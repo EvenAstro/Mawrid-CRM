@@ -2,117 +2,50 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { LeadsIcon, DealsIcon } from "@/components/navIcons";
+import { LeadsIcon, CheckCircleIcon, RevenueIcon } from "@/components/navIcons";
 
-/* ---------- Types ---------- */
 type Stage = { label: string; terminal_type: string | null } | null;
 type Ref = { label: string } | null;
+interface Lead { id: string; created_at: string | null; junk_reason_id: number | null; sources: Ref }
+interface Deal { id: string; owner_id: string | null; expected_value_minor: number | null; won_value_minor: number | null; pipeline_stages: Stage; lost_reasons: Ref }
+interface Activity { entity_type: string | null; entity_id: string | null; occurred_at: string | null }
+interface CrmUser { id: string; name?: string | null; full_name?: string | null; first_name?: string | null; last_name?: string | null; email?: string | null }
 
-interface Lead {
-  id: number | string;
-  junk_reason_id: number | null;
-  created_at: string | null;
-  source_id: number | null;
-  owner_id: number | string | null;
-  sources: Ref;
-  pipeline_stages: Stage;
-  junk_reasons: Ref;
-}
-interface Deal {
-  id: number | string;
-  owner_id: number | string | null;
-  won_value_minor: number | null;
-  pipeline_stages: Stage;
-  lost_reasons: Ref;
-}
-interface Activity {
-  id: number | string;
-  lead_id: number | string | null;
-  occurred_at: string | null;
-}
-interface CrmUser {
-  id: number | string;
-  name?: string | null;
-  full_name?: string | null;
-  first_name?: string | null;
-  last_name?: string | null;
-  email?: string | null;
+const nf = new Intl.NumberFormat("en-US");
+const sar = (minor: number) => "SAR " + nf.format(Math.round(minor / 100));
+function userName(u: CrmUser | undefined, id: string): string {
+  if (u) return u.name || u.full_name || [u.first_name, u.last_name].filter(Boolean).join(" ") || u.email || `Rep ${id.slice(0, 4)}`;
+  return `Rep ${id.slice(0, 4)}`;
 }
 
-/* ---------- Helpers ---------- */
-const sar = (minor: number) =>
-  "SAR " + new Intl.NumberFormat("en-US").format(Math.round(minor / 100));
-
-function userName(u: CrmUser | undefined): string {
-  if (!u) return "Unknown";
+function XCircle({ className }: { className?: string }) {
   return (
-    u.name ||
-    u.full_name ||
-    [u.first_name, u.last_name].filter(Boolean).join(" ") ||
-    u.email ||
-    `User ${u.id}`
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" className={className}>
+      <circle cx="12" cy="12" r="9" /><path d="M15 9l-6 6M9 9l6 6" />
+    </svg>
   );
 }
 
-/* ---------- KPI card ---------- */
-function KpiCard({
-  label,
-  value,
-  sub,
-  tint,
-  Icon,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-  tint: string;
-  Icon: () => React.ReactElement;
-}) {
+function KpiCard({ label, value, color, Icon }: { label: string; value: string; color: string; Icon: (p: { className?: string }) => React.ReactElement }) {
   return (
-    <div className="rounded-2xl border border-[#e6f7f3] bg-white p-5 shadow-sm transition-all hover:shadow-md">
-      <div className="flex items-start justify-between">
-        <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${tint}`}>
-          <Icon />
-        </span>
+    <div className="rounded-2xl border border-[#e5e7eb] bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md">
+      <div className="mb-4 flex items-start justify-between">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">{label}</p>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: `${color}1a`, color }}>
+          <Icon className="h-5 w-5" />
+        </div>
       </div>
-      <p className="mt-4 text-3xl font-extrabold text-[#1e1b4b]">{value}</p>
-      <p className="mt-1 text-xs font-medium uppercase tracking-wide text-gray-400">
-        {label}
-      </p>
-      <p className="mt-1 text-xs text-gray-400">{sub}</p>
+      <p className="text-5xl font-black tabular-nums text-[#1e1b4b]">{value}</p>
     </div>
   );
 }
 
-function Panel({
-  title,
-  children,
-  className = "",
-}: {
-  title: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
+function Panel({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-[#e6f7f3] bg-white p-5 shadow-sm ${className}`}>
+    <div className={`rounded-2xl border border-[#e5e7eb] bg-white p-6 shadow-sm ${className}`}>
       <h3 className="mb-4 text-base font-bold text-[#1e1b4b]">{title}</h3>
       {children}
     </div>
-  );
-}
-
-function CheckCircle() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m5 12 4 4 10-10" />
-    </svg>
-  );
-}
-function XCircle() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 6l12 12M18 6 6 18" />
-    </svg>
   );
 }
 
@@ -120,374 +53,183 @@ export default function AnalyticsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [crmUsers, setCrmUsers] = useState<CrmUser[]>([]);
+  const [users, setUsers] = useState<CrmUser[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       const [l, d, a, u] = await Promise.all([
-        supabase
-          .from("leads")
-          .select(
-            "*, pipeline_stages(label, terminal_type), sources(label), junk_reasons(label)",
-          )
-          .is("deleted_at", null),
-        supabase
-          .from("deals")
-          .select("*, pipeline_stages(label, terminal_type), lost_reasons(label)")
-          .is("deleted_at", null),
-        supabase.from("activities").select("*, activity_types(label)"),
+        supabase.from("leads").select("id, created_at, junk_reason_id, sources(label)").is("deleted_at", null),
+        supabase.from("deals").select("id, owner_id, expected_value_minor, won_value_minor, pipeline_stages(label, terminal_type), lost_reasons(label)").is("deleted_at", null),
+        supabase.from("activities").select("entity_type, entity_id, occurred_at").eq("entity_type", "lead"),
         supabase.from("crm_users").select("*"),
       ]);
       if (l.data) setLeads(l.data as unknown as Lead[]);
       if (d.data) setDeals(d.data as unknown as Deal[]);
       if (a.data) setActivities(a.data as unknown as Activity[]);
-      if (u.data) setCrmUsers(u.data as unknown as CrmUser[]);
+      if (u.data) setUsers(u.data as unknown as CrmUser[]);
       setLoading(false);
     }
     load();
   }, []);
 
-  const stats = useMemo(() => {
+  const s = useMemo(() => {
     const total = leads.length;
     const junk = leads.filter((l) => l.junk_reason_id != null).length;
     const clean = total - junk;
+    const won = deals.filter((d) => d.pipeline_stages?.terminal_type === "won").length;
+    const lost = deals.filter((d) => d.pipeline_stages?.terminal_type === "lost").length;
 
-    // Trend: this month vs last month
-    const now = new Date();
-    const inMonth = (iso: string | null, offset: number) => {
-      if (!iso) return false;
-      const dt = new Date(iso);
-      const ref = new Date(now.getFullYear(), now.getMonth() - offset, 1);
-      return (
-        dt.getFullYear() === ref.getFullYear() && dt.getMonth() === ref.getMonth()
-      );
-    };
-    const leadsThisMonth = leads.filter((l) => inMonth(l.created_at, 0)).length;
-    const leadsLastMonth = leads.filter((l) => inMonth(l.created_at, 1)).length;
-
-    // Deals
-    const wonDeals = deals.filter(
-      (d) => d.pipeline_stages?.terminal_type === "won",
-    );
-    const lostDeals = deals.filter(
-      (d) => d.pipeline_stages?.terminal_type === "lost",
-    );
-    const wonValue = wonDeals.reduce((s, d) => s + (d.won_value_minor ?? 0), 0);
-
-    // Leads by source
-    const sourceCount: Record<string, number> = {};
-    const sourceJunk: Record<string, number> = {};
+    const cnt: Record<string, number> = {};
+    const jnk: Record<string, number> = {};
     leads.forEach((l) => {
-      const key = l.sources?.label ?? "Unknown";
-      sourceCount[key] = (sourceCount[key] ?? 0) + 1;
-      if (l.junk_reason_id != null) sourceJunk[key] = (sourceJunk[key] ?? 0) + 1;
+      const k = l.sources?.label ?? "Unknown";
+      cnt[k] = (cnt[k] ?? 0) + 1;
+      if (l.junk_reason_id != null) jnk[k] = (jnk[k] ?? 0) + 1;
     });
-    const leadsBySource = Object.entries(sourceCount)
-      .map(([label, count]) => ({
-        label,
-        count,
-        junk: sourceJunk[label] ?? 0,
-        clean: count - (sourceJunk[label] ?? 0),
-      }))
-      .sort((a, b) => b.count - a.count);
+    const bySource = Object.entries(cnt).map(([label, count]) => ({ label, count, junk: jnk[label] ?? 0, clean: count - (jnk[label] ?? 0) })).sort((a, b) => b.count - a.count);
 
-    // Rep performance
-    const userMap = new Map(crmUsers.map((u) => [String(u.id), u]));
-    const repMap: Record<string, { deals: number; won: number; lost: number }> = {};
+    const umap = new Map(users.map((u) => [String(u.id), u]));
+    const rmap: Record<string, { deals: number; won: number; lost: number }> = {};
     deals.forEach((d) => {
-      const key = String(d.owner_id ?? "none");
-      if (!repMap[key]) repMap[key] = { deals: 0, won: 0, lost: 0 };
-      repMap[key].deals++;
-      if (d.pipeline_stages?.terminal_type === "won") repMap[key].won++;
-      if (d.pipeline_stages?.terminal_type === "lost") repMap[key].lost++;
+      const k = String(d.owner_id ?? "none");
+      if (!rmap[k]) rmap[k] = { deals: 0, won: 0, lost: 0 };
+      rmap[k].deals++;
+      if (d.pipeline_stages?.terminal_type === "won") rmap[k].won++;
+      if (d.pipeline_stages?.terminal_type === "lost") rmap[k].lost++;
     });
-    const reps = Object.entries(repMap)
-      .map(([id, r]) => ({
-        name: id === "none" ? "Unassigned" : userName(userMap.get(id)),
-        ...r,
-        winRate: r.deals ? (r.won / r.deals) * 100 : 0,
-      }))
-      .sort((a, b) => b.deals - a.deals);
-    const repTotals = reps.reduce(
-      (acc, r) => ({
-        deals: acc.deals + r.deals,
-        won: acc.won + r.won,
-        lost: acc.lost + r.lost,
-      }),
-      { deals: 0, won: 0, lost: 0 },
-    );
+    const reps = Object.entries(rmap).map(([id, r]) => ({ name: id === "none" ? "Unassigned" : userName(umap.get(id), id), ...r, winRate: r.deals ? (r.won / r.deals) * 100 : 0 })).sort((a, b) => b.deals - a.deals).slice(0, 8);
 
-    // Funnel
     const funnel = [
       { label: "Total Leads", count: total, color: "#1a5c4f" },
       { label: "Active", count: clean, color: "#2d8a6e" },
       { label: "Deals Created", count: deals.length, color: "#f59e0b" },
-      { label: "Lost", count: lostDeals.length, color: "#dc2626" },
-      { label: "Won", count: wonDeals.length, color: "#059669" },
+      { label: "Lost", count: lost, color: "#ef4444" },
+      { label: "Won", count: won, color: "#10b981" },
     ];
 
-    // Lost reasons
-    const lostReasonMap: Record<string, { count: number; value: number }> = {};
+    const lrm: Record<string, { count: number; value: number }> = {};
     deals.forEach((d) => {
-      if (d.pipeline_stages?.terminal_type !== "lost" && !d.lost_reasons) return;
       if (!d.lost_reasons?.label) return;
-      const key = d.lost_reasons.label;
-      if (!lostReasonMap[key]) lostReasonMap[key] = { count: 0, value: 0 };
-      lostReasonMap[key].count++;
-      lostReasonMap[key].value += d.won_value_minor ?? 0;
+      const k = d.lost_reasons.label;
+      if (!lrm[k]) lrm[k] = { count: 0, value: 0 };
+      lrm[k].count++;
+      lrm[k].value += d.won_value_minor ?? d.expected_value_minor ?? 0;
     });
-    const lostReasons = Object.entries(lostReasonMap)
-      .map(([label, v]) => ({ label, ...v }))
-      .sort((a, b) => b.count - a.count);
+    const lostReasons = Object.entries(lrm).map(([label, v]) => ({ label, ...v })).sort((a, b) => b.count - a.count);
 
-    // Response time by source (hours from lead created -> first activity)
-    const firstActivity: Record<string, number> = {};
+    const firstAct: Record<string, number> = {};
     activities.forEach((a) => {
-      if (a.lead_id == null || !a.occurred_at) return;
+      if (!a.entity_id || !a.occurred_at) return;
       const t = new Date(a.occurred_at).getTime();
       if (Number.isNaN(t)) return;
-      const key = String(a.lead_id);
-      if (firstActivity[key] == null || t < firstActivity[key])
-        firstActivity[key] = t;
+      if (firstAct[a.entity_id] == null || t < firstAct[a.entity_id]) firstAct[a.entity_id] = t;
     });
-    const respAgg: Record<string, { sum: number; n: number }> = {};
+    const agg: Record<string, { sum: number; n: number }> = {};
     leads.forEach((l) => {
       if (!l.created_at) return;
-      const fa = firstActivity[String(l.id)];
+      const fa = firstAct[l.id];
       if (fa == null) return;
-      const hours = (fa - new Date(l.created_at).getTime()) / 3600000;
-      if (hours < 0 || Number.isNaN(hours)) return;
-      const key = l.sources?.label ?? "Unknown";
-      if (!respAgg[key]) respAgg[key] = { sum: 0, n: 0 };
-      respAgg[key].sum += hours;
-      respAgg[key].n++;
+      const hrs = (fa - new Date(l.created_at).getTime()) / 3600000;
+      if (hrs < 0 || Number.isNaN(hrs)) return;
+      const k = l.sources?.label ?? "Unknown";
+      if (!agg[k]) agg[k] = { sum: 0, n: 0 };
+      agg[k].sum += hrs;
+      agg[k].n++;
     });
-    const responseBySource: Record<string, number> = {};
-    Object.entries(respAgg).forEach(([k, v]) => {
-      responseBySource[k] = v.n ? v.sum / v.n : 0;
-    });
-    const responseRows = Object.entries(responseBySource)
-      .map(([label, hours]) => ({ label, hours }))
-      .sort((a, b) => a.hours - b.hours);
+    const respMap: Record<string, number> = {};
+    Object.entries(agg).forEach(([k, v]) => (respMap[k] = v.n ? v.sum / v.n : 0));
+    const responseRows = Object.entries(respMap).map(([label, hours]) => ({ label, hours })).sort((a, b) => a.hours - b.hours);
 
-    // Source ranking
-    const respValues = Object.values(responseBySource);
-    const minR = respValues.length ? Math.min(...respValues) : 0;
-    const maxR = respValues.length ? Math.max(...respValues) : 0;
-    const ranking = leadsBySource
-      .map((s) => {
-        const junkRate = s.count ? s.junk / s.count : 0;
-        const resp = responseBySource[s.label] ?? maxR;
-        const normResp = maxR > minR ? (resp - minR) / (maxR - minR) : 0;
-        const score = (1 - junkRate) * 0.4 + (1 - normResp) * 0.6;
-        return {
-          label: s.label,
-          junkRate,
-          response: responseBySource[s.label] ?? null,
-          score,
-        };
-      })
-      .sort((a, b) => b.score - a.score);
+    const rv = Object.values(respMap);
+    const minR = rv.length ? Math.min(...rv) : 0;
+    const maxR = rv.length ? Math.max(...rv) : 0;
+    const ranking = bySource.map((src) => {
+      const junkRate = src.count ? src.junk / src.count : 0;
+      const resp = respMap[src.label] ?? maxR;
+      const norm = maxR > minR ? (resp - minR) / (maxR - minR) : 0;
+      const score = (1 - junkRate) * 0.4 + (1 - norm) * 0.6;
+      return { label: src.label, junkRate, response: respMap[src.label] ?? null, score };
+    }).sort((a, b) => b.score - a.score);
 
-    return {
-      total,
-      junk,
-      clean,
-      leadsThisMonth,
-      leadsLastMonth,
-      dealsCount: deals.length,
-      wonValue,
-      leadsBySource,
-      reps,
-      repTotals,
-      funnel,
-      lostReasons,
-      responseRows,
-      ranking,
-    };
-  }, [leads, deals, activities, crmUsers]);
+    return { total, junk, clean, won, lost, activeDeals: deals.length, bySource, reps, funnel, lostReasons, responseRows, ranking };
+  }, [leads, deals, activities, users]);
 
-  const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
+  if (loading) return <div className="py-24 text-center text-[#9ca3af]">Loading analytics…</div>;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24 text-gray-400">
-        Loading analytics…
-      </div>
-    );
-  }
-
-  const maxSource = Math.max(1, ...stats.leadsBySource.map((s) => s.count));
-  const maxSourceTotal = Math.max(1, ...stats.leadsBySource.map((s) => s.count));
-  const maxLost = Math.max(1, ...stats.lostReasons.map((r) => r.count));
-  const maxResp = Math.max(1, ...stats.responseRows.map((r) => r.hours));
+  const maxSource = Math.max(1, ...s.bySource.map((x) => x.count));
+  const maxLost = Math.max(1, ...s.lostReasons.map((x) => x.count));
+  const maxResp = Math.max(1, ...s.responseRows.map((x) => x.hours));
   const medals = ["🥇", "🥈", "🥉"];
   const medalBorder = ["#f5c518", "#c0c0c0", "#cd7f32"];
 
   return (
-    <>
-      {/* Header */}
-      <div className="mb-6">
+    <div className="flex flex-col gap-5">
+      <div>
         <h1 className="text-2xl font-bold text-[#1e1b4b]">Analytics</h1>
-        <p className="text-sm text-gray-400">
-          Real-time insights from your CRM data
-        </p>
+        <p className="text-sm text-[#6b7280]">Real-time insights from your CRM data</p>
       </div>
 
-      {/* Section 1 — KPIs */}
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard
-          label="Total Leads"
-          value={String(stats.total)}
-          sub={`${stats.leadsThisMonth} this month · ${stats.leadsLastMonth} last`}
-          tint="bg-[#f0faf8] text-[#1a5c4f]"
-          Icon={LeadsIcon}
-        />
-        <KpiCard
-          label="Clean Leads"
-          value={String(stats.clean)}
-          sub={`${pct(stats.clean, stats.total)}% of total`}
-          tint="bg-emerald-50 text-emerald-600"
-          Icon={CheckCircle}
-        />
-        <KpiCard
-          label="Junk Leads"
-          value={String(stats.junk)}
-          sub={`${pct(stats.junk, stats.total)}% of total`}
-          tint="bg-red-50 text-red-600"
-          Icon={XCircle}
-        />
-        <KpiCard
-          label="Active Deals"
-          value={String(stats.dealsCount)}
-          sub={`${sar(stats.wonValue)} won`}
-          tint="bg-[#f0faf8] text-[#1a5c4f]"
-          Icon={DealsIcon}
-        />
+      <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
+        <KpiCard label="Total Leads" value={String(s.total)} color="#1a5c4f" Icon={LeadsIcon} />
+        <KpiCard label="Clean Leads" value={String(s.clean)} color="#10b981" Icon={CheckCircleIcon} />
+        <KpiCard label="Junk Leads" value={String(s.junk)} color="#ef4444" Icon={XCircle} />
+        <KpiCard label="Active Deals" value={String(s.activeDeals)} color="#f59e0b" Icon={RevenueIcon} />
       </div>
 
-      {/* Section 2 */}
-      <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Leads by Source */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <Panel title="Leads by Source">
-          {stats.leadsBySource.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-400">No data</p>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {stats.leadsBySource.map((s, i) => (
-                <div key={s.label} className="flex items-center gap-3">
-                  <span className="w-24 flex-none truncate text-xs text-gray-500">
-                    {s.label}
-                  </span>
-                  <div className="h-5 flex-1 overflow-hidden rounded-full bg-gray-100">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${(s.count / maxSource) * 100}%`,
-                        backgroundColor: "#1a5c4f",
-                        opacity: Math.max(0.45, 1 - i * 0.12),
-                      }}
-                    />
+          {s.bySource.length === 0 ? <p className="py-8 text-center text-sm text-[#9ca3af]">No data</p> : (
+            <div>
+              {s.bySource.map((src) => (
+                <div key={src.label} className="mb-3">
+                  <div className="mb-1 flex justify-between">
+                    <span className="text-sm text-[#6b7280]">{src.label}</span>
+                    <span className="text-sm font-semibold text-[#1e1b4b]">{src.count}</span>
                   </div>
-                  <span className="w-8 flex-none text-right text-xs font-semibold text-gray-600">
-                    {s.count}
-                  </span>
+                  <div className="h-2 rounded-full bg-[#f1f5f9]"><div className="h-full rounded-full bg-[#1a5c4f]" style={{ width: `${(src.count / maxSource) * 100}%` }} /></div>
                 </div>
               ))}
             </div>
           )}
         </Panel>
 
-        {/* Rep Performance */}
         <Panel title="Sales Rep Performance">
-          {stats.reps.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-400">No data</p>
-          ) : (
+          {s.reps.length === 0 ? <p className="py-8 text-center text-sm text-[#9ca3af]">No data</p> : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="text-[10px] uppercase tracking-wider text-gray-400">
-                    <th className="pb-2">Rep</th>
-                    <th className="pb-2 text-center">Deals</th>
-                    <th className="pb-2 text-center">Won</th>
-                    <th className="pb-2 text-center">Lost</th>
-                    <th className="pb-2 text-right">Win %</th>
-                  </tr>
-                </thead>
+              <table className="w-full text-left text-sm">
+                <thead><tr className="text-xs uppercase tracking-wider text-[#9ca3af]"><th className="pb-2">Rep</th><th className="pb-2 text-center">Deals</th><th className="pb-2 text-center">Won</th><th className="pb-2 text-center">Lost</th><th className="pb-2 text-right">Win %</th></tr></thead>
                 <tbody>
-                  {stats.reps.map((r) => {
+                  {s.reps.map((r, index) => {
                     const wr = Math.round(r.winRate);
-                    const wrClass =
-                      wr >= 20
-                        ? "bg-emerald-50 text-emerald-600"
-                        : wr >= 1
-                          ? "bg-amber-50 text-amber-600"
-                          : "bg-red-50 text-red-600";
+                    const cls = wr >= 20 ? "bg-green-50 text-green-700" : wr >= 1 ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700";
                     return (
-                      <tr key={r.name} className="border-t border-gray-50">
-                        <td className="py-2 font-medium text-gray-700">
-                          {r.name}
-                        </td>
-                        <td className="py-2 text-center text-gray-600">
-                          {r.deals}
-                        </td>
-                        <td className="py-2 text-center text-gray-600">
-                          {r.won}
-                        </td>
-                        <td className="py-2 text-center text-gray-600">
-                          {r.lost}
-                        </td>
-                        <td className="py-2 text-right">
-                          <span
-                            className={`rounded-full px-2 py-0.5 font-semibold ${wrClass}`}
-                          >
-                            {wr}%
-                          </span>
-                        </td>
+                      <tr key={`rep-${r.name}-${index}`} className="border-t border-[#f1f5f9]">
+                        <td className="py-2 font-medium text-[#374151]">{r.name}</td>
+                        <td className="py-2 text-center text-[#6b7280]">{r.deals}</td>
+                        <td className="py-2 text-center text-[#6b7280]">{r.won}</td>
+                        <td className="py-2 text-center text-[#6b7280]">{r.lost}</td>
+                        <td className="py-2 text-right"><span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>{wr}%</span></td>
                       </tr>
                     );
                   })}
-                  <tr className="border-t-2 border-gray-100 font-bold text-[#1e1b4b]">
-                    <td className="py-2">Total</td>
-                    <td className="py-2 text-center">{stats.repTotals.deals}</td>
-                    <td className="py-2 text-center">{stats.repTotals.won}</td>
-                    <td className="py-2 text-center">{stats.repTotals.lost}</td>
-                    <td className="py-2 text-right">
-                      {pct(stats.repTotals.won, stats.repTotals.deals)}%
-                    </td>
-                  </tr>
                 </tbody>
               </table>
             </div>
           )}
         </Panel>
 
-        {/* Funnel */}
         <Panel title="Sales Funnel">
           <div className="flex flex-col gap-2.5">
-            {stats.funnel.map((f) => {
-              const width = pct(f.count, stats.total || 1);
-              const tiny = width < 12;
+            {s.funnel.map((f) => {
+              const pct = s.total ? Math.round((f.count / s.total) * 100) : 0;
+              const tiny = pct < 16;
               return (
-                <div key={f.label}>
-                  <div className="flex h-8 items-center">
-                    <div
-                      className="flex h-full min-w-[3px] items-center rounded-lg px-2"
-                      style={{ width: `${Math.max(width, 2)}%`, backgroundColor: f.color }}
-                    >
-                      {!tiny && (
-                        <span className="truncate text-xs font-semibold text-white">
-                          {f.label} · {f.count} · {width}%
-                        </span>
-                      )}
-                    </div>
-                    {tiny && (
-                      <span className="ml-2 text-xs font-medium text-gray-600">
-                        {f.label} · {f.count} · {width}%
-                      </span>
-                    )}
+                <div key={f.label} className="flex h-9 items-center">
+                  <div className="flex h-full min-w-[4px] items-center rounded-lg px-2.5" style={{ width: `${Math.max(pct, 3)}%`, backgroundColor: f.color }}>
+                    {!tiny && <span className="truncate text-xs font-semibold text-white">{f.label} · {f.count} · {pct}%</span>}
                   </div>
+                  {tiny && <span className="ml-2 text-xs text-[#6b7280]">{f.label} · {f.count} · {pct}%</span>}
                 </div>
               );
             })}
@@ -495,40 +237,16 @@ export default function AnalyticsPage() {
         </Panel>
       </div>
 
-      {/* Section 3 */}
-      <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Lead Quality by Source */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <Panel title="Lead Quality by Source">
-          {stats.leadsBySource.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-400">No data</p>
-          ) : (
+          {s.bySource.length === 0 ? <p className="py-8 text-center text-sm text-[#9ca3af]">No data</p> : (
             <div className="flex flex-col gap-3">
-              {stats.leadsBySource.map((s) => (
-                <div key={s.label}>
-                  <p className="mb-1 text-xs text-gray-500">{s.label}</p>
+              {s.bySource.map((src) => (
+                <div key={src.label}>
+                  <p className="mb-1 text-sm text-[#6b7280]">{src.label}</p>
                   <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <div className="h-3 flex-1 overflow-hidden rounded-full bg-gray-100">
-                        <div
-                          className="h-full rounded-full bg-emerald-500"
-                          style={{ width: `${(s.clean / maxSourceTotal) * 100}%` }}
-                        />
-                      </div>
-                      <span className="w-6 text-right text-[11px] text-emerald-600">
-                        {s.clean}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="h-3 flex-1 overflow-hidden rounded-full bg-gray-100">
-                        <div
-                          className="h-full rounded-full bg-red-500"
-                          style={{ width: `${(s.junk / maxSourceTotal) * 100}%` }}
-                        />
-                      </div>
-                      <span className="w-6 text-right text-[11px] text-red-600">
-                        {s.junk}
-                      </span>
-                    </div>
+                    <div className="flex items-center gap-2"><div className="h-2.5 flex-1 rounded-full bg-[#f1f5f9]"><div className="h-full rounded-full bg-green-500" style={{ width: `${(src.clean / maxSource) * 100}%` }} /></div><span className="w-7 text-right text-xs text-green-700">{src.clean}</span></div>
+                    <div className="flex items-center gap-2"><div className="h-2.5 flex-1 rounded-full bg-[#f1f5f9]"><div className="h-full rounded-full bg-red-500" style={{ width: `${(src.junk / maxSource) * 100}%` }} /></div><span className="w-7 text-right text-xs text-red-700">{src.junk}</span></div>
                   </div>
                 </div>
               ))}
@@ -536,65 +254,28 @@ export default function AnalyticsPage() {
           )}
         </Panel>
 
-        {/* Why We Lose Deals */}
         <Panel title="Why We Lose Deals">
-          {stats.lostReasons.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-400">No lost deals</p>
-          ) : (
+          {s.lostReasons.length === 0 ? <p className="py-8 text-center text-sm text-[#9ca3af]">No lost deals</p> : (
             <div className="flex flex-col gap-3">
-              {stats.lostReasons.map((r) => (
-                <div
-                  key={r.label}
-                  className="flex items-center gap-3"
-                  title={`${r.count} deals · ${sar(r.value)}`}
-                >
-                  <span className="w-24 flex-none truncate text-xs text-gray-500">
-                    {r.label}
-                  </span>
-                  <div className="h-5 flex-1 overflow-hidden rounded-full bg-gray-100">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${(r.count / maxLost) * 100}%`,
-                        backgroundColor: "#dc2626",
-                      }}
-                    />
-                  </div>
-                  <span className="w-8 flex-none text-right text-xs font-semibold text-gray-600">
-                    {r.count}
-                  </span>
+              {s.lostReasons.map((r) => (
+                <div key={r.label}>
+                  <div className="mb-1 flex justify-between"><span className="text-sm text-[#6b7280]">{r.label}</span><span className="text-xs text-[#9ca3af]">{r.count} · {sar(r.value)}</span></div>
+                  <div className="h-2 rounded-full bg-[#f1f5f9]"><div className="h-full rounded-full bg-red-500" style={{ width: `${(r.count / maxLost) * 100}%` }} /></div>
                 </div>
               ))}
             </div>
           )}
         </Panel>
 
-        {/* Response Time by Source */}
         <Panel title="Response Time by Source">
-          {stats.responseRows.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-400">No data</p>
-          ) : (
+          {s.responseRows.length === 0 ? <p className="py-8 text-center text-sm text-[#9ca3af]">No data</p> : (
             <div className="flex flex-col gap-3">
-              {stats.responseRows.map((r) => {
-                const color =
-                  r.hours < 50 ? "#1a5c4f" : r.hours <= 150 ? "#f59e0b" : "#dc2626";
+              {s.responseRows.map((r) => {
+                const color = r.hours < 50 ? "#10b981" : r.hours <= 150 ? "#f59e0b" : "#ef4444";
                 return (
-                  <div key={r.label} className="flex items-center gap-3">
-                    <span className="w-24 flex-none truncate text-xs text-gray-500">
-                      {r.label}
-                    </span>
-                    <div className="h-5 flex-1 overflow-hidden rounded-full bg-gray-100">
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${(r.hours / maxResp) * 100}%`,
-                          backgroundColor: color,
-                        }}
-                      />
-                    </div>
-                    <span className="w-12 flex-none text-right text-xs font-semibold text-gray-600">
-                      {Math.round(r.hours)}h
-                    </span>
+                  <div key={r.label}>
+                    <div className="mb-1 flex justify-between"><span className="text-sm text-[#6b7280]">{r.label}</span><span className="text-sm font-semibold text-[#1e1b4b]">{Math.round(r.hours)}h</span></div>
+                    <div className="h-2 rounded-full bg-[#f1f5f9]"><div className="h-full rounded-full" style={{ width: `${(r.hours / maxResp) * 100}%`, backgroundColor: color }} /></div>
                   </div>
                 );
               })}
@@ -603,44 +284,25 @@ export default function AnalyticsPage() {
         </Panel>
       </div>
 
-      {/* Section 4 — Source Ranking */}
       <Panel title="🏆 Source Ranking">
-        {stats.ranking.length === 0 ? (
-          <p className="py-8 text-center text-sm text-gray-400">No data</p>
-        ) : (
+        {s.ranking.length === 0 ? <p className="py-8 text-center text-sm text-[#9ca3af]">No data</p> : (
           <div className="flex flex-wrap gap-4">
-            {stats.ranking.map((s, i) => {
-              const isLast = i === stats.ranking.length - 1 && stats.ranking.length > 3;
-              const topColor = isLast
-                ? "#dc2626"
-                : medalBorder[i] ?? "#e6f7f3";
-              const badge = isLast ? "🔴" : (medals[i] ?? `#${i + 1}`);
+            {s.ranking.map((r, i) => {
+              const isLast = i === s.ranking.length - 1 && s.ranking.length > 3;
+              const topColor = isLast ? "#ef4444" : medalBorder[i] ?? "#e5e7eb";
+              const badge = isLast ? "🔴" : medals[i] ?? `#${i + 1}`;
               return (
-                <div
-                  key={s.label}
-                  className="min-w-[150px] flex-1 rounded-xl border border-[#e6f7f3] bg-white p-4 shadow-sm"
-                  style={{ borderTop: `4px solid ${topColor}` }}
-                >
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="text-lg">{badge}</span>
-                    <span className="text-xs font-medium text-gray-400">
-                      #{i + 1}
-                    </span>
-                  </div>
-                  <p className="font-bold text-[#1e1b4b]">{s.label}</p>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Junk: {Math.round(s.junkRate * 100)}%
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Avg Response:{" "}
-                    {s.response == null ? "—" : `${Math.round(s.response)}h`}
-                  </p>
+                <div key={r.label} className="min-w-[160px] flex-1 rounded-xl border border-[#e5e7eb] bg-white p-4 shadow-sm" style={{ borderTop: `4px solid ${topColor}` }}>
+                  <div className="mb-1 flex items-center justify-between"><span className="text-lg">{badge}</span><span className="text-xs font-medium text-[#9ca3af]">#{i + 1}</span></div>
+                  <p className="font-bold text-[#1e1b4b]">{r.label}</p>
+                  <p className="mt-1 text-sm text-[#6b7280]">Junk: {Math.round(r.junkRate * 100)}%</p>
+                  <p className="text-sm text-[#6b7280]">Response: {r.response == null ? "—" : `${Math.round(r.response)}h`}</p>
                 </div>
               );
             })}
           </div>
         )}
       </Panel>
-    </>
+    </div>
   );
 }

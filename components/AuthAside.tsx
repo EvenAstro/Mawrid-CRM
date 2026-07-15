@@ -26,7 +26,7 @@ export default function AuthAside({
   bullets: string[];
 }) {
   return (
-    <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-gradient-to-br from-[#1e1b4b] to-[#1a5c4f] p-12 lg:flex">
+    <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-gradient-to-br from-[#0f172a] to-[#1a5c4f] p-12 lg:flex">
       {/* Decorative glows */}
       <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-[#4fd1b5]/10 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-28 -left-20 h-80 w-80 rounded-full bg-[#1a5c4f]/40 blur-3xl" />

@@ -29,7 +29,7 @@ export default function BrandPanel() {
       style={{
         minHeight: "100vh",
         background:
-          "linear-gradient(135deg, #1e1b4b 0%, #1a5c4f 100%)",
+          "linear-gradient(135deg, #0f172a 0%, #1a5c4f 100%)",
       }}
     >
       {/* Decorative glow */}

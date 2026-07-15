@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { ToastProvider } from "@/components/Toast";
 import {
   DashboardIcon,
   ContactsIcon,
@@ -15,7 +16,7 @@ import {
   AnalyticsIcon,
   ScoringIcon,
   BellIcon,
-  SearchIcon,
+  LogoutIcon,
 } from "@/components/navIcons";
 
 const navItems = [
@@ -35,17 +36,12 @@ function initials(name: string, email: string) {
   const parts = source.split(/[\s@.]+/).filter(Boolean);
   return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
 }
-
 function isActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === "/dashboard";
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [email, setEmail] = useState("");
@@ -54,9 +50,7 @@ export default function DashboardLayout({
 
   useEffect(() => {
     async function checkUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.replace("/");
         return;
@@ -74,112 +68,94 @@ export default function DashboardLayout({
   }
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen flex-1 items-center justify-center bg-[#f0faf8] text-gray-500">
-        Loading…
-      </div>
-    );
+    return <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] text-[#9ca3af]">Loading…</div>;
   }
 
   const displayName = fullName || email.split("@")[0];
   const userInitials = initials(fullName, email);
-  const activeItem = navItems.find((n) => isActive(pathname, n.href));
-  const pageTitle = activeItem?.label ?? "Dashboard";
+  const pageName = navItems.find((n) => isActive(pathname, n.href))?.label ?? "Dashboard";
+
+  useEffect(() => {
+    document.title = `${pageName} | Mawrid CRM`;
+  }, [pageName]);
 
   return (
-    <div className="min-h-screen bg-[#f0faf8]">
+    <ToastProvider>
+    <div className="min-h-screen bg-[#f8fafc]">
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 z-20 flex h-screen w-[260px] flex-col bg-[#1e1b4b]">
+      <div className="fixed inset-y-0 left-0 z-30 flex w-64 flex-col bg-[#1e1b4b]">
         {/* Logo */}
-        <div className="p-6 pb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-extrabold text-white">مَوْرِد</span>
-            <span className="h-2 w-2 rounded-full bg-[#4ade80]" />
+        <div className="flex h-16 items-center gap-3 border-b border-white/10 px-5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a5c4f]">
+            <span className="text-base font-black text-white">م</span>
           </div>
-          <span className="mt-0.5 block text-xs uppercase tracking-[0.2em] text-[#4ade80]/70">
-            Mawrid
-          </span>
+          <div>
+            <span className="block text-base font-bold text-white">Mawrid</span>
+            <span className="text-xs font-medium text-[#7ee7cd]">CRM Platform</span>
+          </div>
         </div>
-        <div className="mx-6 border-t border-white/10" />
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
-          <p className="mb-2 px-3 text-[10px] uppercase tracking-[0.15em] text-white/30">
-            Workspace
-          </p>
-          <div className="flex flex-col gap-1">
-            {navItems.map(({ label, href, Icon }) => {
-              const active = isActive(pathname, href);
-              return (
-                <Link
-                  key={label}
-                  href={href}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
-                    active
-                      ? "bg-[#1a5c4f] text-white shadow-lg shadow-[#1a5c4f]/30"
-                      : "text-white/60 hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  <span className="flex h-8 w-8 flex-none items-center justify-center">
-                    <Icon />
-                  </span>
-                  <span>{label}</span>
-                </Link>
-              );
-            })}
-          </div>
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
+          <p className="px-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/25">Workspace</p>
+          {navItems.map(({ label, href, Icon }) => {
+            const active = isActive(pathname, href);
+            return (
+              <Link
+                key={label}
+                href={href}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all ${
+                  active ? "bg-[#1a5c4f] font-semibold text-white shadow-lg shadow-[#1a5c4f]/25" : "font-medium text-white/50 hover:bg-white/[0.08] hover:text-white"
+                }`}
+              >
+                <Icon className="h-[18px] w-[18px] flex-shrink-0" />
+                {label}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* User */}
-        <div className="flex items-center gap-3 border-t border-white/10 p-4">
-          <div className="flex h-[38px] w-[38px] flex-none items-center justify-center rounded-full bg-[#1a5c4f] text-sm font-bold text-white">
-            {userInitials}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-white">
-              {displayName}
-            </p>
-            <p className="truncate text-xs text-white/40">{email}</p>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="ml-auto text-xs font-medium text-red-400/70 transition hover:text-red-400"
-          >
-            Logout
-          </button>
-        </div>
-      </aside>
-
-      {/* Topbar */}
-      <header className="fixed left-[260px] right-0 top-0 z-10 flex h-16 items-center justify-between border-b border-gray-100 bg-white/80 px-8 backdrop-blur">
-        <h1 className="text-lg font-bold text-[#1e1b4b]">{pageTitle}</h1>
-        <div className="flex items-center gap-4">
-          <div className="hidden h-9 w-52 items-center gap-2 rounded-xl bg-gray-50 px-3 text-gray-400 sm:flex">
-            <SearchIcon />
-            <input
-              type="text"
-              placeholder="Search…"
-              className="w-full bg-transparent text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none"
-              style={{ boxShadow: "none" }}
-            />
-          </div>
-          <button
-            className="relative text-gray-500 hover:text-[#1a5c4f]"
-            aria-label="Notifications"
-          >
-            <BellIcon />
-            <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500" />
-          </button>
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1a5c4f] text-xs font-bold text-white">
-            {userInitials}
+        <div className="border-t border-white/10 px-3 py-4">
+          <div className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#1a5c4f]">
+              <span className="text-sm font-bold text-white">{userInitials}</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-white">{displayName}</p>
+              <p className="truncate text-xs text-white/40">{email}</p>
+            </div>
+            <button onClick={handleLogout} aria-label="Log out" className="p-1 text-white/25 transition-colors hover:text-red-400">
+              <LogoutIcon className="h-4 w-4" />
+            </button>
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Content */}
-      <main className="ml-[260px] min-h-screen bg-[#f0faf8] p-8 pt-24">
-        {children}
+      {/* Top bar */}
+      <div className="fixed left-64 right-0 top-0 z-20 flex h-16 items-center justify-between border-b border-[#e5e7eb] bg-white px-8 shadow-sm">
+        <div className="flex items-center gap-1.5 text-sm">
+          <span className="text-[#9ca3af]">Workspace</span>
+          <span className="text-[#d1d5db]">/</span>
+          <span className="font-semibold text-[#1e1b4b]">{pageName}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <input placeholder="Search..." className="hidden h-9 w-48 rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-4 text-sm text-[#1e1b4b] placeholder:text-[#9ca3af] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/10 sm:block" />
+          <button aria-label="Notifications" className="relative text-[#9ca3af] transition-colors hover:text-[#1e1b4b]">
+            <BellIcon className="h-[18px] w-[18px]" />
+            <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-red-500" />
+          </button>
+          <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[#1a5c4f]">
+            <span className="text-xs font-bold text-white">{userInitials}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main */}
+      <main className="ml-64 min-h-screen bg-[#f8fafc] pt-16">
+        <div className="mx-auto max-w-[1400px] p-8">{children}</div>
       </main>
     </div>
+    </ToastProvider>
   );
 }
