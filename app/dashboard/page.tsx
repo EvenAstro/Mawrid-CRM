@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { LeadsIcon, CheckCircleIcon, RevenueIcon, TrendingUpIcon } from "@/components/navIcons";
 import { useToast } from "@/components/Toast";
 import NewLeadSlideOver from "@/components/NewLeadSlideOver";
 import LogActivitySlideOver from "@/components/LogActivitySlideOver";
+import AddContactSlideOver from "@/components/AddContactSlideOver";
+import { dayHeader, dayKey, formatDateTime } from "@/lib/format";
 
 /* ---------- Types ---------- */
 type Stage = { label: string; terminal_type: string | null } | null;
@@ -99,12 +102,11 @@ function latestDate(iso: (string | null)[]): Date {
   return new Date(Math.min(max || now, now));
 }
 function trendText(cur: number, prev: number): { text: string; cls: string } {
-  if (prev === 0 && cur === 0) return { text: "No change", cls: "text-[#9ca3af]" };
-  if (prev === 0) return { text: "↑ New this month", cls: "text-green-600" };
+  if (prev === 0) return { text: "First month of tracking", cls: "text-[#94a3b8]" };
   const pct = Math.round(((cur - prev) / prev) * 100);
-  if (pct === 0) return { text: "No change", cls: "text-[#9ca3af]" };
-  if (pct > 0) return { text: `↑ ${pct}% from last month`, cls: "text-green-600" };
-  return { text: `↓ ${Math.abs(pct)}% from last month`, cls: "text-red-600" };
+  if (pct === 0) return { text: "No change from last month", cls: "text-[#94a3b8]" };
+  if (pct > 0) return { text: `↑ ${pct}% from last month`, cls: "text-[#10b981]" };
+  return { text: `↓ ${Math.abs(pct)}% from last month`, cls: "text-[#ef4444]" };
 }
 function initials(name: string | null | undefined) {
   if (!name) return "—";
@@ -130,6 +132,22 @@ function getAIScore(lead: Lead): number {
   if (lead.establishment_id) p *= 0.05;
   p = Math.min(1, Math.max(0, p));
   return Math.round((1 - p) * 100);
+}
+function activityColor(label?: string | null) {
+  const l = (label || "").toLowerCase();
+  if (l.includes("whatsapp")) return "#10b981";
+  if (l.includes("call")) return "#1a5c4f";
+  if (l.includes("email")) return "#8b5cf6";
+  if (l.includes("deal") || l.includes("meeting")) return "#f59e0b";
+  return "#1a5c4f";
+}
+function activityGlyph(label?: string | null) {
+  const l = (label || "").toLowerCase();
+  if (l.includes("whatsapp")) return "💬";
+  if (l.includes("call")) return "📞";
+  if (l.includes("email")) return "✉️";
+  if (l.includes("meeting")) return "🗓️";
+  return "•";
 }
 function aiPill(score: number) {
   if (score >= 70) return "bg-green-50 text-green-700 border border-green-100";
@@ -215,6 +233,7 @@ const CARD = "rounded-2xl border border-[#e5e7eb] bg-white p-6 shadow-sm transit
 /* ---------- Page ---------- */
 export default function DashboardPage() {
   const toast = useToast();
+  const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -225,6 +244,7 @@ export default function DashboardPage() {
   const [error, setError] = useState(false);
   const [newLeadOpen, setNewLeadOpen] = useState(false);
   const [logActivityOpen, setLogActivityOpen] = useState(false);
+  const [addContactOpen, setAddContactOpen] = useState(false);
   const [completing, setCompleting] = useState<Set<string | number>>(new Set());
 
   useEffect(() => {
@@ -353,10 +373,10 @@ export default function DashboardPage() {
   }
 
   const kpis = [
-    { label: "Total Leads", value: String(m.total_leads), Icon: LeadsIcon, color: "#1a5c4f", trend: m.leadsTrend },
-    { label: "Clean Leads", value: String(m.clean_leads), Icon: CheckCircleIcon, color: "#10b981", trend: m.cleanTrend },
-    { label: "Active Deals", value: String(m.total_deals), Icon: RevenueIcon, color: "#f59e0b", trend: m.dealsTrend },
-    { label: "Pipeline Value", value: `SAR ${compactSAR(m.pipeline_value)}`, Icon: TrendingUpIcon, color: "#6366f1", trend: m.pipeTrend },
+    { label: "Total Leads", value: String(m.total_leads), Icon: LeadsIcon, color: "#1a5c4f", trend: m.leadsTrend, href: "/dashboard/leads" },
+    { label: "Clean Leads", value: String(m.clean_leads), Icon: CheckCircleIcon, color: "#10b981", trend: m.cleanTrend, href: "/dashboard/leads?filter=clean" },
+    { label: "Active Deals", value: String(m.total_deals), Icon: RevenueIcon, color: "#f59e0b", trend: m.dealsTrend, href: "/dashboard/deals?filter=active" },
+    { label: "Pipeline Value", value: `SAR ${compactSAR(m.pipeline_value)}`, Icon: TrendingUpIcon, color: "#6366f1", trend: m.pipeTrend, href: "/dashboard/analytics" },
   ];
 
   const overview = [
@@ -378,24 +398,24 @@ export default function DashboardPage() {
           <p className="mt-1 text-sm text-[#9ca3af]">{longDate(now)}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setNewLeadOpen(true)} className="rounded-xl bg-[#1a5c4f] px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-[#1a5c4f]/20 transition-colors hover:bg-[#15503f]">+ New Lead</button>
-          <button onClick={() => setLogActivityOpen(true)} className="rounded-xl border border-[#e5e7eb] px-4 py-2.5 text-sm font-medium text-[#6b7280] transition-all hover:border-[#1a5c4f] hover:text-[#1a5c4f]">Log Activity</button>
-          <Link href="/dashboard/contacts" className="rounded-xl border border-[#e5e7eb] px-4 py-2.5 text-sm font-medium text-[#6b7280] transition-all hover:border-[#1a5c4f] hover:text-[#1a5c4f]">Add Contact</Link>
+          <button onClick={() => setNewLeadOpen(true)} className="rounded-full bg-[#1a5c4f] px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-[#1a5c4f]/25 transition-colors hover:bg-[#15503f]">+ New Lead</button>
+          <button onClick={() => setLogActivityOpen(true)} className="rounded-full border border-[#e8ece9] bg-white px-5 py-2.5 text-sm font-medium text-[#475569] transition-all hover:border-[#1a5c4f] hover:text-[#1a5c4f]">Log Activity</button>
+          <button onClick={() => setAddContactOpen(true)} className="rounded-full border border-[#e8ece9] bg-white px-5 py-2.5 text-sm font-medium text-[#475569] transition-all hover:border-[#1a5c4f] hover:text-[#1a5c4f]">Add Contact</button>
         </div>
       </div>
 
       {/* KPIs */}
       <div className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {kpis.map(({ label, value, Icon, color, trend }) => (
-          <div key={label} className="relative overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md">
+        {kpis.map(({ label, value, Icon, color, trend, href }) => (
+          <Link key={label} href={href} className="group relative overflow-hidden rounded-2xl border border-[#e8ece9] bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <span className="absolute bottom-4 left-0 top-4 w-1 rounded-full" style={{ background: color }} />
-            <span className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: `${color}1a`, color }}>
+            <span className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-105" style={{ backgroundColor: `${color}1a`, color }}>
               <Icon className="h-5 w-5" />
             </span>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">{label}</p>
-            <p className="mb-2 mt-3 text-5xl font-black text-[#1e1b4b]">{value}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#94a3b8]">{label}</p>
+            <p className="mb-2 mt-3 text-4xl font-black text-[#1e1b4b]">{value}</p>
             <p className={`text-xs font-semibold ${trend.cls}`}>{trend.text}</p>
-          </div>
+          </Link>
         ))}
       </div>
 
@@ -465,21 +485,24 @@ export default function DashboardPage() {
             <Link href="/dashboard/leads" className="text-xs font-semibold text-[#1a5c4f] hover:underline">View all →</Link>
           </div>
           {m.recentLeads.length === 0 ? (
-            <p className="py-6 text-center text-sm text-[#9ca3af]">No leads yet.</p>
+            <div className="py-6 text-center">
+              <p className="text-sm text-[#94a3b8]">No leads yet — add your first lead</p>
+              <button onClick={() => setNewLeadOpen(true)} className="mt-3 rounded-full bg-[#1a5c4f] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#15503f]">+ New Lead</button>
+            </div>
           ) : (
             m.recentLeads.map((l) => {
               const score = getAIScore(l);
               return (
-                <div key={l.id} className="flex items-center gap-3 border-b border-[#f1f5f9] py-2.5 last:border-0">
+                <Link key={l.id} href={`/dashboard/leads?open=${l.id}`} className="flex items-center gap-3 border-b border-[#f1f5f9] py-2.5 transition-colors last:border-0 hover:bg-[#f0faf8]">
                   <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#1a5c4f]">
                     <span className="text-xs font-bold text-white">{initials(l.full_name)}</span>
                   </div>
                   <div className="min-w-0 flex-1">
                     <p dir="auto" className="truncate text-sm font-semibold text-[#1e1b4b]">{l.full_name || "Unnamed lead"}</p>
-                    <p className="text-xs text-[#9ca3af]">{l.sources?.label || "—"}</p>
+                    <p className="text-xs text-[#94a3b8]">{l.sources?.label || "—"}</p>
                   </div>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${aiPill(score)}`}>{score}%</span>
-                </div>
+                </Link>
               );
             })
           )}
@@ -492,23 +515,34 @@ export default function DashboardPage() {
             <Link href="/dashboard/activities" className="text-xs font-semibold text-[#1a5c4f] hover:underline">View all →</Link>
           </div>
           {activities.length === 0 ? (
-            <p className="py-6 text-center text-sm text-[#9ca3af]">No activity recorded.</p>
+            <p className="py-6 text-center text-sm text-[#94a3b8]">No activities recorded</p>
           ) : (
-            activities.map((a, i) => (
-              <div key={a.id} className="flex gap-3 py-2.5">
-                <div className="flex flex-col items-center">
-                  <div className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-[#1a5c4f]" />
-                  {i < activities.length - 1 && <div className="mt-1 w-px flex-1 bg-[#f1f5f9]" />}
+            (() => {
+              const groups: { key: string; header: string; items: Activity[] }[] = [];
+              for (const a of activities) {
+                const k = dayKey(a.occurred_at);
+                let g = groups.find((x) => x.key === k);
+                if (!g) { g = { key: k, header: dayHeader(a.occurred_at), items: [] }; groups.push(g); }
+                g.items.push(a);
+              }
+              return groups.map((g) => (
+                <div key={g.key}>
+                  <p className="sticky top-0 bg-white py-1 text-[11px] font-semibold uppercase tracking-wider text-[#94a3b8]">{g.header}</p>
+                  {g.items.map((a) => {
+                    const c = activityColor(a.activity_types?.label);
+                    return (
+                      <div key={a.id} className="flex gap-3 py-2.5">
+                        <span className="mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full text-xs" style={{ backgroundColor: `${c}1a`, color: c }}>{activityGlyph(a.activity_types?.label)}</span>
+                        <div className="min-w-0 flex-1">
+                          <p dir="auto" className="line-clamp-2 text-sm leading-relaxed text-[#475569]">{a.body || a.activity_types?.label || "Activity"}</p>
+                          <span className="text-xs text-[#94a3b8]">{formatDateTime(a.occurred_at)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="min-w-0 flex-1 pb-1">
-                  <p dir="auto" className="line-clamp-2 text-sm leading-relaxed text-[#374151]">{a.body || a.activity_types?.label || "Activity"}</p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="text-xs text-[#9ca3af]">{dateTimeNice(a.occurred_at)}</span>
-                    {a.direction && <span className="rounded border border-[#e5e7eb] bg-[#f8fafc] px-1.5 py-0.5 text-xs text-[#6b7280]">{a.direction}</span>}
-                  </div>
-                </div>
-              </div>
-            ))
+              ));
+            })()
           )}
         </div>
 
@@ -538,6 +572,7 @@ export default function DashboardPage() {
 
       <NewLeadSlideOver open={newLeadOpen} onClose={() => setNewLeadOpen(false)} onCreated={load} />
       <LogActivitySlideOver open={logActivityOpen} onClose={() => setLogActivityOpen(false)} onCreated={load} />
+      <AddContactSlideOver open={addContactOpen} onClose={() => setAddContactOpen(false)} onCreated={load} />
     </div>
   );
 }

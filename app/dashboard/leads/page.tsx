@@ -6,7 +6,7 @@ import { SearchIcon, LeadsIcon } from "@/components/navIcons";
 import LeadSlideOver, { type Lead } from "@/components/LeadSlideOver";
 import NewLeadSlideOver from "@/components/NewLeadSlideOver";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 15;
 
 function initials(name: string | null): string {
   if (!name) return "—";
@@ -64,26 +64,29 @@ function StatCard({
   label,
   tint,
   emoji,
+  active,
+  onClick,
 }: {
   value: number;
   label: string;
   tint: string;
   emoji: string;
+  active?: boolean;
+  onClick?: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-[#e5e7eb] bg-white px-4 py-3 shadow-sm">
-      <span
-        className={`flex h-9 w-9 flex-none items-center justify-center rounded-lg text-base ${tint}`}
-      >
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-3 rounded-full border bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-[#1a5c4f] ${active ? "border-[#1a5c4f] ring-2 ring-[#1a5c4f]/15" : "border-[#e8ece9]"}`}
+    >
+      <span className={`flex h-9 w-9 flex-none items-center justify-center rounded-full text-base ${tint}`}>
         {emoji}
       </span>
       <div>
-        <p className="text-lg font-extrabold leading-none text-[#1e1b4b]">
-          {value}
-        </p>
-        <p className="mt-0.5 text-[13px] text-[#9ca3af]">{label}</p>
+        <p className="text-lg font-extrabold leading-none text-[#1e1b4b]">{value}</p>
+        <p className="mt-0.5 text-[13px] text-[#94a3b8]">{label}</p>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -97,6 +100,17 @@ export default function LeadsPage() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [error, setError] = useState(false);
   const [newLeadOpen, setNewLeadOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"all" | "clean" | "junk">("all");
+  const [openLeadId, setOpenLeadId] = useState<string | null>(null);
+
+  // Honor ?filter= and ?open= params from dashboard deep-links.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const f = p.get("filter");
+    if (f === "clean" || f === "junk") setStatusFilter(f);
+    const o = p.get("open");
+    if (o) setOpenLeadId(o);
+  }, []);
 
   async function load() {
     setError(false);
@@ -129,6 +143,16 @@ export default function LeadsPage() {
     return map;
   }, [leads]);
 
+  // Open the deep-linked lead once data has loaded.
+  useEffect(() => {
+    if (!openLeadId || !leads.length) return;
+    const match = leads.find((l) => String(l.id) === openLeadId);
+    if (match) {
+      setSelectedLead(match);
+      setOpenLeadId(null);
+    }
+  }, [openLeadId, leads]);
+
   // Filter option lists
   const stageOptions = useMemo(() => {
     const set = new Set<string>();
@@ -146,6 +170,8 @@ export default function LeadsPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return leads.filter((l) => {
+      if (statusFilter === "clean" && l.junk_reason_id != null) return false;
+      if (statusFilter === "junk" && l.junk_reason_id == null) return false;
       if (stageFilter !== "all" && l.pipeline_stages?.label !== stageFilter)
         return false;
       if (sourceFilter !== "all" && l.sources?.label !== sourceFilter)
@@ -157,7 +183,7 @@ export default function LeadsPage() {
         (l.email ?? "").toLowerCase().includes(q)
       );
     });
-  }, [leads, search, stageFilter, sourceFilter]);
+  }, [leads, search, stageFilter, sourceFilter, statusFilter]);
 
   const cleanCount = leads.filter((l) => l.junk_reason_id == null).length;
   const junkCount = leads.length - cleanCount;
@@ -172,7 +198,7 @@ export default function LeadsPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [search, stageFilter, sourceFilter]);
+  }, [search, stageFilter, sourceFilter, statusFilter]);
 
   return (
     <>
@@ -186,24 +212,9 @@ export default function LeadsPage() {
 
       {/* Stats bar */}
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <StatCard
-          value={leads.length}
-          label="Total Leads"
-          emoji="🎯"
-          tint="bg-[#f0faf8]"
-        />
-        <StatCard
-          value={cleanCount}
-          label="Clean Leads"
-          emoji="✅"
-          tint="bg-emerald-50"
-        />
-        <StatCard
-          value={junkCount}
-          label="Junk Leads"
-          emoji="🗑️"
-          tint="bg-red-50"
-        />
+        <StatCard value={leads.length} label="Total Leads" emoji="🎯" tint="bg-[#f0faf8]" active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
+        <StatCard value={cleanCount} label="Clean Leads" emoji="✅" tint="bg-emerald-50" active={statusFilter === "clean"} onClick={() => setStatusFilter("clean")} />
+        <StatCard value={junkCount} label="Junk Leads" emoji="🗑️" tint="bg-red-50" active={statusFilter === "junk"} onClick={() => setStatusFilter("junk")} />
       </div>
 
       {/* Search & filter bar */}
@@ -317,7 +328,8 @@ export default function LeadsPage() {
                   return (
                     <tr
                       key={lead.id}
-                      className="border-b border-[#f1f5f9] transition-colors last:border-0 hover:bg-[#f8fafc]"
+                      onClick={() => setSelectedLead(lead)}
+                      className={`cursor-pointer border-b border-[#f1f5f9] transition-colors last:border-0 hover:bg-[#f0faf8] ${isJunk ? "opacity-60" : ""}`}
                     >
                       {/* Name */}
                       <td className="px-6 py-3.5">

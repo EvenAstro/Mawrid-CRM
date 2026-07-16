@@ -1,27 +1,44 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf9f5;
+  --foreground: #1e1b4b;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-jakarta), system-ui, sans-serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-cairo: var(--font-cairo), var(--font-inter), system-ui, sans-serif;
 
-  /* Brand palette */
-  --color-primary: #1a5c4f;
-  --color-primary-dark: #15503f;
-  --color-navy: #0f172a;
-  --color-mint: #f0faf8;
-  --color-mint-border: #e2e8f0;
+  /* ---- Mawrid brand palette ---- */
+  --color-primary: #1a5c4f; /* teal — buttons, active, links */
+  --color-primary-dark: #15503f; /* deep teal — hover */
+  --color-mint: #f0faf8; /* soft accents, chart fills */
+  --color-ivory: #faf9f5; /* warm page background */
+  --color-ink: #1e1b4b; /* headlines, primary text */
+  --color-ink-secondary: #475569; /* body text */
+  --color-muted: #94a3b8; /* labels, captions */
+  --color-border-light: #e8ece9; /* light borders */
+  --color-navy: #1e1b4b;
+
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
 }
 
 body {
-  background: #ffffff;
-  color: #1e1b4b;
-  font-family: var(--font-jakarta), system-ui, sans-serif;
+  background: var(--color-ivory);
+  color: var(--color-ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+/* Cairo for headings + Arabic */
+.font-cairo,
+h1,
+h2,
+h3 {
+  font-family: var(--font-cairo), var(--font-inter), system-ui, sans-serif;
 }
 
 /* Smooth transitions on interactive elements */
@@ -91,6 +108,21 @@ input[type="checkbox"].ls-toggle:checked + .ls-toggle-label::after {
 }
 .ls-result {
   animation: fadeInUp 0.4s ease;
+}
+
+/* Mint shimmer for skeleton loaders */
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #f0faf8 0%, #e2f4ef 50%, #f0faf8 100%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
 }
 
 /* Toast entrance */
