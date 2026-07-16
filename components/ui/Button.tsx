@@ -7,17 +7,17 @@ type Size = "sm" | "md" | "lg";
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    "bg-primary text-white shadow-sm shadow-primary/25 hover:bg-primary-dark disabled:hover:bg-primary",
+    "bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] text-white shadow-[0_4px_12px_rgba(26,92,79,0.25)] hover:scale-[1.02] hover:shadow-[0_6px_18px_rgba(26,92,79,0.32)]",
   secondary:
-    "border border-border-light bg-white text-ink-secondary hover:border-primary hover:text-primary",
+    "border-2 border-primary bg-white text-primary hover:bg-mint",
   ghost: "text-ink-secondary hover:bg-mint hover:text-primary",
-  danger: "bg-danger text-white shadow-sm shadow-danger/25 hover:brightness-95",
+  danger: "bg-danger text-white shadow-[0_4px_12px_rgba(239,68,68,0.25)] hover:brightness-95",
 };
 
 const SIZES: Record<Size, string> = {
-  sm: "h-9 px-3.5 text-[13px]",
-  md: "h-11 px-5 text-[15px]",
-  lg: "h-12 px-6 text-base",
+  sm: "h-9 px-4 text-[13px]",
+  md: "h-11 px-6 text-[15px]",
+  lg: "h-12 px-8 text-base",
 };
 
 export interface ButtonProps

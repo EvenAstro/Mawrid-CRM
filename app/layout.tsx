@@ -1,17 +1,11 @@
 import type { Metadata } from "next";
-import { Cairo, Inter } from "next/font/google";
+import { Cairo } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-});
-
 const cairo = Cairo({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
   variable: "--font-cairo",
-  subsets: ["latin", "arabic"],
-  weight: ["400", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -26,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${cairo.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+    <html lang="en" className={`${cairo.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col bg-white font-sans">{children}</body>
     </html>
   );
 }

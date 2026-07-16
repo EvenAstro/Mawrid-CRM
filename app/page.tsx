@@ -112,7 +112,7 @@ export default function LandingPage() {
           <Link href="/login" className="rounded-full px-4 py-2 text-sm font-medium text-ink-secondary transition hover:bg-mint hover:text-primary">
             Sign In
           </Link>
-          <Link href="/register" className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-primary/25 transition hover:bg-primary-dark">
+          <Link href="/register" className="rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(26,92,79,0.25)] transition hover:scale-[1.02]">
             {t.create}
           </Link>
         </div>
@@ -125,18 +125,18 @@ export default function LandingPage() {
           <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-white px-4 py-2 text-sm font-semibold text-primary shadow-sm">
             {t.badge}
           </span>
-          <h1 dir="auto" className="mx-auto mt-8 max-w-3xl text-4xl font-extrabold leading-[1.1] text-ink sm:text-[56px]">
+          <h1 dir="auto" className="mx-auto mt-8 max-w-3xl text-[40px] font-black leading-[1.05] tracking-[-0.04em] text-ink sm:text-[64px]">
             أهلاً بك في نظام مورد
           </h1>
-          <p className="mt-3 text-lg font-semibold text-primary sm:text-xl">{t.heroSub}</p>
+          <p className="mt-4 text-2xl font-extrabold tracking-[-0.03em] text-primary sm:text-[40px]">{t.heroSub}</p>
           <p dir="auto" className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-ink-secondary">
             {t.heroDesc}
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link href="/login" className="w-full rounded-full bg-primary px-8 py-4 text-base font-bold text-white shadow-xl shadow-primary/25 transition hover:-translate-y-0.5 hover:bg-primary-dark sm:w-auto">
+            <Link href="/login" className="w-full rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] px-8 py-4 text-base font-bold text-white shadow-[0_4px_12px_rgba(26,92,79,0.25)] transition hover:scale-[1.02] hover:shadow-[0_6px_18px_rgba(26,92,79,0.32)] sm:w-auto">
               {t.signIn} →
             </Link>
-            <Link href="/register" className="w-full rounded-full border border-border-light bg-white px-8 py-4 text-base font-semibold text-ink transition hover:border-primary/40 hover:bg-mint sm:w-auto">
+            <Link href="/register" className="w-full rounded-full border-2 border-primary bg-white px-8 py-4 text-base font-semibold text-primary transition hover:bg-mint sm:w-auto">
               {t.create}
             </Link>
           </div>
@@ -145,14 +145,14 @@ export default function LandingPage() {
       </section>
 
       {/* Trust strip */}
-      <section className="border-y border-border-light bg-white px-6 py-12">
+      <section className="bg-mint px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <p className="text-center text-sm text-muted">{t.trust}</p>
-          <div className="mt-8 grid grid-cols-2 gap-6 sm:grid-cols-4">
+          <div className="mt-10 grid grid-cols-2 gap-8 sm:grid-cols-4">
             {statCards.map((s) => (
-              <div key={s.l} className="rounded-2xl border border-border-light bg-ivory p-5 text-center">
-                <p className="text-3xl font-extrabold text-primary sm:text-4xl">{s.v}</p>
-                <p className="mt-1 text-[13px] font-medium text-muted">{s.l}</p>
+              <div key={s.l} className="text-center">
+                <p className="text-4xl font-black tracking-[-0.03em] text-primary sm:text-5xl">{s.v}</p>
+                <p className="mt-2 text-sm font-medium text-muted">{s.l}</p>
               </div>
             ))}
           </div>
@@ -160,10 +160,10 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section className="px-6 py-20">
+      <section className="px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <p className="text-center text-[13px] font-bold uppercase tracking-widest text-primary">{t.kicker}</p>
-          <h2 className="mt-3 text-center text-3xl font-extrabold text-ink sm:text-4xl">{t.featuresTitle}</h2>
+          <h2 className="mt-3 text-center text-4xl font-black tracking-[-0.03em] text-ink sm:text-5xl">{t.featuresTitle}</h2>
           <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((f) => (
               <Link
@@ -181,10 +181,10 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section className="bg-white px-6 py-20">
+      <section className="bg-white px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <p className="text-center text-[13px] font-bold uppercase tracking-widest text-primary">{t.howKicker}</p>
-          <h2 className="mt-3 text-center text-3xl font-extrabold text-ink sm:text-4xl">{t.howTitle}</h2>
+          <h2 className="mt-3 text-center text-4xl font-black tracking-[-0.03em] text-ink sm:text-5xl">{t.howTitle}</h2>
           <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-3">
             {steps.map((s) => (
               <div key={s.n} className="relative rounded-2xl border border-border-light bg-ivory p-8">

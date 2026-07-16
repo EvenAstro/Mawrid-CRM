@@ -140,7 +140,7 @@ export default function DealsPage() {
 
       {loading ? (
         <div className="flex gap-3 overflow-x-auto">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-72 w-[280px] flex-none" />)}
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-72 w-[300px] flex-none" />)}
         </div>
       ) : error ? (
         <EmptyState icon="🔌" title="Connection error" subtitle="We couldn't load your deals." action={<Button onClick={() => { setLoading(true); load(); }}>Retry</Button>} />
@@ -155,7 +155,7 @@ export default function DealsPage() {
                 onDragOver={(e) => { e.preventDefault(); setOverStage(stage.id); }}
                 onDragLeave={() => setOverStage((s) => (s === stage.id ? null : s))}
                 onDrop={(e) => { e.preventDefault(); setOverStage(null); if (dragId) moveDeal(dragId, stage.id); setDragId(null); }}
-                className={`group/col flex w-[280px] flex-none flex-col rounded-2xl p-2 transition-colors ${columnTint(stage.terminal_type)} ${isOver ? "ring-2 ring-primary/40" : ""}`}
+                className={`group/col flex w-[300px] flex-none flex-col rounded-2xl p-2 transition-colors ${columnTint(stage.terminal_type)} ${isOver ? "ring-2 ring-primary/40" : ""}`}
               >
                 <div className="mb-2 flex items-center justify-between px-2 py-1">
                   <span className="flex items-center gap-2 text-[15px] font-semibold text-ink">

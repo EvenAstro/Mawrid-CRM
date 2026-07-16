@@ -71,7 +71,7 @@ function scoreColor(pct: number): string {
 function Field({ label, value }: { label: string; value: string | null }) {
   return (
     <div>
-      <p className="text-[13px] font-semibold uppercase tracking-wide text-[#9ca3af]">
+      <p className="text-[13px] font-semibold uppercase tracking-wide text-[#94a3b8]">
         {label}
       </p>
       <p dir="auto" className="mt-0.5 text-[15px] font-medium text-[#1e1b4b]">{value || "—"}</p>
@@ -173,14 +173,14 @@ export default function LeadSlideOver({
 
       {/* Panel */}
       <aside
-        className={`fixed right-0 top-0 z-50 flex h-screen w-full max-w-[520px] flex-col border-l border-[#e5e7eb] bg-[#f8fafc] shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`fixed right-0 top-0 z-50 flex h-screen w-full max-w-[520px] flex-col border-l border-[#e8ece9] bg-[#f8fafc] shadow-2xl transition-transform duration-300 ease-in-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {data && (
           <>
             {/* Header */}
-            <div className="flex items-start justify-between border-b border-[#e5e7eb] p-6">
+            <div className="flex items-start justify-between border-b border-[#e8ece9] p-6">
               <div className="flex items-center gap-3">
                 <span className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-[#1a5c4f] text-lg font-bold text-white">
                   {initials(data.full_name)}
@@ -189,7 +189,7 @@ export default function LeadSlideOver({
                   <h2 dir="auto" className="truncate text-xl font-bold text-[#1e1b4b]">
                     {data.full_name || "Unnamed lead"}
                   </h2>
-                  <p className="text-[15px] text-[#9ca3af]">{data.phone || "—"}</p>
+                  <p className="text-[15px] text-[#94a3b8]">{data.phone || "—"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -205,7 +205,7 @@ export default function LeadSlideOver({
                 <button
                   onClick={onClose}
                   aria-label="Close"
-                  className="text-[#9ca3af] transition hover:text-[#374151]"
+                  className="text-[#94a3b8] transition hover:text-[#334155]"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -240,16 +240,16 @@ export default function LeadSlideOver({
 
               {/* Section 2 — AI Analysis: spinner while computing, then result */}
               {!leadScore && (
-                <div className="flex items-center gap-3 rounded-2xl border border-[#e5e7eb] bg-white p-5">
+                <div className="flex items-center gap-3 rounded-2xl border border-[#e8ece9] bg-white p-5">
                   <svg className="h-5 w-5 animate-spin text-[#1a5c4f]" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.4 0 0 5.4 0 12h4z" />
                   </svg>
-                  <span className="text-[15px] font-medium text-[#6b7280]">Calculating AI lead score…</span>
+                  <span className="text-[15px] font-medium text-[#334155]">Calculating AI lead score…</span>
                 </div>
               )}
               {leadScore && (
-                <div className="rounded-2xl border border-[#e5e7eb] bg-gradient-to-br from-[#1a5c4f]/10 to-transparent p-5">
+                <div className="rounded-2xl border border-[#e8ece9] bg-gradient-to-br from-[#1a5c4f]/10 to-transparent p-5">
                   <h3 className="mb-4 font-semibold text-[#1e1b4b]">
                     🤖 AI Lead Score
                   </h3>
@@ -281,7 +281,7 @@ export default function LeadSlideOver({
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] text-[#9ca3af]">
+                      <p className="text-[13px] text-[#94a3b8]">
                         Clean Lead Probability
                       </p>
                       <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-[#f1f5f9]">
@@ -294,7 +294,7 @@ export default function LeadSlideOver({
                           }}
                         />
                       </div>
-                      <div className="mt-1.5 flex justify-between text-[13px] text-[#9ca3af]">
+                      <div className="mt-1.5 flex justify-between text-[13px] text-[#94a3b8]">
                         <span>p_junk: {Math.round(leadScore.pJunk * 100)}%</span>
                         <span>p_clean: {Math.round(leadScore.pClean * 100)}%</span>
                       </div>
@@ -316,7 +316,7 @@ export default function LeadSlideOver({
 
                   {/* Feature pills */}
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="rounded-full bg-[#f1f5f9] px-3 py-1 text-[13px] text-[#6b7280]">
+                    <span className="rounded-full bg-[#f1f5f9] px-3 py-1 text-[13px] text-[#334155]">
                       📍 {leadScore.source}
                     </span>
                     {leadScore.hasCampaign ? (
@@ -324,7 +324,7 @@ export default function LeadSlideOver({
                         💰 Paid Campaign
                       </span>
                     ) : (
-                      <span className="rounded-full bg-[#f1f5f9] px-3 py-1 text-[13px] text-[#9ca3af]">
+                      <span className="rounded-full bg-[#f1f5f9] px-3 py-1 text-[13px] text-[#94a3b8]">
                         💰 Organic
                       </span>
                     )}
@@ -333,7 +333,7 @@ export default function LeadSlideOver({
                         🏢 Company Matched
                       </span>
                     ) : (
-                      <span className="rounded-full bg-[#f1f5f9] px-3 py-1 text-[13px] text-[#9ca3af]">
+                      <span className="rounded-full bg-[#f1f5f9] px-3 py-1 text-[13px] text-[#94a3b8]">
                         🏢 No Match
                       </span>
                     )}
@@ -347,7 +347,7 @@ export default function LeadSlideOver({
                   Recent Activity
                 </h3>
                 {activities.length === 0 ? (
-                  <p className="text-[13px] text-[#9ca3af]">No activity recorded</p>
+                  <p className="text-[13px] text-[#94a3b8]">No activity recorded</p>
                 ) : (
                   <div className="flex flex-col gap-3">
                     {activities.map((a) => (
@@ -358,12 +358,12 @@ export default function LeadSlideOver({
                             <span className="text-[13px] font-medium text-[#1e1b4b]">
                               {a.activity_types?.label ?? "Activity"}
                             </span>
-                            <span className="text-[13px] text-[#9ca3af]">
+                            <span className="text-[13px] text-[#94a3b8]">
                               {formatDate(a.occurred_at)}
                             </span>
                           </div>
                           {a.body && (
-                            <p className="truncate text-[13px] text-[#9ca3af]">
+                            <p className="truncate text-[13px] text-[#94a3b8]">
                               {a.body}
                             </p>
                           )}

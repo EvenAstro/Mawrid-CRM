@@ -123,9 +123,9 @@ export default function LogActivitySlideOver({
   }
 
   const inputCls =
-    "h-11 w-full rounded-xl border border-[#e5e7eb] bg-white px-3.5 text-[15px] text-[#374151] placeholder:text-[#9ca3af] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15";
+    "h-11 w-full rounded-xl border border-[#e8ece9] bg-white px-3.5 text-[15px] text-[#334155] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15";
   const labelCls =
-    "mb-1.5 block text-[13px] font-semibold uppercase tracking-wide text-[#9ca3af]";
+    "mb-1.5 block text-[13px] font-semibold uppercase tracking-wide text-[#94a3b8]";
 
   return (
     <>
@@ -136,16 +136,16 @@ export default function LogActivitySlideOver({
         }`}
       />
       <aside
-        className={`fixed right-0 top-0 z-50 flex h-screen w-full max-w-[460px] flex-col border-l border-[#e5e7eb] bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`fixed right-0 top-0 z-50 flex h-screen w-full max-w-[460px] flex-col border-l border-[#e8ece9] bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-[#e5e7eb] p-6">
+        <div className="flex items-center justify-between border-b border-[#e8ece9] p-6">
           <div>
             <h2 className="text-xl font-bold text-[#1e1b4b]">Log Activity</h2>
-            <p className="mt-0.5 text-[13px] text-[#9ca3af]">Record a touchpoint with a contact</p>
+            <p className="mt-0.5 text-[13px] text-[#94a3b8]">Record a touchpoint with a contact</p>
           </div>
-          <button onClick={onClose} aria-label="Close" className="text-[#9ca3af] transition hover:text-[#374151]">
+          <button onClick={onClose} aria-label="Close" className="text-[#94a3b8] transition hover:text-[#334155]">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-5 w-5">
               <path d="M6 6l12 12M18 6 6 18" />
             </svg>
@@ -184,7 +184,7 @@ export default function LogActivitySlideOver({
               />
             )}
             {!selected && hits.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-lg">
+              <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-[#e8ece9] bg-white shadow-lg">
                 {hits.map((h) => (
                   <button
                     key={h.id}
@@ -194,7 +194,7 @@ export default function LogActivitySlideOver({
                       setHits([]);
                     }}
                     dir="auto"
-                    className="block w-full px-3.5 py-2.5 text-left text-[15px] text-[#374151] transition hover:bg-[#f8fafc]"
+                    className="block w-full px-3.5 py-2.5 text-left text-[15px] text-[#334155] transition hover:bg-[#f8fafc]"
                   >
                     {h.full_name || "Unnamed lead"}
                   </button>
@@ -227,13 +227,13 @@ export default function LogActivitySlideOver({
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
               placeholder="What happened on this touchpoint…"
-              className="w-full rounded-xl border border-[#e5e7eb] bg-white px-3.5 py-2.5 text-[15px] text-[#374151] placeholder:text-[#9ca3af] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15"
+              className="w-full rounded-xl border border-[#e8ece9] bg-white px-3.5 py-2.5 text-[15px] text-[#334155] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15"
             />
           </div>
         </form>
 
-        <div className="flex gap-3 border-t border-[#e5e7eb] p-6">
-          <button onClick={onClose} type="button" className="h-11 flex-1 rounded-xl border border-[#e5e7eb] text-[15px] font-semibold text-[#6b7280] transition hover:bg-[#f8fafc]">
+        <div className="flex gap-3 border-t border-[#e8ece9] p-6">
+          <button onClick={onClose} type="button" className="h-11 flex-1 rounded-xl border border-[#e8ece9] text-[15px] font-semibold text-[#334155] transition hover:bg-[#f8fafc]">
             Cancel
           </button>
           <button

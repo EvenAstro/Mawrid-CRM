@@ -1,23 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #faf9f5;
+  --background: #ffffff;
   --foreground: #1e1b4b;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter), system-ui, sans-serif;
-  --font-cairo: var(--font-cairo), var(--font-inter), system-ui, sans-serif;
+  /* Cairo everywhere — Arabic + English */
+  --font-sans: var(--font-cairo), system-ui, sans-serif;
+  --font-cairo: var(--font-cairo), system-ui, sans-serif;
 
   /* ---- Mawrid brand palette ---- */
   --color-primary: #1a5c4f; /* teal — buttons, active, links */
   --color-primary-dark: #15503f; /* deep teal — hover */
-  --color-mint: #f0faf8; /* soft accents, chart fills */
-  --color-ivory: #faf9f5; /* warm page background */
+  --color-primary-light: #2d8570; /* gradient end */
+  --color-mint: #f0faf8; /* soft accents, badges, hover */
+  --color-ivory: #ffffff; /* page background is now pure white */
   --color-ink: #1e1b4b; /* headlines, primary text */
-  --color-ink-secondary: #475569; /* body text */
+  --color-ink-secondary: #334155; /* body text */
   --color-muted: #94a3b8; /* labels, captions */
   --color-border-light: #e8ece9; /* light borders */
   --color-navy: #1e1b4b;
@@ -28,17 +30,29 @@
 }
 
 body {
-  background: var(--color-ivory);
+  background: #ffffff;
   color: var(--color-ink);
-  font-family: var(--font-inter), system-ui, sans-serif;
+  font-family: var(--font-cairo), system-ui, sans-serif;
+  line-height: 1.6;
 }
 
-/* Cairo for headings + Arabic */
+/* Bold, tight Cairo headings */
 .font-cairo,
 h1,
 h2,
 h3 {
-  font-family: var(--font-cairo), var(--font-inter), system-ui, sans-serif;
+  font-family: var(--font-cairo), system-ui, sans-serif;
+}
+h1,
+h2,
+h3 {
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+/* Soft teal-tinted card shadow */
+.shadow-brand {
+  box-shadow: 0 4px 12px rgba(26, 92, 79, 0.08);
 }
 
 /* Smooth transitions on interactive elements */

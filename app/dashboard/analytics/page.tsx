@@ -224,7 +224,7 @@ export default function AnalyticsPage() {
                     const cls = wr >= 20 ? "bg-green-50 text-green-700" : wr >= 1 ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700";
                     return (
                       <tr key={`rep-${r.name}-${index}`} className="border-t border-[#f1f5f9]">
-                        <td className="py-2 font-medium text-[#374151]">{r.name}</td>
+                        <td className="py-2 font-medium text-[#334155]">{r.name}</td>
                         <td className="py-2 text-center text-[#475569]">{r.deals}</td>
                         <td className="py-2 text-center text-[#475569]">{r.won}</td>
                         <td className="py-2 text-center text-[#475569]">{r.lost}</td>
