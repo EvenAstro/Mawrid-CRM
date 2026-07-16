@@ -40,12 +40,14 @@ export default function LoginPage() {
   }
 
   const inputCls =
-    "h-12 w-full rounded-xl border border-[#e5e7eb] bg-white pl-11 pr-4 text-[15px] text-[#1e1b4b] placeholder:text-[#9ca3af] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/10 transition-all";
+    "h-12 w-full rounded-xl border border-[#e8ece9] bg-white pl-11 pr-4 text-[15px] text-[#1e1b4b] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/10 transition-all";
 
   return (
-    <div className="flex min-h-screen bg-white">
-      {/* Left panel */}
-      <div className="hidden w-5/12 flex-col justify-between bg-gradient-to-br from-[#1e1b4b] to-[#1a5c4f] p-12 lg:flex">
+    <div className="flex min-h-screen bg-ivory lg:flex-row-reverse">
+      {/* Navy panel (right on desktop) */}
+      <div className="relative hidden w-5/12 flex-col justify-between overflow-hidden bg-gradient-to-br from-[#1e1b4b] to-[#1a5c4f] p-12 lg:flex">
+        <div className="pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-24 -right-10 h-80 w-80 rounded-full bg-[#7ee7cd]/10" />
         <div className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15">
             <span className="text-base font-black text-white">م</span>
@@ -64,37 +66,37 @@ export default function LoginPage() {
             ))}
           </div>
         </div>
-        <div>
-          <div className="mb-1 flex gap-0.5 text-amber-300">★★★★★</div>
-          <p className="text-sm italic text-white/70">“Mawrid transformed how our team tracks and closes deals.”</p>
-          <p className="mt-1 text-xs text-white/40">— Sales Lead, Riyadh</p>
-        </div>
+        <p className="text-sm text-white/40">Internal Sales Platform · Riyadh, Saudi Arabia</p>
       </div>
 
       {/* Right form */}
-      <div className="flex flex-1 flex-col items-center justify-center px-8 py-12">
-        <div className="w-full max-w-sm">
-          <h1 className="mb-1 text-2xl font-black tracking-tight text-[#1e1b4b]">Sign in to Mawrid</h1>
-          <p className="mb-8 text-sm text-[#9ca3af]">Enter your credentials below</p>
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+        <div className="w-full max-w-sm rounded-2xl border border-border-light bg-white p-8 shadow-sm">
+          <div className="mb-6 flex items-center gap-2.5 lg:hidden">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary"><span className="text-base font-black text-white">م</span></div>
+            <span className="text-lg font-bold text-ink">Mawrid CRM</span>
+          </div>
+          <h1 className="mb-1 text-2xl font-extrabold tracking-tight text-[#1e1b4b]">Welcome back</h1>
+          <p className="mb-8 text-sm text-[#94a3b8]">Enter your credentials below</p>
 
           <form onSubmit={handleLogin} autoComplete="off" className="flex flex-col gap-4">
             <input type="text" name="fake-user" style={{ display: "none" }} />
             <input type="password" name="fake-pass" style={{ display: "none" }} />
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-[#374151]">Email</label>
+              <label className="mb-1.5 block text-sm font-medium text-[#475569]">Email</label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af]"><MailIcon className="h-4 w-4" /></span>
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8]"><MailIcon className="h-4 w-4" /></span>
                 <input type="email" autoComplete="off" readOnly onFocus={(e) => e.target.removeAttribute("readonly")} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" className={inputCls} />
               </div>
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-[#374151]">Password</label>
+              <label className="mb-1.5 block text-sm font-medium text-[#475569]">Password</label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af]"><LockIcon className="h-4 w-4" /></span>
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8]"><LockIcon className="h-4 w-4" /></span>
                 <input type={showPass ? "text" : "password"} autoComplete="new-password" readOnly onFocus={(e) => e.target.removeAttribute("readonly")} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className={`${inputCls} pr-11`} />
-                <button type="button" onClick={() => setShowPass((v) => !v)} aria-label={showPass ? "Hide password" : "Show password"} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#6b7280]">
+                <button type="button" onClick={() => setShowPass((v) => !v)} aria-label={showPass ? "Hide password" : "Show password"} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#475569]">
                   {showPass ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                 </button>
               </div>
@@ -102,12 +104,12 @@ export default function LoginPage() {
 
             {error && <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
 
-            <button type="submit" disabled={loading} className="mt-2 h-12 w-full rounded-xl bg-[#1a5c4f] text-base font-bold text-white shadow-sm shadow-[#1a5c4f]/20 transition-colors hover:bg-[#15503f] disabled:opacity-60">
-              {loading ? "Signing in..." : "Sign In"}
+            <button type="submit" disabled={loading} className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#1a5c4f] text-base font-bold text-white shadow-sm shadow-[#1a5c4f]/25 transition-colors hover:bg-[#15503f] disabled:opacity-60">
+              {loading ? "Signing in..." : "Sign In →"}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-[#6b7280]">
+          <p className="mt-6 text-center text-sm text-[#475569]">
             Don&apos;t have an account?{" "}
             <Link href="/register" className="font-semibold text-[#1a5c4f] hover:underline">Create one →</Link>
           </p>

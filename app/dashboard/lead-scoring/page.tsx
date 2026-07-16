@@ -23,6 +23,7 @@ const SOURCES = [
 type Result = {
   isJunk: boolean;
   pJunk: number;
+  reasons: string[];
 };
 
 function Toggle({
@@ -54,14 +55,30 @@ export default function LeadScoringPage() {
   const [hasQuiz, setHasQuiz] = useState(false);
   const [matched, setMatched] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
 
   function analyze() {
-    let p = SOURCE_JUNK[source] ?? 0.5;
-    if (matched) p *= 0.05;
-    if (hasQuiz) p *= 0.8;
-    if (hasCampaign) p *= 0.88;
-    p = Math.max(0, Math.min(1, p));
-    setResult({ isJunk: p >= 0.5, pJunk: p });
+    setAnalyzing(true);
+    setResult(null);
+    setTimeout(() => {
+      let p = SOURCE_JUNK[source] ?? 0.5;
+      const reasons: string[] = [];
+      reasons.push(`Source "${source}" has a ${Math.round((SOURCE_JUNK[source] ?? 0.5) * 100)}% baseline junk rate`);
+      if (matched) { p *= 0.05; reasons.push("Matched to an existing company — strong genuine-intent signal"); }
+      if (hasQuiz) { p *= 0.8; reasons.push("Answered intake questions — shows engagement"); }
+      if (hasCampaign) { p *= 0.88; reasons.push("Came from a paid campaign — mild positive signal"); }
+      p = Math.max(0, Math.min(1, p));
+      setResult({ isJunk: p >= 0.5, pJunk: p, reasons });
+      setAnalyzing(false);
+    }, 600);
+  }
+
+  function reset() {
+    setResult(null);
+    setSource("Instagram");
+    setHasCampaign(false);
+    setHasQuiz(false);
+    setMatched(false);
   }
 
   const pClean = result ? 1 - result.pJunk : 0;
@@ -99,22 +116,22 @@ export default function LeadScoringPage() {
       </div>
 
       {/* Form card */}
-      <div className="mx-auto max-w-[580px] rounded-2xl border border-[#e5e7eb] bg-white p-8 shadow-sm">
+      <div className="mx-auto max-w-[580px] rounded-2xl border border-[#e8ece9] bg-white p-8 shadow-sm">
         <h2 className="text-lg font-bold text-[#1e1b4b]">Lead Details</h2>
-        <p className="mb-6 text-[15px] text-[#9ca3af]">
+        <p className="mb-6 text-[15px] text-[#94a3b8]">
           Fill in what you know about this lead
         </p>
 
         <div className="flex flex-col gap-5">
           {/* Source */}
           <div>
-            <label className="mb-1.5 block text-[15px] font-semibold text-[#374151]">
+            <label className="mb-1.5 block text-[15px] font-semibold text-[#475569]">
               Lead Source 📍
             </label>
             <select
               value={source}
               onChange={(e) => setSource(e.target.value)}
-              className="h-12 w-full rounded-xl border border-[#e5e7eb] bg-white px-4 text-[15px] text-[#374151] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/10"
+              className="h-12 w-full rounded-xl border border-[#e8ece9] bg-white px-4 text-[15px] text-[#475569] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/10"
             >
               {SOURCES.map((s) => (
                 <option key={s} value={s}>
@@ -153,9 +170,20 @@ export default function LeadScoringPage() {
 
           <button
             onClick={analyze}
-            className="mt-2 h-12 w-full rounded-xl bg-[#1a5c4f] text-base font-bold text-white transition hover:bg-[#15503f]"
+            disabled={analyzing}
+            className="mt-2 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#1a5c4f] text-base font-bold text-white transition hover:bg-[#15503f] disabled:opacity-70"
           >
-            Analyze Lead →
+            {analyzing ? (
+              <>
+                <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.4 0 0 5.4 0 12h4z" />
+                </svg>
+                Analyzing…
+              </>
+            ) : (
+              "Analyze Lead →"
+            )}
           </button>
         </div>
       </div>
@@ -211,17 +239,28 @@ export default function LeadScoringPage() {
 
           <div className="my-6 border-t border-white/15" />
 
+          {/* Reasons */}
+          <div className="mt-2 flex flex-col gap-2">
+            {result.reasons.map((r, i) => (
+              <div key={i} className="flex items-start gap-2 text-[14px] text-white/90">
+                <span className="mt-0.5">✓</span>
+                <span>{r}</span>
+              </div>
+            ))}
+          </div>
+
           {/* Recommendation */}
-          <div className="rounded-xl bg-black/20 p-4 text-[15px] text-white/90">
+          <div className="mt-5 rounded-xl bg-black/20 p-4 text-[15px] text-white/90">
             {result.isJunk ? (
               <>⚠️ We recommend not spending sales team time on this lead.</>
             ) : (
-              <>
-                🚀 This lead is worth immediate follow-up. Assign to a sales rep
-                and begin outreach as soon as possible.
-              </>
+              <>🚀 This lead is worth immediate follow-up. Assign to a sales rep and begin outreach as soon as possible.</>
             )}
           </div>
+
+          <button onClick={reset} className="mt-5 w-full rounded-full border border-white/30 py-3 text-[15px] font-semibold text-white transition hover:bg-white/10">
+            Analyze Another
+          </button>
         </div>
       )}
     </>
@@ -242,10 +281,10 @@ function ToggleRow({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-[#e5e7eb] bg-[#f8fafc] p-3">
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-[#e8ece9] bg-[#f8fafc] p-3">
       <div>
-        <p className="text-[15px] font-semibold text-[#374151]">{title}</p>
-        <p className="text-[13px] text-[#9ca3af]">{sub}</p>
+        <p className="text-[15px] font-semibold text-[#475569]">{title}</p>
+        <p className="text-[13px] text-[#94a3b8]">{sub}</p>
       </div>
       <Toggle id={id} checked={checked} onChange={onChange} />
     </div>

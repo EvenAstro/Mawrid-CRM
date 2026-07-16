@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { LeadsIcon, CheckCircleIcon, RevenueIcon } from "@/components/navIcons";
+import { downloadCSV } from "@/lib/format";
+import Skeleton from "@/components/ui/Skeleton";
 
 type Stage = { label: string; terminal_type: string | null } | null;
 type Ref = { label: string } | null;
@@ -28,9 +30,9 @@ function XCircle({ className }: { className?: string }) {
 
 function KpiCard({ label, value, color, Icon }: { label: string; value: string; color: string; Icon: (p: { className?: string }) => React.ReactElement }) {
   return (
-    <div className="rounded-2xl border border-[#e5e7eb] bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md">
+    <div className="rounded-2xl border border-[#e8ece9] bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md">
       <div className="mb-4 flex items-start justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">{label}</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#94a3b8]">{label}</p>
         <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: `${color}1a`, color }}>
           <Icon className="h-5 w-5" />
         </div>
@@ -40,10 +42,20 @@ function KpiCard({ label, value, color, Icon }: { label: string; value: string; 
   );
 }
 
-function Panel({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
+function Panel({ title, subtitle, children, className = "", onExport }: { title: string; subtitle?: string; children: React.ReactNode; className?: string; onExport?: () => void }) {
   return (
-    <div className={`rounded-2xl border border-[#e5e7eb] bg-white p-6 shadow-sm ${className}`}>
-      <h3 className="mb-4 text-base font-bold text-[#1e1b4b]">{title}</h3>
+    <div className={`rounded-2xl border border-[#e8ece9] bg-white p-6 shadow-sm ${className}`}>
+      <div className="mb-4 flex items-start justify-between gap-2">
+        <div>
+          <h3 className="text-lg font-bold text-[#1e1b4b]">{title}</h3>
+          {subtitle && <p className="mt-0.5 text-[13px] text-[#94a3b8]">{subtitle}</p>}
+        </div>
+        {onExport && (
+          <button onClick={onExport} className="flex-none rounded-full border border-[#e8ece9] px-3 py-1 text-[12px] font-semibold text-[#475569] transition hover:border-primary hover:text-primary">
+            ↓ CSV
+          </button>
+        )}
+      </div>
       {children}
     </div>
   );
@@ -155,7 +167,14 @@ export default function AnalyticsPage() {
     return { total, junk, clean, won, lost, activeDeals: deals.length, bySource, reps, funnel, lostReasons, responseRows, ranking };
   }, [leads, deals, activities, users]);
 
-  if (loading) return <div className="py-24 text-center text-[#9ca3af]">Loading analytics…</div>;
+  if (loading)
+    return (
+      <div className="flex flex-col gap-5">
+        <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32" />)}</div>
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-64" />)}</div>
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-64" />)}</div>
+      </div>
+    );
 
   const maxSource = Math.max(1, ...s.bySource.map((x) => x.count));
   const maxLost = Math.max(1, ...s.lostReasons.map((x) => x.count));
@@ -166,8 +185,8 @@ export default function AnalyticsPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-2xl font-bold text-[#1e1b4b]">Analytics</h1>
-        <p className="text-sm text-[#6b7280]">Real-time insights from your CRM data</p>
+        <h1 className="text-2xl font-extrabold text-[#1e1b4b]">Analytics</h1>
+        <p className="mt-1 text-[15px] text-[#94a3b8]">Real-time insights from your CRM data</p>
       </div>
 
       <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
@@ -178,13 +197,13 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <Panel title="Leads by Source">
-          {s.bySource.length === 0 ? <p className="py-8 text-center text-sm text-[#9ca3af]">No data</p> : (
+        <Panel title="Leads by Source" onExport={() => downloadCSV("leads-by-source.csv", s.bySource.map((x) => ({ source: x.label, count: x.count, clean: x.clean, junk: x.junk })))}>
+          {s.bySource.length === 0 ? <p className="py-8 text-center text-sm text-[#94a3b8]">No data</p> : (
             <div>
               {s.bySource.map((src) => (
                 <div key={src.label} className="mb-3">
                   <div className="mb-1 flex justify-between">
-                    <span className="text-sm text-[#6b7280]">{src.label}</span>
+                    <span className="text-sm text-[#475569]">{src.label}</span>
                     <span className="text-sm font-semibold text-[#1e1b4b]">{src.count}</span>
                   </div>
                   <div className="h-2 rounded-full bg-[#f1f5f9]"><div className="h-full rounded-full bg-[#1a5c4f]" style={{ width: `${(src.count / maxSource) * 100}%` }} /></div>
@@ -194,11 +213,11 @@ export default function AnalyticsPage() {
           )}
         </Panel>
 
-        <Panel title="Sales Rep Performance">
-          {s.reps.length === 0 ? <p className="py-8 text-center text-sm text-[#9ca3af]">No data</p> : (
+        <Panel title="Sales Rep Performance" onExport={() => downloadCSV("rep-performance.csv", s.reps.map((r) => ({ rep: r.name, deals: r.deals, won: r.won, lost: r.lost, win_pct: Math.round(r.winRate) })))}>
+          {s.reps.length === 0 ? <p className="py-8 text-center text-sm text-[#94a3b8]">No data</p> : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead><tr className="text-xs uppercase tracking-wider text-[#9ca3af]"><th className="pb-2">Rep</th><th className="pb-2 text-center">Deals</th><th className="pb-2 text-center">Won</th><th className="pb-2 text-center">Lost</th><th className="pb-2 text-right">Win %</th></tr></thead>
+                <thead><tr className="text-xs uppercase tracking-wider text-[#94a3b8]"><th className="pb-2">Rep</th><th className="pb-2 text-center">Deals</th><th className="pb-2 text-center">Won</th><th className="pb-2 text-center">Lost</th><th className="pb-2 text-right">Win %</th></tr></thead>
                 <tbody>
                   {s.reps.map((r, index) => {
                     const wr = Math.round(r.winRate);
@@ -206,9 +225,9 @@ export default function AnalyticsPage() {
                     return (
                       <tr key={`rep-${r.name}-${index}`} className="border-t border-[#f1f5f9]">
                         <td className="py-2 font-medium text-[#374151]">{r.name}</td>
-                        <td className="py-2 text-center text-[#6b7280]">{r.deals}</td>
-                        <td className="py-2 text-center text-[#6b7280]">{r.won}</td>
-                        <td className="py-2 text-center text-[#6b7280]">{r.lost}</td>
+                        <td className="py-2 text-center text-[#475569]">{r.deals}</td>
+                        <td className="py-2 text-center text-[#475569]">{r.won}</td>
+                        <td className="py-2 text-center text-[#475569]">{r.lost}</td>
                         <td className="py-2 text-right"><span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>{wr}%</span></td>
                       </tr>
                     );
@@ -229,7 +248,7 @@ export default function AnalyticsPage() {
                   <div className="flex h-full min-w-[4px] items-center rounded-lg px-2.5" style={{ width: `${Math.max(pct, 3)}%`, backgroundColor: f.color }}>
                     {!tiny && <span className="truncate text-xs font-semibold text-white">{f.label} · {f.count} · {pct}%</span>}
                   </div>
-                  {tiny && <span className="ml-2 text-xs text-[#6b7280]">{f.label} · {f.count} · {pct}%</span>}
+                  {tiny && <span className="ml-2 text-xs text-[#475569]">{f.label} · {f.count} · {pct}%</span>}
                 </div>
               );
             })}
@@ -239,11 +258,11 @@ export default function AnalyticsPage() {
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <Panel title="Lead Quality by Source">
-          {s.bySource.length === 0 ? <p className="py-8 text-center text-sm text-[#9ca3af]">No data</p> : (
+          {s.bySource.length === 0 ? <p className="py-8 text-center text-sm text-[#94a3b8]">No data</p> : (
             <div className="flex flex-col gap-3">
               {s.bySource.map((src) => (
                 <div key={src.label}>
-                  <p className="mb-1 text-sm text-[#6b7280]">{src.label}</p>
+                  <p className="mb-1 text-sm text-[#475569]">{src.label}</p>
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2"><div className="h-2.5 flex-1 rounded-full bg-[#f1f5f9]"><div className="h-full rounded-full bg-green-500" style={{ width: `${(src.clean / maxSource) * 100}%` }} /></div><span className="w-7 text-right text-xs text-green-700">{src.clean}</span></div>
                     <div className="flex items-center gap-2"><div className="h-2.5 flex-1 rounded-full bg-[#f1f5f9]"><div className="h-full rounded-full bg-red-500" style={{ width: `${(src.junk / maxSource) * 100}%` }} /></div><span className="w-7 text-right text-xs text-red-700">{src.junk}</span></div>
@@ -254,12 +273,12 @@ export default function AnalyticsPage() {
           )}
         </Panel>
 
-        <Panel title="Why We Lose Deals">
-          {s.lostReasons.length === 0 ? <p className="py-8 text-center text-sm text-[#9ca3af]">No lost deals</p> : (
+        <Panel title="Why We Lose Deals" onExport={() => downloadCSV("lost-reasons.csv", s.lostReasons.map((r) => ({ reason: r.label, count: r.count, value_sar: Math.round(r.value / 100) })))}>
+          {s.lostReasons.length === 0 ? <p className="py-8 text-center text-sm text-[#94a3b8]">No lost deals</p> : (
             <div className="flex flex-col gap-3">
               {s.lostReasons.map((r) => (
                 <div key={r.label}>
-                  <div className="mb-1 flex justify-between"><span className="text-sm text-[#6b7280]">{r.label}</span><span className="text-xs text-[#9ca3af]">{r.count} · {sar(r.value)}</span></div>
+                  <div className="mb-1 flex justify-between"><span className="text-sm text-[#475569]">{r.label}</span><span className="text-xs text-[#94a3b8]">{r.count} · {sar(r.value)}</span></div>
                   <div className="h-2 rounded-full bg-[#f1f5f9]"><div className="h-full rounded-full bg-red-500" style={{ width: `${(r.count / maxLost) * 100}%` }} /></div>
                 </div>
               ))}
@@ -267,14 +286,14 @@ export default function AnalyticsPage() {
           )}
         </Panel>
 
-        <Panel title="Response Time by Source">
-          {s.responseRows.length === 0 ? <p className="py-8 text-center text-sm text-[#9ca3af]">No data</p> : (
+        <Panel title="Response Time by Source" onExport={() => downloadCSV("response-time.csv", s.responseRows.map((r) => ({ source: r.label, avg_hours: Math.round(r.hours) })))}>
+          {s.responseRows.length === 0 ? <p className="py-8 text-center text-sm text-[#94a3b8]">No data</p> : (
             <div className="flex flex-col gap-3">
               {s.responseRows.map((r) => {
                 const color = r.hours < 50 ? "#10b981" : r.hours <= 150 ? "#f59e0b" : "#ef4444";
                 return (
                   <div key={r.label}>
-                    <div className="mb-1 flex justify-between"><span className="text-sm text-[#6b7280]">{r.label}</span><span className="text-sm font-semibold text-[#1e1b4b]">{Math.round(r.hours)}h</span></div>
+                    <div className="mb-1 flex justify-between"><span className="text-sm text-[#475569]">{r.label}</span><span className="text-sm font-semibold text-[#1e1b4b]">{Math.round(r.hours)}h</span></div>
                     <div className="h-2 rounded-full bg-[#f1f5f9]"><div className="h-full rounded-full" style={{ width: `${(r.hours / maxResp) * 100}%`, backgroundColor: color }} /></div>
                   </div>
                 );
@@ -285,18 +304,18 @@ export default function AnalyticsPage() {
       </div>
 
       <Panel title="🏆 Source Ranking">
-        {s.ranking.length === 0 ? <p className="py-8 text-center text-sm text-[#9ca3af]">No data</p> : (
+        {s.ranking.length === 0 ? <p className="py-8 text-center text-sm text-[#94a3b8]">No data</p> : (
           <div className="flex flex-wrap gap-4">
             {s.ranking.map((r, i) => {
               const isLast = i === s.ranking.length - 1 && s.ranking.length > 3;
-              const topColor = isLast ? "#ef4444" : medalBorder[i] ?? "#e5e7eb";
+              const topColor = isLast ? "#ef4444" : medalBorder[i] ?? "#e8ece9";
               const badge = isLast ? "🔴" : medals[i] ?? `#${i + 1}`;
               return (
-                <div key={r.label} className="min-w-[160px] flex-1 rounded-xl border border-[#e5e7eb] bg-white p-4 shadow-sm" style={{ borderTop: `4px solid ${topColor}` }}>
-                  <div className="mb-1 flex items-center justify-between"><span className="text-lg">{badge}</span><span className="text-xs font-medium text-[#9ca3af]">#{i + 1}</span></div>
+                <div key={r.label} className="min-w-[160px] flex-1 rounded-xl border border-[#e8ece9] bg-white p-4 shadow-sm" style={{ borderTop: `4px solid ${topColor}` }}>
+                  <div className="mb-1 flex items-center justify-between"><span className="text-lg">{badge}</span><span className="text-xs font-medium text-[#94a3b8]">#{i + 1}</span></div>
                   <p className="font-bold text-[#1e1b4b]">{r.label}</p>
-                  <p className="mt-1 text-sm text-[#6b7280]">Junk: {Math.round(r.junkRate * 100)}%</p>
-                  <p className="text-sm text-[#6b7280]">Response: {r.response == null ? "—" : `${Math.round(r.response)}h`}</p>
+                  <p className="mt-1 text-sm text-[#475569]">Junk: {Math.round(r.junkRate * 100)}%</p>
+                  <p className="text-sm text-[#475569]">Response: {r.response == null ? "—" : `${Math.round(r.response)}h`}</p>
                 </div>
               );
             })}
