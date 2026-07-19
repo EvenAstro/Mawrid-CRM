@@ -117,8 +117,8 @@ export default function DealsPage() {
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-ink">Deals</h1>
-          <p className="mt-1 text-[15px] text-muted">{loading ? "Loading…" : `${deals.length} deals across ${stages.length} stages`}</p>
+          <h1 dir="auto" className="text-2xl font-extrabold text-ink">الصفقات</h1>
+          <p className="mt-1 text-[15px] text-muted">{loading ? "جارِ التحميل…" : `${deals.length} صفقة عبر ${stages.length} مرحلة`}</p>
         </div>
         <Button onClick={() => setAddStage(null)}>+ Add Deal</Button>
       </div>

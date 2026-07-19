@@ -31,21 +31,39 @@ function getAIScore(lead: Lead): number {
   return Math.round((1 - p_junk) * 100);
 }
 
-function aiScoreStyle(score: number): { pill: string; dot: string } {
-  if (score >= 70)
-    return {
-      pill: "bg-green-50 text-green-700 border border-green-100",
-      dot: "bg-green-500",
-    };
-  if (score >= 40)
-    return {
-      pill: "bg-amber-50 text-amber-700 border border-amber-100",
-      dot: "bg-amber-500",
-    };
-  return {
-    pill: "bg-red-50 text-red-700 border border-red-100",
-    dot: "bg-red-500",
-  };
+function scoreHex(score: number): string {
+  if (score >= 70) return "#10b981"; // green
+  if (score >= 40) return "#f59e0b"; // amber
+  return "#ef4444"; // red
+}
+
+/** Compact colored progress ring with the score in matching color. */
+function AiScoreRing({ score }: { score: number }) {
+  const color = scoreHex(score);
+  const R = 15;
+  const C = 2 * Math.PI * R;
+  const offset = C * (1 - Math.max(0, Math.min(100, score)) / 100);
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="relative inline-flex h-9 w-9 items-center justify-center">
+        <svg width="36" height="36" viewBox="0 0 36 36" className="-rotate-90">
+          <circle cx="18" cy="18" r={R} fill="none" stroke="#e8efed" strokeWidth="3.5" />
+          <circle
+            cx="18"
+            cy="18"
+            r={R}
+            fill="none"
+            stroke={color}
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            strokeDasharray={C}
+            strokeDashoffset={offset}
+          />
+        </svg>
+      </span>
+      <span className="text-[13px] font-bold" style={{ color }}>{score}%</span>
+    </span>
+  );
 }
 
 function formatDate(iso: string | null): string {
@@ -204,17 +222,17 @@ export default function LeadsPage() {
     <>
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-[#1e1b4b]">Leads</h1>
+        <h1 dir="auto" className="text-2xl font-extrabold text-[#1e1b4b]">العملاء المحتملون</h1>
         <p className="mt-1 text-[15px] text-[#94a3b8]">
-          Manage and track your leads pipeline
+          إدارة ومتابعة مسار العملاء المحتملين
         </p>
       </div>
 
       {/* Stats bar */}
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <StatCard value={leads.length} label="Total Leads" emoji="🎯" tint="bg-[#f0faf8]" active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
-        <StatCard value={cleanCount} label="Clean Leads" emoji="✅" tint="bg-emerald-50" active={statusFilter === "clean"} onClick={() => setStatusFilter("clean")} />
-        <StatCard value={junkCount} label="Junk Leads" emoji="🗑️" tint="bg-red-50" active={statusFilter === "junk"} onClick={() => setStatusFilter("junk")} />
+        <StatCard value={leads.length} label="إجمالي العملاء" emoji="🎯" tint="bg-[#f0faf8]" active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
+        <StatCard value={cleanCount} label="عملاء مؤهلون" emoji="✅" tint="bg-emerald-50" active={statusFilter === "clean"} onClick={() => setStatusFilter("clean")} />
+        <StatCard value={junkCount} label="غير مؤهلين" emoji="🗑️" tint="bg-red-50" active={statusFilter === "junk"} onClick={() => setStatusFilter("junk")} />
       </div>
 
       {/* Search & filter bar */}
@@ -391,18 +409,7 @@ export default function LeadsPage() {
 
                       {/* AI Score */}
                       <td className="px-6 py-3.5">
-                        {(() => {
-                          const score = scoreCache.get(lead.id) ?? getAIScore(lead);
-                          const s = aiScoreStyle(score);
-                          return (
-                            <span
-                              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] font-bold ${s.pill}`}
-                            >
-                              <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
-                              {score}%
-                            </span>
-                          );
-                        })()}
+                        <AiScoreRing score={scoreCache.get(lead.id) ?? getAIScore(lead)} />
                       </td>
 
                       {/* Owner */}

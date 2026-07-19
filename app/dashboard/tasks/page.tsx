@@ -153,8 +153,8 @@ export default function TasksPage() {
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-ink">Tasks</h1>
-          <p className="mt-1 text-[15px] text-muted">{loading ? "Loading…" : `${tasks.length} open tasks`}</p>
+          <h1 dir="auto" className="text-2xl font-extrabold text-ink">المهام</h1>
+          <p className="mt-1 text-[15px] text-muted">{loading ? "جارِ التحميل…" : `${tasks.length} مهمة مفتوحة`}</p>
         </div>
         <Button onClick={() => setNewOpen(true)}>+ New Task</Button>
       </div>

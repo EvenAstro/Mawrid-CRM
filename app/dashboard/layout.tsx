@@ -22,27 +22,27 @@ import {
 
 const navGroups = [
   {
-    heading: "Workspace",
+    heading: "مساحة العمل",
     items: [
-      { label: "Dashboard", href: "/dashboard", Icon: DashboardIcon },
-      { label: "Contacts", href: "/dashboard/contacts", Icon: ContactsIcon },
-      { label: "Leads", href: "/dashboard/leads", Icon: LeadsIcon },
-      { label: "Deals", href: "/dashboard/deals", Icon: DealsIcon },
+      { label: "الرئيسية", href: "/dashboard", Icon: DashboardIcon },
+      { label: "جهات الاتصال", href: "/dashboard/contacts", Icon: ContactsIcon },
+      { label: "العملاء المحتملون", href: "/dashboard/leads", Icon: LeadsIcon },
+      { label: "الصفقات", href: "/dashboard/deals", Icon: DealsIcon },
     ],
   },
   {
-    heading: "Engagement",
+    heading: "التفاعل",
     items: [
-      { label: "Activities", href: "/dashboard/activities", Icon: ActivitiesIcon },
-      { label: "Tasks", href: "/dashboard/tasks", Icon: TasksIcon },
-      { label: "Tickets", href: "/dashboard/tickets", Icon: TicketsIcon },
+      { label: "النشاطات", href: "/dashboard/activities", Icon: ActivitiesIcon },
+      { label: "المهام", href: "/dashboard/tasks", Icon: TasksIcon },
+      { label: "التذاكر", href: "/dashboard/tickets", Icon: TicketsIcon },
     ],
   },
   {
-    heading: "Intelligence",
+    heading: "الذكاء",
     items: [
-      { label: "Analytics", href: "/dashboard/analytics", Icon: AnalyticsIcon },
-      { label: "Lead Scoring", href: "/dashboard/lead-scoring", Icon: ScoringIcon },
+      { label: "التحليلات", href: "/dashboard/analytics", Icon: AnalyticsIcon },
+      { label: "تقييم العملاء", href: "/dashboard/lead-scoring", Icon: ScoringIcon },
     ],
   },
 ];
@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     });
   }
 
-  const pageName = allItems.find((n) => isActive(pathname, n.href))?.label ?? "Dashboard";
+  const pageName = allItems.find((n) => isActive(pathname, n.href))?.label ?? "الرئيسية";
   useEffect(() => {
     document.title = `${pageName} · Mawrid CRM`;
   }, [pageName]);
@@ -198,7 +198,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           className="fixed right-0 top-0 z-20 flex h-16 items-center justify-between border-b border-border-light bg-white/90 px-8 backdrop-blur-sm transition-all duration-300"
         >
           <div className="flex items-center gap-1.5 text-sm">
-            <span className="text-muted">Workspace</span>
+            <span className="text-muted">مساحة العمل</span>
             <span className="text-[#d1d5db]">/</span>
             <span className="font-semibold text-ink">{pageName}</span>
           </div>

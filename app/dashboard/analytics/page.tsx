@@ -185,8 +185,8 @@ export default function AnalyticsPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-2xl font-extrabold text-[#1e1b4b]">Analytics</h1>
-        <p className="mt-1 text-[15px] text-[#94a3b8]">Real-time insights from your CRM data</p>
+        <h1 dir="auto" className="text-2xl font-extrabold text-[#1e1b4b]">التحليلات</h1>
+        <p className="mt-1 text-[15px] text-[#94a3b8]">رؤى فورية من بيانات نظامك</p>
       </div>
 
       <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">

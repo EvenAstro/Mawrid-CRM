@@ -104,8 +104,8 @@ export default function ActivitiesPage() {
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-ink">Activities</h1>
-          <p className="mt-1 text-[15px] text-muted">{loading ? "Loading…" : `${total} touchpoints across your CRM`}</p>
+          <h1 dir="auto" className="text-2xl font-extrabold text-ink">النشاطات</h1>
+          <p className="mt-1 text-[15px] text-muted">{loading ? "جارِ التحميل…" : `${total} نشاط عبر النظام`}</p>
         </div>
         <Button onClick={() => setLogOpen(true)}>+ Log Activity</Button>
       </div>

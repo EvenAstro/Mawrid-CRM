@@ -132,8 +132,8 @@ export default function TicketsPage() {
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-ink">Tickets</h1>
-          <p className="mt-1 text-[15px] text-muted">{loading ? "Loading…" : `${openCount} open · ${tickets.length} total`}</p>
+          <h1 dir="auto" className="text-2xl font-extrabold text-ink">التذاكر</h1>
+          <p className="mt-1 text-[15px] text-muted">{loading ? "جارِ التحميل…" : `${openCount} مفتوحة · ${tickets.length} الإجمالي`}</p>
         </div>
         <Button onClick={() => setNewOpen(true)}>+ New Ticket</Button>
       </div>

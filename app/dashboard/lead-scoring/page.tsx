@@ -92,9 +92,9 @@ export default function LeadScoringPage() {
             ✦
           </span>
           <div>
-            <h1 className="text-2xl font-bold text-white">Lead Scoring</h1>
+            <h1 dir="auto" className="text-2xl font-bold text-white">تقييم العملاء</h1>
             <p className="text-[15px] text-white/60">
-              AI-powered lead qualification
+              تأهيل العملاء بالذكاء الاصطناعي
             </p>
           </div>
         </div>
