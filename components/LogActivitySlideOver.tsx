@@ -37,6 +37,9 @@ export default function LogActivitySlideOver({
   const [notes, setNotes] = useState("");
   const [date, setDate] = useState(todayInput());
   const [saving, setSaving] = useState(false);
+  // Default to outbound — this form is framed as the rep recording their own
+  // touchpoint ("Record a touchpoint with a contact"); inbound is the explicit choice.
+  const [direction, setDirection] = useState<"outbound" | "inbound">("outbound");
 
   useEffect(() => {
     if (!open || types.length) return;
@@ -84,6 +87,7 @@ export default function LogActivitySlideOver({
     setTypeId("");
     setNotes("");
     setDate(todayInput());
+    setDirection("outbound");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -99,12 +103,15 @@ export default function LogActivitySlideOver({
     setSaving(true);
     const { data: userData } = await supabase.auth.getUser();
     const now = new Date().toISOString();
+    const activityId = crypto.randomUUID();
+    const trimmedNotes = notes.trim();
     const { error } = await supabase.from("activities").insert({
-      id: crypto.randomUUID(),
+      id: activityId,
       entity_type: "lead",
       entity_id: selected.id,
       activity_type_id: typeId,
-      body: notes.trim() || null,
+      body: trimmedNotes || null,
+      direction,
       occurred_at: new Date(date + "T00:00:00").toISOString(),
       user_id: userData.user?.id ?? null,
       created_at: now,
@@ -117,6 +124,17 @@ export default function LogActivitySlideOver({
       return;
     }
     toast("Activity logged");
+
+    // Fire-and-forget: classify inbound replies in the background. The form
+    // closes immediately regardless of how long — or whether — this succeeds.
+    if (direction === "inbound" && trimmedNotes) {
+      fetch("/api/classify-activity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activityId, body: trimmedNotes }),
+      }).catch((err) => console.error("[LogActivity] classify trigger failed", err));
+    }
+
     reset();
     onCreated?.();
     onClose();
@@ -201,6 +219,36 @@ export default function LogActivitySlideOver({
                 ))}
               </div>
             )}
+          </div>
+
+          <div>
+            <label className={labelCls}>Direction *</label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                dir="auto"
+                onClick={() => setDirection("outbound")}
+                className={`h-11 flex-1 rounded-xl border text-[14px] font-semibold transition ${
+                  direction === "outbound"
+                    ? "border-[#1a5c4f] bg-[#f0faf8] text-[#1a5c4f]"
+                    : "border-[#e8ece9] text-[#334155] hover:border-[#1a5c4f]/40"
+                }`}
+              >
+                اتصلت بالعميل
+              </button>
+              <button
+                type="button"
+                dir="auto"
+                onClick={() => setDirection("inbound")}
+                className={`h-11 flex-1 rounded-xl border text-[14px] font-semibold transition ${
+                  direction === "inbound"
+                    ? "border-[#1a5c4f] bg-[#f0faf8] text-[#1a5c4f]"
+                    : "border-[#e8ece9] text-[#334155] hover:border-[#1a5c4f]/40"
+                }`}
+              >
+                رد العميل
+              </button>
+            </div>
           </div>
 
           <div>

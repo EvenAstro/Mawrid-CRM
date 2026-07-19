@@ -10,6 +10,7 @@ import SlideOver from "@/components/ui/SlideOver";
 import Skeleton from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import NewDealSlideOver from "@/components/NewDealSlideOver";
+import NextBestActionCard from "@/components/NextBestActionCard";
 
 interface Deal {
   id: string;
@@ -212,6 +213,7 @@ export default function DealsPage() {
       <SlideOver open={!!selected} onClose={() => setSelected(null)} title={selected?.name || "Deal"} subtitle={selected?.pipeline_stages?.label ?? undefined}>
         {selected && (
           <div className="flex flex-col gap-5">
+            {selected.id && <NextBestActionCard dealId={selected.id} />}
             <div className="rounded-2xl border border-border-light bg-white p-5">
               <p className="text-[13px] text-muted">Deal Value</p>
               <p className="mt-1 text-3xl font-extrabold text-primary">{dealValue(selected)}</p>

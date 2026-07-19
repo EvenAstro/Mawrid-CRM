@@ -102,7 +102,7 @@ function latestDate(iso: (string | null)[]): Date {
   return new Date(Math.min(max || now, now));
 }
 function trendText(cur: number, prev: number): { text: string; cls: string } {
-  if (prev === 0) return { text: "First month of tracking", cls: "text-[#94a3b8]" };
+  if (prev === 0) return { text: "أول شهر", cls: "text-[#94a3b8]" };
   const pct = Math.round(((cur - prev) / prev) * 100);
   if (pct === 0) return { text: "No change from last month", cls: "text-[#94a3b8]" };
   if (pct > 0) return { text: `↑ ${pct}% from last month`, cls: "text-[#10b981]" };
@@ -413,7 +413,7 @@ export default function DashboardPage() {
               <Icon className="h-5 w-5" />
             </span>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-[#94a3b8]">{label}</p>
-            <p className="mb-2 mt-3 text-4xl font-black text-[#1e1b4b]">{value}</p>
+            <p className="mb-2 mt-3 text-[44px] font-black leading-none text-[#1e1b4b]">{value}</p>
             <p className={`text-xs font-semibold ${trend.cls}`}>{trend.text}</p>
           </Link>
         ))}

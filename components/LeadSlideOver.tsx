@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import NextBestActionCard from "@/components/NextBestActionCard";
 
 export interface Lead {
   id: string | number;
@@ -223,6 +224,9 @@ export default function LeadSlideOver({
 
             {/* Body */}
             <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6">
+              {/* AI Next Best Action — only shows when the lead has activity */}
+              <NextBestActionCard dealId={String(data.id)} entityType="lead" hideWhenEmpty />
+
               {/* Section 1 — Lead info */}
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Name" value={data.full_name} />
