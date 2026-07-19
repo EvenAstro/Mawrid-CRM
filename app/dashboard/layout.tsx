@@ -215,7 +215,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Main */}
         <main style={{ marginLeft: w }} className="min-h-screen bg-white pt-16 transition-all duration-300">
-          <div className="mx-auto max-w-[1280px] p-8">{children}</div>
+          <div key={pathname} className="page-content mx-auto max-w-[1280px] p-8">{children}</div>
         </main>
       </div>
     </ToastProvider>

@@ -50,9 +50,9 @@ interface Task {
 /* ---------- Helpers ---------- */
 function greeting() {
   const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
+  if (h < 12) return "صباح الخير";
+  if (h < 18) return "مساء الخير";
+  return "مساء الخير";
 }
 function longDate(d: Date) {
   return d.toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
@@ -176,10 +176,10 @@ function PipelineChart({ points }: { points: { label: string; value: number }[] 
   if (allZero) {
     return (
       <div className="flex h-44 flex-col items-center justify-center gap-3 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f0faf8] text-2xl">📊</div>
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f0faf8] text-2xl">📊</div>
         <div>
-          <p className="text-base font-semibold text-[#334155]">No deals this week</p>
-          <p className="mt-0.5 text-sm text-[#94a3b8]">New deal value will appear here as deals come in.</p>
+          <p dir="auto" className="text-[18px] font-semibold text-[#1e1b4b]">لا توجد صفقات هذا الأسبوع</p>
+          <p dir="auto" className="mt-1 text-sm text-[#3f554e]">ستظهر قيمة الصفقات الجديدة هنا عند إضافتها.</p>
         </div>
       </div>
     );
@@ -393,8 +393,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-[#94a3b8]">{greeting()},</p>
-          <h1 className="mt-0.5 text-3xl font-black text-[#1e1b4b]">{firstName || "there"} 👋</h1>
+          <h1 dir="auto" className="text-[28px] font-bold tracking-[-0.02em] text-[#1e1b4b]">{greeting()}، {firstName || "بك"} 👋</h1>
           <p className="mt-1 text-sm text-[#94a3b8]">{longDate(now)}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -407,7 +406,7 @@ export default function DashboardPage() {
       {/* KPIs */}
       <div className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map(({ label, value, Icon, color, trend, href }) => (
-          <Link key={label} href={href} className="group relative overflow-hidden rounded-2xl border border-[#e8ece9] bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <Link key={label} href={href} className="group relative overflow-hidden rounded-2xl border border-[#e8efed] bg-white p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.02)] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(0,0,0,0.06),0_12px_32px_rgba(0,0,0,0.04)]">
             <span className="absolute bottom-4 left-0 top-4 w-1 rounded-full" style={{ background: color }} />
             <span className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-105" style={{ backgroundColor: `${color}1a`, color }}>
               <Icon className="h-5 w-5" />

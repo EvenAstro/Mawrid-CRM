@@ -3,6 +3,51 @@
 :root {
   --background: #ffffff;
   --foreground: #1e1b4b;
+
+  /* ---- Premium design-system palette (raw vars for landing + new work) ---- */
+  --teal-900: #0d3b30;
+  --teal-700: #1a5c4f;
+  --teal-500: #2d8570;
+  --teal-300: #7ec8b5;
+  --teal-100: #d6f0ea;
+  --teal-50: #f0faf8;
+
+  --gray-950: #0a0f0d;
+  --gray-900: #111916;
+  --gray-800: #1c2b26;
+  --gray-700: #2d3f39;
+  --gray-600: #3f554e;
+  --gray-400: #6b8880;
+  --gray-300: #9bb5af;
+  --gray-200: #c8d8d5;
+  --gray-100: #e8efed;
+  --gray-50: #f4f8f7;
+  --gray-25: #fafcfb;
+
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #6366f1;
+}
+
+/* Premium page-transition fade on route change */
+@keyframes premiumFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.page-content {
+  animation: premiumFadeIn 0.2s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-content {
+    animation: none;
+  }
 }
 
 @theme inline {
