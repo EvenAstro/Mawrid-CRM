@@ -228,7 +228,7 @@ function Skeleton() {
   );
 }
 
-const CARD = "rounded-2xl border border-[#e8ece9] bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md";
+const CARD = "rounded-2xl border border-gray-100 bg-white p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.02)] transition-all duration-200 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05),0_12px_32px_rgba(0,0,0,0.03)]";
 
 /* ---------- Page ---------- */
 export default function DashboardPage() {
@@ -423,7 +423,7 @@ export default function DashboardPage() {
         <div className={`${CARD} lg:col-span-2`}>
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <h3 className="text-base font-bold text-[#1e1b4b]">Pipeline Activity</h3>
+              <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">Pipeline Activity</h3>
               <p className="mt-0.5 text-sm text-[#94a3b8]">Deal value · {m.seriesRange}</p>
             </div>
             <span className="rounded-full border border-[#e8ece9] bg-[#f8fafc] px-3 py-1 text-xs text-[#94a3b8]">Last 7 days</span>
@@ -437,7 +437,7 @@ export default function DashboardPage() {
         </div>
 
         <div className={`${CARD} flex flex-col`}>
-          <h3 className="mb-1 text-base font-bold text-[#1e1b4b]">Today</h3>
+          <h3 className="mb-1 text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">Today</h3>
           <p className="text-4xl font-black tabular-nums text-[#1a5c4f]">{now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>
           <p className="mb-4 text-sm text-[#94a3b8]">{longDate(now)}</p>
           <div className="flex-1 border-t border-[#f1f5f9] pt-4">
@@ -480,7 +480,7 @@ export default function DashboardPage() {
         {/* Recent Leads */}
         <div className={CARD}>
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-base font-bold text-[#1e1b4b]">Recent Leads</h3>
+            <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">Recent Leads</h3>
             <Link href="/dashboard/leads" className="text-xs font-semibold text-[#1a5c4f] hover:underline">View all →</Link>
           </div>
           {m.recentLeads.length === 0 ? (
@@ -510,7 +510,7 @@ export default function DashboardPage() {
         {/* Activity Feed */}
         <div className={CARD}>
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-base font-bold text-[#1e1b4b]">Activity Feed</h3>
+            <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">Activity Feed</h3>
             <Link href="/dashboard/activities" className="text-xs font-semibold text-[#1a5c4f] hover:underline">View all →</Link>
           </div>
           {activities.length === 0 ? (
@@ -547,7 +547,7 @@ export default function DashboardPage() {
 
         {/* Sales Overview */}
         <div className={CARD}>
-          <h3 className="mb-4 text-base font-bold text-[#1e1b4b]">Sales Overview</h3>
+          <h3 className="mb-4 text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">Sales Overview</h3>
           {overview.map((o) => (
             <div key={o.label} className="flex items-center justify-between border-b border-[#f1f5f9] py-2.5 last:border-0">
               <div className="flex items-center gap-2">

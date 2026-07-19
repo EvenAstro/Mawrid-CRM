@@ -72,6 +72,27 @@
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
+  --color-info: #6366f1;
+
+  /* ---- Premium scales wired as utilities (bg-teal-700, text-gray-400, …) ---- */
+  --color-teal-900: #0d3b30;
+  --color-teal-700: #1a5c4f;
+  --color-teal-500: #2d8570;
+  --color-teal-300: #7ec8b5;
+  --color-teal-100: #d6f0ea;
+  --color-teal-50: #f0faf8;
+
+  --color-gray-950: #0a0f0d;
+  --color-gray-900: #111916;
+  --color-gray-800: #1c2b26;
+  --color-gray-700: #2d3f39;
+  --color-gray-600: #3f554e;
+  --color-gray-400: #6b8880;
+  --color-gray-300: #9bb5af;
+  --color-gray-200: #c8d8d5;
+  --color-gray-100: #e8efed;
+  --color-gray-50: #f4f8f7;
+  --color-gray-25: #fafcfb;
 }
 
 body {
