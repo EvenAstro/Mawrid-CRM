@@ -30,7 +30,7 @@ function XCircle({ className }: { className?: string }) {
 
 function KpiCard({ label, value, color, Icon }: { label: string; value: string; color: string; Icon: (p: { className?: string }) => React.ReactElement }) {
   return (
-    <div className="rounded-2xl border border-[#e8ece9] bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md">
+    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md">
       <div className="mb-4 flex items-start justify-between">
         <p className="text-xs font-semibold uppercase tracking-wider text-[#94a3b8]">{label}</p>
         <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: `${color}1a`, color }}>
@@ -44,14 +44,14 @@ function KpiCard({ label, value, color, Icon }: { label: string; value: string; 
 
 function Panel({ title, subtitle, children, className = "", onExport }: { title: string; subtitle?: string; children: React.ReactNode; className?: string; onExport?: () => void }) {
   return (
-    <div className={`rounded-2xl border border-[#e8ece9] bg-white p-6 shadow-sm ${className}`}>
+    <div className={`rounded-2xl border border-gray-100 bg-white p-6 shadow-sm ${className}`}>
       <div className="mb-4 flex items-start justify-between gap-2">
         <div>
           <h3 className="text-lg font-bold text-[#1e1b4b]">{title}</h3>
           {subtitle && <p className="mt-0.5 text-[13px] text-[#94a3b8]">{subtitle}</p>}
         </div>
         {onExport && (
-          <button onClick={onExport} className="flex-none rounded-full border border-[#e8ece9] px-3 py-1 text-[12px] font-semibold text-[#475569] transition hover:border-primary hover:text-primary">
+          <button onClick={onExport} className="flex-none rounded-full border border-gray-100 px-3 py-1 text-[12px] font-semibold text-[#475569] transition hover:border-primary hover:text-primary">
             ↓ CSV
           </button>
         )}
@@ -223,7 +223,7 @@ export default function AnalyticsPage() {
                     const wr = Math.round(r.winRate);
                     const cls = wr >= 20 ? "bg-green-50 text-green-700" : wr >= 1 ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700";
                     return (
-                      <tr key={`rep-${r.name}-${index}`} className="border-t border-[#f1f5f9]">
+                      <tr key={`rep-${r.name}-${index}`} className="border-t border-gray-50">
                         <td className="py-2 font-medium text-[#334155]">{r.name}</td>
                         <td className="py-2 text-center text-[#475569]">{r.deals}</td>
                         <td className="py-2 text-center text-[#475569]">{r.won}</td>
@@ -311,7 +311,7 @@ export default function AnalyticsPage() {
               const topColor = isLast ? "#ef4444" : medalBorder[i] ?? "#e8ece9";
               const badge = isLast ? "🔴" : medals[i] ?? `#${i + 1}`;
               return (
-                <div key={r.label} className="min-w-[160px] flex-1 rounded-xl border border-[#e8ece9] bg-white p-4 shadow-sm" style={{ borderTop: `4px solid ${topColor}` }}>
+                <div key={r.label} className="min-w-[160px] flex-1 rounded-xl border border-gray-100 bg-white p-4 shadow-sm" style={{ borderTop: `4px solid ${topColor}` }}>
                   <div className="mb-1 flex items-center justify-between"><span className="text-lg">{badge}</span><span className="text-xs font-medium text-[#94a3b8]">#{i + 1}</span></div>
                   <p className="font-bold text-[#1e1b4b]">{r.label}</p>
                   <p className="mt-1 text-sm text-[#475569]">Junk: {Math.round(r.junkRate * 100)}%</p>

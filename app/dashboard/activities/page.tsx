@@ -141,7 +141,7 @@ export default function ActivitiesPage() {
                   const ic = iconFor(a.activity_types?.label);
                   const name = a.entity_id ? leadNames[a.entity_id] : undefined;
                   return (
-                    <div key={a.id} className="flex gap-3 border-b border-[#f1f5f9] px-2 py-3 last:border-0">
+                    <div key={a.id} className="flex gap-3 border-b border-gray-50 px-2 py-3 last:border-0">
                       <span className="mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full text-sm" style={{ backgroundColor: `${ic.c}1a` }}>{ic.g}</span>
                       <div className="min-w-0 flex-1">
                         <div className="mb-0.5 flex flex-wrap items-center gap-2">

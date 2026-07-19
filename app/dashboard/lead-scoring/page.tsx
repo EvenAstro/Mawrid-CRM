@@ -116,7 +116,7 @@ export default function LeadScoringPage() {
       </div>
 
       {/* Form card */}
-      <div className="mx-auto max-w-[580px] rounded-2xl border border-[#e8ece9] bg-white p-8 shadow-sm">
+      <div className="mx-auto max-w-[580px] rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
         <h2 className="text-lg font-bold text-[#1e1b4b]">Lead Details</h2>
         <p className="mb-6 text-[15px] text-[#94a3b8]">
           Fill in what you know about this lead
@@ -131,7 +131,7 @@ export default function LeadScoringPage() {
             <select
               value={source}
               onChange={(e) => setSource(e.target.value)}
-              className="h-12 w-full rounded-xl border border-[#e8ece9] bg-white px-4 text-[15px] text-[#475569] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/10"
+              className="h-12 w-full rounded-xl border border-gray-100 bg-white px-4 text-[15px] text-[#475569] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/10"
             >
               {SOURCES.map((s) => (
                 <option key={s} value={s}>
@@ -281,7 +281,7 @@ function ToggleRow({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-[#e8ece9] bg-[#f8fafc] p-3">
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-gray-100 bg-gray-25 p-3">
       <div>
         <p className="text-[15px] font-semibold text-[#475569]">{title}</p>
         <p className="text-[13px] text-[#94a3b8]">{sub}</p>

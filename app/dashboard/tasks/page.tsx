@@ -171,12 +171,12 @@ export default function TasksPage() {
             <>
               {groups.overdue.length > 0 && (
                 <section>
-                  <h2 className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-red-700">Overdue · {groups.overdue.length}</h2>
+                  <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-red-50 text-red-500">Overdue · {groups.overdue.length}</h2>
                   <div className="flex flex-col gap-2">{groups.overdue.map((t) => <TaskRow key={t.id} t={t} tone="border-red-300" />)}</div>
                 </section>
               )}
               <section>
-                <h2 className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-primary">Today · {groups.todayT.length}</h2>
+                <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-teal-50 text-teal-700">Today · {groups.todayT.length}</h2>
                 {groups.todayT.length === 0 ? (
                   <p className="rounded-xl border border-dashed border-border-light py-5 text-center text-[15px] text-muted">🎉 All clear for today!</p>
                 ) : (
@@ -185,13 +185,13 @@ export default function TasksPage() {
               </section>
               {groups.week.length > 0 && (
                 <section>
-                  <h2 className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-ink-secondary">This Week · {groups.week.length}</h2>
+                  <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-gray-50 text-gray-600">This Week · {groups.week.length}</h2>
                   <div className="flex flex-col gap-2">{groups.week.map((t) => <TaskRow key={t.id} t={t} tone="border-border-light" />)}</div>
                 </section>
               )}
               {groups.upcoming.length > 0 && (
                 <section>
-                  <h2 className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-muted">Upcoming · {groups.upcoming.length}</h2>
+                  <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-gray-50 text-gray-500">Upcoming · {groups.upcoming.length}</h2>
                   <div className="flex flex-col gap-2">{groups.upcoming.map((t) => <TaskRow key={t.id} t={t} tone="border-border-light" />)}</div>
                 </section>
               )}
@@ -221,7 +221,7 @@ export default function TasksPage() {
               const hasTasks = taskDays.has(dateStr);
               const isSel = dayFilter === dateStr;
               return (
-                <button key={day} onClick={() => setDayFilter(isSel ? null : dateStr)} className={`flex h-9 flex-col items-center justify-center rounded-lg text-[13px] transition ${isSel ? "bg-primary text-white" : isToday ? "bg-primary/10 font-bold text-primary" : hasTasks ? "font-semibold text-primary hover:bg-mint" : "text-ink-secondary hover:bg-[#f8fafc]"}`}>
+                <button key={day} onClick={() => setDayFilter(isSel ? null : dateStr)} className={`flex h-9 flex-col items-center justify-center rounded-lg text-[13px] transition ${isSel ? "bg-primary text-white" : isToday ? "bg-primary/10 font-bold text-primary" : hasTasks ? "font-semibold text-primary hover:bg-mint" : "text-ink-secondary hover:bg-gray-25"}`}>
                   {day}
                   {hasTasks && !isSel && !isToday && <span className="h-1 w-1 rounded-full bg-primary" />}
                 </button>

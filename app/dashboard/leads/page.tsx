@@ -77,7 +77,7 @@ function StatCard({
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-3 rounded-full border bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-[#1a5c4f] ${active ? "border-[#1a5c4f] ring-2 ring-[#1a5c4f]/15" : "border-[#e8ece9]"}`}
+      className={`flex items-center gap-3 rounded-full border bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-[#1a5c4f] ${active ? "border-[#1a5c4f] ring-2 ring-[#1a5c4f]/15" : "border-gray-100"}`}
     >
       <span className={`flex h-9 w-9 flex-none items-center justify-center rounded-full text-base ${tint}`}>
         {emoji}
@@ -218,7 +218,7 @@ export default function LeadsPage() {
       </div>
 
       {/* Search & filter bar */}
-      <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-[#e8ece9] bg-white p-4 shadow-sm sm:flex-row">
+      <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:flex-row">
         <div className="relative flex-1">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]">
             <SearchIcon />
@@ -228,14 +228,14 @@ export default function LeadsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, phone or email…"
-            className="h-11 w-full rounded-xl border border-[#e8ece9] bg-white pl-10 pr-4 text-[15px] text-[#334155] placeholder:text-[#94a3b8]"
+            className="h-11 w-full rounded-xl border border-gray-100 bg-white pl-10 pr-4 text-[15px] text-[#334155] placeholder:text-[#94a3b8]"
           />
         </div>
 
         <select
           value={stageFilter}
           onChange={(e) => setStageFilter(e.target.value)}
-          className="h-11 rounded-xl border border-[#e8ece9] bg-white px-3 text-[15px] text-[#334155] focus:border-[#1a5c4f] focus:outline-none"
+          className="h-11 rounded-xl border border-gray-100 bg-white px-3 text-[15px] text-[#334155] focus:border-[#1a5c4f] focus:outline-none"
         >
           <option value="all">All Stages</option>
           {stageOptions.map((s) => (
@@ -248,7 +248,7 @@ export default function LeadsPage() {
         <select
           value={sourceFilter}
           onChange={(e) => setSourceFilter(e.target.value)}
-          className="h-11 rounded-xl border border-[#e8ece9] bg-white px-3 text-[15px] text-[#334155] focus:border-[#1a5c4f] focus:outline-none"
+          className="h-11 rounded-xl border border-gray-100 bg-white px-3 text-[15px] text-[#334155] focus:border-[#1a5c4f] focus:outline-none"
         >
           <option value="all">All Sources</option>
           {sourceOptions.map((s) => (
@@ -260,18 +260,18 @@ export default function LeadsPage() {
 
         <button
           onClick={() => setNewLeadOpen(true)}
-          className="h-11 flex-none rounded-xl bg-[#1a5c4f] px-4 text-[15px] font-semibold text-white shadow-sm shadow-[#1a5c4f]/25 hover:bg-[#15503f]"
+          className="h-11 flex-none rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] px-6 text-[15px] font-semibold text-white shadow-[0_2px_8px_rgba(26,92,79,0.2)] transition-all hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(26,92,79,0.28)]"
         >
           + Add Lead
         </button>
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-[#e8ece9] bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[880px] border-collapse text-left">
             <thead>
-              <tr className="border-b border-[#e8ece9] bg-[#f8fafc] text-[12px] font-semibold uppercase tracking-wider text-[#94a3b8]">
+              <tr className="border-b border-gray-100 bg-gray-25 text-[12px] font-semibold uppercase tracking-wider text-[#94a3b8]">
                 <th className="px-6 py-3">Name</th>
                 <th className="px-6 py-3">Source</th>
                 <th className="px-6 py-3">Stage</th>
@@ -329,7 +329,7 @@ export default function LeadsPage() {
                     <tr
                       key={lead.id}
                       onClick={() => setSelectedLead(lead)}
-                      className={`cursor-pointer border-b border-[#f1f5f9] transition-colors last:border-0 hover:bg-[#f0faf8] ${isJunk ? "opacity-60" : ""}`}
+                      className={`cursor-pointer border-b border-gray-50 transition-colors duration-100 last:border-0 hover:bg-teal-50 ${isJunk ? "opacity-50 grayscale-[20%]" : ""}`}
                     >
                       {/* Name */}
                       <td className="px-6 py-3.5">
@@ -351,7 +351,7 @@ export default function LeadsPage() {
                       {/* Source */}
                       <td className="px-6 py-3.5">
                         {lead.sources?.label ? (
-                          <span className="rounded-full bg-[#f1f5f9] px-2 py-0.5 text-[13px] text-[#334155]">
+                          <span className="rounded-full border border-teal-100 bg-teal-50 px-3 py-1 text-[11px] font-semibold text-teal-700">
                             {lead.sources.label}
                           </span>
                         ) : (
@@ -434,7 +434,7 @@ export default function LeadsPage() {
 
         {/* Pagination */}
         {!loading && filtered.length > 0 && (
-          <div className="flex items-center justify-between border-t border-[#e8ece9] px-6 py-4">
+          <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4">
             <p className="text-[13px] text-[#94a3b8]">
               Showing{" "}
               <span className="font-semibold text-[#334155]">
@@ -450,7 +450,7 @@ export default function LeadsPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="rounded-lg border border-[#e8ece9] px-3 py-1.5 text-[13px] font-semibold text-[#334155] transition hover:bg-[#f8fafc] disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-lg border border-gray-100 px-3 py-1.5 text-[13px] font-semibold text-[#334155] transition hover:bg-gray-25 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Previous
               </button>
@@ -460,7 +460,7 @@ export default function LeadsPage() {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="rounded-lg border border-[#e8ece9] px-3 py-1.5 text-[13px] font-semibold text-[#334155] transition hover:bg-[#f8fafc] disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-lg border border-gray-100 px-3 py-1.5 text-[13px] font-semibold text-[#334155] transition hover:bg-gray-25 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Next
               </button>

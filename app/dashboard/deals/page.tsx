@@ -163,7 +163,7 @@ export default function DealsPage() {
                     <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: accent }} />
                     {stage.label}
                   </span>
-                  <span className="rounded-full bg-white px-2 py-0.5 text-[13px] font-semibold text-ink-secondary">{colDeals.length}</span>
+                  <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ backgroundColor: `${accent}1a`, color: accent }}>{colDeals.length}</span>
                 </div>
 
                 <button onClick={() => setAddStage(stage.id)} className="mb-2 hidden rounded-lg border border-dashed border-primary/30 py-1.5 text-[13px] font-semibold text-primary transition hover:bg-white group-hover/col:block">
@@ -181,18 +181,17 @@ export default function DealsPage() {
                         onDragStart={() => setDragId(d.id)}
                         onDragEnd={() => setDragId(null)}
                         onClick={() => setSelected(d)}
-                        className={`cursor-grab rounded-xl border border-border-light bg-white p-4 shadow-sm transition-all hover:shadow-md active:cursor-grabbing ${dragId === d.id ? "opacity-50" : ""}`}
-                        style={{ borderLeft: `3px solid ${accent}` }}
+                        className={`cursor-grab rounded-xl border border-l-[3px] border-gray-100 border-l-transparent bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-l-teal-700 hover:shadow-[0_4px_16px_rgba(26,92,79,0.1)] active:cursor-grabbing ${dragId === d.id ? "opacity-50" : ""}`}
                       >
-                        <p dir="auto" className="truncate text-[15px] font-semibold text-ink">{d.name || "Untitled deal"}</p>
-                        <div className="mt-2 flex items-center justify-between">
-                          <span className="text-[15px] font-bold text-primary">{dealValue(d)}</span>
+                        <p dir="auto" className="truncate text-[15px] font-semibold text-gray-900">{d.name || "Untitled deal"}</p>
+                        <div className="mt-1 flex items-center justify-between">
+                          <span className="text-[16px] font-bold text-gray-900">{dealValue(d)}</span>
                           {d.probability_pct != null && d.probability_pct > 0 && (
-                            <span className="rounded-full bg-mint px-2 py-0.5 text-[11px] font-bold text-primary">AI {d.probability_pct}%</span>
+                            <span className="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700">AI {d.probability_pct}%</span>
                           )}
                         </div>
-                        <div className="mt-2 flex items-center justify-between text-[12px] text-muted">
-                          <span>{d.target_close_date ? formatDate(d.target_close_date) : "No close date"}</span>
+                        <div className="mt-3 flex items-center justify-between text-[12px] text-gray-400">
+                          <span>{d.target_close_date ? formatDate(d.target_close_date) : "—"}</span>
                           {d.pipeline_stages?.terminal_type === "lost" && d.lost_reasons?.label && (
                             <span className="rounded bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-700">{d.lost_reasons.label}</span>
                           )}

@@ -106,7 +106,7 @@ export default function ContactsPage() {
                 <p className="truncate">📞 {c.phone || "—"}</p>
                 <p className="truncate">✉️ {c.email || "—"}</p>
               </div>
-              <div className="mt-4 flex items-center justify-between border-t border-[#f1f5f9] pt-3">
+              <div className="mt-4 flex items-center justify-between border-t border-gray-50 pt-3">
                 <span className="text-[12px] text-muted">{formatDate(c.created_at)}</span>
                 <button onClick={() => setSelected(c)} className="rounded-full border border-primary/30 px-3 py-1 text-[13px] font-semibold text-primary transition hover:bg-mint">Profile</button>
               </div>

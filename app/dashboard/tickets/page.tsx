@@ -149,7 +149,7 @@ export default function TicketsPage() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-left">
             <thead>
-              <tr className="border-b border-border-light bg-[#f8fafc] text-[12px] font-semibold uppercase tracking-wider text-muted">
+              <tr className="border-b border-border-light bg-gray-25 text-[12px] font-semibold uppercase tracking-wider text-muted">
                 <th className="px-6 py-3">Title</th>
                 <th className="px-6 py-3">Type</th>
                 <th className="px-6 py-3">Priority</th>
@@ -167,7 +167,7 @@ export default function TicketsPage() {
                 <tr><td colSpan={6} className="px-6 py-10"><EmptyState icon="🎫" title="No tickets found" subtitle="Create your first ticket." action={<Button onClick={() => setNewOpen(true)}>+ New Ticket</Button>} /></td></tr>
               ) : (
                 filtered.map((t) => (
-                  <tr key={t.id} onClick={() => setSelected(t)} className="cursor-pointer border-b border-[#f1f5f9] transition-colors last:border-0 hover:bg-mint">
+                  <tr key={t.id} onClick={() => setSelected(t)} className="cursor-pointer border-b border-gray-50 transition-colors last:border-0 hover:bg-mint">
                     <td className="max-w-[320px] px-6 py-3.5"><p dir="auto" className="truncate text-[15px] font-semibold text-ink">{t.title || "Untitled"}</p></td>
                     <td className="px-6 py-3.5 text-[15px] text-ink-secondary">{titleize(t.type)}</td>
                     <td className="px-6 py-3.5"><span className={`rounded-full px-2.5 py-1 text-[13px] font-medium capitalize ${priorityStyle(t.priority)}`}>{t.priority || "—"}</span></td>

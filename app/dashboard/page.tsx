@@ -221,9 +221,9 @@ function Skeleton() {
   return (
     <div className="flex flex-col gap-6">
       <div className="h-9 w-64 animate-pulse rounded-lg bg-white" />
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <div key={i} className={`${box} h-36 border border-[#e8ece9]`} />)}</div>
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3"><div className={`${box} h-80 border border-[#e8ece9] lg:col-span-2`} /><div className={`${box} h-80 border border-[#e8ece9]`} /></div>
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className={`${box} h-64 border border-[#e8ece9]`} />)}</div>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <div key={i} className={`${box} h-36 border border-gray-100`} />)}</div>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3"><div className={`${box} h-80 border border-gray-100 lg:col-span-2`} /><div className={`${box} h-80 border border-gray-100`} /></div>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className={`${box} h-64 border border-gray-100`} />)}</div>
     </div>
   );
 }
@@ -426,10 +426,10 @@ export default function DashboardPage() {
               <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">Pipeline Activity</h3>
               <p className="mt-0.5 text-sm text-[#94a3b8]">Deal value · {m.seriesRange}</p>
             </div>
-            <span className="rounded-full border border-[#e8ece9] bg-[#f8fafc] px-3 py-1 text-xs text-[#94a3b8]">Last 7 days</span>
+            <span className="rounded-full border border-gray-100 bg-gray-25 px-3 py-1 text-xs text-[#94a3b8]">Last 7 days</span>
           </div>
           <PipelineChart points={m.series} />
-          <div className="mt-4 flex gap-8 border-t border-[#f1f5f9] pt-4">
+          <div className="mt-4 flex gap-8 border-t border-gray-50 pt-4">
             <div><p className="text-lg font-bold text-[#1e1b4b]">{m.total_deals}</p><p className="text-xs text-[#94a3b8]">Total Deals</p></div>
             <div><p className="text-lg font-bold text-green-600">{m.won}</p><p className="text-xs text-[#94a3b8]">Won</p></div>
             <div><p className="text-lg font-bold text-red-600">{m.lost}</p><p className="text-xs text-[#94a3b8]">Lost</p></div>
@@ -440,7 +440,7 @@ export default function DashboardPage() {
           <h3 className="mb-1 text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">Today</h3>
           <p className="text-4xl font-black tabular-nums text-[#1a5c4f]">{now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>
           <p className="mb-4 text-sm text-[#94a3b8]">{longDate(now)}</p>
-          <div className="flex-1 border-t border-[#f1f5f9] pt-4">
+          <div className="flex-1 border-t border-gray-50 pt-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#94a3b8]">Upcoming Tasks</p>
             {tasks.length === 0 ? (
               <p className="py-6 text-center text-sm text-[#94a3b8]">🎉 All clear for today!</p>
@@ -448,13 +448,13 @@ export default function DashboardPage() {
               tasks.map((t) => {
                 const done = completing.has(t.id);
                 return (
-                  <div key={t.id} className="flex items-center gap-3 border-b border-[#f1f5f9] py-2.5 last:border-0">
+                  <div key={t.id} className="flex items-center gap-3 border-b border-gray-50 py-2.5 last:border-0">
                     <button
                       type="button"
                       onClick={() => completeTask(t)}
                       aria-label="Mark task complete"
                       className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-                        done ? "border-[#1a5c4f] bg-[#1a5c4f] text-white" : "border-[#e8ece9] hover:border-[#1a5c4f]"
+                        done ? "border-[#1a5c4f] bg-[#1a5c4f] text-white" : "border-gray-100 hover:border-[#1a5c4f]"
                       }`}
                     >
                       {done && (
@@ -492,7 +492,7 @@ export default function DashboardPage() {
             m.recentLeads.map((l) => {
               const score = getAIScore(l);
               return (
-                <Link key={l.id} href={`/dashboard/leads?open=${l.id}`} className="flex items-center gap-3 border-b border-[#f1f5f9] py-2.5 transition-colors last:border-0 hover:bg-[#f0faf8]">
+                <Link key={l.id} href={`/dashboard/leads?open=${l.id}`} className="flex items-center gap-3 border-b border-gray-50 py-2.5 transition-colors last:border-0 hover:bg-[#f0faf8]">
                   <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#1a5c4f]">
                     <span className="text-xs font-bold text-white">{initials(l.full_name)}</span>
                   </div>
@@ -549,7 +549,7 @@ export default function DashboardPage() {
         <div className={CARD}>
           <h3 className="mb-4 text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">Sales Overview</h3>
           {overview.map((o) => (
-            <div key={o.label} className="flex items-center justify-between border-b border-[#f1f5f9] py-2.5 last:border-0">
+            <div key={o.label} className="flex items-center justify-between border-b border-gray-50 py-2.5 last:border-0">
               <div className="flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: o.dot }} />
                 <span className="text-sm text-[#334155]">{o.label}</span>
@@ -557,7 +557,7 @@ export default function DashboardPage() {
               <span className={`rounded-md px-2 py-0.5 text-sm font-bold ${o.badge}`}>{o.value}</span>
             </div>
           ))}
-          <div className="mt-4 border-t border-[#f1f5f9] pt-4">
+          <div className="mt-4 border-t border-gray-50 pt-4">
             <div className="mb-2 flex justify-between text-xs text-[#94a3b8]">
               <span>Win Rate</span>
               <span className="font-semibold text-[#334155]">{m.win_rate.toFixed(1)}%</span>
