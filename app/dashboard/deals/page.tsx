@@ -197,12 +197,12 @@ export default function DealsPage() {
                             onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/deals/${d.id}/investigation`); }}
                             title="فتح تقرير التحقيق"
                             aria-label="فتح تقرير التحقيق"
-                            className="absolute left-2.5 top-2.5 rounded-md p-1 text-[13px] text-gray-300 transition-colors hover:bg-red-50 hover:text-red-600"
+                            className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-sm transition-all duration-150 hover:border-red-200 hover:bg-red-50 hover:text-red-500"
                           >
-                            🔍
+                            <SearchIcon className="h-3.5 w-3.5" />
                           </button>
                         )}
-                        <p dir="auto" className="truncate text-[15px] font-semibold text-gray-900">{d.name || "Untitled deal"}</p>
+                        <p dir="auto" className={`truncate text-[15px] font-semibold text-gray-900 ${stage.terminal_type === "lost" ? "pr-8" : ""}`}>{d.name || "Untitled deal"}</p>
                         <div className="mt-1 flex items-center justify-between">
                           <span className="text-[16px] font-bold text-gray-900">{dealValue(d)}</span>
                           {d.probability_pct != null && d.probability_pct > 0 && (

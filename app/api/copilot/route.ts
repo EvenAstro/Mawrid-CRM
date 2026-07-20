@@ -90,10 +90,10 @@ function isChatMessage(v: unknown): v is ChatMessage {
 export async function GET() {
   try {
     const snap = await buildSnapshot();
-    return NextResponse.json({ stuckCount: snap.stuckCount, upcomingCount: snap.upcomingCount });
+    return NextResponse.json({ stuckCount: snap.stuckCount, upcomingCount: snap.upcomingCount, stats: snap.stats });
   } catch (err) {
     console.error("[copilot] summary failed", err);
-    return NextResponse.json({ stuckCount: 0, upcomingCount: 0 });
+    return NextResponse.json({ stuckCount: 0, upcomingCount: 0, stats: null });
   }
 }
 

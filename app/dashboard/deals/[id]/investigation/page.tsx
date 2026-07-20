@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { money } from "@/lib/format";
 import type {
@@ -15,7 +15,6 @@ const C = {
   surface: "#111714",
   border: "#1E2821",
   red: "#DC2626",
-  redDim: "#7F1D1D",
   amber: "#D97706",
   green: "#16A34A",
   teal: "#0D9488",
@@ -34,7 +33,6 @@ const SEVERITY: Record<
   minor: { label: "MINOR", color: C.muted, bg: "rgba(75,94,84,0.15)" },
 };
 
-// ── Formatting helpers (monospace-friendly, en-CA gives ISO-ish dates) ──────
 function fmtStamp(iso: string | null | undefined): string {
   if (!iso) return "——";
   const d = new Date(iso);
@@ -48,16 +46,13 @@ function fmtDay(iso: string | null | undefined): string {
   return d.toLocaleDateString("en-CA");
 }
 
-// ── Injects the JetBrains Mono stylesheet into <head>, only while mounted ────
 function useJetBrainsMono() {
   useEffect(() => {
-    const href =
-      "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap";
+    const href = "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap";
     if (document.querySelector(`link[href="${href}"]`)) return;
     const link = document.createElement("link");
     link.rel = "stylesheet";
     link.href = href;
-    link.dataset.invFont = "1";
     document.head.appendChild(link);
     return () => {
       link.remove();
@@ -68,13 +63,38 @@ function useJetBrainsMono() {
 const STYLE = `
 @keyframes inv-scan { 0% { transform: translateY(-20vh); } 100% { transform: translateY(120vh); } }
 @keyframes inv-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.55); }
-  50% { box-shadow: 0 0 0 7px rgba(220,38,38,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.6); }
+  50% { box-shadow: 0 0 0 6px rgba(220,38,38,0); }
 }
 @keyframes inv-dots { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
-.inv-fade { animation: inv-fade-in 0.5s ease both; }
-@keyframes inv-fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes inv-fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
 `;
+
+// ── Scroll-reveal wrapper (IntersectionObserver, CSS-only animation) ─────────
+function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShown(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.12 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div ref={ref} style={{ opacity: shown ? undefined : 0, animation: shown ? `inv-fadeUp 0.6s ${delay}s both` : undefined }}>
+      {children}
+    </div>
+  );
+}
 
 export default function InvestigationPage() {
   const params = useParams<{ id: string }>();
@@ -122,23 +142,20 @@ export default function InvestigationPage() {
       style={{ background: C.bg, color: C.white, fontFamily: MONO }}
     >
       <style>{STYLE}</style>
-
       {loading ? (
         <LoadingState />
       ) : notFound || !payload ? (
         <ErrorScreen onBack={() => router.push("/dashboard/deals")} />
       ) : (
-        <Report payload={payload} onBack={() => router.push("/dashboard/deals")} />
+        <Report payload={payload} onBack={() => router.push("/dashboard/deals")} onRetry={load} />
       )}
     </div>
   );
 }
 
-// ── Loading: scanning line + monospace status ───────────────────────────────
 function LoadingState() {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden">
-      {/* horizontal scanning beam */}
       <div
         className="pointer-events-none absolute inset-x-0 h-24"
         style={{
@@ -147,19 +164,11 @@ function LoadingState() {
         }}
       />
       <div className="relative z-10 text-center">
-        <p className="text-[13px] tracking-[0.2em]" style={{ color: C.teal }}>
-          [ SECURE ANALYSIS ]
-        </p>
-        <p className="mt-3 text-[16px]" style={{ color: C.white }}>
-          جاري تحليل ملف الصفقة...
-        </p>
+        <p className="text-[13px] tracking-[0.2em]" style={{ color: C.teal }}>[ SECURE ANALYSIS ]</p>
+        <p className="mt-3 text-[16px]" style={{ color: C.white }}>جاري تحليل ملف الصفقة...</p>
         <div className="mt-4 flex items-center justify-center gap-1.5">
           {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              className="h-2 w-2 rounded-full"
-              style={{ background: C.teal, animation: `inv-dots 1.2s ${i * 0.2}s ease-in-out infinite` }}
-            />
+            <span key={i} className="h-2 w-2 rounded-full" style={{ background: C.teal, animation: `inv-dots 1.2s ${i * 0.2}s ease-in-out infinite` }} />
           ))}
         </div>
       </div>
@@ -171,14 +180,8 @@ function ErrorScreen({ onBack }: { onBack: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="text-center">
-        <p className="text-[15px]" style={{ color: C.amber }}>
-          تعذّر تحميل ملف التحقيق
-        </p>
-        <button
-          onClick={onBack}
-          className="mt-4 rounded-md px-4 py-2 text-[13px] font-semibold"
-          style={{ border: `1px solid ${C.border}`, color: C.white }}
-        >
+        <p className="text-[15px]" style={{ color: C.amber }}>تعذّر تحميل ملف التحقيق</p>
+        <button onClick={onBack} className="mt-4 rounded-md px-4 py-2 text-[13px] font-semibold" style={{ border: `1px solid ${C.border}`, color: C.white }}>
           ← العودة للصفقات
         </button>
       </div>
@@ -186,165 +189,171 @@ function ErrorScreen({ onBack }: { onBack: () => void }) {
   );
 }
 
-// ── The report ──────────────────────────────────────────────────────────────
-function Report({ payload, onBack }: { payload: InvestigationPayload; onBack: () => void }) {
-  const { deal, activities, turningPoint, breakdown, costAnalysis, report, aiFailed } = payload;
+// ── Hero header ──────────────────────────────────────────────────────────────
+function Hero({ deal, onBack }: { deal: InvestigationPayload["deal"]; onBack: () => void }) {
   const shortId = deal.id.slice(0, 8).toUpperCase();
+  return (
+    <header className="relative overflow-hidden" style={{ minHeight: 200, background: C.bg, borderBottom: `1px solid ${C.border}` }}>
+      {/* Watermark */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute select-none"
+        style={{
+          fontFamily: "Cairo, sans-serif",
+          fontSize: 200,
+          fontWeight: 800,
+          color: C.red,
+          opacity: 0.06,
+          transform: "rotate(-12deg)",
+          right: -20,
+          top: -20,
+          zIndex: 0,
+          lineHeight: 1,
+          whiteSpace: "nowrap",
+        }}
+      >
+        خسارة
+      </span>
+
+      {/* CLASSIFIED stamp — top-left */}
+      <div
+        className="absolute select-none"
+        style={{
+          left: 24,
+          top: 24,
+          border: `2px solid ${C.stampRed}`,
+          color: C.stampRed,
+          fontFamily: MONO,
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: "0.3em",
+          padding: "4px 12px",
+          transform: "rotate(-8deg)",
+          opacity: 0.7,
+        }}
+      >
+        CLASSIFIED
+      </div>
+
+      {/* Back — top-right */}
+      <button
+        onClick={onBack}
+        className="absolute text-[13px] transition-opacity hover:opacity-70"
+        style={{ right: 24, top: 26, color: C.teal }}
+      >
+        ← العودة للصفقات
+      </button>
+
+      {/* Centered content */}
+      <div className="relative z-[1] flex flex-col items-center justify-center px-6 py-12 text-center" style={{ minHeight: 200 }}>
+        <h1 className="flex items-center gap-2.5 leading-tight" style={{ fontFamily: "Cairo, sans-serif", fontWeight: 800, fontSize: 32, color: C.white }}>
+          <span>🔍</span> تقرير التحقيق
+        </h1>
+        <p className="mt-2" style={{ fontFamily: "Cairo, sans-serif", fontWeight: 700, fontSize: 22, color: C.red }}>
+          {deal.name || "صفقة بدون اسم"}
+        </p>
+        <p className="mt-2" dir="ltr" style={{ fontFamily: MONO, fontSize: 13, color: C.muted }}>
+          {deal.currency} {deal.valueSAR != null ? money(deal.valueSAR) : "——"} · {deal.stageLabel} · {fmtDay(deal.lostAt)}
+        </p>
+        <p className="mt-1.5" dir="ltr" style={{ fontFamily: MONO, fontSize: 11, color: "#33443C" }}>
+          ID: {shortId} · وقت التحليل: {fmtStamp(new Date().toISOString())}
+        </p>
+      </div>
+    </header>
+  );
+}
+
+// ── The report ──────────────────────────────────────────────────────────────
+function Report({
+  payload,
+  onBack,
+  onRetry,
+}: {
+  payload: InvestigationPayload;
+  onBack: () => void;
+  onRetry: () => void;
+}) {
+  const { deal, activities, turningPoint, breakdown, costAnalysis, report, aiFailed } = payload;
+  let step = 0;
+  const nextDelay = () => 0.05 + step++ * 0.08;
 
   return (
     <div className="relative min-h-screen">
-      {/* Watermark — the one bold risk */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center select-none overflow-hidden"
-      >
-        <span
-          style={{
-            fontFamily: "Cairo, sans-serif",
-            fontSize: "min(28vw, 340px)",
-            fontWeight: 800,
-            color: C.red,
-            opacity: 0.04,
-            transform: "rotate(-15deg)",
-            lineHeight: 1,
-            whiteSpace: "nowrap",
-          }}
-        >
-          خسارة
-        </span>
-      </div>
+      <Hero deal={deal} onBack={onBack} />
 
       <div className="relative z-10 mx-auto max-w-[920px] px-6 py-8 sm:px-10">
-        {/* Back */}
-        <button
-          onClick={onBack}
-          className="mb-6 text-[13px] transition-opacity hover:opacity-70"
-          style={{ color: C.muted }}
-        >
-          ← العودة للصفقات
-        </button>
-
-        {/* Header */}
-        <header className="inv-fade relative border-b pb-6" style={{ borderColor: C.border }}>
-          {/* CLASSIFIED stamp */}
-          <div
-            className="absolute -top-2 left-0 select-none rounded-sm px-2.5 py-1 text-[11px] font-bold tracking-[0.2em]"
-            style={{
-              color: C.stampRed,
-              border: `1.5px solid ${C.stampRed}`,
-              opacity: 0.6,
-              transform: "rotate(-8deg)",
-            }}
-          >
-            CLASSIFIED
-          </div>
-
-          <div className="flex items-start justify-between gap-4">
-            <div className="pt-2">
-              <h1
-                className="flex items-center gap-2 text-[28px] font-extrabold leading-tight"
-                style={{ fontFamily: "Cairo, sans-serif", color: C.white }}
-              >
-                <span>🔍</span> تقرير التحقيق
-              </h1>
-            </div>
-            {/* خسارة stamp */}
-            <div
-              className="mt-1 select-none rounded-md px-4 py-1.5 text-[16px] font-extrabold"
-              style={{
-                fontFamily: "Cairo, sans-serif",
-                color: C.red,
-                border: `2px solid ${C.red}`,
-                background: "rgba(220,38,38,0.08)",
-                transform: "rotate(3deg)",
-              }}
-            >
-              خسارة
-            </div>
-          </div>
-
-          <p className="mt-3 text-[16px]" style={{ fontFamily: "Cairo, sans-serif", color: C.white }}>
-            <span className="font-bold">{deal.name || "صفقة بدون اسم"}</span>
-            <span style={{ color: C.muted }}> · </span>
-            <span style={{ color: C.teal }}>
-              {deal.currency} {deal.valueSAR != null ? money(deal.valueSAR) : "——"}
-            </span>
-            <span style={{ color: C.muted }}> · </span>
-            <span style={{ color: C.muted }}>{deal.stageLabel}</span>
-          </p>
-
-          <div className="mt-4 grid gap-1 text-[12px]" style={{ color: C.muted }}>
-            <div className="flex flex-wrap gap-x-6 gap-y-1" dir="ltr" style={{ justifyContent: "flex-end" }}>
-              <span>ID: {shortId}</span>
-              <span>تاريخ الخسارة: {fmtDay(deal.lostAt)}</span>
-              <span>المدة: {deal.durationDays ?? "——"} يوم</span>
-            </div>
-            <div dir="ltr" style={{ textAlign: "right" }}>
-              وقت التحليل: {fmtStamp(new Date().toISOString())}
-            </div>
-          </div>
-        </header>
-
         {aiFailed && (
-          <div
-            className="inv-fade mt-6 rounded-md px-4 py-3 text-[13px]"
-            style={{ border: `1px solid ${C.amber}`, background: "rgba(217,119,6,0.08)", color: C.amber }}
-          >
-            التحليل الآلي غير متاح — عرض البيانات الخام
-          </div>
-        )}
-
-        {/* [1] Executive summary */}
-        {report && (
-          <Section n="1" title="الملخص التنفيذي">
-            <div
-              className="inv-fade rounded-lg py-4 pr-5 pl-4 text-[15px] leading-relaxed"
-              style={{
-                background: C.surface,
-                borderRight: `4px solid ${C.red}`,
-                fontFamily: "Cairo, sans-serif",
-                color: C.white,
-              }}
-            >
-              {report.executive_summary}
+          <Reveal delay={nextDelay()}>
+            <div className="rounded-xl py-4 pr-5 pl-4" style={{ background: C.surface, borderRight: `3px solid ${C.amber}` }}>
+              <p className="flex items-center gap-2 text-[15px] font-bold" style={{ fontFamily: "Cairo, sans-serif", color: C.amber }}>
+                ⚠️ التحليل الآلي غير متاح مؤقتاً
+              </p>
+              <p className="mt-1 text-[13px]" style={{ fontFamily: "Cairo, sans-serif", color: C.muted }}>
+                يمكنك مراجعة التسلسل الزمني أدناه يدوياً.
+              </p>
+              <button
+                onClick={onRetry}
+                className="mt-3 rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors hover:bg-white/5"
+                style={{ border: `1px solid ${C.border}`, color: C.amber }}
+              >
+                إعادة المحاولة
+              </button>
             </div>
-          </Section>
+          </Reveal>
         )}
 
-        {/* [2] Timeline */}
-        <Section n="2" title="التسلسل الزمني للأحداث">
-          <Timeline activities={activities} lostAt={deal.lostAt} daysBeforeLoss={turningPoint.daysBeforeLoss} />
-        </Section>
+        {report && (
+          <Reveal delay={nextDelay()}>
+            <Section n="1" title="الملخص التنفيذي">
+              <div
+                className="rounded-lg py-4 pr-5 pl-4 text-[15px] leading-relaxed"
+                style={{ background: C.surface, borderRight: `4px solid ${C.red}`, fontFamily: "Cairo, sans-serif", color: C.white }}
+              >
+                {report.executive_summary}
+              </div>
+            </Section>
+          </Reveal>
+        )}
 
-        {/* [3] Root causes */}
+        <Reveal delay={nextDelay()}>
+          <Section n="2" title="التسلسل الزمني للأحداث">
+            <Timeline activities={activities} lostAt={deal.lostAt} daysBeforeLoss={turningPoint.daysBeforeLoss} />
+          </Section>
+        </Reveal>
+
         {report && report.root_causes.length > 0 && (
-          <Section n="3" title="الأسباب الجذرية">
-            <div className="flex flex-col gap-3">
-              {report.root_causes.map((rc, i) => (
-                <RootCause key={i} rc={rc} />
-              ))}
-            </div>
-          </Section>
+          <Reveal delay={nextDelay()}>
+            <Section n="3" title="الأسباب الجذرية">
+              <div className="flex flex-col gap-3">
+                {report.root_causes.map((rc, i) => (
+                  <RootCause key={i} rc={rc} />
+                ))}
+              </div>
+            </Section>
+          </Reveal>
         )}
 
-        {/* [4] Comparison */}
         {report && (
-          <Section n="4" title="المقارنة بالصفقات المشابهة">
-            <Comparison report={report} breakdown={breakdown} />
-          </Section>
+          <Reveal delay={nextDelay()}>
+            <Section n="4" title="المقارنة بالصفقات المشابهة">
+              <Comparison report={report} breakdown={breakdown} />
+            </Section>
+          </Reveal>
         )}
 
-        {/* [5] Lesson */}
         {report && (
-          <Section n="5" title="الدرس المستفاد">
-            <Lesson lesson={report.lesson} />
-          </Section>
+          <Reveal delay={nextDelay()}>
+            <Section n="5" title="الدرس المستفاد">
+              <Lesson lesson={report.lesson} />
+            </Section>
+          </Reveal>
         )}
 
-        {/* [6] Cost analysis */}
-        <Section n="6" title="تحليل التكلفة">
-          <CostGrid cost={costAnalysis} />
-        </Section>
+        <Reveal delay={nextDelay()}>
+          <Section n="6" title="تحليل التكلفة">
+            <CostGrid cost={costAnalysis} />
+          </Section>
+        </Reveal>
 
         <div className="h-16" />
       </div>
@@ -354,15 +363,15 @@ function Report({ payload, onBack }: { payload: InvestigationPayload; onBack: ()
 
 function Section({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
   return (
-    <section className="inv-fade mt-9">
-      <div className="mb-3 flex items-center gap-2.5">
+    <section className="mt-9">
+      <div className="mb-4 flex items-center gap-3">
         <span
-          className="flex h-6 w-6 items-center justify-center rounded text-[12px] font-bold"
-          style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.teal }}
+          className="flex h-8 w-8 items-center justify-center rounded-full text-[14px] font-bold"
+          style={{ background: "rgba(13,148,136,0.12)", border: `1px solid ${C.teal}`, color: C.teal }}
         >
           {n}
         </span>
-        <h2 className="text-[17px] font-bold" style={{ fontFamily: "Cairo, sans-serif", color: C.white }}>
+        <h2 className="text-[19px] font-bold" style={{ fontFamily: "Cairo, sans-serif", color: C.white }}>
           {title}
         </h2>
       </div>
@@ -390,68 +399,49 @@ function Timeline({
   }
 
   return (
-    <div
-      className="relative rounded-lg p-5"
-      style={{ background: C.surface, border: `1px solid ${C.border}` }}
-    >
-      <div className="flex flex-col gap-0">
+    <div className="rounded-xl p-4" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+      <div className="flex flex-col">
         {activities.map((a) => {
           const inbound = a.direction === "inbound";
-          const accent = a.isTurningPoint ? C.red : inbound ? C.teal : C.muted;
+          const accent = a.isTurningPoint ? C.red : inbound ? C.teal : C.border;
           return (
             <div key={a.id}>
-              {/* days-without-action marker, shown just before the turning point */}
-              {a.isTurningPoint && daysBeforeLoss != null && (
-                <div className="mb-2 mt-1 text-center text-[12px]" style={{ color: C.amber }}>
-                  ⏱ {daysBeforeLoss} أيام بدون تصرف فعّال
-                </div>
+              {a.isTurningPoint && (
+                <p className="mb-1 mt-2 px-1 text-[11px] font-bold uppercase tracking-[0.15em]" style={{ fontFamily: MONO, color: C.red }}>
+                  🔴 نقطة التحول
+                </p>
               )}
               <div
-                className="relative flex gap-3 rounded-md py-2.5 pr-3"
-                style={
-                  a.isTurningPoint
-                    ? { background: "rgba(220,38,38,0.09)", borderRight: `4px solid ${C.red}` }
-                    : { borderRight: `2px solid ${accent}` }
-                }
+                className="flex gap-3"
+                style={{
+                  minHeight: 56,
+                  padding: "12px 16px",
+                  borderLeft: `3px solid ${accent}`,
+                  background: a.isTurningPoint ? "rgba(220,38,38,0.08)" : "transparent",
+                }}
               >
-                {/* dot */}
-                <span
-                  className="mt-1.5 h-2 w-2 flex-none rounded-full"
-                  style={
-                    a.isTurningPoint
-                      ? { background: C.red, animation: "inv-pulse 1.6s ease-in-out infinite" }
-                      : { background: accent }
-                  }
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                    <span className="text-[11px]" dir="ltr" style={{ color: C.muted }}>
+                <div className="flex-none" style={{ width: 132 }}>
+                  <div className="flex items-center gap-1.5">
+                    {a.isTurningPoint && (
+                      <span className="h-2 w-2 flex-none rounded-full" style={{ background: C.red, animation: "inv-pulse 2s infinite" }} />
+                    )}
+                    <span dir="ltr" style={{ fontFamily: MONO, fontSize: 12, color: C.muted }}>
                       {fmtStamp(a.occurred_at)}
                     </span>
-                    <span className="text-[11px] font-semibold" style={{ color: accent }}>
-                      {inbound ? "← العميل" : "← المندوب"}
-                    </span>
-                    {a.isTurningPoint && (
-                      <span className="text-[11px] font-bold" style={{ color: C.red }}>
-                        🔴 نقطة التحول
-                      </span>
-                    )}
-                    {a.situational_tag && !a.isTurningPoint && (
-                      <span
-                        className="rounded px-1.5 py-0.5 text-[10px]"
-                        style={{ background: "rgba(13,148,136,0.12)", color: C.teal }}
-                      >
-                        {a.situational_tag}
-                      </span>
-                    )}
                   </div>
-                  <p
-                    dir="auto"
-                    className="mt-1 text-[14px] leading-relaxed"
-                    style={{ fontFamily: "Cairo, sans-serif", color: a.isTurningPoint ? C.white : "#C6D2CB" }}
-                  >
+                  <div className="mt-1 text-[10px] font-semibold" style={{ color: inbound ? C.teal : C.muted }}>
+                    {inbound ? "← العميل" : "← المندوب"}
+                  </div>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p dir="auto" className="text-[14px] leading-relaxed" style={{ fontFamily: "Cairo, sans-serif", color: a.isTurningPoint ? C.white : "#C6D2CB" }}>
                     {a.body || "(بدون نص)"}
                   </p>
+                  {a.situational_tag && !a.isTurningPoint && (
+                    <span className="mt-1 inline-block rounded px-1.5 py-0.5 text-[10px]" style={{ background: "rgba(13,148,136,0.12)", color: C.teal }}>
+                      {a.situational_tag}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -460,14 +450,15 @@ function Timeline({
       </div>
 
       {/* Loss terminal marker */}
-      <div className="mt-4">
-        <div className="h-px w-full" style={{ background: C.red, opacity: 0.5 }} />
-        <div className="mt-2 flex items-center gap-2 text-[14px] font-bold" style={{ color: C.red }}>
-          <span>✕ خُسرت الصفقة</span>
-          <span className="text-[11px] font-normal" dir="ltr" style={{ color: C.muted }}>
-            {fmtStamp(lostAt)}
-          </span>
-        </div>
+      <div className="mt-4 pt-3" style={{ borderTop: `1px solid rgba(220,38,38,0.4)` }}>
+        <p className="text-center text-[13px] font-bold" dir="ltr" style={{ fontFamily: MONO, color: C.red }}>
+          ✕ خُسرت الصفقة — {fmtDay(lostAt)}
+        </p>
+        {daysBeforeLoss != null && (
+          <p className="mt-1.5 text-center text-[12px]" style={{ color: C.amber }}>
+            ⏱ {daysBeforeLoss} أيام بين نقطة التحول والخسارة
+          </p>
+        )}
       </div>
     </div>
   );
@@ -477,34 +468,20 @@ function Timeline({
 function RootCause({ rc }: { rc: AiReport["root_causes"][number] }) {
   const sev = SEVERITY[rc.severity] ?? SEVERITY.minor;
   return (
-    <div
-      className="rounded-lg py-4 pr-5 pl-4"
-      style={{ background: C.surface, borderRight: `3px solid ${sev.color}` }}
-    >
+    <div className="rounded-lg py-4 pr-5 pl-4" style={{ background: C.surface, borderRight: `3px solid ${sev.color}` }}>
       <div className="flex items-center gap-2.5">
-        <span
-          className="rounded px-2 py-0.5 text-[10px] font-bold tracking-wider"
-          style={{ color: sev.color, background: sev.bg }}
-        >
+        <span className="rounded px-2 py-0.5 text-[10px] font-bold tracking-wider" style={{ color: sev.color, background: sev.bg }}>
           {sev.label}
         </span>
         <h3 className="text-[15px] font-bold" style={{ fontFamily: "Cairo, sans-serif", color: C.white }}>
           {rc.title}
         </h3>
       </div>
-      <p
-        dir="auto"
-        className="mt-2 text-[14px] leading-relaxed"
-        style={{ fontFamily: "Cairo, sans-serif", color: "#C6D2CB" }}
-      >
+      <p dir="auto" className="mt-2 text-[14px] leading-relaxed" style={{ fontFamily: "Cairo, sans-serif", color: "#C6D2CB" }}>
         {rc.description}
       </p>
       {rc.evidence && (
-        <div
-          className="mt-3 rounded px-3 py-2 text-[12px] leading-relaxed"
-          dir="auto"
-          style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.muted, fontFamily: MONO }}
-        >
+        <div className="mt-3 rounded px-3 py-2 text-[12px] leading-relaxed" dir="auto" style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.muted, fontFamily: MONO }}>
           {rc.evidence}
         </div>
       )}
@@ -513,57 +490,26 @@ function RootCause({ rc }: { rc: AiReport["root_causes"][number] }) {
 }
 
 // ── Comparison ──────────────────────────────────────────────────────────────
-function Comparison({
-  report,
-  breakdown,
-}: {
-  report: AiReport;
-  breakdown: InvestigationPayload["breakdown"];
-}) {
+function Comparison({ report, breakdown }: { report: AiReport; breakdown: InvestigationPayload["breakdown"] }) {
   return (
     <div>
       <div className="grid gap-3 sm:grid-cols-2">
-        {/* Won */}
         <div className="rounded-lg p-4" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-          <p className="text-[13px] font-bold" style={{ color: C.green }}>
-            ✅ الصفقات الرابحة ({breakdown.wonCount})
-          </p>
-          <p
-            dir="auto"
-            className="mt-2 text-[13px] leading-relaxed"
-            style={{ fontFamily: "Cairo, sans-serif", color: "#C6D2CB" }}
-          >
+          <p className="text-[13px] font-bold" style={{ color: C.green }}>✅ الصفقات الرابحة ({breakdown.wonCount})</p>
+          <p dir="auto" className="mt-2 text-[13px] leading-relaxed" style={{ fontFamily: "Cairo, sans-serif", color: "#C6D2CB" }}>
             {report.comparison.won_pattern}
           </p>
         </div>
-        {/* Lost */}
         <div className="rounded-lg p-4" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-          <p className="text-[13px] font-bold" style={{ color: C.red }}>
-            ❌ الصفقات المخسورة ({breakdown.lostCount})
-          </p>
-          <p
-            dir="auto"
-            className="mt-2 text-[13px] leading-relaxed"
-            style={{ fontFamily: "Cairo, sans-serif", color: "#C6D2CB" }}
-          >
+          <p className="text-[13px] font-bold" style={{ color: C.red }}>❌ الصفقات المخسورة ({breakdown.lostCount})</p>
+          <p dir="auto" className="mt-2 text-[13px] leading-relaxed" style={{ fontFamily: "Cairo, sans-serif", color: "#C6D2CB" }}>
             {report.comparison.lost_pattern}
           </p>
         </div>
       </div>
-
-      {/* Key differentiator */}
-      <div
-        className="mt-3 rounded-lg py-4 pr-5 pl-4"
-        style={{ background: "rgba(217,119,6,0.08)", borderRight: `3px solid ${C.amber}` }}
-      >
-        <p className="text-[11px] font-bold tracking-wider" style={{ color: C.amber }}>
-          الفارق الحاسم
-        </p>
-        <p
-          dir="auto"
-          className="mt-1.5 text-[15px] font-semibold leading-relaxed"
-          style={{ fontFamily: "Cairo, sans-serif", color: C.white }}
-        >
+      <div className="mt-3 rounded-lg py-4 pr-5 pl-4" style={{ background: "rgba(217,119,6,0.08)", borderRight: `3px solid ${C.amber}` }}>
+        <p className="text-[11px] font-bold tracking-wider" style={{ color: C.amber }}>الفارق الحاسم</p>
+        <p dir="auto" className="mt-1.5 text-[15px] font-semibold leading-relaxed" style={{ fontFamily: "Cairo, sans-serif", color: C.white }}>
           {report.comparison.key_differentiator}
         </p>
       </div>
@@ -574,26 +520,15 @@ function Comparison({
 // ── Lesson ──────────────────────────────────────────────────────────────────
 function Lesson({ lesson }: { lesson: AiReport["lesson"] }) {
   return (
-    <div
-      className="rounded-xl p-6"
-      style={{ background: C.surface, border: `1px solid ${C.border}`, borderTop: `3px solid ${C.amber}` }}
-    >
+    <div className="rounded-xl p-6" style={{ background: C.surface, border: `1px solid ${C.border}`, borderTop: `3px solid ${C.amber}` }}>
       <h3 className="text-[28px] font-bold leading-tight" style={{ fontFamily: "Cairo, sans-serif", color: C.amber }}>
         {lesson.title}
       </h3>
-      <p
-        dir="auto"
-        className="mt-3 text-[16px]"
-        style={{ fontFamily: "Cairo, sans-serif", color: C.white, lineHeight: 1.8 }}
-      >
+      <p dir="auto" className="mt-3 text-[16px]" style={{ fontFamily: "Cairo, sans-serif", color: C.white, lineHeight: 1.8 }}>
         {lesson.rule}
       </p>
       <div className="mt-4">
-        <span
-          className="inline-block rounded px-3 py-1.5 text-[12px]"
-          dir="auto"
-          style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.teal, fontFamily: MONO }}
-        >
+        <span className="inline-block rounded px-3 py-1.5 text-[12px]" dir="auto" style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.teal, fontFamily: MONO }}>
           يُطبق على: {lesson.applies_to}
         </span>
       </div>
@@ -603,29 +538,22 @@ function Lesson({ lesson }: { lesson: AiReport["lesson"] }) {
 
 // ── Cost grid ───────────────────────────────────────────────────────────────
 function CostGrid({ cost }: { cost: InvestigationPayload["costAnalysis"] }) {
-  const cell = (label: string, value: string, big = false) => (
-    <div className="rounded-lg p-4 text-center" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-      <p className="text-[12px]" style={{ fontFamily: "Cairo, sans-serif", color: C.muted }}>
-        {label}
-      </p>
-      <p
-        className="mt-2 font-bold"
-        dir="ltr"
-        style={{ fontFamily: MONO, color: big ? C.red : C.white, fontSize: big ? 26 : 20 }}
-      >
+  const Card = ({ label, value, color }: { label: string; value: string; color: string }) => (
+    <div className="rounded-xl p-5 text-center" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+      <p className="text-[12px]" style={{ fontFamily: "Cairo, sans-serif", color: C.muted }}>{label}</p>
+      <p className="mt-2" dir="ltr" style={{ fontFamily: "Cairo, sans-serif", fontWeight: 800, fontSize: 28, color }}>
         {value}
       </p>
     </div>
   );
-
   return (
     <div>
       <div className="grid gap-3 sm:grid-cols-3">
-        {cell("هذه الصفقة", `${cost.currency} ${money(cost.this_deal)}`)}
-        {cell("عدد الحالات المشابهة", String(cost.similar_losses_count))}
-        {cell("التكلفة الكلية للنمط", `${cost.currency} ${money(cost.total_pattern_cost)}`, true)}
+        <Card label="هذه الصفقة" value={`${cost.currency} ${money(cost.this_deal)}`} color={C.white} />
+        <Card label="حالات مشابهة" value={String(cost.similar_losses_count)} color={C.teal} />
+        <Card label="التكلفة الكلية للنمط" value={`${cost.currency} ${money(cost.total_pattern_cost)}`} color={C.red} />
       </div>
-      <p className="mt-2 text-[11px]" style={{ fontFamily: "Cairo, sans-serif", color: C.muted }}>
+      <p className="mt-2 text-[12px]" style={{ fontFamily: "Cairo, sans-serif", color: C.muted }}>
         بناءً على {cost.similar_losses_count} صفقات بنفس النمط
       </p>
     </div>

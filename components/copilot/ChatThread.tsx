@@ -66,17 +66,17 @@ function MessageActions({ msg }: { msg: ChatMessage }) {
   );
 }
 
-function LoadingDots() {
+function TypingDots() {
   return (
-    <div className="flex items-center gap-1 py-1">
+    <div className="flex items-center gap-1.5 py-1">
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="h-2 w-2 rounded-full bg-teal-500"
-          style={{ animation: `copilotBounce 1.2s ${i * 0.15}s ease-in-out infinite` }}
+          className="rounded-full"
+          style={{ height: 8, width: 8, background: "#0D9488", animation: `copilotBounce 1.2s ${i * 0.2}s infinite` }}
         />
       ))}
-      <style>{`@keyframes copilotBounce { 0%,80%,100% { transform: translateY(0); opacity:.4 } 40% { transform: translateY(-4px); opacity:1 } }`}</style>
+      <style>{`@keyframes copilotBounce { 0%,80%,100% { transform: translateY(0); opacity:.35 } 40% { transform: translateY(-5px); opacity:1 } }`}</style>
     </div>
   );
 }
@@ -115,10 +115,25 @@ export default function ChatThread({ emptyHint }: { emptyHint?: React.ReactNode 
           <div key={m.id} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[85%] ${isUser ? "" : "w-full"}`}>
               <div
-                className={
+                className="px-4 py-3 text-[15px]"
+                style={
                   isUser
-                    ? "rounded-2xl rounded-tr-sm bg-teal-700 px-4 py-2.5 text-[14px] text-white"
-                    : "rounded-2xl rounded-tl-sm bg-gray-50 px-4 py-3 text-gray-900"
+                    ? {
+                        background: "linear-gradient(135deg, #1A5C4F 0%, #2D8570 100%)",
+                        borderRadius: "16px 16px 4px 16px",
+                        color: "#fff",
+                        fontFamily: "Cairo, sans-serif",
+                        fontWeight: 500,
+                      }
+                    : {
+                        background: "#fff",
+                        border: "1px solid #E8EFED",
+                        borderRadius: "16px 16px 16px 4px",
+                        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                        color: "#1C2B26",
+                        fontFamily: "Cairo, sans-serif",
+                        lineHeight: 1.6,
+                      }
                 }
               >
                 {isUser ? (
@@ -126,7 +141,7 @@ export default function ChatThread({ emptyHint }: { emptyHint?: React.ReactNode 
                     {m.content}
                   </p>
                 ) : showDots ? (
-                  <LoadingDots />
+                  <TypingDots />
                 ) : (
                   <RichText content={m.content} />
                 )}

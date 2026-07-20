@@ -66,11 +66,20 @@ export interface SnapshotSections {
   tasks: string;
 }
 
+export interface SnapshotStats {
+  totalLeads: number;
+  activeDeals: number;
+  pipelineValueSAR: number;
+  stuckCount: number;
+}
+
 export interface BusinessSnapshot {
   /** Compact always-on context (leads totals, deal counts, pipeline, weekly). */
   overview: string;
   /** Named detail sections — the route includes only what the question needs. */
   sections: SnapshotSections;
+  /** Headline numbers for the Copilot full-page snapshot bar. */
+  stats: SnapshotStats;
   stuckCount: number;
   upcomingCount: number;
   stuckDeals: StuckDeal[];
@@ -288,6 +297,12 @@ ${upcomingTasks}`,
   return {
     overview,
     sections,
+    stats: {
+      totalLeads,
+      activeDeals: activeDeals.length,
+      pipelineValueSAR: pipelineValue,
+      stuckCount: stuck.length,
+    },
     stuckCount: stuck.length,
     upcomingCount: upcoming.length,
     stuckDeals: stuckTop,

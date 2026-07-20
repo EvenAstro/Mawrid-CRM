@@ -103,5 +103,5 @@ export default function RichText({ content }: { content: string }) {
   }
   flushList();
 
-  return <div className="text-[14px]">{blocks}</div>;
+  return <div className="text-[15px]">{blocks}</div>;
 }

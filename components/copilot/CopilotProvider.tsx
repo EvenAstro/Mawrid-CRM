@@ -10,11 +10,19 @@ export interface ChatMessage {
   at: number;
 }
 
+export interface SnapshotStats {
+  totalLeads: number;
+  activeDeals: number;
+  pipelineValueSAR: number;
+  stuckCount: number;
+}
+
 interface CopilotContextValue {
   messages: ChatMessage[];
   streaming: boolean;
   open: boolean;
   unread: boolean;
+  stats: SnapshotStats | null;
   setOpen: (o: boolean) => void;
   send: (text: string) => void;
   clear: () => void;
@@ -62,6 +70,7 @@ export default function CopilotProvider({ children }: { children: React.ReactNod
   const [streaming, setStreaming] = useState(false);
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(false);
+  const [stats, setStats] = useState<SnapshotStats | null>(null);
   const summaryRef = useRef<{ stuckCount: number; upcomingCount: number } | null>(null);
   const messagesRef = useRef<ChatMessage[]>([]);
   messagesRef.current = messages;
@@ -76,9 +85,14 @@ export default function CopilotProvider({ children }: { children: React.ReactNod
       try {
         const res = await fetch("/api/copilot");
         if (!res.ok) return;
-        const s = (await res.json()) as { stuckCount: number; upcomingCount: number };
+        const s = (await res.json()) as {
+          stuckCount: number;
+          upcomingCount: number;
+          stats: SnapshotStats | null;
+        };
         if (!active) return;
-        summaryRef.current = s;
+        summaryRef.current = { stuckCount: s.stuckCount, upcomingCount: s.upcomingCount };
+        if (s.stats) setStats(s.stats);
         const greeted = localStorage.getItem(todayKey()) === "1";
         if (!greeted && (s.stuckCount > 0 || s.upcomingCount > 0)) setUnread(true);
       } catch {
@@ -174,8 +188,8 @@ export default function CopilotProvider({ children }: { children: React.ReactNod
   }, []);
 
   const value = useMemo<CopilotContextValue>(
-    () => ({ messages, streaming, open, unread, setOpen: openPanel, send, clear, pageContext }),
-    [messages, streaming, open, unread, openPanel, send, clear, pageContext],
+    () => ({ messages, streaming, open, unread, stats, setOpen: openPanel, send, clear, pageContext }),
+    [messages, streaming, open, unread, stats, openPanel, send, clear, pageContext],
   );
 
   return <CopilotContext.Provider value={value}>{children}</CopilotContext.Provider>;

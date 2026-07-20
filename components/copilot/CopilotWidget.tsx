@@ -51,16 +51,21 @@ export default function CopilotWidget() {
         }`}
       >
         {/* Header */}
-        <div className="flex h-16 flex-none items-center justify-between border-b border-gray-100 px-4">
+        <div
+          className="flex h-16 flex-none items-center justify-between px-4"
+          style={{ background: "linear-gradient(135deg, #0A2E28 0%, #1A5C4F 100%)" }}
+        >
+          <style>{`@keyframes copilotStatus { 0%,100% { opacity:1; transform:scale(1) } 50% { opacity:.4; transform:scale(.85) } }`}</style>
           <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] text-white">
+            <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white">
               <SparkleRobot className="h-5 w-5" />
             </span>
             <div>
-              <p className="text-[16px] font-bold leading-tight text-[#1e1b4b]" style={{ fontFamily: "Cairo, sans-serif" }}>
+              <p className="flex items-center gap-2 text-[16px] font-bold leading-tight text-white" style={{ fontFamily: "Cairo, sans-serif" }}>
+                <span className="h-2 w-2 rounded-full bg-green-400" style={{ animation: "copilotStatus 2.4s ease-in-out infinite" }} />
                 مساعد مورد
               </p>
-              <p className="text-[12px] text-gray-400">اسألني أي شيء عن صفقاتك</p>
+              <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.6)" }}>متصل ويعرف كل شيء عن صفقاتك</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -69,7 +74,7 @@ export default function CopilotWidget() {
               onClick={() => setOpen(false)}
               title="فتح في صفحة كاملة"
               aria-label="فتح في صفحة كاملة"
-              className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-50 hover:text-teal-700"
+              className="rounded-lg p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
                 <path d="M15 3h6v6M21 3l-9 9M10 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-5" />
@@ -78,7 +83,7 @@ export default function CopilotWidget() {
             <button
               onClick={() => setOpen(false)}
               aria-label="إغلاق"
-              className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-50 hover:text-gray-700"
+              className="rounded-lg p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-5 w-5">
                 <path d="M6 6l12 12M18 6 6 18" />
@@ -88,7 +93,7 @@ export default function CopilotWidget() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4" style={{ background: "#FAFCFB" }}>
           <ChatThread />
         </div>
 
