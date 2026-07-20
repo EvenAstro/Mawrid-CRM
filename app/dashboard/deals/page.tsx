@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 import { SearchIcon } from "@/components/navIcons";
@@ -47,6 +48,8 @@ function columnTint(t: string | null): string {
 
 export default function DealsPage() {
   const toast = useToast();
+  const router = useRouter();
+  const [lostDeal, setLostDeal] = useState<Deal | null>(null);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [stages, setStages] = useState<StageCol[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,6 +114,12 @@ export default function DealsPage() {
       return;
     }
     toast(`Moved to ${toStage?.label ?? "stage"}`);
+
+    // Deal just entered a Lost stage → offer to open the investigation report.
+    if (toStage?.terminal_type === "lost") {
+      const moved = { ...deal, stage_id: toStageId, pipeline_stages: toStage ? { label: toStage.label, color: toStage.color, terminal_type: toStage.terminal_type } : deal.pipeline_stages };
+      setLostDeal(moved);
+    }
   }
 
   return (
@@ -181,8 +190,18 @@ export default function DealsPage() {
                         onDragStart={() => setDragId(d.id)}
                         onDragEnd={() => setDragId(null)}
                         onClick={() => setSelected(d)}
-                        className={`cursor-grab rounded-xl border border-l-[3px] border-gray-100 border-l-transparent bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-l-teal-700 hover:shadow-[0_4px_16px_rgba(26,92,79,0.1)] active:cursor-grabbing ${dragId === d.id ? "opacity-50" : ""}`}
+                        className={`group/card relative cursor-grab rounded-xl border border-l-[3px] border-gray-100 border-l-transparent bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-l-teal-700 hover:shadow-[0_4px_16px_rgba(26,92,79,0.1)] active:cursor-grabbing ${dragId === d.id ? "opacity-50" : ""}`}
                       >
+                        {stage.terminal_type === "lost" && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/deals/${d.id}/investigation`); }}
+                            title="فتح تقرير التحقيق"
+                            aria-label="فتح تقرير التحقيق"
+                            className="absolute left-2.5 top-2.5 rounded-md p-1 text-[13px] text-gray-300 transition-colors hover:bg-red-50 hover:text-red-600"
+                          >
+                            🔍
+                          </button>
+                        )}
                         <p dir="auto" className="truncate text-[15px] font-semibold text-gray-900">{d.name || "Untitled deal"}</p>
                         <div className="mt-1 flex items-center justify-between">
                           <span className="text-[16px] font-bold text-gray-900">{dealValue(d)}</span>
@@ -230,6 +249,46 @@ export default function DealsPage() {
           </div>
         )}
       </SlideOver>
+
+      {/* Lost → investigation prompt */}
+      {lostDeal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setLostDeal(null)} />
+          <div
+            dir="rtl"
+            className="relative w-full max-w-[420px] overflow-hidden rounded-2xl border-t-4 shadow-2xl"
+            style={{ background: "#0A0D0C", borderTopColor: "#DC2626", color: "#F0F4F2" }}
+          >
+            <div className="p-6">
+              <h3 className="flex items-center gap-2 text-[18px] font-extrabold" style={{ fontFamily: "Cairo, sans-serif" }}>
+                🔍 تم تسجيل الخسارة
+              </h3>
+              <p className="mt-3 text-[15px]" style={{ fontFamily: "Cairo, sans-serif", color: "#C6D2CB" }}>
+                هل تريد فتح تقرير التحقيق؟
+              </p>
+              <p className="mt-1 text-[12px]" style={{ fontFamily: "Cairo, sans-serif", color: "#4B5E54" }}>
+                يستغرق التحليل بضع ثوانٍ
+              </p>
+              <div className="mt-6 flex gap-3">
+                <button
+                  onClick={() => { const id = lostDeal.id; setLostDeal(null); router.push(`/dashboard/deals/${id}/investigation`); }}
+                  className="h-11 flex-1 rounded-xl text-[14px] font-bold text-white transition hover:opacity-90"
+                  style={{ background: "#DC2626", fontFamily: "Cairo, sans-serif" }}
+                >
+                  فتح التحقيق
+                </button>
+                <button
+                  onClick={() => setLostDeal(null)}
+                  className="h-11 flex-1 rounded-xl text-[14px] font-semibold transition hover:bg-white/5"
+                  style={{ border: "1px solid #1E2821", color: "#C6D2CB", fontFamily: "Cairo, sans-serif" }}
+                >
+                  لاحقاً
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
