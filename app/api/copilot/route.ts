@@ -160,14 +160,34 @@ ${CAPABILITIES}${context ? `\n\nسياق: ${context}` : ""}${
 
   if (!upstream.ok || !upstream.body) {
     const detail = await upstream.text().catch(() => "");
-    console.error("[copilot] Groq API error", upstream.status, detail);
+    // Log the EXACT status + raw body Groq returned, so the real cause is always visible.
+    console.error(`[copilot] Groq returned HTTP ${upstream.status}. Raw body: ${detail}`);
+
+    // Pull Groq's own human-readable reason out of the error body when present.
+    let groqReason = "";
+    let retryIn = "";
+    try {
+      const parsed = JSON.parse(detail) as { error?: { message?: string } };
+      groqReason = parsed.error?.message ?? "";
+      const m = /try again in ([^.]+)/i.exec(groqReason);
+      if (m) retryIn = m[1].trim();
+    } catch {
+      /* body may not be JSON */
+    }
+
     if (upstream.status === 429) {
+      const message = retryIn
+        ? `تم بلوغ حد Groq المجاني (100 ألف رمز/يوم لكامل الحساب — ليس لكل مفتاح). حاول مرة أخرى خلال ${retryIn}.`
+        : "تم بلوغ حد Groq المجاني (100 ألف رمز/يوم لكامل الحساب — ليس لكل مفتاح). سيعود العمل بعد إعادة تعيين الحصة.";
+      return NextResponse.json({ error: "rate_limit", message, groqReason }, { status: 429 });
+    }
+    if (upstream.status === 401) {
       return NextResponse.json(
-        { error: "rate_limit", message: "تم بلوغ الحد اليومي المجاني للمساعد. سيعود العمل تلقائياً بعد إعادة تعيين الحصة." },
-        { status: 429 },
+        { error: "auth", message: "مفتاح Groq غير صالح أو غير مُحمّل. تحقّق من GROQ_API_KEY وأعد تشغيل الخادم.", groqReason },
+        { status: 401 },
       );
     }
-    return NextResponse.json({ error: "Copilot model request failed" }, { status: 502 });
+    return NextResponse.json({ error: "model_error", message: "تعذّر الحصول على رد من المساعد.", groqReason }, { status: 502 });
   }
 
   // Re-stream Groq's OpenAI-style SSE as plain text deltas.
