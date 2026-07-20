@@ -5,6 +5,8 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { ToastProvider } from "@/components/Toast";
+import CopilotProvider from "@/components/copilot/CopilotProvider";
+import CopilotWidget from "@/components/copilot/CopilotWidget";
 import { initials as initialsOf } from "@/lib/format";
 import {
   DashboardIcon,
@@ -107,6 +109,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <ToastProvider>
+      <CopilotProvider>
       <div className="min-h-screen bg-white">
         {/* Sidebar */}
         <div
@@ -217,7 +220,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main style={{ marginLeft: w }} className="min-h-screen bg-gray-25 pt-16 transition-all duration-300">
           <div key={pathname} className="page-content mx-auto max-w-[1280px] p-8">{children}</div>
         </main>
+        <CopilotWidget />
       </div>
+      </CopilotProvider>
     </ToastProvider>
   );
 }
