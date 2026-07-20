@@ -117,7 +117,7 @@ export async function buildSnapshot(): Promise<BusinessSnapshot> {
       .from("activities")
       .select("entity_type, entity_id, body, direction, occurred_at, activity_types(label)")
       .order("occurred_at", { ascending: false })
-      .limit(20),
+      .limit(12),
     supabase.from("activities").select("occurred_at").order("occurred_at", { ascending: false }).limit(1),
     supabase.from("tasks").select("title, due_at").is("completed_at", null).order("due_at", { ascending: true }).limit(200),
   ]);
@@ -222,13 +222,13 @@ export async function buildSnapshot(): Promise<BusinessSnapshot> {
     }
   }
   stuck.sort((a, b) => b.days - a.days);
-  const stuckTop = stuck.slice(0, 10);
+  const stuckTop = stuck.slice(0, 6);
 
   // ── Recent activities ────────────────────────────────────────────────────
   const recentActivities = recentActs
     .map((a) => {
       const when = a.occurred_at ? new Date(a.occurred_at).toLocaleDateString("en-CA") : "——";
-      const body = (a.body || a.activity_types?.label || "نشاط").slice(0, 120);
+      const body = (a.body || a.activity_types?.label || "نشاط").slice(0, 80);
       return `- [${a.direction ?? "?"}] ${when}: ${body}`;
     })
     .join("\n");
@@ -279,7 +279,7 @@ ${recentLostDeals || "(لا يوجد)"}`,
 - صفقات جديدة: ${newDeals7}
 - صفقات مربوحة: ${won7} · صفقات مخسورة: ${lost7}
 - قيمة الـ Pipeline الحالية: SAR ${money(pipelineValue)}`,
-    activities: `الأنشطة الأخيرة (آخر 20):
+    activities: `الأنشطة الأخيرة:
 ${recentActivities || "(لا يوجد)"}`,
     tasks: `المهام القادمة:
 ${upcomingTasks}`,

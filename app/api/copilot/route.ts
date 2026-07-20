@@ -148,7 +148,7 @@ ${CAPABILITIES}${context ? `\n\nسياق: ${context}` : ""}${
       body: JSON.stringify({
         model: GROQ_MODEL,
         temperature: 0.4,
-        max_tokens: 800,
+        max_tokens: 700,
         stream: true,
         messages: [{ role: "system", content: system }, ...messages],
       }),
