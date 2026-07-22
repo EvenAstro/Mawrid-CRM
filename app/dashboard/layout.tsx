@@ -218,7 +218,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Main */}
-        <main style={{ marginLeft: w }} className="min-h-screen bg-gray-25 pt-16 transition-all duration-300">
+        <main
+          style={{ marginLeft: w, paddingRight: "var(--briefing-rail-width, 52px)" }}
+          className="min-h-screen bg-gray-25 pt-16 transition-all duration-300"
+        >
           <div key={pathname} className="page-content mx-auto max-w-[1280px] p-8">{children}</div>
         </main>
         <CopilotWidget />
