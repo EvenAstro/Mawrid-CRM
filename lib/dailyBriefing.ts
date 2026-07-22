@@ -11,6 +11,7 @@ export interface StuckDeal {
   name: string | null;
   leadName: string | null;
   daysSinceContact: number;
+  expectedValueMinor: number | null;
 }
 
 export interface BriefingData {
@@ -52,7 +53,7 @@ export async function fetchBriefingData(): Promise<BriefingData> {
       .limit(5),
     supabase
       .from("deals")
-      .select("id, name, lead_id, updated_at, leads(full_name), pipeline_stages(terminal_type)")
+      .select("id, name, lead_id, updated_at, expected_value_minor, leads(full_name), pipeline_stages(terminal_type)")
       .is("deleted_at", null)
       .order("updated_at", { ascending: true })
       .limit(30),
@@ -66,6 +67,7 @@ export async function fetchBriefingData(): Promise<BriefingData> {
     name: string | null;
     lead_id: string | null;
     updated_at: string | null;
+    expected_value_minor: number | null;
     leads: { full_name: string | null } | null;
     pipeline_stages: { terminal_type: string | null } | null;
   };
@@ -118,7 +120,13 @@ export async function fetchBriefingData(): Promise<BriefingData> {
     const lastTouchDate = new Date(lastTouch);
     if (lastTouchDate <= sevenDaysAgo) {
       const days = Math.floor((Date.now() - lastTouchDate.getTime()) / MS_PER_DAY);
-      stuckDeals.push({ id: d.id, name: d.name, leadName: d.leads?.full_name ?? null, daysSinceContact: days });
+      stuckDeals.push({
+        id: d.id,
+        name: d.name,
+        leadName: d.leads?.full_name ?? null,
+        daysSinceContact: days,
+        expectedValueMinor: d.expected_value_minor,
+      });
     }
   }
   stuckDeals.sort((a, b) => b.daysSinceContact - a.daysSinceContact);
