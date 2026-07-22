@@ -392,30 +392,33 @@ export default function DailyBriefing() {
         </div>
       )}
 
-      {/* Docked rail — fixed to the viewport's right edge, below the topbar, full height.
-          Never overlays content: app/dashboard/layout.tsx reserves matching space via
-          the --briefing-rail-width custom property set above. */}
+      {/* Docked rail — anchored to the viewport's right edge below the topbar, sized to
+          its own content (not the full screen height) so it never leaves a dead empty
+          gap. app/dashboard/layout.tsx reserves matching horizontal space via the
+          --briefing-rail-width custom property set above, so it still pushes <main>
+          instead of overlaying it. */}
       <div
-        className="fixed bottom-0 right-0 top-16 z-30 flex border-e border-border-light bg-white transition-[width] duration-300 ease-in-out"
-        style={{ width: collapsed ? RAIL_COLLAPSED : RAIL_EXPANDED }}
+        className="fixed right-0 top-20 z-30 flex overflow-hidden rounded-l-2xl border border-e-0 border-border-light bg-white shadow-[0_8px_28px_rgba(15,23,20,0.12)] transition-[width] duration-300 ease-in-out"
+        style={{ width: collapsed ? RAIL_COLLAPSED : RAIL_EXPANDED, maxHeight: collapsed ? undefined : "min(72vh, 560px)" }}
       >
-        {/* Icon column — always visible, the permanent anchor of the dock, pinned to the viewport edge. */}
+        {/* Always-visible tab — the permanent, unmistakable "you have things to do" affordance. */}
         <button
           onClick={() => toggleCollapsed(!collapsed)}
-          className="relative flex w-[52px] flex-none flex-col items-center gap-2 py-4"
+          className={`relative flex w-[52px] flex-none flex-col items-center gap-1.5 py-3.5 transition-colors ${collapsed ? "bg-mint" : "hover:bg-gray-25"}`}
           aria-label={collapsed ? "فتح المساعد اليومي" : "طي المساعد اليومي"}
           title="المساعد اليومي"
         >
-          <span className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${collapsed ? "bg-mint text-primary" : "text-muted hover:bg-gray-25"}`}>
+          <span className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${collapsed ? "bg-white text-primary shadow-sm" : "text-muted"}`}>
             <CompassIcon className="h-4 w-4" />
           </span>
+          {collapsed && <span className="text-[9px] font-bold text-primary">مهامك</span>}
           {collapsed && totalPending > 0 && (
-            <span className="absolute right-1.5 top-2.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
+            <span className="absolute right-1 top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white ring-2 ring-mint">
               {totalPending}
             </span>
           )}
           {collapsed && totalPending === 0 && (
-            <span className="absolute right-2.5 top-3.5 h-2.5 w-2.5 rounded-full bg-success" />
+            <span className="absolute right-2 top-2.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-mint" />
           )}
         </button>
 
