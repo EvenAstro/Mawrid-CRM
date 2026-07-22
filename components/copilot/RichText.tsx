@@ -76,6 +76,16 @@ export default function RichText({ content }: { content: string }) {
       blocks.push(<hr key={`hr${key++}`} className="my-2.5 border-t border-black/10" />);
       continue;
     }
+    const heading = /^#{1,4}\s+(.*)$/.exec(trimmed);
+    if (heading) {
+      flushList();
+      blocks.push(
+        <p key={`h${key++}`} dir="auto" className="mb-1 mt-2.5 text-[13px] font-bold text-teal-800 first:mt-0">
+          {inline(heading[1], `h${key}`)}
+        </p>,
+      );
+      continue;
+    }
     const bullet = /^[-*]\s+(.*)$/.exec(trimmed);
     const numbered = /^\d+[.)]\s+(.*)$/.exec(trimmed);
     if (bullet) {
