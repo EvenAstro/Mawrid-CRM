@@ -33,15 +33,6 @@ function timeAr(iso: string | null) {
   return d.toLocaleTimeString("ar-SA-u-nu-latn", { hour: "numeric", minute: "2-digit" });
 }
 
-function taskDot(t: BriefingTask, overdue: boolean) {
-  if (overdue) return "🔴";
-  const d = t.due_at ? new Date(t.due_at) : null;
-  if (!d) return "⚪";
-  const now = new Date();
-  const isToday = d.toDateString() === now.toDateString();
-  return isToday ? "🟡" : "⚪";
-}
-
 /** "صباح الخير" before 10am, "أهلاً" until noon, "مساء الخير" after — makes the modal feel time-aware. */
 function greetingForHour(h: number): string {
   if (h < 10) return "صباح الخير";
@@ -74,25 +65,38 @@ function AISuggestButton({ suggestion, onFetch }: { suggestion: Suggestion | und
     return (
       <button
         onClick={(e) => { e.stopPropagation(); onFetch(); }}
-        className="mt-1 flex items-center gap-1 rounded-full bg-[#f0faf8] px-2 py-0.5 text-[11px] font-semibold text-[#1a5c4f] transition hover:bg-[#e2f4ef]"
+        className="mt-2 flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-[#1a5c4f] shadow-sm ring-1 ring-inset ring-amber-200 transition hover:bg-[#f0faf8]"
       >
         ✨ اقترح لي إجراء
       </button>
     );
   }
   if (suggestion.status === "loading") {
-    return <p className="mt-1 text-[11px] text-gray-400">جارِ التفكير…</p>;
+    return (
+      <p className="mt-2 flex items-center gap-1.5 text-[11px] text-gray-400">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gray-300" /> جارِ التفكير…
+      </p>
+    );
   }
   if (suggestion.status === "error") {
-    return <p className="mt-1 text-[11px] text-red-400">تعذّر جلب الاقتراح</p>;
+    return <p className="mt-2 text-[11px] text-red-400">تعذّر جلب الاقتراح</p>;
   }
   if (suggestion.status === "empty") {
-    return <p className="mt-1 text-[11px] text-gray-400">لا يوجد نشاط كافٍ بعد لاقتراح إجراء</p>;
+    return <p className="mt-2 text-[11px] text-gray-400">لا يوجد نشاط كافٍ بعد لاقتراح إجراء</p>;
   }
   return (
-    <p dir="auto" className="mt-1 rounded-lg bg-[#f0faf8] p-2 text-[12px] leading-relaxed text-[#1a5c4f]">
+    <p dir="auto" className="mt-2 rounded-xl bg-white p-2.5 text-[12px] leading-relaxed text-[#1a5c4f] shadow-sm ring-1 ring-inset ring-[#1a5c4f]/10">
       ✨ {suggestion.action}
     </p>
+  );
+}
+
+function SectionLabel({ icon, tone, children }: { icon: string; tone: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-2 mt-4 flex items-center gap-2 first:mt-0">
+      <span className={`flex h-5 w-5 flex-none items-center justify-center rounded-full text-[11px] ${tone}`}>{icon}</span>
+      <span dir="auto" className="text-[11px] font-bold uppercase tracking-wide text-gray-400">{children}</span>
+    </div>
   );
 }
 
@@ -117,17 +121,10 @@ export default function DailyBriefing() {
       try {
         briefing = await fetchBriefingData();
       } catch (err) {
-        // A fetch failure must never leave the panel permanently blank — fall
-        // back to an empty briefing so the UI still mounts and is debuggable.
         console.error("[DailyBriefing] fetchBriefingData failed", err);
         briefing = EMPTY_BRIEFING;
       }
       if (cancelled) return;
-      console.log("[DailyBriefing] briefing data:", {
-        todayTasks: briefing.todayTasks,
-        overdueTasks: briefing.overdueTasks,
-        stuckDeals: briefing.stuckDeals,
-      });
       setFirstName(name.split(" ")[0] || "");
       setData(briefing);
       if (shouldShowBriefing()) {
@@ -215,7 +212,8 @@ export default function DailyBriefing() {
     }
   }, []);
 
-  const askCopilotAboutDeal = useCallback((deal: StuckDeal) => {
+  const askCopilotAboutDeal = useCallback((e: React.MouseEvent, deal: StuckDeal) => {
+    e.stopPropagation();
     const name = deal.leadName || deal.name || "هذه الصفقة";
     copilot.setOpen(true);
     copilot.send(`وش أنصح أسوي مع صفقة ${name}؟`);
@@ -267,29 +265,28 @@ export default function DailyBriefing() {
               {greetingEmoji(now.getHours())} {greetingForHour(now.getHours())}، {firstName || "بك"}
             </p>
             <p className="mt-1 text-[13px] text-gray-400">{arabicDate(now)}</p>
-            <p dir="auto" className="mt-3 text-[15px] font-medium text-[#1a5c4f]">{summaryLine}</p>
-            <div className="my-4 h-px bg-gray-100" />
+            <div className="mt-4 rounded-xl bg-[#f0faf8] px-4 py-3">
+              <p dir="auto" className="text-[14px] font-semibold text-[#1a5c4f]">{summaryLine}</p>
+            </div>
 
             {totalToday > 0 && (
-              <div className="mb-4">
-                <p className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-gray-400">
-                  📋 مهامك اليوم ({totalToday})
-                </p>
+              <div className="mt-5">
+                <SectionLabel icon="📋" tone="bg-[#e8f4f1] text-[#1a5c4f]">مهامك اليوم ({totalToday})</SectionLabel>
                 <div className="flex flex-col gap-2">
                   {data.overdueTasks.map((t) => (
-                    <div key={t.id} className="flex items-center justify-between rounded-lg bg-red-50 p-3">
-                      <span dir="auto" className="text-[14px] font-medium text-[#1e1b4b]">
+                    <div key={t.id} className="flex items-center justify-between rounded-xl bg-red-50 px-3 py-2.5 ring-1 ring-inset ring-red-100">
+                      <span dir="auto" className="truncate text-[14px] font-medium text-[#1e1b4b]">
                         🔴 {t.title || "مهمة بدون عنوان"}
                       </span>
-                      <span className="font-mono text-[13px] text-gray-400">{timeAr(t.due_at)}</span>
+                      <span className="flex-none font-mono text-[12px] font-semibold text-red-400">متأخرة</span>
                     </div>
                   ))}
                   {data.todayTasks.map((t) => (
-                    <div key={t.id} className="flex items-center justify-between rounded-lg bg-gray-25 p-3">
-                      <span dir="auto" className="text-[14px] font-medium text-[#1e1b4b]">
-                        {taskDot(t, false)} {t.title || "مهمة بدون عنوان"}
+                    <div key={t.id} className="flex items-center justify-between rounded-xl bg-gray-25 px-3 py-2.5 ring-1 ring-inset ring-gray-100">
+                      <span dir="auto" className="truncate text-[14px] font-medium text-[#1e1b4b]">
+                        🟡 {t.title || "مهمة بدون عنوان"}
                       </span>
-                      <span className="font-mono text-[13px] text-gray-400">{timeAr(t.due_at)}</span>
+                      <span className="flex-none font-mono text-[13px] text-gray-400">{timeAr(t.due_at)}</span>
                     </div>
                   ))}
                 </div>
@@ -297,17 +294,15 @@ export default function DailyBriefing() {
             )}
 
             {data.stuckDeals.length > 0 && (
-              <div className="mb-4">
-                <p className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-gray-400">
-                  ⚠️ صفقات تحتاج تواصل ({data.stuckDeals.length})
-                </p>
+              <div className="mt-5">
+                <SectionLabel icon="⚠️" tone="bg-amber-50 text-amber-600">صفقات تحتاج تواصل ({data.stuckDeals.length})</SectionLabel>
                 <div className="flex flex-col gap-2">
                   {data.stuckDeals.slice(0, 5).map((d) => (
-                    <div key={d.id} className="flex items-center justify-between rounded-lg bg-gray-25 p-3">
-                      <span dir="auto" className="text-[14px] font-medium text-[#1e1b4b]">
+                    <div key={d.id} className="flex items-center justify-between rounded-xl bg-amber-50/60 px-3 py-2.5 ring-1 ring-inset ring-amber-100">
+                      <span dir="auto" className="truncate text-[14px] font-medium text-[#1e1b4b]">
                         {d.leadName || d.name || "صفقة"}
                       </span>
-                      <span className="text-[13px] font-semibold text-amber-500">{d.daysSinceContact} أيام بدون رد</span>
+                      <span className="flex-none text-[12px] font-semibold text-amber-600">{d.daysSinceContact} أيام بدون رد</span>
                     </div>
                   ))}
                 </div>
@@ -315,13 +310,12 @@ export default function DailyBriefing() {
             )}
 
             {totalToday === 0 && data.stuckDeals.length === 0 && (
-              <p className="py-4 text-center text-[14px] text-gray-400">لا يوجد ما يحتاج انتباهك الآن 🎉</p>
+              <p className="py-6 text-center text-[14px] text-gray-400">لا يوجد ما يحتاج انتباهك الآن 🎉</p>
             )}
 
-            <div className="my-4 h-px bg-gray-100" />
             <button
               onClick={dismiss}
-              className="w-full rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] py-3 text-[16px] font-semibold text-white shadow-[0_4px_12px_rgba(26,92,79,0.25)] transition-all hover:scale-[1.01] hover:shadow-[0_6px_18px_rgba(26,92,79,0.32)]"
+              className="mt-6 w-full rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] py-3 text-[16px] font-semibold text-white shadow-[0_4px_12px_rgba(26,92,79,0.25)] transition-all hover:scale-[1.01] hover:shadow-[0_6px_18px_rgba(26,92,79,0.32)]"
             >
               تم — ابدأ يومك 🚀
             </button>
@@ -330,34 +324,41 @@ export default function DailyBriefing() {
       )}
 
       <div
-        className="fixed right-0 top-1/2 z-40 flex -translate-y-1/2 flex-col overflow-hidden rounded-l-2xl border-l border-gray-100 bg-white shadow-[-4px_0_20px_rgba(0,0,0,0.08)] transition-[width] duration-300 ease-in-out"
-        style={{ width: collapsed ? 48 : 300, maxHeight: "80vh" }}
+        className="fixed right-0 top-1/2 z-40 flex -translate-y-1/2 flex-col overflow-hidden rounded-l-2xl border border-gray-100 bg-white shadow-[-4px_0_24px_rgba(0,0,0,0.08)] transition-[width] duration-300 ease-in-out"
+        style={{ width: collapsed ? 52 : 320, maxHeight: "82vh" }}
       >
         {collapsed ? (
           <button
             onClick={() => toggleCollapsed(false)}
-            className="flex flex-col items-center gap-2 px-2 py-4 text-lg"
+            className="flex flex-col items-center gap-2.5 px-2 py-5 transition hover:bg-gray-25"
             aria-label="فتح دليلك اليومي"
             title="دليلك اليومي"
           >
-            <span>🧭</span>
-            <span className="h-2 w-2 rounded-full" style={{ background: pulseColor }} />
+            <span className="text-xl">🧭</span>
+            <span className="relative flex h-2 w-2">
+              {(hasOverdue || totalPending > 0) && (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ background: pulseColor }} />
+              )}
+              <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: pulseColor }} />
+            </span>
+            {totalPending > 0 && (
+              <span className="rounded-full bg-[#1a5c4f] px-1.5 py-0.5 text-[10px] font-bold text-white">{totalPending}</span>
+            )}
           </button>
         ) : celebrate ? (
-          <div className="bg-[#f0fdf4] p-5 text-center transition-colors">
-            <p dir="auto" className="text-[14px] font-semibold text-[#166534]">
-              🎉 أنجزت كل شيء!
-            </p>
+          <div className="flex flex-col items-center justify-center gap-1 bg-[#f0fdf4] px-5 py-8 text-center transition-colors">
+            <span className="text-3xl">🎉</span>
+            <p dir="auto" className="text-[14px] font-semibold text-[#166534]">أنجزت كل شيء!</p>
           </div>
         ) : (
-          <div className="flex flex-col overflow-y-auto p-4">
-            <div className="mb-2 flex items-center justify-between">
+          <div className="flex flex-col overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-gray-100 bg-gradient-to-l from-[#f0faf8] to-white px-4 py-3.5">
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ background: pulseColor }} />
                   <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: pulseColor }} />
                 </span>
-                <span dir="auto" className="text-[12px] font-semibold text-[#1a5c4f]">مساعد اليوم</span>
+                <span dir="auto" className="text-[13px] font-bold text-[#1a5c4f]">مساعد اليوم</span>
                 {totalPending > 0 && (
                   <span className="rounded-full bg-[#1a5c4f]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#1a5c4f]">{totalPending}</span>
                 )}
@@ -365,90 +366,112 @@ export default function DailyBriefing() {
               <button
                 onClick={() => toggleCollapsed(true)}
                 aria-label="طي اللوحة"
-                className="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-[#1a5c4f]"
+                className="rounded-lg p-1.5 text-gray-400 transition hover:bg-white hover:text-[#1a5c4f]"
               >
-                ←
+                →
               </button>
             </div>
-            <div className="h-px bg-gray-100" />
 
-            {totalToday > 0 && (
-              <div className="my-2 flex flex-col gap-1.5">
-                {[...data.overdueTasks, ...data.todayTasks].slice(0, 6).map((t) => {
-                  const done = completing.has(t.id);
-                  const overdue = data.overdueTasks.some((x) => x.id === t.id);
-                  return (
-                    <div
-                      key={t.id}
-                      className={`flex items-center gap-2 rounded-lg px-2 py-1.5 transition-opacity ${overdue ? "bg-red-50" : ""} ${done ? "opacity-40" : ""}`}
-                    >
-                      <button
-                        onClick={() => completeTask(t)}
-                        aria-label="إتمام المهمة"
-                        className={`flex h-4 w-4 flex-none items-center justify-center rounded-full border-2 transition-colors ${
-                          done ? "border-[#1a5c4f] bg-[#1a5c4f]" : overdue ? "border-red-300 hover:border-[#1a5c4f]" : "border-gray-200 hover:border-[#1a5c4f]"
-                        }`}
+            <div className="flex-1 px-4 pb-3">
+              {totalToday > 0 && (
+                <>
+                  <SectionLabel icon="📋" tone="bg-[#e8f4f1] text-[#1a5c4f]">مهامك</SectionLabel>
+                  <div className="flex flex-col gap-1.5">
+                    {[...data.overdueTasks, ...data.todayTasks].slice(0, 6).map((t) => {
+                      const done = completing.has(t.id);
+                      const overdue = data.overdueTasks.some((x) => x.id === t.id);
+                      return (
+                        <div
+                          key={t.id}
+                          className={`flex items-center gap-2.5 rounded-xl px-2.5 py-2 transition-all ${
+                            overdue ? "bg-red-50 ring-1 ring-inset ring-red-100" : "hover:bg-gray-25"
+                          } ${done ? "opacity-40" : ""}`}
+                        >
+                          <button
+                            onClick={() => completeTask(t)}
+                            aria-label="إتمام المهمة"
+                            className={`flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full border-2 transition-colors ${
+                              done ? "border-[#1a5c4f] bg-[#1a5c4f]" : overdue ? "border-red-300 hover:border-[#1a5c4f]" : "border-gray-200 hover:border-[#1a5c4f]"
+                            }`}
+                          >
+                            {done && (
+                              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="h-2.5 w-2.5">
+                                <path d="M20 6 9 17l-5-5" />
+                              </svg>
+                            )}
+                          </button>
+                          <span dir="auto" className={`min-w-0 flex-1 truncate text-[13px] text-[#334155] ${done ? "line-through" : ""}`}>
+                            {t.title || "مهمة"}
+                          </span>
+                          <span className={`flex-none font-mono text-[11px] ${overdue ? "font-semibold text-red-500" : "text-gray-400"}`}>
+                            {overdue ? "متأخرة" : timeAr(t.due_at)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {priorityDeals.length > 0 && (
+                <>
+                  <SectionLabel icon="🎯" tone="bg-amber-50 text-amber-600">أولوياتك — صفقات باردة</SectionLabel>
+                  <div className="flex flex-col gap-2">
+                    {priorityDeals.map((d) => (
+                      <div
+                        key={d.id}
+                        onClick={() => router.push(`/dashboard/deals/${d.id}/investigation`)}
+                        role="button"
+                        tabIndex={0}
+                        className="cursor-pointer rounded-xl bg-amber-50/60 p-2.5 ring-1 ring-inset ring-amber-100 transition hover:bg-amber-50"
                       >
-                        {done && (
-                          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="h-2.5 w-2.5">
-                            <path d="M20 6 9 17l-5-5" />
-                          </svg>
-                        )}
-                      </button>
-                      <span dir="auto" className={`min-w-0 flex-1 truncate text-[13px] text-[#334155] ${done ? "line-through" : ""}`}>
-                        {t.title || "مهمة"}
-                      </span>
-                      <span className={`flex-none font-mono text-[11px] ${overdue ? "font-semibold text-red-500" : "text-gray-400"}`}>
-                        {overdue ? "متأخرة" : timeAr(t.due_at)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {priorityDeals.length > 0 && (
-              <>
-                <div className="h-px bg-gray-100" />
-                <p dir="auto" className="mt-2 text-[13px] font-semibold text-amber-600">
-                  🎯 أولوياتك — صفقات باردة
-                </p>
-                <div className="mt-1 flex flex-col gap-2.5">
-                  {priorityDeals.map((d) => (
-                    <div key={d.id} className="rounded-lg bg-amber-50 p-2">
-                      <button onClick={() => askCopilotAboutDeal(d)} className="block w-full text-left">
                         <div className="flex items-center justify-between gap-2">
-                          <p dir="auto" className="truncate text-[13px] font-semibold text-[#1e1b4b]">
+                          <p dir="auto" className="min-w-0 flex-1 truncate text-[13px] font-semibold text-[#1e1b4b]">
                             {d.leadName || d.name || "صفقة"}
                           </p>
-                          <span className="flex-none text-[11px] font-semibold text-amber-600">{d.daysSinceContact} أيام</span>
+                          <span className="flex-none text-[11px] font-bold text-amber-600">{d.daysSinceContact} يوم</span>
                         </div>
-                        <p dir="auto" className="mt-0.5 text-[11px] text-amber-700">💬 اسأل الكوبايلوت عن أفضل خطوة</p>
-                      </button>
-                      <AISuggestButton suggestion={suggestions[d.id]} onFetch={() => fetchSuggestion(d)} />
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <button
+                            onClick={(e) => askCopilotAboutDeal(e, d)}
+                            className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-[#1a5c4f] shadow-sm ring-1 ring-inset ring-[#1a5c4f]/15 transition hover:bg-[#f0faf8]"
+                          >
+                            💬 اسأل الكوبايلوت
+                          </button>
+                        </div>
+                        <AISuggestButton suggestion={suggestions[d.id]} onFetch={() => fetchSuggestion(d)} />
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
 
-            {totalToday === 0 && priorityDeals.length === 0 && (
-              <p className="py-6 text-center text-[13px] text-gray-400">🎉 كل شيء تحت السيطرة</p>
-            )}
+              {totalToday === 0 && priorityDeals.length === 0 && (
+                <p className="py-8 text-center text-[13px] text-gray-400">🎉 كل شيء تحت السيطرة</p>
+              )}
+            </div>
 
-            <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3">
+            <div className="flex flex-col gap-2 border-t border-gray-100 bg-gray-25/60 px-4 py-3">
               <button
                 onClick={() => copilot.setOpen(true)}
-                className="w-full rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] py-2 text-[13px] font-semibold text-white transition hover:opacity-90"
+                className="w-full rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] py-2 text-[13px] font-semibold text-white shadow-sm transition hover:opacity-90"
               >
-                فتح الكوبايلوت
+                💬 فتح الكوبايلوت
               </button>
-              <button
-                onClick={() => router.push("/dashboard/tasks")}
-                className="w-full rounded-full border border-[#1a5c4f]/30 py-2 text-[13px] font-semibold text-[#1a5c4f] transition hover:bg-[#f0faf8]"
-              >
-                عرض كل المهام
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => router.push("/dashboard/tasks")}
+                  className="w-full rounded-full border border-[#1a5c4f]/25 bg-white py-2 text-[12px] font-semibold text-[#1a5c4f] transition hover:bg-[#f0faf8]"
+                >
+                  عرض كل المهام
+                </button>
+                <button
+                  onClick={() => router.push("/dashboard/deals?filter=active")}
+                  className="w-full rounded-full border border-[#1a5c4f]/25 bg-white py-2 text-[12px] font-semibold text-[#1a5c4f] transition hover:bg-[#f0faf8]"
+                >
+                  عرض كل الصفقات
+                </button>
+              </div>
               {process.env.NODE_ENV !== "production" && (
                 <button
                   onClick={() => {
