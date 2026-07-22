@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useCopilot } from "@/components/copilot/CopilotProvider";
 import { fetchBriefingData, type BriefingData, type BriefingTask, type StuckDeal } from "@/lib/dailyBriefing";
 
 const BRIEFING_KEY = "mawrid_briefing_seen";
 const PANEL_KEY = "mawrid_briefing_panel_collapsed";
+const EMPTY_BRIEFING: BriefingData = { todayTasks: [], overdueTasks: [], stuckDeals: [] };
 
 function shouldShowBriefing(): boolean {
   const seen = localStorage.getItem(BRIEFING_KEY);
@@ -40,6 +42,26 @@ function taskDot(t: BriefingTask, overdue: boolean) {
   return isToday ? "🟡" : "⚪";
 }
 
+/** "صباح الخير" before 10am, "أهلاً" until noon, "مساء الخير" after — makes the modal feel time-aware. */
+function greetingForHour(h: number): string {
+  if (h < 10) return "صباح الخير";
+  if (h < 12) return "أهلاً";
+  return "مساء الخير";
+}
+function greetingEmoji(h: number): string {
+  if (h < 10) return "☀️";
+  if (h < 12) return "🌤";
+  return "🌙";
+}
+
+/** One-line local summary of the day — no API call, pure data → text. */
+function daySummary(overdue: number, stuck: number, today: number): string {
+  if (overdue > 0) return `عندك ${overdue} ${overdue === 1 ? "مهمة متأخرة تحتاج" : "مهام متأخرة تحتاج"} اهتمامك أولاً`;
+  if (stuck > 0) return `عندك ${stuck} ${stuck === 1 ? "صفقة لم تتواصل معها" : "صفقات لم تتواصل معها"} من أكثر من أسبوع`;
+  if (today > 0) return `يوم منظم — عندك ${today} ${today === 1 ? "مهمة مجدولة" : "مهام مجدولة"} اليوم`;
+  return "🎉 ما عندك أي مهام أو صفقات عالقة — يوم خفيف!";
+}
+
 interface Suggestion {
   status: "loading" | "done" | "error" | "empty";
   action?: string;
@@ -47,11 +69,11 @@ interface Suggestion {
 }
 
 /** In-panel AI next-action suggestion — fetched only when the rep asks for it, never in the background. */
-function AISuggestButton({ deal, suggestion, onFetch }: { deal: StuckDeal; suggestion: Suggestion | undefined; onFetch: () => void }) {
+function AISuggestButton({ suggestion, onFetch }: { suggestion: Suggestion | undefined; onFetch: () => void }) {
   if (!suggestion) {
     return (
       <button
-        onClick={onFetch}
+        onClick={(e) => { e.stopPropagation(); onFetch(); }}
         className="mt-1 flex items-center gap-1 rounded-full bg-[#f0faf8] px-2 py-0.5 text-[11px] font-semibold text-[#1a5c4f] transition hover:bg-[#e2f4ef]"
       >
         ✨ اقترح لي إجراء
@@ -76,6 +98,7 @@ function AISuggestButton({ deal, suggestion, onFetch }: { deal: StuckDeal; sugge
 
 export default function DailyBriefing() {
   const router = useRouter();
+  const copilot = useCopilot();
   const [firstName, setFirstName] = useState("");
   const [data, setData] = useState<BriefingData | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -90,8 +113,21 @@ export default function DailyBriefing() {
     async function init() {
       const { data: userRes } = await supabase.auth.getUser();
       const name = (userRes.user?.user_metadata?.full_name as string) || (userRes.user?.email ?? "").split("@")[0] || "";
-      const briefing = await fetchBriefingData();
+      let briefing: BriefingData;
+      try {
+        briefing = await fetchBriefingData();
+      } catch (err) {
+        // A fetch failure must never leave the panel permanently blank — fall
+        // back to an empty briefing so the UI still mounts and is debuggable.
+        console.error("[DailyBriefing] fetchBriefingData failed", err);
+        briefing = EMPTY_BRIEFING;
+      }
       if (cancelled) return;
+      console.log("[DailyBriefing] briefing data:", {
+        todayTasks: briefing.todayTasks,
+        overdueTasks: briefing.overdueTasks,
+        stuckDeals: briefing.stuckDeals,
+      });
       setFirstName(name.split(" ")[0] || "");
       setData(briefing);
       if (shouldShowBriefing()) {
@@ -149,7 +185,7 @@ export default function DailyBriefing() {
         n.delete(task.id);
         return n;
       });
-    }, 1000);
+    }, 800);
   }, [completing]);
 
   const fetchSuggestion = useCallback(async (deal: StuckDeal) => {
@@ -179,27 +215,38 @@ export default function DailyBriefing() {
     }
   }, []);
 
+  const askCopilotAboutDeal = useCallback((deal: StuckDeal) => {
+    const name = deal.leadName || deal.name || "هذه الصفقة";
+    copilot.setOpen(true);
+    copilot.send(`وش أنصح أسوي مع صفقة ${name}؟`);
+  }, [copilot]);
+
   const remainingCount = useMemo(() => {
     if (!data) return 0;
     return data.todayTasks.length + data.overdueTasks.length;
   }, [data]);
 
+  const allClear = !!data && remainingCount === 0 && data.stuckDeals.length === 0;
+
   useEffect(() => {
-    if (!collapsed && data && remainingCount === 0 && data.stuckDeals.length === 0) {
+    if (!collapsed && allClear) {
       setCelebrate(true);
       const t = setTimeout(() => toggleCollapsed(true), 3000);
       return () => clearTimeout(t);
     }
     setCelebrate(false);
-  }, [collapsed, data, remainingCount, toggleCollapsed]);
+  }, [collapsed, allClear, toggleCollapsed]);
 
   if (!data) return null;
 
   const totalToday = data.todayTasks.length + data.overdueTasks.length;
-  const hasOverdueBadge = data.overdueTasks.length > 0;
-  const hasStuckBadge = data.stuckDeals.length > 0;
+  const totalPending = totalToday + data.stuckDeals.length;
+  const hasOverdue = data.overdueTasks.length > 0;
   // Priority queue: coldest deals surface first — that IS the prioritization.
   const priorityDeals = data.stuckDeals.slice(0, 5);
+  const pulseColor = hasOverdue ? "#ef4444" : allClear ? "#10b981" : "#f59e0b";
+  const now = new Date();
+  const summaryLine = daySummary(data.overdueTasks.length, data.stuckDeals.length, data.todayTasks.length);
 
   return (
     <>
@@ -217,9 +264,10 @@ export default function DailyBriefing() {
             }}
           >
             <p dir="auto" className="text-[24px] font-extrabold text-[#1e1b4b]">
-              🌅 صباح الخير، {firstName || "بك"}
+              {greetingEmoji(now.getHours())} {greetingForHour(now.getHours())}، {firstName || "بك"}
             </p>
-            <p className="mt-1 text-[13px] text-gray-400">{arabicDate(new Date())}</p>
+            <p className="mt-1 text-[13px] text-gray-400">{arabicDate(now)}</p>
+            <p dir="auto" className="mt-3 text-[15px] font-medium text-[#1a5c4f]">{summaryLine}</p>
             <div className="my-4 h-px bg-gray-100" />
 
             {totalToday > 0 && (
@@ -293,24 +341,27 @@ export default function DailyBriefing() {
             title="دليلك اليومي"
           >
             <span>🧭</span>
-            {hasOverdueBadge ? (
-              <span className="h-2 w-2 rounded-full bg-red-500" />
-            ) : hasStuckBadge ? (
-              <span className="h-2 w-2 rounded-full bg-amber-400" />
-            ) : null}
+            <span className="h-2 w-2 rounded-full" style={{ background: pulseColor }} />
           </button>
         ) : celebrate ? (
-          <div className="p-5 text-center">
-            <p dir="auto" className="text-[14px] font-semibold text-[#1e1b4b]">
-              🎉 أنجزت كل مهامك اليوم!
+          <div className="bg-[#f0fdf4] p-5 text-center transition-colors">
+            <p dir="auto" className="text-[14px] font-semibold text-[#166534]">
+              🎉 أنجزت كل شيء!
             </p>
           </div>
         ) : (
           <div className="flex flex-col overflow-y-auto p-4">
             <div className="mb-2 flex items-center justify-between">
-              <span dir="auto" className="text-[14px] font-bold text-[#1e1b4b]">
-                🧭 دليلك اليومي
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ background: pulseColor }} />
+                  <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: pulseColor }} />
+                </span>
+                <span dir="auto" className="text-[12px] font-semibold text-[#1a5c4f]">مساعد اليوم</span>
+                {totalPending > 0 && (
+                  <span className="rounded-full bg-[#1a5c4f]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#1a5c4f]">{totalPending}</span>
+                )}
+              </div>
               <button
                 onClick={() => toggleCollapsed(true)}
                 aria-label="طي اللوحة"
@@ -327,7 +378,10 @@ export default function DailyBriefing() {
                   const done = completing.has(t.id);
                   const overdue = data.overdueTasks.some((x) => x.id === t.id);
                   return (
-                    <div key={t.id} className={`flex items-center gap-2 py-1 transition-opacity ${done ? "opacity-40" : ""}`}>
+                    <div
+                      key={t.id}
+                      className={`flex items-center gap-2 rounded-lg px-2 py-1.5 transition-opacity ${overdue ? "bg-red-50" : ""} ${done ? "opacity-40" : ""}`}
+                    >
                       <button
                         onClick={() => completeTask(t)}
                         aria-label="إتمام المهمة"
@@ -342,9 +396,11 @@ export default function DailyBriefing() {
                         )}
                       </button>
                       <span dir="auto" className={`min-w-0 flex-1 truncate text-[13px] text-[#334155] ${done ? "line-through" : ""}`}>
-                        {taskDot(t, overdue)} {t.title || "مهمة"}
+                        {t.title || "مهمة"}
                       </span>
-                      <span className="flex-none font-mono text-[11px] text-gray-400">{timeAr(t.due_at)}</span>
+                      <span className={`flex-none font-mono text-[11px] ${overdue ? "font-semibold text-red-500" : "text-gray-400"}`}>
+                        {overdue ? "متأخرة" : timeAr(t.due_at)}
+                      </span>
                     </div>
                   );
                 })}
@@ -359,17 +415,17 @@ export default function DailyBriefing() {
                 </p>
                 <div className="mt-1 flex flex-col gap-2.5">
                   {priorityDeals.map((d) => (
-                    <div key={d.id} className="rounded-lg bg-gray-25 p-2">
-                      <button
-                        onClick={() => router.push(`/dashboard/deals/${d.id}/investigation`)}
-                        className="block w-full text-left"
-                      >
-                        <p dir="auto" className="truncate text-[13px] font-semibold text-[#1e1b4b]">
-                          {d.leadName || d.name || "صفقة"}
-                        </p>
-                        <p className="text-[11px] text-gray-500">{d.daysSinceContact} أيام بدون تواصل</p>
+                    <div key={d.id} className="rounded-lg bg-amber-50 p-2">
+                      <button onClick={() => askCopilotAboutDeal(d)} className="block w-full text-left">
+                        <div className="flex items-center justify-between gap-2">
+                          <p dir="auto" className="truncate text-[13px] font-semibold text-[#1e1b4b]">
+                            {d.leadName || d.name || "صفقة"}
+                          </p>
+                          <span className="flex-none text-[11px] font-semibold text-amber-600">{d.daysSinceContact} أيام</span>
+                        </div>
+                        <p dir="auto" className="mt-0.5 text-[11px] text-amber-700">💬 اسأل الكوبايلوت عن أفضل خطوة</p>
                       </button>
-                      <AISuggestButton deal={d} suggestion={suggestions[d.id]} onFetch={() => fetchSuggestion(d)} />
+                      <AISuggestButton suggestion={suggestions[d.id]} onFetch={() => fetchSuggestion(d)} />
                     </div>
                   ))}
                 </div>
@@ -380,13 +436,31 @@ export default function DailyBriefing() {
               <p className="py-6 text-center text-[13px] text-gray-400">🎉 كل شيء تحت السيطرة</p>
             )}
 
-            <div className="mt-3 h-px bg-gray-100" />
-            <button
-              onClick={() => router.push("/dashboard/tasks")}
-              className="mt-3 w-full rounded-full border border-[#1a5c4f]/30 py-2 text-[13px] font-semibold text-[#1a5c4f] transition hover:bg-[#f0faf8]"
-            >
-              فتح المهام الكاملة
-            </button>
+            <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3">
+              <button
+                onClick={() => copilot.setOpen(true)}
+                className="w-full rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] py-2 text-[13px] font-semibold text-white transition hover:opacity-90"
+              >
+                فتح الكوبايلوت
+              </button>
+              <button
+                onClick={() => router.push("/dashboard/tasks")}
+                className="w-full rounded-full border border-[#1a5c4f]/30 py-2 text-[13px] font-semibold text-[#1a5c4f] transition hover:bg-[#f0faf8]"
+              >
+                عرض كل المهام
+              </button>
+              {process.env.NODE_ENV !== "production" && (
+                <button
+                  onClick={() => {
+                    localStorage.removeItem(BRIEFING_KEY);
+                    location.reload();
+                  }}
+                  className="w-full rounded-full border border-dashed border-gray-300 py-1.5 text-[11px] font-medium text-gray-400 transition hover:border-gray-400 hover:text-gray-500"
+                >
+                  🔄 إعادة تعيين (dev)
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
