@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useCopilot } from "@/components/copilot/CopilotProvider";
@@ -8,7 +8,19 @@ import { fetchBriefingData, type BriefingData, type BriefingTask, type StuckDeal
 
 const BRIEFING_KEY = "mawrid_briefing_seen";
 const PANEL_KEY = "mawrid_briefing_panel_collapsed";
+const POS_KEY = "mawrid_briefing_panel_pos";
 const EMPTY_BRIEFING: BriefingData = { todayTasks: [], overdueTasks: [], stuckDeals: [] };
+
+interface Pos {
+  top: number;
+  left: number;
+}
+
+function clampPos(p: Pos, width: number, height: number): Pos {
+  const maxLeft = Math.max(8, window.innerWidth - width - 8);
+  const maxTop = Math.max(8, window.innerHeight - height - 8);
+  return { top: Math.min(Math.max(8, p.top), maxTop), left: Math.min(Math.max(8, p.left), maxLeft) };
+}
 
 function shouldShowBriefing(): boolean {
   const seen = localStorage.getItem(BRIEFING_KEY);
@@ -111,6 +123,66 @@ export default function DailyBriefing() {
   const [completing, setCompleting] = useState<Set<string>>(new Set());
   const [celebrate, setCelebrate] = useState(false);
   const [suggestions, setSuggestions] = useState<Record<string, Suggestion>>({});
+  const [pos, setPos] = useState<Pos | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ startX: number; startY: number; startTop: number; startLeft: number; moved: boolean } | null>(null);
+
+  // Default docking spot; overridden by whatever the rep last dragged it to.
+  useEffect(() => {
+    const saved = localStorage.getItem(POS_KEY);
+    if (saved) {
+      try {
+        setPos(JSON.parse(saved));
+        return;
+      } catch {
+        /* fall through to default */
+      }
+    }
+    setPos({ top: 96, left: window.innerWidth - 320 - 16 });
+  }, []);
+
+  const beginDrag = useCallback((e: React.PointerEvent) => {
+    if (!pos) return;
+    dragRef.current = { startX: e.clientX, startY: e.clientY, startTop: pos.top, startLeft: pos.left, moved: false };
+    setDragging(true);
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, [pos]);
+
+  useEffect(() => {
+    if (!dragging) return;
+    function onMove(e: PointerEvent) {
+      const d = dragRef.current;
+      if (!d) return;
+      const dx = e.clientX - d.startX;
+      const dy = e.clientY - d.startY;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) d.moved = true;
+      if (!d.moved) return;
+      const w = panelRef.current?.offsetWidth ?? 320;
+      const h = panelRef.current?.offsetHeight ?? 300;
+      setPos(clampPos({ top: d.startTop + dy, left: d.startLeft + dx }, w, h));
+    }
+    function onUp() {
+      setDragging(false);
+      setPos((p) => {
+        if (p) localStorage.setItem(POS_KEY, JSON.stringify(p));
+        return p;
+      });
+    }
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, [dragging]);
+
+  const planMyDay = useCallback(() => {
+    copilot.setOpen(true);
+    copilot.send(
+      "خطط لي يومي: رتب أولوياتي بناءً على مهامي الحالية والصفقات العالقة وآخر نشاط لكل صفقة، وأعطني خطوات عملية مرتبة أبدأ فيها الآن.",
+    );
+  }, [copilot]);
 
   useEffect(() => {
     let cancelled = false;
@@ -235,7 +307,7 @@ export default function DailyBriefing() {
     setCelebrate(false);
   }, [collapsed, allClear, toggleCollapsed]);
 
-  if (!data) return null;
+  if (!data || !pos) return null;
 
   const totalToday = data.todayTasks.length + data.overdueTasks.length;
   const totalPending = totalToday + data.stuckDeals.length;
@@ -324,15 +396,20 @@ export default function DailyBriefing() {
       )}
 
       <div
-        className="fixed right-0 z-40 flex flex-col overflow-hidden rounded-l-2xl border border-gray-100 bg-white shadow-[-4px_0_24px_rgba(0,0,0,0.08)] transition-all duration-300 ease-in-out"
-        style={{ width: collapsed ? 56 : 320, top: 96, bottom: collapsed ? "auto" : 110 }}
+        ref={panelRef}
+        className={`fixed z-40 flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_8px_32px_rgba(0,0,0,0.1)] ${dragging ? "" : "transition-all duration-300 ease-in-out"}`}
+        style={{ width: collapsed ? 56 : 320, top: pos.top, left: pos.left, maxHeight: collapsed ? undefined : "min(70vh, 560px)" }}
       >
         {collapsed ? (
           <button
-            onClick={() => toggleCollapsed(false)}
-            className="relative flex flex-col items-center gap-1.5 px-2 py-4 transition hover:bg-gray-25"
-            aria-label="فتح دليلك اليومي"
-            title="دليلك اليومي"
+            onPointerDown={beginDrag}
+            onClick={() => {
+              if (dragRef.current?.moved) return; // suppress the click that follows a drag
+              toggleCollapsed(false);
+            }}
+            className="relative flex cursor-grab flex-col items-center gap-1.5 px-2 py-4 transition hover:bg-gray-25 active:cursor-grabbing"
+            aria-label="فتح دليلك اليومي — اسحب لتحريكه"
+            title="دليلك اليومي (اسحب لتحريكه)"
           >
             <span className="text-2xl">🧭</span>
             <span dir="auto" className="text-[10px] font-semibold text-gray-400">مساعدك</span>
@@ -352,9 +429,17 @@ export default function DailyBriefing() {
             <p dir="auto" className="text-[14px] font-semibold text-[#166534]">أنجزت كل شيء!</p>
           </div>
         ) : (
-          <div className="flex flex-col overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-gray-100 bg-gradient-to-l from-[#f0faf8] to-white px-4 py-3.5">
-              <div className="flex items-center gap-2">
+          <div className="flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between border-b border-gray-100 bg-gradient-to-l from-[#f0faf8] to-white px-2 py-2.5">
+              <button
+                onPointerDown={beginDrag}
+                aria-label="اسحب لتحريك اللوحة"
+                title="اسحب لتحريك اللوحة"
+                className="cursor-grab rounded-lg px-1.5 py-1 text-gray-300 transition hover:bg-white hover:text-gray-400 active:cursor-grabbing"
+              >
+                ⠿
+              </button>
+              <div className="flex flex-1 items-center gap-2 px-1">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ background: pulseColor }} />
                   <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: pulseColor }} />
@@ -373,7 +458,7 @@ export default function DailyBriefing() {
               </button>
             </div>
 
-            <div className="flex-1 px-4 pb-3">
+            <div className="flex-1 overflow-y-auto px-4 pb-3">
               {totalToday > 0 && (
                 <>
                   <SectionLabel icon="📋" tone="bg-[#e8f4f1] text-[#1a5c4f]">مهامك</SectionLabel>
@@ -454,8 +539,14 @@ export default function DailyBriefing() {
 
             <div className="flex flex-col gap-2 border-t border-gray-100 bg-gray-25/60 px-4 py-3">
               <button
-                onClick={() => copilot.setOpen(true)}
+                onClick={planMyDay}
                 className="w-full rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] py-2 text-[13px] font-semibold text-white shadow-sm transition hover:opacity-90"
+              >
+                🧠 خطط لي يومي
+              </button>
+              <button
+                onClick={() => copilot.setOpen(true)}
+                className="w-full rounded-full border border-[#1a5c4f]/25 bg-white py-2 text-[12px] font-semibold text-[#1a5c4f] transition hover:bg-[#f0faf8]"
               >
                 💬 فتح الكوبايلوت
               </button>
