@@ -324,25 +324,26 @@ export default function DailyBriefing() {
       )}
 
       <div
-        className="fixed right-0 top-1/2 z-40 flex -translate-y-1/2 flex-col overflow-hidden rounded-l-2xl border border-gray-100 bg-white shadow-[-4px_0_24px_rgba(0,0,0,0.08)] transition-[width] duration-300 ease-in-out"
-        style={{ width: collapsed ? 52 : 320, maxHeight: "82vh" }}
+        className="fixed right-0 z-40 flex flex-col overflow-hidden rounded-l-2xl border border-gray-100 bg-white shadow-[-4px_0_24px_rgba(0,0,0,0.08)] transition-all duration-300 ease-in-out"
+        style={{ width: collapsed ? 56 : 320, top: 96, bottom: collapsed ? "auto" : 110 }}
       >
         {collapsed ? (
           <button
             onClick={() => toggleCollapsed(false)}
-            className="flex flex-col items-center gap-2.5 px-2 py-5 transition hover:bg-gray-25"
+            className="relative flex flex-col items-center gap-1.5 px-2 py-4 transition hover:bg-gray-25"
             aria-label="فتح دليلك اليومي"
             title="دليلك اليومي"
           >
-            <span className="text-xl">🧭</span>
-            <span className="relative flex h-2 w-2">
-              {(hasOverdue || totalPending > 0) && (
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ background: pulseColor }} />
-              )}
-              <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: pulseColor }} />
-            </span>
+            <span className="text-2xl">🧭</span>
+            <span dir="auto" className="text-[10px] font-semibold text-gray-400">مساعدك</span>
             {totalPending > 0 && (
-              <span className="rounded-full bg-[#1a5c4f] px-1.5 py-0.5 text-[10px] font-bold text-white">{totalPending}</span>
+              <span className="absolute -top-1.5 -left-1.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white ring-2 ring-white">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                <span className="relative">{totalPending}</span>
+              </span>
+            )}
+            {totalPending === 0 && (
+              <span className="absolute -top-1 -left-1 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
             )}
           </button>
         ) : celebrate ? (
