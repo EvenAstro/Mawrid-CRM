@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { ToastProvider } from "@/components/Toast";
 import CopilotProvider from "@/components/copilot/CopilotProvider";
 import CopilotWidget from "@/components/copilot/CopilotWidget";
+import DailyBriefing from "@/components/DailyBriefing";
 import { initials as initialsOf } from "@/lib/format";
 import {
   DashboardIcon,
@@ -221,6 +222,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div key={pathname} className="page-content mx-auto max-w-[1280px] p-8">{children}</div>
         </main>
         <CopilotWidget />
+        <DailyBriefing />
       </div>
       </CopilotProvider>
     </ToastProvider>
