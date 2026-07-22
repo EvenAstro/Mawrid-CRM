@@ -16,8 +16,8 @@ export const SITUATIONAL_TAGS = [
 
 export type SituationalTag = (typeof SITUATIONAL_TAGS)[number];
 
-const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
-const CLASSIFY_MODEL = "llama-3.3-70b-versatile";
+const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
+const CLASSIFY_MODEL = "meta-llama/llama-3.3-70b-instruct";
 
 function buildPrompt(messageText: string): string {
   return `Classify this customer message into exactly one category:
@@ -54,22 +54,22 @@ interface GroqChatResponse {
 
 /**
  * Classifies a single inbound customer message into one of SITUATIONAL_TAGS using
- * Groq's OpenAI-compatible chat completions API (llama-3.3-70b-versatile).
- * Server-side only (reads GROQ_API_KEY). Returns null on any failure — including an
+ * OpenRouter's OpenAI-compatible chat completions API (meta-llama/llama-3.3-70b-instruct).
+ * Server-side only (reads OPENROUTER_API_KEY). Returns null on any failure — including an
  * off-list model response — so callers can leave situational_tag null and retry later.
  */
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function classifyActivity(messageText: string): Promise<SituationalTag | null> {
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    console.error("[classifyActivity] GROQ_API_KEY is not set");
+    console.error("[classifyActivity] OPENROUTER_API_KEY is not set");
     return null;
   }
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const res = await fetch(GROQ_ENDPOINT, {
+      const res = await fetch(OPENROUTER_ENDPOINT, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -91,7 +91,7 @@ export async function classifyActivity(messageText: string): Promise<Situational
       }
 
       if (!res.ok) {
-        console.error(`[classifyActivity] Groq API error ${res.status}`, await res.text());
+        console.error(`[classifyActivity] OpenRouter API error ${res.status}`, await res.text());
         return null;
       }
 

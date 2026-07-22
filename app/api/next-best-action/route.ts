@@ -6,8 +6,8 @@ import { buildPrompt } from "@/lib/nextBestAction/buildPrompt";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct";
 const CACHE_TTL_MS = 30 * 60 * 1000;
 
 interface Recommendation {
@@ -101,20 +101,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Deal ${dealId} not found` }, { status: 404 });
   }
 
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "GROQ_API_KEY is not configured" }, { status: 500 });
+    return NextResponse.json({ error: "OPENROUTER_API_KEY is not configured" }, { status: 500 });
   }
 
   const { system, user } = buildPrompt(context);
 
   let content: string | undefined;
   try {
-    const res = await fetch(GROQ_ENDPOINT, {
+    const res = await fetch(OPENROUTER_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: GROQ_MODEL,
+        model: OPENROUTER_MODEL,
         temperature: 0.3,
         max_tokens: 400,
         messages: [
@@ -125,14 +125,14 @@ export async function POST(req: NextRequest) {
     });
 
     if (!res.ok) {
-      console.error("[next-best-action] Groq API error", res.status, await res.text());
+      console.error("[next-best-action] OpenRouter API error", res.status, await res.text());
       return NextResponse.json({ error: "Recommendation model request failed" }, { status: 502 });
     }
 
     const data = (await res.json()) as GroqChatResponse;
     content = data.choices?.[0]?.message?.content ?? undefined;
   } catch (err) {
-    console.error("[next-best-action] Groq call failed", err);
+    console.error("[next-best-action] OpenRouter call failed", err);
     return NextResponse.json({ error: "Recommendation model request failed" }, { status: 502 });
   }
 
