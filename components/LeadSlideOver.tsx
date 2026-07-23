@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import NextBestActionCard from "@/components/NextBestActionCard";
+import { fetchLeadScoreModel, scoreWithModel } from "@/lib/leadScore/computeLeadScore";
 
 export interface Lead {
   id: string | number;
@@ -36,15 +37,6 @@ interface LeadScore {
   matched: boolean;
   source: string;
 }
-
-const SOURCE_RATES: Record<string, number> = {
-  "Employee Referral": 0.0,
-  "Partner Referral": 0.0,
-  Snapchat: 0.388,
-  TikTok: 0.667,
-  Website: 0.75,
-  Instagram: 0.805,
-};
 
 function initials(name: string | null): string {
   if (!name) return "—";
@@ -127,19 +119,16 @@ export default function LeadSlideOver({
             t.campaign_id && t.campaign_id !== "--",
         ) || false;
       const matched = !!lead.establishment_id;
-      const source = lead.sources?.label || "Instagram";
+      const source = lead.sources?.label || "غير محدد";
 
-      let pJunk = SOURCE_RATES[source] ?? 0.5;
-      if (matched) pJunk *= 0.05;
-      if (has_campaign) pJunk *= 0.88;
-      pJunk = Math.min(1, Math.max(0, pJunk));
+      const model = await fetchLeadScoreModel();
+      const result = scoreWithModel(model, { source, matched, hasCampaign: has_campaign });
 
-      const pClean = 1 - pJunk;
       setLeadScore({
-        pJunk,
-        pClean,
-        score: Math.round(pClean * 100),
-        isJunk: pJunk >= 0.5,
+        pJunk: result.pJunk,
+        pClean: 1 - result.pJunk,
+        score: result.score,
+        isJunk: result.pJunk >= 0.5,
         hasCampaign: has_campaign,
         matched,
         source,

@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { SearchIcon, LeadsIcon } from "@/components/navIcons";
 import LeadSlideOver, { type Lead } from "@/components/LeadSlideOver";
 import NewLeadSlideOver from "@/components/NewLeadSlideOver";
+import { fetchLeadScoreModel, scoreWithModel, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
 
 const PAGE_SIZE = 15;
 
@@ -14,21 +15,13 @@ function initials(name: string | null): string {
   return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "—";
 }
 
-const AI_SOURCE_RATES: Record<string, number> = {
-  "Employee Referral": 0.0,
-  "Partner Referral": 0.0,
-  Snapchat: 0.388,
-  TikTok: 0.667,
-  Website: 0.75,
-  Instagram: 0.805,
-};
-
-function getAIScore(lead: Lead): number {
-  const source = lead.sources?.label || "Instagram";
-  let p_junk = AI_SOURCE_RATES[source] ?? 0.5;
-  if (lead.establishment_id) p_junk *= 0.05;
-  p_junk = Math.min(1, Math.max(0, p_junk));
-  return Math.round((1 - p_junk) * 100);
+function getAIScore(lead: Lead, model: LeadScoreModel | null): number {
+  if (!model) return 50;
+  return scoreWithModel(model, {
+    source: lead.sources?.label || "غير محدد",
+    matched: !!lead.establishment_id,
+    hasCampaign: false,
+  }).score;
 }
 
 function scoreHex(score: number): string {
@@ -120,6 +113,7 @@ export default function LeadsPage() {
   const [newLeadOpen, setNewLeadOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "clean" | "junk">("all");
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
+  const [scoreModel, setScoreModel] = useState<LeadScoreModel | null>(null);
 
   // Honor ?filter= and ?open= params from dashboard deep-links.
   useEffect(() => {
@@ -152,14 +146,17 @@ export default function LeadsPage() {
 
   useEffect(() => {
     load();
+    fetchLeadScoreModel()
+      .then(setScoreModel)
+      .catch((err) => console.error("[Leads] lead score model failed", err));
   }, []);
 
   // Cache AI scores per lead id so they aren't recomputed on every render.
   const scoreCache = useMemo(() => {
     const map = new Map<string | number, number>();
-    for (const l of leads) map.set(l.id, getAIScore(l));
+    for (const l of leads) map.set(l.id, getAIScore(l, scoreModel));
     return map;
-  }, [leads]);
+  }, [leads, scoreModel]);
 
   // Open the deep-linked lead once data has loaded.
   useEffect(() => {
@@ -409,7 +406,7 @@ export default function LeadsPage() {
 
                       {/* AI Score */}
                       <td className="px-6 py-3.5">
-                        <AiScoreRing score={scoreCache.get(lead.id) ?? getAIScore(lead)} />
+                        <AiScoreRing score={scoreCache.get(lead.id) ?? getAIScore(lead, scoreModel)} />
                       </td>
 
                       {/* Owner */}
