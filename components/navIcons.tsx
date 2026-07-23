@@ -144,6 +144,14 @@ export const ChevronDownIcon = ({ className }: P) => (
   </Svg>
 );
 
+/* open-book */
+export const PlaybookIcon = ({ className }: P) => (
+  <Svg className={className}>
+    <path d="M12 6.5c-1.8-1.3-4-2-6.5-2-.6 0-1 .4-1 1v11c0 .6.4 1 1 1 2.5 0 4.7.7 6.5 2 1.8-1.3 4-2 6.5-2 .6 0 1-.4 1-1v-11c0-.6-.4-1-1-1-2.5 0-4.7.7-6.5 2Z" />
+    <path d="M12 6.5v13" />
+  </Svg>
+);
+
 /* logout */
 export const LogoutIcon = ({ className }: P) => (
   <Svg className={className}>
