@@ -20,6 +20,7 @@ import {
   AnalyticsIcon,
   ScoringIcon,
   PlaybookIcon,
+  InsightsIcon,
   BellIcon,
   LogoutIcon,
 } from "@/components/navIcons";
@@ -45,6 +46,7 @@ const navGroups = [
   {
     heading: "الذكاء",
     items: [
+      { label: "لوحة الرؤى", href: "/dashboard/insights", Icon: InsightsIcon },
       { label: "التحليلات", href: "/dashboard/analytics", Icon: AnalyticsIcon },
       { label: "تقييم العملاء", href: "/dashboard/lead-scoring", Icon: ScoringIcon },
       { label: "الدليل التكتيكي", href: "/dashboard/playbook", Icon: PlaybookIcon },

@@ -144,6 +144,14 @@ export const ChevronDownIcon = ({ className }: P) => (
   </Svg>
 );
 
+/* sparkle-chart */
+export const InsightsIcon = ({ className }: P) => (
+  <Svg className={className}>
+    <path d="M4 20V11M10 20V6M16 20v-8M20 20v-4" />
+    <path d="M18.5 3.5v3M17 5h3" />
+  </Svg>
+);
+
 /* open-book */
 export const PlaybookIcon = ({ className }: P) => (
   <Svg className={className}>
