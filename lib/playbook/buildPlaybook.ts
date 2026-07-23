@@ -6,6 +6,11 @@ import { SITUATIONAL_TAGS, type SituationalTag } from "@/lib/classifyActivity";
  * together are what mark a group as trustworthy. */
 export const MIN_SAMPLE = 4;
 
+/** Max age between an inbound classification and the deal's close before we
+ * treat the classification as stale (not representative of what the customer
+ * was actually thinking at close). 60 days is generous for a B2B sales cycle. */
+const MAX_TAG_AGE_MS = 60 * 86_400_000;
+
 export const TAG_LABELS: Record<SituationalTag, string> = {
   price_objection: "اعتراض على السعر",
   technical_concern: "استفسار تقني",
@@ -50,6 +55,7 @@ interface DealRow {
   lead_id: string | null;
   expected_value_minor: number | null;
   won_value_minor: number | null;
+  created_at: string | null;
   updated_at: string | null;
   pipeline_stages: { label: string | null; terminal_type: string | null } | null;
   lost_reasons: { label: string | null } | null;
@@ -87,10 +93,14 @@ export interface PlaybookGroup {
   liftPP: number;
   confident: boolean;
   wonValueSAR: number;
+  /** How many of the won deals in this group had no captured value (so the
+   * total above understates by an unknown amount). */
+  wonValueMissingCount: number;
   /** Up to 3 closing-move examples — the LAST outbound message before each
    * won deal, i.e. what was actually said just before it closed. */
   wonClosingMessages: string[];
-  /** Full ranked list of loss reasons (label + count), highest first. */
+  /** Full ranked list of loss reasons (label + count). Total always equals
+   * `lost`; deals with no captured reason land under "غير مسجّل". */
   lossReasons: LossReasonRow[];
 }
 
@@ -102,6 +112,20 @@ export interface PlaybookHighlights {
   bestSource: { source: string; winRatePct: number; total: number } | null;
 }
 
+/** Transparent breakdown of why some resolved deals didn't make it into the
+ * playbook — surfaced on the page so the user can see the true data quality
+ * instead of trusting one aggregate coverage %. */
+export interface DataQualityReport {
+  resolvedDeals: number;
+  includedDeals: number;
+  excludedNoInbound: number;
+  excludedNoTag: number;
+  excludedStaleTag: number;
+  wonDealsMissingValue: number;
+  lostDealsMissingReason: number;
+  closeDateSource: { fromUpdated: number; fromCreated: number; missing: number };
+}
+
 export interface PlaybookData {
   groups: PlaybookGroup[];
   coverage: { resolvedDeals: number; taggedDeals: number; coveragePct: number };
@@ -111,6 +135,8 @@ export interface PlaybookData {
   highlights: PlaybookHighlights;
   /** The distinct list of source labels present across all groups, for filters. */
   sources: string[];
+  /** Per-deal data-quality accounting — see DataQualityReport. */
+  quality: DataQualityReport;
 }
 
 function isSituationalTag(v: string | null): v is SituationalTag {
@@ -135,17 +161,28 @@ function wilsonInterval(successes: number, trials: number): [number, number] {
 
 /**
  * Aggregates every resolved (won/lost) deal by its last-known customer
- * situation (situational_tag) × lead source into real win-rate stats —
- * augmented with a Wilson confidence interval, lift vs baseline, and the
- * actual last outbound message before each won deal (the closing move,
- * not a random outbound). Every number here is derived from data on the
- * deals + activities tables — no LLM guesswork.
+ * situation (situational_tag) × lead source into real win-rate stats. Every
+ * number here is derived from data on the deals + activities tables — no
+ * LLM guesswork.
+ *
+ * Data-quality rules applied here:
+ * - The classification for a deal is the LAST inbound tag that occurred
+ *   BEFORE the deal's close date (updated_at, falling back to created_at,
+ *   falling back to "now"). Tags added after close are ignored.
+ * - Same rule for closing-move outbound messages.
+ * - Won deals with no captured monetary value are counted in a separate
+ *   `wonValueMissingCount` field so a low `wonValueSAR` doesn't silently
+ *   mislead the reader.
+ * - Lost deals with no captured `lost_reason` are always shown under a
+ *   "غير مسجّل" bucket so the sum of reasons always equals `lost`.
+ * - Every excluded deal is counted in a DataQualityReport surfaced to the
+ *   page, so coverage isn't presented as a single opaque percentage.
  */
 export async function buildPlaybook(): Promise<PlaybookData> {
   const dealsRes = await supabase
     .from("deals")
     .select(
-      "id, name, lead_id, expected_value_minor, won_value_minor, updated_at, pipeline_stages(label, terminal_type), lost_reasons(label), leads(sources(label))",
+      "id, name, lead_id, expected_value_minor, won_value_minor, created_at, updated_at, pipeline_stages(label, terminal_type), lost_reasons(label), leads(sources(label))",
     )
     .is("deleted_at", null);
   if (dealsRes.error) console.error("[buildPlaybook] deals fetch failed", dealsRes.error);
@@ -192,43 +229,123 @@ export async function buildPlaybook(): Promise<PlaybookData> {
     won: number;
     lost: number;
     wonValueSAR: number;
+    wonValueMissingCount: number;
     closingMessages: string[];
-    lostReasons: Map<string, number>;
+    /** null key = "غير مسجّل" (loss reason wasn't captured on the deal) */
+    lostReasons: Map<string | null, number>;
   };
   const buckets = new Map<string, Bucket>();
 
   let overallWon = 0;
   let overallTotal = 0;
 
+  const quality: DataQualityReport = {
+    resolvedDeals: resolved.length,
+    includedDeals: 0,
+    excludedNoInbound: 0,
+    excludedNoTag: 0,
+    excludedStaleTag: 0,
+    wonDealsMissingValue: 0,
+    lostDealsMissingReason: 0,
+    closeDateSource: { fromUpdated: 0, fromCreated: 0, missing: 0 },
+  };
+
   for (const d of resolved) {
     const dealActsForD = byEntity.get(`deal:${d.id}`) ?? [];
     const leadActsForD = d.lead_id ? byEntity.get(`lead:${d.lead_id}`) ?? [] : [];
-    const combinedInbound = [...dealActsForD, ...leadActsForD]
-      .filter((a) => a.direction === "inbound" && isSituationalTag(a.situational_tag))
-      .sort((a, b) => new Date(b.occurred_at ?? 0).getTime() - new Date(a.occurred_at ?? 0).getTime());
-    const tag = combinedInbound[0]?.situational_tag as SituationalTag | undefined;
-    if (!tag) continue; // no classified customer situation — can't place it in the playbook
+    const combined = [...dealActsForD, ...leadActsForD];
 
+    // Establish the deal's presumed close cutoff. updated_at is the best signal
+    // we have without a dedicated closed_at column; if that's missing we fall
+    // back to created_at, and only as a last resort to "now" (which is a real
+    // data-quality issue and gets counted).
+    let closeMs: number;
+    if (d.updated_at) {
+      closeMs = new Date(d.updated_at).getTime();
+      quality.closeDateSource.fromUpdated++;
+    } else if (d.created_at) {
+      closeMs = new Date(d.created_at).getTime();
+      quality.closeDateSource.fromCreated++;
+    } else {
+      closeMs = Date.now();
+      quality.closeDateSource.missing++;
+    }
+
+    // Only consider inbound tags that occurred BEFORE the deal closed, so a
+    // stray tag added after the close doesn't reclassify a completed deal.
+    const inboundBeforeClose = combined
+      .filter(
+        (a) =>
+          a.direction === "inbound" &&
+          isSituationalTag(a.situational_tag) &&
+          a.occurred_at &&
+          new Date(a.occurred_at).getTime() <= closeMs,
+      )
+      .sort((a, b) => new Date(b.occurred_at ?? 0).getTime() - new Date(a.occurred_at ?? 0).getTime());
+
+    const anyInbound = combined.some((a) => a.direction === "inbound");
+    const anyTaggedInboundEver = combined.some((a) => a.direction === "inbound" && isSituationalTag(a.situational_tag));
+
+    if (!anyInbound) {
+      quality.excludedNoInbound++;
+      continue;
+    }
+    if (!anyTaggedInboundEver) {
+      quality.excludedNoTag++;
+      continue;
+    }
+    if (inboundBeforeClose.length === 0) {
+      // Every classified inbound is dated AFTER close — the tag is stale.
+      quality.excludedStaleTag++;
+      continue;
+    }
+
+    // Guard against wildly stale classifications: if the last inbound tag is
+    // older than MAX_TAG_AGE_MS before close, its representativeness is weak.
+    const lastTag = inboundBeforeClose[0];
+    const tagAge = closeMs - new Date(lastTag.occurred_at as string).getTime();
+    if (tagAge > MAX_TAG_AGE_MS) {
+      quality.excludedStaleTag++;
+      continue;
+    }
+
+    const tag = lastTag.situational_tag as SituationalTag;
     const source = d.leads?.sources?.label || "غير محدد";
     const key = `${tag}::${source}`;
     const bucket = buckets.get(key) ?? {
       won: 0,
       lost: 0,
       wonValueSAR: 0,
+      wonValueMissingCount: 0,
       closingMessages: [] as string[],
-      lostReasons: new Map<string, number>(),
+      lostReasons: new Map<string | null, number>(),
     };
+
     const isWon = d.pipeline_stages?.terminal_type === "won";
     overallTotal++;
+    quality.includedDeals++;
+
     if (isWon) {
       overallWon++;
       bucket.won++;
-      bucket.wonValueSAR += Math.round((d.won_value_minor ?? d.expected_value_minor ?? 0) / 100);
-      // Closing move: the LAST outbound message before the deal was updated (i.e. closed as won).
-      // Not a random outbound — this is what was said just before it closed.
-      const closingCutoff = d.updated_at ? new Date(d.updated_at).getTime() : Date.now();
+
+      const rawValue = d.won_value_minor ?? d.expected_value_minor;
+      if (rawValue == null) {
+        bucket.wonValueMissingCount++;
+        quality.wonDealsMissingValue++;
+      } else {
+        bucket.wonValueSAR += Math.round(rawValue / 100);
+      }
+
+      // Closing move: the LAST outbound message strictly before close.
       const lastOutbound = dealActsForD
-        .filter((a) => a.direction === "outbound" && a.body && a.occurred_at && new Date(a.occurred_at).getTime() <= closingCutoff)
+        .filter(
+          (a) =>
+            a.direction === "outbound" &&
+            a.body &&
+            a.occurred_at &&
+            new Date(a.occurred_at).getTime() <= closeMs,
+        )
         .sort((a, b) => new Date(b.occurred_at ?? 0).getTime() - new Date(a.occurred_at ?? 0).getTime())[0];
       if (lastOutbound?.body && bucket.closingMessages.length < 3) {
         const trimmed = lastOutbound.body.length > 200 ? `${lastOutbound.body.slice(0, 200)}…` : lastOutbound.body;
@@ -237,7 +354,10 @@ export async function buildPlaybook(): Promise<PlaybookData> {
     } else {
       bucket.lost++;
       const reason = d.lost_reasons?.label || null;
-      if (reason) bucket.lostReasons.set(reason, (bucket.lostReasons.get(reason) ?? 0) + 1);
+      // Always count the deal — null-reason lands under a dedicated bucket
+      // instead of silently disappearing. This way sum(lossReasons) === lost.
+      bucket.lostReasons.set(reason, (bucket.lostReasons.get(reason) ?? 0) + 1);
+      if (reason == null) quality.lostDealsMissingReason++;
     }
     buckets.set(key, bucket);
   }
@@ -251,7 +371,7 @@ export async function buildPlaybook(): Promise<PlaybookData> {
     const [low, high] = wilsonInterval(b.won, total);
     const rate = total ? b.won / total : 0;
     const lossReasons: LossReasonRow[] = [...b.lostReasons.entries()]
-      .map(([reason, count]) => ({ reason, count }))
+      .map(([reason, count]) => ({ reason: reason ?? "غير مسجّل", count }))
       .sort((a, c) => c.count - a.count);
     return {
       tag,
@@ -267,19 +387,12 @@ export async function buildPlaybook(): Promise<PlaybookData> {
       liftPP: Math.round((rate - baselineWinRate) * 100),
       confident: total >= MIN_SAMPLE,
       wonValueSAR: b.wonValueSAR,
+      wonValueMissingCount: b.wonValueMissingCount,
       wonClosingMessages: b.closingMessages,
       lossReasons,
     };
   });
   groups.sort((a, b) => b.total - a.total);
-
-  const taggedDeals = resolved.filter((d) => {
-    const dealActsForD = byEntity.get(`deal:${d.id}`) ?? [];
-    const leadActsForD = d.lead_id ? byEntity.get(`lead:${d.lead_id}`) ?? [] : [];
-    return [...dealActsForD, ...leadActsForD].some(
-      (a) => a.direction === "inbound" && isSituationalTag(a.situational_tag),
-    );
-  }).length;
 
   // ── Highlights: pull out the single biggest signals worth flagging ──
   const confident = groups.filter((g) => g.confident);
@@ -316,11 +429,12 @@ export async function buildPlaybook(): Promise<PlaybookData> {
     groups,
     coverage: {
       resolvedDeals: resolved.length,
-      taggedDeals,
-      coveragePct: resolved.length ? Math.round((taggedDeals / resolved.length) * 100) : 0,
+      taggedDeals: quality.includedDeals,
+      coveragePct: resolved.length ? Math.round((quality.includedDeals / resolved.length) * 100) : 0,
     },
     baselineWinRatePct,
     highlights: { bestGroup, worstGroup, bestObjection, hardestObjection, bestSource },
     sources,
+    quality,
   };
 }

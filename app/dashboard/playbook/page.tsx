@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { buildPlaybook, MIN_SAMPLE, TAG_LABELS, type PlaybookData, type PlaybookGroup } from "@/lib/playbook/buildPlaybook";
+import {
+  buildPlaybook,
+  MIN_SAMPLE,
+  TAG_LABELS,
+  type PlaybookData,
+  type PlaybookGroup,
+  type DataQualityReport,
+} from "@/lib/playbook/buildPlaybook";
 import { money } from "@/lib/format";
 import Skeleton from "@/components/ui/Skeleton";
 import type { SituationalTag } from "@/lib/classifyActivity";
@@ -30,6 +37,19 @@ function ConfidenceBar({ pct, lowPct, highPct, color }: { pct: number; lowPct: n
   );
 }
 
+/* ---------- Won/Lost split bar ---------- */
+function SplitBar({ won, lost }: { won: number; lost: number }) {
+  const total = won + lost;
+  if (total === 0) return null;
+  const wonPct = (won / total) * 100;
+  return (
+    <div className="flex h-2 w-full overflow-hidden rounded-full bg-gray-100">
+      <div className="h-full bg-[#10b981]" style={{ width: `${wonPct}%` }} />
+      <div className="h-full bg-[#ef4444]" style={{ width: `${100 - wonPct}%` }} />
+    </div>
+  );
+}
+
 /* ---------- Group card ---------- */
 function GroupCard({ g, baselineWinRatePct }: { g: PlaybookGroup; baselineWinRatePct: number }) {
   const [open, setOpen] = useState(false);
@@ -40,7 +60,7 @@ function GroupCard({ g, baselineWinRatePct }: { g: PlaybookGroup; baselineWinRat
   const liftColor = g.liftPP > 0 ? "#10b981" : "#ef4444";
 
   return (
-    <div className={`${CARD} flex flex-col p-5`}>
+    <div className={`${CARD} flex flex-col p-5 transition-shadow hover:shadow-[0_2px_10px_rgba(0,0,0,0.05)]`}>
       {/* Header row */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -55,11 +75,13 @@ function GroupCard({ g, baselineWinRatePct }: { g: PlaybookGroup; baselineWinRat
           <span className="text-[26px] font-black leading-none tabular-nums" style={{ color }}>
             {g.winRatePct}%
           </span>
-          {hasLift && (
+          {hasLift ? (
             <span className="mt-1 flex items-center gap-1 text-[10.5px] font-bold tabular-nums" style={{ color: liftColor }}>
               {liftSign} {liftAbs}
               <span className="text-[9px] font-medium">نقطة عن المتوسط</span>
             </span>
+          ) : (
+            <span className="mt-1 text-[10px] text-muted">مطابق للمتوسط</span>
           )}
         </div>
       </div>
@@ -69,22 +91,34 @@ function GroupCard({ g, baselineWinRatePct }: { g: PlaybookGroup; baselineWinRat
         <ConfidenceBar pct={g.winRatePct} lowPct={g.winRateLowPct} highPct={g.winRateHighPct} color={color} />
         <div className="mt-1 flex items-center justify-between text-[10px] text-[#94a3b8]">
           <span className="tabular-nums">{g.winRateLowPct}%</span>
-          <span className="tracking-wider">مجال الثقة 95%</span>
+          <span>المدى الحقيقي المحتمل (ثقة 95%)</span>
           <span className="tabular-nums">{g.winRateHighPct}%</span>
         </div>
       </div>
 
-      {/* Meta row: wins/losses/value */}
-      <div className="mt-4 flex items-center justify-between border-t border-gray-50 pt-3 text-[12px]">
-        <div className="flex items-center gap-3 text-[#475569]">
-          <span className="tabular-nums"><span className="font-bold text-[#10b981]">{g.won}</span> مربوحة</span>
-          <span className="text-gray-200">·</span>
-          <span className="tabular-nums"><span className="font-bold text-[#ef4444]">{g.lost}</span> مخسورة</span>
+      {/* Won/Lost split bar */}
+      <div className="mt-4">
+        <SplitBar won={g.won} lost={g.lost} />
+        <div className="mt-1.5 flex items-center justify-between text-[11px] tabular-nums">
+          <span className="text-[#10b981]"><span className="font-bold">{g.won}</span> مربوحة</span>
+          <span className="text-[#ef4444]"><span className="font-bold">{g.lost}</span> مخسورة</span>
         </div>
-        {g.wonValueSAR > 0 && (
-          <span className="tabular-nums text-[11px] font-semibold text-[#1e1b4b]">SAR {money(g.wonValueSAR)}</span>
-        )}
       </div>
+
+      {/* Value row */}
+      {(g.wonValueSAR > 0 || g.wonValueMissingCount > 0) && (
+        <div className="mt-3 flex items-center justify-between border-t border-gray-50 pt-3 text-[11.5px]">
+          <span className="text-muted">قيمة المربوح</span>
+          <div className="flex items-center gap-2 tabular-nums">
+            {g.wonValueSAR > 0 && <span className="font-bold text-[#1e1b4b]">SAR {money(g.wonValueSAR)}</span>}
+            {g.wonValueMissingCount > 0 && (
+              <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700" title="عدد الصفقات المربوحة اللي ما فيها قيمة مسجّلة">
+                +{g.wonValueMissingCount} بلا قيمة
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Confidence warning */}
       {!g.confident && (
@@ -108,11 +142,11 @@ function GroupCard({ g, baselineWinRatePct }: { g: PlaybookGroup; baselineWinRat
             <div className="mt-3 flex flex-col gap-4 border-t border-gray-50 pt-4">
               {g.lossReasons.length > 0 && (
                 <div>
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#ef4444]">أسباب الخسارة</p>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#ef4444]">أسباب الخسارة ({g.lost})</p>
                   <div className="flex flex-col gap-1.5">
                     {g.lossReasons.slice(0, 4).map((r) => (
                       <div key={r.reason} className="flex items-center justify-between text-[12.5px]">
-                        <span dir="auto" className="truncate text-[#475569]">{r.reason}</span>
+                        <span dir="auto" className={`truncate ${r.reason === "غير مسجّل" ? "italic text-[#94a3b8]" : "text-[#475569]"}`}>{r.reason}</span>
                         <span className="flex-none font-bold tabular-nums text-[#ef4444]">×{r.count}</span>
                       </div>
                     ))}
@@ -139,7 +173,7 @@ function GroupCard({ g, baselineWinRatePct }: { g: PlaybookGroup; baselineWinRat
   );
 }
 
-/* ---------- Highlight tile: big, focused, cleaner ---------- */
+/* ---------- Highlight tile: bigger, more useful ---------- */
 function BigHighlight({
   eyebrow,
   title,
@@ -147,6 +181,7 @@ function BigHighlight({
   subtitle,
   tone,
   icon,
+  sampleMessage,
 }: {
   eyebrow: string;
   title: string;
@@ -154,25 +189,34 @@ function BigHighlight({
   subtitle: string;
   tone: "positive" | "negative";
   icon: string;
+  sampleMessage?: string;
 }) {
   const color = tone === "positive" ? "#10b981" : "#ef4444";
   const bg = tone === "positive" ? "#f0fdf4" : "#fef2f2";
   return (
     <div className={`${CARD} relative overflow-hidden p-6`}>
-      <span className="absolute -left-6 -top-6 h-24 w-24 rounded-full opacity-40" style={{ background: bg }} />
-      <div className="relative flex items-start gap-4">
-        <span className="flex h-11 w-11 flex-none items-center justify-center rounded-2xl text-lg" style={{ background: bg, color }}>
-          {icon}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color }}>{eyebrow}</p>
-          <p dir="auto" className="mt-1 truncate text-[15px] font-bold text-ink">{title}</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-[28px] font-black leading-none tabular-nums" style={{ color }}>{value}</span>
-            <span className="text-[11px] font-medium text-muted">نسبة فوز</span>
+      <span className="absolute -left-8 -top-8 h-28 w-28 rounded-full opacity-50" style={{ background: bg }} />
+      <div className="relative">
+        <div className="flex items-start gap-4">
+          <span className="flex h-11 w-11 flex-none items-center justify-center rounded-2xl text-lg" style={{ background: bg, color }}>
+            {icon}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color }}>{eyebrow}</p>
+            <p dir="auto" className="mt-1 truncate text-[15px] font-bold text-ink">{title}</p>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-[28px] font-black leading-none tabular-nums" style={{ color }}>{value}</span>
+              <span className="text-[11px] font-medium text-muted">نسبة فوز</span>
+            </div>
+            <p dir="auto" className="mt-1.5 text-[11.5px] text-muted">{subtitle}</p>
           </div>
-          <p dir="auto" className="mt-1.5 text-[11.5px] text-muted">{subtitle}</p>
         </div>
+        {sampleMessage && (
+          <div className="relative mt-4 rounded-xl bg-mint/50 p-3">
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-primary">آخر رسالة نجحت</p>
+            <p dir="auto" className="text-[12.5px] leading-relaxed text-ink-secondary line-clamp-3">{sampleMessage}</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -186,6 +230,78 @@ function HeroStat({ label, value, sub }: { label: string; value: string; sub?: s
       <p className="mt-0.5 text-[20px] font-black tabular-nums text-white">{value}</p>
       {sub && <p className="text-[10px] text-white/60">{sub}</p>}
     </div>
+  );
+}
+
+/* ---------- Data quality panel ---------- */
+function QualityRow({ label, value, help, warn }: { label: string; value: number; help: string; warn?: boolean }) {
+  if (value === 0) return null;
+  return (
+    <div className="flex items-start justify-between gap-3 py-1.5">
+      <div className="min-w-0 flex-1">
+        <p dir="auto" className="text-[12.5px] font-semibold text-ink-secondary">{label}</p>
+        <p dir="auto" className="text-[11px] text-muted">{help}</p>
+      </div>
+      <span className={`flex-none rounded-md px-2 py-0.5 text-[12px] font-bold tabular-nums ${warn ? "bg-amber-50 text-amber-700" : "bg-gray-100 text-[#475569]"}`}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function DataQualityPanel({ q, coveragePct }: { q: DataQualityReport; coveragePct: number }) {
+  const [open, setOpen] = useState(false);
+  const anyIssues =
+    q.excludedNoInbound + q.excludedNoTag + q.excludedStaleTag + q.wonDealsMissingValue + q.lostDealsMissingReason + q.closeDateSource.missing >
+    0;
+  return (
+    <section className={`${CARD} overflow-hidden`}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-3 p-5 text-right transition hover:bg-gray-25"
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-mint text-primary">🔬</span>
+          <div className="min-w-0">
+            <p className="text-[14px] font-bold text-ink">جودة البيانات</p>
+            <p dir="auto" className="mt-0.5 text-[12px] text-muted">
+              دخلت {q.includedDeals} من {q.resolvedDeals} صفقة مغلقة في الحسابات
+              {anyIssues && " — اضغط للتفاصيل"}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-none items-center gap-3">
+          <span
+            className="rounded-full px-2.5 py-1 text-[13px] font-black tabular-nums"
+            style={{ background: `${winRateColor(coveragePct)}1a`, color: winRateColor(coveragePct) }}
+          >
+            {coveragePct}%
+          </span>
+          <span className={`text-[10px] transition-transform ${open ? "rotate-180" : ""}`}>▼</span>
+        </div>
+      </button>
+      {open && (
+        <div className="border-t border-gray-100 px-5 py-4">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div>
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-muted">صفقات مستبعدة</p>
+              <QualityRow label="ما فيها أي رد من العميل" value={q.excludedNoInbound} help="بدون رد وارد ما نقدر نصنّف الحالة." />
+              <QualityRow label="فيها ردود بس ما تصنّفت بعد" value={q.excludedNoTag} help="ردود العميل موجودة لكن ما مرّت على تصنيف الحالة." />
+              <QualityRow label="آخر تصنيف قديم أو بعد الإغلاق" value={q.excludedStaleTag} help="التصنيف صار بعد إغلاق الصفقة أو أقدم من 60 يوم — مو ممثل." warn />
+            </div>
+            <div>
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-muted">بيانات ناقصة داخل الصفقات المدخلة</p>
+              <QualityRow label="صفقات مربوحة بدون قيمة مسجّلة" value={q.wonDealsMissingValue} help="مجموع القيمة أقل من الحقيقي بهذا العدد." warn />
+              <QualityRow label="صفقات مخسورة بدون سبب مسجّل" value={q.lostDealsMissingReason} help="تظهر تحت 'غير مسجّل' في أسباب الخسارة." warn />
+              <QualityRow label="صفقات بدون تاريخ تحديث" value={q.closeDateSource.missing} help="استخدمنا الوقت الحالي كتاريخ إغلاق — قد يكون غير دقيق." warn />
+            </div>
+          </div>
+          <p className="mt-4 border-t border-gray-50 pt-3 text-[11px] leading-relaxed text-muted">
+            نعتبر تاريخ آخر تحديث للصفقة (<code className="rounded bg-gray-100 px-1 text-[10px]">updated_at</code>) بديلاً عن تاريخ الإغلاق الفعلي، لأنه ما فيه عمود مخصص. أي تعديل بعد الإغلاق يحرك التاريخ — لكن هذي فرضية معقولة لغالبية الصفقات.
+          </p>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -248,12 +364,13 @@ export default function PlaybookPage() {
     return (
       <div className="flex flex-col gap-6">
         <Skeleton className="h-40" />
+        <Skeleton className="h-20" />
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-32" />)}
+          {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-40" />)}
         </div>
         <Skeleton className="h-16" />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-56" />)}
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-64" />)}
         </div>
       </div>
     );
@@ -299,20 +416,16 @@ export default function PlaybookPage() {
 
           <div className="flex flex-wrap gap-3">
             <HeroStat label="المتوسط العام" value={`${data.baselineWinRatePct}%`} sub="نسبة الفوز الإجمالية" />
-            <HeroStat label="تغطية البيانات" value={`${data.coverage.coveragePct}%`} sub={`${data.coverage.taggedDeals}/${data.coverage.resolvedDeals} صفقة`} />
+            <HeroStat label="داخل الحسابات" value={`${data.coverage.taggedDeals}`} sub={`من ${data.coverage.resolvedDeals} صفقة`} />
             <HeroStat label="التركيبات" value={String(totalCount)} sub="حالة × مصدر" />
           </div>
         </div>
-
-        {data.coverage.coveragePct < 40 && (
-          <p dir="auto" className="relative mt-5 inline-flex items-start gap-2 rounded-lg bg-amber-500/15 px-3 py-2 text-[12px] text-amber-100">
-            <span>⚠️</span>
-            <span>التغطية لسا منخفضة — الأرقام تتحسّن كل ما زاد عدد ردود العملاء المصنّفة.</span>
-          </p>
-        )}
       </section>
 
-      {/* ═══ 2. AT A GLANCE — 2 big signals ═════════════════════════ */}
+      {/* ═══ 2. DATA QUALITY ═════════════════════════════════════ */}
+      <DataQualityPanel q={data.quality} coveragePct={data.coverage.coveragePct} />
+
+      {/* ═══ 3. AT A GLANCE — 2 big signals ═════════════════════════ */}
       {(h.bestGroup || h.worstGroup) && (
         <section>
           <div className="mb-3 flex items-center gap-2">
@@ -325,9 +438,10 @@ export default function PlaybookPage() {
                 eyebrow="أنجح تركيبة — كرّرها"
                 title={`${h.bestGroup.tagLabel} · ${h.bestGroup.source}`}
                 value={`${h.bestGroup.winRatePct}%`}
-                subtitle={`مبنية على ${h.bestGroup.total} صفقة`}
+                subtitle={`مبنية على ${h.bestGroup.total} صفقة (${h.bestGroup.won} مربوحة، ${h.bestGroup.lost} مخسورة)`}
                 tone="positive"
                 icon="🏆"
+                sampleMessage={h.bestGroup.wonClosingMessages[0]}
               />
             )}
             {h.worstGroup && (
@@ -335,7 +449,7 @@ export default function PlaybookPage() {
                 eyebrow="أضعف تركيبة — راجع طريقتك"
                 title={`${h.worstGroup.tagLabel} · ${h.worstGroup.source}`}
                 value={`${h.worstGroup.winRatePct}%`}
-                subtitle={`مبنية على ${h.worstGroup.total} صفقة`}
+                subtitle={`مبنية على ${h.worstGroup.total} صفقة (${h.worstGroup.won} مربوحة، ${h.worstGroup.lost} مخسورة)`}
                 tone="negative"
                 icon="🎯"
               />
@@ -344,7 +458,7 @@ export default function PlaybookPage() {
         </section>
       )}
 
-      {/* ═══ 3. ALL PATTERNS — filter + grid ═══════════════════════ */}
+      {/* ═══ 4. ALL PATTERNS — filter + grid ═══════════════════════ */}
       <section>
         <div className="mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -444,7 +558,7 @@ export default function PlaybookPage() {
         )}
       </section>
 
-      {/* ═══ 4. LEGEND — how to read this ══════════════════════════ */}
+      {/* ═══ 5. LEGEND — how to read this ══════════════════════════ */}
       <section className={`${CARD} p-6`}>
         <div className="mb-4 flex items-center gap-2">
           <span className="h-4 w-1 rounded-full bg-primary" />
@@ -473,10 +587,10 @@ export default function PlaybookPage() {
             </div>
           </div>
           <div className="flex gap-3">
-            <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-mint text-primary">🏷️</span>
+            <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-mint text-primary">🔬</span>
             <div>
-              <p className="mb-0.5 font-semibold text-ink">تصنيف الأنشطة</p>
-              <p dir="auto" className="text-[12.5px] text-muted">الدليل يعتمد على تصنيف رد العميل. كل ما زاد التسجيل، دقّت الأرقام أكثر.</p>
+              <p className="mb-0.5 font-semibold text-ink">جودة البيانات مفتوحة</p>
+              <p dir="auto" className="text-[12.5px] text-muted">قسم "جودة البيانات" فوق يوضّح كم صفقة استبعدنا ولماذا، وكم بيانات ناقصة ضمن المدخل — عشان تعرف مصدر الأرقام.</p>
             </div>
           </div>
         </div>
