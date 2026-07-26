@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   buildRevenueIntelligence,
   type RevenueIntelligenceData,
@@ -11,27 +11,29 @@ import {
 // ── Global styles ──────────────────────────────────────────────────────────
 const GLOBAL_CSS = `
 @keyframes ri-up    { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:none } }
-@keyframes ri-in    { from { opacity:0; transform:scale(.97)       } to { opacity:1; transform:none } }
+@keyframes ri-in    { from { opacity:0; transform:scale(.96) }       to { opacity:1; transform:none } }
 @keyframes ri-shine { from { transform:translateX(-100%) skewX(-18deg) } to { transform:translateX(250%) skewX(-18deg) } }
-@keyframes ri-orb   { 0%,100%{ transform:translate(0,0) scale(1) } 50%{ transform:translate(16px,-12px) scale(1.08) } }
-@keyframes ri-orb2  { 0%,100%{ transform:translate(0,0) scale(1) } 50%{ transform:translate(-10px,14px) scale(.93) } }
-@keyframes ri-dash  { to { stroke-dashoffset:0 } }
-.ri-up   { animation: ri-up   .55s cubic-bezier(.22,1,.36,1) both }
-.ri-in   { animation: ri-in   .45s cubic-bezier(.22,1,.36,1) both }
-.ri-card { animation: ri-up   .5s  cubic-bezier(.22,1,.36,1) both }
+@keyframes ri-orb   { 0%,100%{ transform:translate(0,0) scale(1) }   50%{ transform:translate(16px,-12px) scale(1.08) } }
+@keyframes ri-orb2  { 0%,100%{ transform:translate(0,0) scale(1) }   50%{ transform:translate(-10px,14px) scale(.93) } }
+@keyframes ri-pulse { 0%,100%{ opacity:1 } 50%{ opacity:.4 } }
+@keyframes ri-scan  { from{ transform:translateY(-100%) } to{ transform:translateY(400%) } }
+@keyframes ri-type  { from{ width:0 } to{ width:100% } }
+.ri-up   { animation: ri-up  .55s cubic-bezier(.22,1,.36,1) both }
+.ri-in   { animation: ri-in  .4s  cubic-bezier(.22,1,.36,1) both }
+.ri-card { animation: ri-up  .5s  cubic-bezier(.22,1,.36,1) both }
 .ri-card:nth-child(1){ animation-delay:.05s }
 .ri-card:nth-child(2){ animation-delay:.12s }
 .ri-card:nth-child(3){ animation-delay:.19s }
 .ri-card:nth-child(4){ animation-delay:.26s }
 .ri-shine-wrap{ overflow:hidden; position:relative }
 .ri-shine-wrap::after{
-  content:''; position:absolute; inset:0;
+  content:''; position:absolute; inset:0; pointer-events:none;
   background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.18) 50%,transparent 70%);
-  animation:ri-shine 2.4s ease-in-out 1.2s 1;
+  animation:ri-shine 2.4s ease-in-out 1s 1;
 }
 .ri-hover-lift { transition:box-shadow .2s,transform .2s }
 .ri-hover-lift:hover { transform:translateY(-3px) }
-.ri-ring-stroke { stroke-dasharray:0 999; animation:ri-dash .9s cubic-bezier(.4,0,.2,1) .3s forwards }
+.ri-pulse { animation: ri-pulse 2s ease-in-out infinite }
 `;
 
 // ── Formatters ─────────────────────────────────────────────────────────────
@@ -54,7 +56,21 @@ const RISK: Record<string, { label:string; dot:string; pill:string }> = {
   low:    { label:"مستقرة",   dot:"#22c55e", pill:"bg-emerald-50 text-emerald-700 border-emerald-200" },
 };
 
-// ── AI Context ─────────────────────────────────────────────────────────────
+// ── Pipeline health score (0–100) ──────────────────────────────────────────
+function calcHealth(d: RevenueIntelligenceData): { score: number; label: string; color: string; bg: string } {
+  if (!d.deals.length) return { score: 0, label: "لا بيانات", color: "#9ca3af", bg: "#f9fafb" };
+  const winScore  = d.winRateThisMonth;
+  const riskScore = Math.max(0, 100 - (d.atRiskCount / d.deals.length) * 200);
+  const weightRatio = d.totalPipelineSAR > 0 ? (d.weightedPipelineSAR / d.totalPipelineSAR) * 100 : 50;
+  const score = Math.round(winScore * 0.35 + riskScore * 0.4 + weightRatio * 0.25);
+  const clamped = Math.min(100, Math.max(0, score));
+  if (clamped >= 75) return { score: clamped, label: "ممتاز",   color: "#059669", bg: "#ecfdf5" };
+  if (clamped >= 50) return { score: clamped, label: "جيد",     color: "#2563eb", bg: "#eff6ff" };
+  if (clamped >= 30) return { score: clamped, label: "متوسط",   color: "#d97706", bg: "#fffbeb" };
+  return               { score: clamped, label: "يحتاج عناية", color: "#dc2626", bg: "#fff1f2" };
+}
+
+// ── AI helpers ─────────────────────────────────────────────────────────────
 function buildContext(d: RevenueIntelligenceData) {
   return [
     `التاريخ: ${new Date(d.asOf).toLocaleDateString("ar-SA")}`,
@@ -74,19 +90,28 @@ function buildContext(d: RevenueIntelligenceData) {
   ].join("\n");
 }
 
+async function callAI(messages: {role:"user"|"assistant";content:string}[], context: string): Promise<string> {
+  const r = await fetch("/api/revenue-intelligence-ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages, context }),
+  });
+  const j = await r.json();
+  return j.reply ?? "تعذّر الاتصال.";
+}
+
 // ── Animated number ────────────────────────────────────────────────────────
 function AnimNum({ value, fmt }: { value:number; fmt:(n:number)=>string }) {
   const [v, setV] = useState(0);
   useEffect(()=>{
-    let s: number|null=null;
-    const dur=850;
+    let s: number|null=null; const dur=850;
     function f(ts:number){ if(!s)s=ts; const p=Math.min((ts-s)/dur,1); setV(Math.round((1-Math.pow(1-p,3))*value)); if(p<1)requestAnimationFrame(f); }
     requestAnimationFrame(f);
   },[value]);
   return <>{fmt(v)}</>;
 }
 
-// ── Animated ring ─────────────────────────────────────────────────────────
+// ── Ring ───────────────────────────────────────────────────────────────────
 function Ring({ pct, color, size=64 }: { pct:number; color:string; size?:number }) {
   const r=(size-10)/2, circ=2*Math.PI*r, dash=(pct/100)*circ;
   return (
@@ -120,17 +145,295 @@ function Spark({ vals, color }: { vals:number[]; color:string }) {
   );
 }
 
+// ── ═══════════════════════════════════════════════════════════════════════ ──
+// ── NEW FEATURE 1: Pipeline Health Card ───────────────────────────────────
+// ── ═══════════════════════════════════════════════════════════════════════ ──
+function HealthCard({ data, ctx }: { data: RevenueIntelligenceData; ctx: string }) {
+  const health = calcHealth(data);
+  const [insight, setInsight] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const SIZE = 96, R = 36, STROKE = 10, circ = 2 * Math.PI * R;
+  const dash = (health.score / 100) * circ;
+
+  async function explain() {
+    if (insight) { setOpen(true); return; }
+    setOpen(true); setLoading(true);
+    try {
+      const reply = await callAI([{
+        role: "user",
+        content: `نبضة خط المبيعات لديك ${health.score}/100 (${health.label}). اشرح لي في 3 جمل قصيرة: لماذا هذا السكور؟ وما أهم شيء يجب فعله لرفعه؟ كن محدداً وعملياً.`
+      }], ctx);
+      setInsight(reply);
+    } finally { setLoading(false); }
+  }
+
+  return (
+    <div className="ri-up" style={{animationDelay:".08s"}}>
+      {/* Card */}
+      <div className="relative overflow-hidden rounded-2xl border p-6 flex items-center gap-5 ri-hover-lift cursor-pointer"
+        onClick={explain}
+        style={{background:`linear-gradient(135deg,${health.bg},white)`,borderColor:`${health.color}30`,boxShadow:`0 2px 12px ${health.color}14`}}>
+        {/* Scan line animation */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
+          <div className="absolute left-0 right-0 h-16 opacity-[0.06]"
+            style={{background:`linear-gradient(180deg,transparent,${health.color},transparent)`,animation:"ri-scan 3s linear infinite"}}/>
+        </div>
+
+        {/* Donut gauge */}
+        <div className="relative flex-none">
+          <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="-rotate-90">
+            <circle cx={SIZE/2} cy={SIZE/2} r={R} fill="none" stroke={`${health.color}18`} strokeWidth={STROKE}/>
+            <circle cx={SIZE/2} cy={SIZE/2} r={R} fill="none" stroke={health.color} strokeWidth={STROKE}
+              strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+              style={{transition:"stroke-dasharray 1.4s cubic-bezier(.4,0,.2,1) .3s"}}/>
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-[22px] font-black tabular-nums leading-none" style={{color:health.color}}>
+              <AnimNum value={health.score} fmt={n=>`${n}`}/>
+            </span>
+            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">/ 100</span>
+          </div>
+        </div>
+
+        {/* Text */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[9px] font-black uppercase tracking-[0.18em] text-gray-400">نبضة الخط</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:`${health.color}18`,color:health.color}}>{health.label}</span>
+          </div>
+          <p className="text-[15px] font-bold text-gray-900 mb-3">صحة خط مبيعاتك</p>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {[
+              {label:"نسبة الفوز",  val:`${data.winRateThisMonth}%`,   color:"#059669"},
+              {label:"صفقات آمنة",  val:`${Math.max(0,data.deals.length-data.atRiskCount)}`,    color:"#2563eb"},
+              {label:"كثافة الخط",  val:`${data.totalPipelineSAR>0?Math.round((data.weightedPipelineSAR/data.totalPipelineSAR)*100):0}%`, color:"#d97706"},
+            ].map(m=>(
+              <div key={m.label} className="rounded-xl py-2 px-1" style={{background:`${m.color}0d`}}>
+                <p className="text-[13px] font-black tabular-nums" style={{color:m.color}}>{m.val}</p>
+                <p className="text-[9px] text-gray-400 mt-0.5">{m.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CTA hint */}
+        <div className="flex-none flex flex-col items-center gap-1 text-gray-300">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" style={{color:health.color}}>
+            <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+          </svg>
+          <span className="text-[9px] font-semibold" style={{color:health.color}}>فسّر لي</span>
+        </div>
+      </div>
+
+      {/* AI explanation panel */}
+      {open && (
+        <div className="ri-in mt-3 rounded-2xl border overflow-hidden"
+          style={{background:`linear-gradient(135deg,#071510,#0d3d33)`,borderColor:`${health.color}25`}}>
+          <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.07]">
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded-lg flex items-center justify-center" style={{background:`linear-gradient(135deg,${C.brand2},${C.brand3})`}}>
+                <svg viewBox="0 0 16 16" className="h-3.5 w-3.5"><circle cx="8" cy="6" r="2.5" fill="none" stroke="white" strokeWidth="1.3"/><circle cx="5" cy="9.5" r="1.5" fill="none" stroke="white" strokeWidth="1.3"/><circle cx="11" cy="9.5" r="1.5" fill="none" stroke="white" strokeWidth="1.3"/></svg>
+              </div>
+              <span className="text-[11px] font-bold text-white">تحليل نبضة الخط · AI</span>
+            </div>
+            <button onClick={e=>{e.stopPropagation();setOpen(false);}} className="text-white/30 hover:text-white/70 transition text-sm">✕</button>
+          </div>
+          <div className="px-5 py-4 text-[13px] text-white/75 leading-[1.8] min-h-[60px]">
+            {loading ? (
+              <div className="flex items-center gap-2 text-white/40">
+                {[0,1,2].map(i=><span key={i} className="h-1.5 w-1.5 rounded-full bg-emerald-400/60 animate-bounce" style={{animationDelay:`${i*.15}s`}}/>)}
+                <span className="text-[11px]">يحلل البيانات…</span>
+              </div>
+            ) : insight}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── ═══════════════════════════════════════════════════════════════════════ ──
+// ── NEW FEATURE 2: Deal Coach ─────────────────────────────────────────────
+// ── ═══════════════════════════════════════════════════════════════════════ ──
+interface CoachStep { num: number; title: string; body: string }
+
+function parseSteps(text: string): CoachStep[] {
+  // Parse "الخطوة 1: title\nbody" pattern
+  const steps: CoachStep[] = [];
+  const parts = text.split(/(?=الخطوة\s*\d)/);
+  for (const p of parts) {
+    const m = p.match(/الخطوة\s*(\d)[:\s]+([^\n]+)\n?([\s\S]*)/);
+    if (m) steps.push({ num: parseInt(m[1]), title: m[2].trim(), body: m[3].trim() });
+  }
+  // fallback: just show raw text as one block
+  if (!steps.length && text.trim()) steps.push({ num: 1, title: "خطة العمل", body: text.trim() });
+  return steps;
+}
+
+function CoachModal({ deal, ctx, onClose }: { deal: RIDeal; ctx: string; onClose: () => void }) {
+  const [steps, setSteps]   = useState<CoachStep[]>([]);
+  const [raw,   setRaw]     = useState("");
+  const [loading, setLoading] = useState(true);
+  const [done,  setDone]    = useState(false);
+  const cat  = CAT[deal.category] ?? CAT.pipeline;
+  const risk = RISK[deal.riskLevel];
+
+  useEffect(() => {
+    function h(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    window.addEventListener("keydown", h); return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+
+  useEffect(() => {
+    const prompt = `أنت مدرب مبيعات خبير. لديك هذه الصفقة:
+- الاسم: ${deal.name}${deal.leadName ? ` | العميل: ${deal.leadName}` : ""}
+- القيمة: ${sarFull(deal.valueSAR)} ريال
+- الاحتمالية: ${deal.probabilityPct}%
+- المرحلة: ${deal.stage}
+- في المرحلة منذ: ${deal.daysInStage} يوم
+- آخر تواصل: ${deal.daysSinceActivity != null ? `منذ ${deal.daysSinceActivity} يوم` : "لا يوجد تواصل"}
+- إشارات الخطر: ${deal.riskReasons.length ? deal.riskReasons.join("، ") : "لا توجد"}
+
+اكتب لي خطة عمل عملية من 3 خطوات لإغلاق هذه الصفقة هذا الأسبوع.
+استخدم هذا التنسيق بالضبط:
+الخطوة 1: [عنوان قصير]
+[شرح 2-3 جمل]
+
+الخطوة 2: [عنوان قصير]
+[شرح 2-3 جمل]
+
+الخطوة 3: [عنوان قصير]
+[شرح 2-3 جمل]`;
+
+    callAI([{ role: "user", content: prompt }], ctx)
+      .then(reply => { setRaw(reply); setSteps(parseSteps(reply)); setDone(true); })
+      .catch(() => { setSteps([{ num: 1, title: "خطأ", body: "تعذّر الاتصال." }]); setDone(true); })
+      .finally(() => setLoading(false));
+  }, [deal, ctx]);
+
+  const stepColors = ["#059669", "#2563eb", "#d97706"];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-xl"/>
+      <div className="ri-in relative w-full max-w-lg overflow-hidden rounded-3xl shadow-2xl" onClick={e=>e.stopPropagation()}
+        style={{background:"linear-gradient(160deg,#071510 0%,#0c1f18 50%,#0a1c16 100%)",border:"1px solid rgba(255,255,255,.1)"}}>
+
+        {/* Glow orb */}
+        <div className="absolute top-[-40px] right-[-20px] h-48 w-48 pointer-events-none"
+          style={{background:"radial-gradient(circle,rgba(45,133,112,.2),transparent 70%)"}}/>
+
+        {/* Header */}
+        <div className="relative px-7 pt-6 pb-5 border-b border-white/[0.08]">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-7 w-7 rounded-xl flex items-center justify-center ri-shine-wrap"
+                  style={{background:"linear-gradient(135deg,#1a5c4f,#34a388)"}}>
+                  <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 2a1 1 0 0 1 .894.553l7 14A1 1 0 0 1 17 18H3a1 1 0 0 1-.894-1.447l7-14A1 1 0 0 1 10 2z"/>
+                    <path d="M10 8v4M10 14h.01"/>
+                  </svg>
+                </div>
+                <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">مدرب الصفقات · AI</span>
+              </div>
+              <h2 className="text-[18px] font-black text-white leading-tight">{deal.name}</h2>
+              {deal.leadName && <p className="text-[12px] text-white/40 mt-0.5">{deal.leadName}</p>}
+            </div>
+            <button onClick={onClose}
+              className="h-9 w-9 rounded-2xl flex items-center justify-center flex-none text-white/30 hover:text-white/70 hover:bg-white/10 transition mt-1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-4 w-4"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          {/* Deal quick stats */}
+          <div className="flex flex-wrap gap-2 mt-4">
+            {[
+              { label: sarFull(deal.valueSAR) + " ر.س", color: "#34d399" },
+              { label: `${deal.probabilityPct}% احتمالية`, color: cat.hex + "cc" },
+              { label: risk.label, color: risk.dot },
+              { label: deal.stage, color: "rgba(255,255,255,.4)" },
+            ].map(b => (
+              <span key={b.label} className="text-[11px] font-bold px-3 py-1 rounded-full border"
+                style={{ color: b.color, borderColor: b.color + "40", background: b.color + "12" }}>
+                {b.label}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Steps */}
+        <div className="relative px-7 py-6 space-y-5">
+          {loading && (
+            <div className="space-y-4">
+              {/* Scanning animation */}
+              <div className="flex items-center gap-3 text-white/40 text-[12px]">
+                <div className="relative h-5 w-5">
+                  <div className="absolute inset-0 rounded-full border-2 border-emerald-400/30"/>
+                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-emerald-400 animate-spin"/>
+                </div>
+                يحلل بيانات الصفقة ويضع خطة عمل…
+              </div>
+              {[0,1,2].map(i => (
+                <div key={i} className="rounded-2xl p-4 border border-white/[0.06]" style={{background:"rgba(255,255,255,.03)"}}>
+                  <div className="h-3 rounded-full w-1/3 mb-3" style={{background:"rgba(255,255,255,.08)"}}/>
+                  <div className="space-y-1.5">
+                    <div className="h-2 rounded-full w-full" style={{background:"rgba(255,255,255,.05)"}}/>
+                    <div className="h-2 rounded-full w-4/5" style={{background:"rgba(255,255,255,.04)"}}/>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {done && steps.map((step, i) => (
+            <div key={i} className="ri-up rounded-2xl p-5 border"
+              style={{animationDelay:`${i * 0.12}s`, background:`${stepColors[i] ?? "#059669"}0c`, borderColor:`${stepColors[i] ?? "#059669"}25`}}>
+              <div className="flex items-start gap-3">
+                <div className="h-7 w-7 rounded-xl flex items-center justify-center text-[12px] font-black text-white flex-none ri-shine-wrap"
+                  style={{background:`linear-gradient(135deg,${stepColors[i] ?? "#059669"},${stepColors[i] ?? "#059669"}cc)`}}>
+                  {step.num}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-bold mb-1.5" style={{color:stepColors[i] ?? "#059669"}}>{step.title}</p>
+                  <p className="text-[12px] text-white/65 leading-[1.75]">{step.body}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        {done && (
+          <div className="px-7 pb-7 flex gap-3">
+            <a href="/dashboard/deals"
+              className="flex-1 ri-shine-wrap flex items-center justify-center gap-2 py-3 rounded-2xl text-white text-[13px] font-bold transition-all hover:opacity-90"
+              style={{background:`linear-gradient(135deg,${C.brand},${C.brand2})`,boxShadow:`0 8px 24px ${C.brand}50`}}>
+              افتح الصفقة
+              <svg viewBox="0 0 16 16" fill="white" className="h-3.5 w-3.5 rotate-180"><path d="M6 4l4 4-4 4V4z"/></svg>
+            </a>
+            <button onClick={onClose}
+              className="px-5 py-3 rounded-2xl text-white/50 hover:text-white/80 border border-white/10 hover:border-white/20 text-[13px] font-medium transition-all">
+              إغلاق
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── KPI Card ───────────────────────────────────────────────────────────────
 function KpiCard({ label,note,value,fmt,unit,accent,topFrom,topTo,icon,spark,ring }:
   { label:string; note:string; value:number; fmt?:(n:number)=>string;
     unit?:string; accent:string; topFrom:string; topTo:string;
     icon:React.ReactNode; spark?:number[]; ring?:{pct:number} }) {
-  const fmtFn=fmt??sarK;
+  const fmtFn = fmt ?? sarK;
   return (
     <div className="ri-card ri-hover-lift relative bg-white rounded-2xl overflow-hidden border border-gray-100/80 p-6 flex flex-col gap-5"
       style={{boxShadow:"0 1px 4px rgba(0,0,0,.07),0 0 0 1px rgba(0,0,0,.04)"}}>
       <div className="absolute top-0 inset-x-0 h-[3px] rounded-t-2xl" style={{background:`linear-gradient(90deg,${topFrom},${topTo})`}}/>
-      {/* Subtle bg tint from accent */}
       <div className="absolute inset-0 pointer-events-none rounded-2xl" style={{background:`radial-gradient(ellipse 70% 50% at 90% 0%,${topFrom}09,transparent)`}}/>
       <div className="relative flex items-start justify-between gap-3">
         <div className="h-10 w-10 rounded-xl flex items-center justify-center flex-none ri-shine-wrap"
@@ -140,7 +443,7 @@ function KpiCard({ label,note,value,fmt,unit,accent,topFrom,topTo,icon,spark,rin
         {ring ? (
           <div className="relative flex-none">
             <Ring pct={ring.pct} color={topFrom} size={58}/>
-            <span className="absolute inset-0 flex items-center justify-center text-[11px] font-black" style={{color:topFrom,paddingBottom:2}}>
+            <span className="absolute inset-0 flex items-center justify-center text-[11px] font-black" style={{color:topFrom}}>
               <AnimNum value={ring.pct} fmt={n=>`${n}%`}/>
             </span>
           </div>
@@ -148,7 +451,7 @@ function KpiCard({ label,note,value,fmt,unit,accent,topFrom,topTo,icon,spark,rin
       </div>
       <div className="relative">
         <div className="flex items-end gap-1.5 leading-none">
-          <span className="text-[32px] font-black tracking-tight" style={{color:accent}}>
+          <span className="text-[32px] font-black tracking-tight tabular-nums" style={{color:accent}}>
             <AnimNum value={value} fmt={fmtFn}/>
           </span>
           {unit && <span className="text-xs text-gray-400 mb-1 font-medium">{unit}</span>}
@@ -173,13 +476,11 @@ function ForecastBars({ scenarios }: { scenarios:RevenueIntelligenceData["foreca
       {scenarios.map((s,i)=>{
         const p=pal[i], pct=(s.valueSAR/max)*100;
         return (
-          <div key={s.label} className="group">
+          <div key={s.label}>
             <div className="flex items-center justify-between mb-2.5">
               <div className="flex items-center gap-2.5">
                 <div className="h-7 w-7 rounded-lg flex items-center justify-center text-[11px] font-black text-white shadow-sm ri-shine-wrap"
-                  style={{background:`linear-gradient(135deg,${p.from},${p.to})`}}>
-                  {i+1}
-                </div>
+                  style={{background:`linear-gradient(135deg,${p.from},${p.to})`}}>{i+1}</div>
                 <div>
                   <p className="text-[13px] font-bold text-gray-800">{s.label}</p>
                   <p className="text-[10px] text-gray-400">{p.note}</p>
@@ -190,14 +491,7 @@ function ForecastBars({ scenarios }: { scenarios:RevenueIntelligenceData["foreca
               </p>
             </div>
             <div className="relative h-2.5 w-full rounded-full overflow-hidden" style={{background:"#f1f5f9"}}>
-              {/* track fill */}
-              <div className="h-full rounded-full transition-all duration-1000 group-hover:brightness-110"
-                style={{width:`${pct}%`, background:`linear-gradient(90deg,${p.from},${p.to})`}}/>
-              {/* shimmer streak */}
-              <div className="absolute inset-0 pointer-events-none"
-                style={{background:`linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent)`,
-                  backgroundSize:"60% 100%", backgroundRepeat:"no-repeat",
-                  backgroundPositionX:`${pct-20}%`}}/>
+              <div className="h-full rounded-full transition-all duration-1000" style={{width:`${pct}%`,background:`linear-gradient(90deg,${p.from},${p.to})`}}/>
             </div>
           </div>
         );
@@ -219,7 +513,6 @@ function DistPills({ categories }: { categories:RevenueIntelligenceData["categor
   });
   return (
     <div className="flex flex-col gap-5">
-      {/* Donut */}
       <div className="flex items-center gap-5">
         <div className="relative flex-none">
           <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="-rotate-90">
@@ -246,33 +539,30 @@ function DistPills({ categories }: { categories:RevenueIntelligenceData["categor
                 <span className="h-2.5 w-2.5 rounded-sm flex-none" style={{backgroundColor:colors[i]}}/>
                 <span className="text-[12px] font-semibold text-gray-700 flex-1">{cfg.label}</span>
                 <span className="text-[11px] text-gray-400">{c.count} صفقة</span>
-                <span className="text-[12px] font-black w-9 text-left" style={{color:colors[i]}}>{pct}%</span>
+                <span className="text-[12px] font-black w-9 text-left tabular-nums" style={{color:colors[i]}}>{pct}%</span>
               </div>
             );
           })}
         </div>
       </div>
-      {/* Stacked bar */}
       <div className="flex h-2 w-full rounded-full overflow-hidden gap-[1.5px]">
         {categories.map((c,i)=>(
           <div key={c.category} className="transition-all duration-700"
             style={{width:`${total?(c.totalSAR/total)*100:0}%`,backgroundColor:colors[i]}}/>
         ))}
       </div>
-      {/* Category cards */}
       <div className="space-y-2.5">
         {categories.map((c,i)=>{
           const cfg=CAT[c.category]; if(!cfg) return null;
           const pct=total?Math.round((c.totalSAR/total)*100):0;
           return (
             <div key={c.category} className="rounded-xl p-3.5 border ri-hover-lift"
-              style={{backgroundColor:cfg.bg, borderColor:cfg.ring+"70",
-                boxShadow:`0 0 0 0 ${colors[i]}00`,transition:"box-shadow .2s"}}>
+              style={{backgroundColor:cfg.bg,borderColor:cfg.ring+"70"}}>
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-sm" style={{backgroundColor:colors[i]}}/>
                   <span className="text-[12px] font-bold" style={{color:cfg.hex}}>{cfg.label}</span>
-                  <span className="text-[9px] text-gray-400 font-medium">{cfg.sub}</span>
+                  <span className="text-[9px] text-gray-400">{cfg.sub}</span>
                 </div>
                 <span className="text-[13px] font-black tabular-nums" style={{color:cfg.hex}}>{sarK(c.totalSAR)}</span>
               </div>
@@ -301,13 +591,13 @@ function WeeklyChart({ data }: { data:RevenueIntelligenceData["weeklyHistory"] }
             <span className="text-[11px] font-medium text-gray-500">صفقات {label}</span>
           </div>
         ))}
-        <span className="mr-auto text-[11px] text-gray-400">حوّم للتفاصيل</span>
+        <span className="mr-auto text-[10px] text-gray-400">حوّم للتفاصيل</span>
       </div>
       <div className="flex items-end gap-[3px] h-32">
         {data.map((w,i)=>{
           const wonH=(w.wonSAR/max)*100, lostH=(w.lostSAR/max)*100, isH=hov===i;
           return (
-            <div key={i} className="relative flex-1 flex flex-col items-center group cursor-pointer"
+            <div key={i} className="relative flex-1 flex flex-col items-center cursor-pointer"
               onMouseEnter={()=>setHov(i)} onMouseLeave={()=>setHov(null)}>
               {isH&&(
                 <div className="absolute z-20 rounded-xl px-3 py-2 text-[11px] text-center whitespace-nowrap shadow-xl pointer-events-none"
@@ -321,9 +611,9 @@ function WeeklyChart({ data }: { data:RevenueIntelligenceData["weeklyHistory"] }
               )}
               <div className="w-full flex items-end gap-[1px] h-[120px]">
                 <div className="flex-1 rounded-t-[3px] transition-all duration-200"
-                  style={{height:`${wonH}%`, background:isH?`linear-gradient(180deg,#059669,${C.brand2})`:`linear-gradient(180deg,${C.brand3},${C.brand2})`, minHeight:w.wonSAR>0?3:0, boxShadow:isH?"0 -4px 12px rgba(5,150,105,.35)":"none"}}/>
+                  style={{height:`${wonH}%`,background:isH?`linear-gradient(180deg,#059669,${C.brand2})`:`linear-gradient(180deg,${C.brand3},${C.brand2})`,minHeight:w.wonSAR>0?3:0,boxShadow:isH?"0 -4px 12px rgba(5,150,105,.35)":"none"}}/>
                 <div className="flex-1 rounded-t-[3px] transition-all duration-200"
-                  style={{height:`${lostH}%`, background:isH?"#ef4444":"#fca5a5", minHeight:w.lostSAR>0?3:0, boxShadow:isH?"0 -4px 12px rgba(239,68,68,.3)":"none"}}/>
+                  style={{height:`${lostH}%`,background:isH?"#ef4444":"#fca5a5",minHeight:w.lostSAR>0?3:0,boxShadow:isH?"0 -4px 12px rgba(239,68,68,.3)":"none"}}/>
               </div>
               {i%3===0&&<span className="text-[8px] text-gray-400 mt-1 whitespace-nowrap">{w.weekLabel}</span>}
             </div>
@@ -334,7 +624,7 @@ function WeeklyChart({ data }: { data:RevenueIntelligenceData["weeklyHistory"] }
   );
 }
 
-// ── AI Panel ───────────────────────────────────────────────────────────────
+// ── AI Chat Panel ──────────────────────────────────────────────────────────
 interface Msg { role:"user"|"assistant"; content:string }
 function AiPanel({ ctx }: { ctx:string }) {
   const [msgs,setMsgs]=useState<Msg[]>([]);
@@ -342,32 +632,27 @@ function AiPanel({ ctx }: { ctx:string }) {
   const [busy,setBusy]=useState(false);
   const end=useRef<HTMLDivElement>(null);
   const QUICK=["أي صفقة أركّز عليها اليوم؟","ليش هذي الصفقات في خطر؟","كيف أحسّن نسبة الفوز؟","توقعك لنهاية الشهر؟"];
+
   async function send(text:string){
     const q=text.trim(); if(!q||busy) return;
     setVal("");
     const next:Msg[]=[...msgs,{role:"user",content:q}];
     setMsgs(next); setBusy(true);
-    try{
-      const r=await fetch("/api/revenue-intelligence-ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:next,context:ctx})});
-      const j=await r.json();
-      setMsgs([...next,{role:"assistant",content:j.reply??"حدث خطأ."}]);
-    }catch{ setMsgs([...next,{role:"assistant",content:"تعذّر الاتصال."}]); }
+    try{ const reply=await callAI(next,ctx); setMsgs([...next,{role:"assistant",content:reply}]); }
+    catch{ setMsgs([...next,{role:"assistant",content:"تعذّر الاتصال."}]); }
     finally{ setBusy(false); }
   }
   useEffect(()=>{ end.current?.scrollIntoView({behavior:"smooth"}); },[msgs,busy]);
 
   return (
     <div className="flex flex-col h-full" style={{background:"linear-gradient(160deg,#060f0d 0%,#0a1c16 55%,#0c2018 100%)"}}>
-      {/* Noise */}
       <div className="absolute inset-0 opacity-[0.035] pointer-events-none"
         style={{backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",backgroundSize:"120px"}}/>
-      {/* Glows */}
       <div className="absolute top-[-20px] right-[-20px] h-52 w-52 pointer-events-none"
-        style={{background:"radial-gradient(circle,rgba(45,133,112,.2) 0%,transparent 70%)",animation:"ri-orb 7s ease-in-out infinite"}}/>
+        style={{background:"radial-gradient(circle,rgba(45,133,112,.2),transparent 70%)",animation:"ri-orb 8s ease-in-out infinite"}}/>
       <div className="absolute bottom-[80px] left-[-30px] h-40 w-40 pointer-events-none"
-        style={{background:"radial-gradient(circle,rgba(26,92,79,.18) 0%,transparent 70%)",animation:"ri-orb2 9s ease-in-out infinite"}}/>
+        style={{background:"radial-gradient(circle,rgba(26,92,79,.18),transparent 70%)",animation:"ri-orb2 10s ease-in-out infinite"}}/>
 
-      {/* Header */}
       <div className="relative px-5 pt-5 pb-4 border-b border-white/[0.07] flex items-center gap-3.5">
         <div className="relative flex-none">
           <div className="h-11 w-11 rounded-2xl flex items-center justify-center ri-shine-wrap"
@@ -386,7 +671,7 @@ function AiPanel({ ctx }: { ctx:string }) {
         </div>
         <div>
           <p className="text-[13px] font-bold text-white">محلل الإيرادات · AI</p>
-          <p className="text-[10px] text-white/30 mt-0.5">يستحضر كل بيانات خطك · اسأله بالعربي</p>
+          <p className="text-[10px] text-white/30 mt-0.5">اسأله عن أي شيء في الخط</p>
         </div>
         <div className="mr-auto flex items-center gap-1.5 rounded-full px-2.5 py-1 border"
           style={{background:"rgba(74,222,128,.08)",borderColor:"rgba(74,222,128,.2)"}}>
@@ -395,7 +680,6 @@ function AiPanel({ ctx }: { ctx:string }) {
         </div>
       </div>
 
-      {/* Messages */}
       <div className="relative flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-0">
         {msgs.length===0&&(
           <div className="pt-2 space-y-2">
@@ -403,11 +687,7 @@ function AiPanel({ ctx }: { ctx:string }) {
             {QUICK.map(q=>(
               <button key={q} onClick={()=>send(q)}
                 className="w-full text-right text-[12px] text-white/50 hover:text-white/90 border border-white/[0.07] hover:border-white/[0.2] rounded-xl px-4 py-3 transition-all duration-150 leading-relaxed"
-                style={{background:"rgba(255,255,255,0.04)"}}
-                onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.background="rgba(255,255,255,0.09)";}}
-                onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.background="rgba(255,255,255,0.04)";}}>
-                {q}
-              </button>
+                style={{background:"rgba(255,255,255,0.04)"}}>{q}</button>
             ))}
           </div>
         )}
@@ -416,18 +696,11 @@ function AiPanel({ ctx }: { ctx:string }) {
             {m.role==="assistant"&&(
               <div className="h-7 w-7 rounded-xl flex-none flex items-center justify-center mt-0.5 shadow"
                 style={{background:"linear-gradient(135deg,#1a5c4f,#2d8570)"}}>
-                <svg viewBox="0 0 18 18" className="h-3.5 w-3.5">
-                  <rect x="2" y="4" width="14" height="10" rx="2.5" fill="none" stroke="white" strokeWidth="1.4"/>
-                  <circle cx="6.5" cy="8.5" r="1.3" fill="#4ade80"/>
-                  <circle cx="11.5" cy="8.5" r="1.3" fill="#4ade80"/>
-                  <path d="M6 12h6" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
-                </svg>
+                <svg viewBox="0 0 18 18" className="h-3.5 w-3.5"><rect x="2" y="4" width="14" height="10" rx="2.5" fill="none" stroke="white" strokeWidth="1.4"/><circle cx="6.5" cy="8.5" r="1.3" fill="#4ade80"/><circle cx="11.5" cy="8.5" r="1.3" fill="#4ade80"/><path d="M6 12h6" stroke="white" strokeWidth="1.2" strokeLinecap="round"/></svg>
               </div>
             )}
             <div className={`max-w-[88%] px-4 py-3 text-[12.5px] leading-[1.75] whitespace-pre-wrap rounded-2xl ${m.role==="user"?"text-white rounded-tl-sm":"text-white/80 rounded-tr-sm border border-white/[0.07]"}`}
-              style={m.role==="user"
-                ?{background:"linear-gradient(135deg,#1a5c4f,#2d8570)",boxShadow:"0 4px 16px rgba(26,92,79,.4)"}
-                :{background:"rgba(255,255,255,0.05)"}}>
+              style={m.role==="user"?{background:"linear-gradient(135deg,#1a5c4f,#2d8570)",boxShadow:"0 4px 16px rgba(26,92,79,.4)"}:{background:"rgba(255,255,255,0.05)"}}>
               {m.content}
             </div>
           </div>
@@ -445,17 +718,15 @@ function AiPanel({ ctx }: { ctx:string }) {
         <div ref={end}/>
       </div>
 
-      {/* Input */}
       <div className="relative px-4 pb-4 pt-2 border-t border-white/[0.07]">
         <div className="flex items-end gap-2 rounded-xl px-3.5 py-2.5 border transition-all duration-200"
           style={{background:"rgba(255,255,255,0.05)",borderColor:"rgba(255,255,255,0.09)"}}>
           <textarea value={val} onChange={e=>setVal(e.target.value)}
             onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send(val);}}}
-            placeholder="اسأل عن خط مبيعاتك…"
-            rows={1} style={{maxHeight:72}}
+            placeholder="اسأل عن خط مبيعاتك…" rows={1} style={{maxHeight:72}}
             className="flex-1 bg-transparent text-[12.5px] text-white/75 placeholder-white/20 resize-none focus:outline-none leading-relaxed"/>
           <button onClick={()=>send(val)} disabled={!val.trim()||busy}
-            className="h-8 w-8 rounded-lg flex items-center justify-center flex-none transition-all duration-150 disabled:opacity-20 hover:scale-105 active:scale-95"
+            className="h-8 w-8 rounded-lg flex items-center justify-center flex-none transition-all disabled:opacity-20 hover:scale-105 active:scale-95"
             style={{background:"linear-gradient(135deg,#1a5c4f,#34a388)",boxShadow:"0 2px 8px rgba(26,92,79,.5)"}}>
             <svg viewBox="0 0 20 20" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 -rotate-90"><path d="M10 16V4M4 10l6-6 6 6"/></svg>
           </button>
@@ -466,76 +737,90 @@ function AiPanel({ ctx }: { ctx:string }) {
 }
 
 // ── Deal Modal ─────────────────────────────────────────────────────────────
-function DealModal({ deal,onClose }: { deal:RIDeal; onClose:()=>void }) {
+function DealModal({ deal,ctx,onClose }: { deal:RIDeal; ctx:string; onClose:()=>void }) {
+  const [showCoach, setShowCoach] = useState(false);
   const cat=CAT[deal.category]??CAT.pipeline, risk=RISK[deal.riskLevel];
   const w=Math.round(deal.valueSAR*deal.probabilityPct/100);
   useEffect(()=>{
-    function h(e:KeyboardEvent){ if(e.key==="Escape") onClose(); }
+    function h(e:KeyboardEvent){ if(e.key==="Escape"&&!showCoach) onClose(); }
     window.addEventListener("keydown",h); return ()=>window.removeEventListener("keydown",h);
-  },[onClose]);
+  },[onClose,showCoach]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/65 backdrop-blur-xl"/>
-      <div className="ri-in relative bg-white rounded-3xl shadow-2xl w-full max-w-[420px] overflow-hidden" onClick={e=>e.stopPropagation()}>
-        <div className="h-1" style={{background:`linear-gradient(90deg,${risk.dot},${cat.hex})`}}/>
-        <div className="px-7 pt-6 pb-4 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.22em] mb-2">تفاصيل الصفقة</p>
-            <h2 className="text-xl font-black text-gray-900 leading-tight">{deal.name}</h2>
-            {deal.leadName&&<p className="text-sm text-gray-400 mt-1">{deal.leadName}</p>}
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+        <div className="absolute inset-0 bg-black/65 backdrop-blur-xl"/>
+        <div className="ri-in relative bg-white rounded-3xl shadow-2xl w-full max-w-[420px] overflow-hidden" onClick={e=>e.stopPropagation()}>
+          <div className="h-1" style={{background:`linear-gradient(90deg,${risk.dot},${cat.hex})`}}/>
+          <div className="px-7 pt-6 pb-4 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.22em] mb-2">تفاصيل الصفقة</p>
+              <h2 className="text-xl font-black text-gray-900 leading-tight">{deal.name}</h2>
+              {deal.leadName&&<p className="text-sm text-gray-400 mt-1">{deal.leadName}</p>}
+            </div>
+            <button onClick={onClose} className="h-9 w-9 rounded-2xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition flex-none mt-1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-4 w-4"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
           </div>
-          <button onClick={onClose} className="h-9 w-9 rounded-2xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition flex-none mt-1">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-4 w-4"><path d="M18 6 6 18M6 6l12 12"/></svg>
-          </button>
-        </div>
-        <div className="px-7 pb-5 flex flex-wrap gap-2">
-          <span className="text-[11px] font-bold px-3 py-1.5 rounded-full border" style={{color:cat.hex,backgroundColor:cat.bg,borderColor:cat.ring}}>{cat.label}</span>
-          <span className={`text-[11px] font-bold px-3 py-1.5 rounded-full border ${risk.pill}`}>{risk.label}</span>
-          <span className="text-[11px] font-bold px-3 py-1.5 rounded-full border bg-gray-50 text-gray-600 border-gray-200">{deal.stage}</span>
-        </div>
-        <div className="mx-7 mb-5 grid grid-cols-3 gap-2.5">
-          {[
-            {label:"القيمة",     val:sarFull(deal.valueSAR), unit:"ر.س", bg:"#f9fafb", border:"#e5e7eb", color:"#111827"},
-            {label:"الاحتمالية",val:`${deal.probabilityPct}%`, unit:"",   bg:"#eff6ff", border:"#bfdbfe", color:"#1d4ed8"},
-            {label:"المرجّحة",  val:sarFull(w),              unit:"ر.س", bg:"#ecfdf5", border:"#a7f3d0", color:"#065f46"},
-          ].map(({label,val,unit,bg,border,color})=>(
-            <div key={label} className="rounded-2xl p-4 text-center border" style={{background:bg,borderColor:border}}>
-              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2">{label}</p>
-              <p className="text-[15px] font-black" style={{color}}>{val}</p>
-              {unit&&<p className="text-[9px] text-gray-400 mt-0.5">{unit}</p>}
-            </div>
-          ))}
-        </div>
-        <div className="mx-7 mb-5 rounded-2xl overflow-hidden border border-gray-100">
-          {[
-            {label:"في المرحلة منذ",val:`${deal.daysInStage} يوم`,warn:deal.daysInStage>30},
-            {label:"آخر تواصل",val:deal.daysSinceActivity!=null?`منذ ${deal.daysSinceActivity} يوم`:"لا يوجد",warn:(deal.daysSinceActivity??0)>14},
-          ].map(({label,val,warn},idx)=>(
-            <div key={label} className={`flex items-center justify-between px-4 py-3 bg-white ${idx>0?"border-t border-gray-100":""}`}>
-              <span className="text-[12px] text-gray-500">{label}</span>
-              <span className={`text-[12px] font-bold ${warn?"text-red-600":"text-gray-800"}`}>{val}</span>
-            </div>
-          ))}
-        </div>
-        {deal.riskReasons.length>0&&(
-          <div className="mx-7 mb-5 rounded-2xl border border-red-100 bg-red-50/80 p-4">
-            <p className="text-[9px] font-black text-red-600 uppercase tracking-[0.2em] mb-3">إشارات الخطر</p>
-            <div className="space-y-2">
-              {deal.riskReasons.map(r=>(
-                <div key={r} className="flex items-start gap-2.5"><span className="h-1.5 w-1.5 rounded-full bg-red-400 flex-none mt-1.5"/><p className="text-[12px] text-red-700 leading-snug">{r}</p></div>
-              ))}
-            </div>
+          <div className="px-7 pb-5 flex flex-wrap gap-2">
+            <span className="text-[11px] font-bold px-3 py-1.5 rounded-full border" style={{color:cat.hex,backgroundColor:cat.bg,borderColor:cat.ring}}>{cat.label}</span>
+            <span className={`text-[11px] font-bold px-3 py-1.5 rounded-full border ${risk.pill}`}>{risk.label}</span>
+            <span className="text-[11px] font-bold px-3 py-1.5 rounded-full border bg-gray-50 text-gray-600 border-gray-200">{deal.stage}</span>
           </div>
-        )}
-        <div className="px-7 pb-7">
-          <a href="/dashboard/deals" className="ri-shine-wrap flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-white text-sm font-bold transition-all hover:opacity-90 hover:-translate-y-0.5 active:translate-y-0"
-            style={{background:`linear-gradient(135deg,${C.brand},${C.brand2})`,boxShadow:`0 8px 24px ${C.brand}45`}}>
-            افتح الصفقة
-            <svg viewBox="0 0 16 16" fill="white" className="h-4 w-4 rotate-180"><path d="M6 4l4 4-4 4V4z"/></svg>
-          </a>
+          <div className="mx-7 mb-5 grid grid-cols-3 gap-2.5">
+            {[
+              {label:"القيمة",     val:sarFull(deal.valueSAR), unit:"ر.س", bg:"#f9fafb", border:"#e5e7eb", color:"#111827"},
+              {label:"الاحتمالية",val:`${deal.probabilityPct}%`, unit:"",  bg:"#eff6ff", border:"#bfdbfe", color:"#1d4ed8"},
+              {label:"المرجّحة",  val:sarFull(w),              unit:"ر.س", bg:"#ecfdf5", border:"#a7f3d0", color:"#065f46"},
+            ].map(({label,val,unit,bg,border,color})=>(
+              <div key={label} className="rounded-2xl p-4 text-center border" style={{background:bg,borderColor:border}}>
+                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2">{label}</p>
+                <p className="text-[15px] font-black tabular-nums" style={{color}}>{val}</p>
+                {unit&&<p className="text-[9px] text-gray-400 mt-0.5">{unit}</p>}
+              </div>
+            ))}
+          </div>
+          <div className="mx-7 mb-5 rounded-2xl overflow-hidden border border-gray-100">
+            {[
+              {label:"في المرحلة منذ",val:`${deal.daysInStage} يوم`,warn:deal.daysInStage>30},
+              {label:"آخر تواصل",val:deal.daysSinceActivity!=null?`منذ ${deal.daysSinceActivity} يوم`:"لا يوجد",warn:(deal.daysSinceActivity??0)>14},
+            ].map(({label,val,warn},idx)=>(
+              <div key={label} className={`flex items-center justify-between px-4 py-3 bg-white ${idx>0?"border-t border-gray-100":""}`}>
+                <span className="text-[12px] text-gray-500">{label}</span>
+                <span className={`text-[12px] font-bold ${warn?"text-red-600":"text-gray-800"}`}>{val}</span>
+              </div>
+            ))}
+          </div>
+          {deal.riskReasons.length>0&&(
+            <div className="mx-7 mb-5 rounded-2xl border border-red-100 bg-red-50/80 p-4">
+              <p className="text-[9px] font-black text-red-600 uppercase tracking-[0.2em] mb-3">إشارات الخطر</p>
+              <div className="space-y-2">
+                {deal.riskReasons.map(r=>(
+                  <div key={r} className="flex items-start gap-2.5"><span className="h-1.5 w-1.5 rounded-full bg-red-400 flex-none mt-1.5"/><p className="text-[12px] text-red-700 leading-snug">{r}</p></div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="px-7 pb-7 flex gap-2.5">
+            {/* Coach button */}
+            <button onClick={()=>setShowCoach(true)}
+              className="flex-1 ri-shine-wrap flex items-center justify-center gap-2 py-3.5 rounded-2xl text-white text-[13px] font-bold transition-all hover:opacity-90 hover:-translate-y-0.5"
+              style={{background:"linear-gradient(135deg,#0d3d33,#2d8570)",boxShadow:"0 8px 24px rgba(13,61,51,.5)"}}>
+              <svg viewBox="0 0 20 20" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                <path d="M10 2a1 1 0 0 1 .894.553l7 14A1 1 0 0 1 17 18H3a1 1 0 0 1-.894-1.447l7-14A1 1 0 0 1 10 2z"/>
+                <path d="M10 8v3M10 13h.01"/>
+              </svg>
+              خطة إغلاق AI
+            </button>
+            <a href="/dashboard/deals"
+              className="px-5 flex items-center justify-center rounded-2xl border border-gray-200 text-gray-600 text-[13px] font-semibold hover:bg-gray-50 transition-all">
+              فتح
+            </a>
+          </div>
         </div>
       </div>
-    </div>
+      {showCoach && <CoachModal deal={deal} ctx={ctx} onClose={()=>setShowCoach(false)}/>}
+    </>
   );
 }
 
@@ -551,14 +836,14 @@ function Row({ deal,onClick }: { deal:RIDeal; onClick:()=>void }) {
             {risk.dot==="#ef4444"&&<span className="absolute inset-0 rounded-full animate-ping opacity-40" style={{backgroundColor:risk.dot}}/>}
           </div>
           <div>
-            <p className="text-[13px] font-semibold text-gray-900 group-hover:text-[#065f46] transition-colors leading-snug">{deal.name}</p>
+            <p className="text-[13px] font-semibold text-gray-900 group-hover:text-[#065f46] transition-colors">{deal.name}</p>
             {deal.leadName&&<p className="text-[11px] text-gray-400">{deal.leadName}</p>}
           </div>
         </div>
       </td>
       <td className="px-4 py-3.5 hidden sm:table-cell">
         <div className="flex items-center gap-1.5">
-          {deal.stageColor&&<span className="h-2 w-2 rounded-full flex-none" style={{backgroundColor:deal.stageColor}}/>}
+          {deal.stageColor&&<span className="h-2 w-2 rounded-full" style={{backgroundColor:deal.stageColor}}/>}
           <span className="text-[11px] text-gray-500">{deal.stage}</span>
         </div>
       </td>
@@ -568,9 +853,9 @@ function Row({ deal,onClick }: { deal:RIDeal; onClick:()=>void }) {
       <td className="px-4 py-3.5 hidden lg:table-cell">
         <div className="flex items-center gap-2.5">
           <div className="h-1.5 w-16 rounded-full bg-gray-100 overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-700" style={{width:`${deal.probabilityPct}%`,background:`linear-gradient(90deg,${cat.hex}99,${cat.hex})`}}/>
+            <div className="h-full rounded-full" style={{width:`${deal.probabilityPct}%`,background:`linear-gradient(90deg,${cat.hex}99,${cat.hex})`}}/>
           </div>
-          <span className="text-[11px] font-bold text-gray-600 w-8 text-left">{deal.probabilityPct}%</span>
+          <span className="text-[11px] font-bold text-gray-600 w-8 tabular-nums">{deal.probabilityPct}%</span>
         </div>
       </td>
       <td className="px-4 py-3.5 hidden xl:table-cell">
@@ -587,11 +872,10 @@ function Row({ deal,onClick }: { deal:RIDeal; onClick:()=>void }) {
 }
 
 // ── Section heading ────────────────────────────────────────────────────────
-function SectionHead({ icon, title, sub, accent }: { icon:React.ReactNode; title:string; sub:string; accent:string }) {
+function SectionHead({ icon,title,sub,accent }: { icon:React.ReactNode; title:string; sub:string; accent:string }) {
   return (
     <div className="flex items-center gap-3 mb-6">
-      <div className="h-10 w-10 rounded-xl flex items-center justify-center flex-none ri-shine-wrap"
-        style={{background:`${accent}18`}}>
+      <div className="h-10 w-10 rounded-xl flex items-center justify-center flex-none ri-shine-wrap" style={{background:`${accent}18`}}>
         <span style={{color:accent}}>{icon}</span>
       </div>
       <div>
@@ -606,13 +890,17 @@ function SectionHead({ icon, title, sub, accent }: { icon:React.ReactNode; title
 type FK="all"|DealCategory|"high_risk";
 
 export default function RevenueIntelligencePage() {
-  const [data,setData]=useState<RevenueIntelligenceData|null>(null);
-  const [loading,setLoading]=useState(true);
-  const [sel,setSel]=useState<RIDeal|null>(null);
-  const [filter,setFilter]=useState<FK>("all");
-  const [search,setSearch]=useState("");
+  const [data,setData]       = useState<RevenueIntelligenceData|null>(null);
+  const [loading,setLoading] = useState(true);
+  const [sel,setSel]         = useState<RIDeal|null>(null);
+  const [coachDeal,setCoachDeal] = useState<RIDeal|null>(null);
+  const [filter,setFilter]   = useState<FK>("all");
+  const [search,setSearch]   = useState("");
+  const [ctx,setCtx]         = useState("");
 
-  useEffect(()=>{ buildRevenueIntelligence().then(setData).finally(()=>setLoading(false)); },[]);
+  useEffect(()=>{
+    buildRevenueIntelligence().then(d=>{ setData(d); setCtx(buildContext(d)); }).finally(()=>setLoading(false));
+  },[]);
 
   if(loading) return (
     <div dir="rtl" className="min-h-[72vh] flex flex-col items-center justify-center gap-6">
@@ -632,7 +920,6 @@ export default function RevenueIntelligencePage() {
   );
   if(!data) return <div dir="rtl" className="py-20 text-center text-gray-400 text-sm">تعذّر تحميل البيانات</div>;
 
-  const ctx=buildContext(data);
   const atRisk=data.deals.filter(d=>d.riskLevel==="high");
   const wonSpark=data.weeklyHistory.slice(-8).map(w=>w.wonSAR);
 
@@ -656,19 +943,13 @@ export default function RevenueIntelligencePage() {
       <style>{GLOBAL_CSS}</style>
       <div dir="rtl" className="flex flex-col gap-6 pb-14">
 
-        {/* ── HERO ─────────────────────────────────────────────────── */}
+        {/* HERO */}
         <div className="ri-up relative overflow-hidden rounded-[28px] text-white"
           style={{background:"linear-gradient(148deg,#040c0a 0%,#071510 28%,#0d3d33 62%,#1a5c4f 100%)",minHeight:208}}>
-          {/* Animated orbs */}
           <div className="absolute top-[-30px] right-[-20px] h-72 w-72 pointer-events-none" style={{background:"radial-gradient(circle,rgba(45,133,112,.22),transparent 68%)",animation:"ri-orb 8s ease-in-out infinite"}}/>
           <div className="absolute bottom-[-50px] left-[25%] h-56 w-56 pointer-events-none" style={{background:"radial-gradient(circle,rgba(26,92,79,.2),transparent 65%)",animation:"ri-orb2 10s ease-in-out infinite"}}/>
-          <div className="absolute top-[40%] left-[50%] h-28 w-28 pointer-events-none" style={{background:"radial-gradient(circle,rgba(52,163,136,.14),transparent 70%)",animation:"ri-orb 12s ease-in-out 2s infinite"}}/>
-          {/* Grid */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.04]"
             style={{backgroundImage:"linear-gradient(rgba(255,255,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.6) 1px,transparent 1px)",backgroundSize:"48px 48px"}}/>
-          {/* Shine sweep */}
-          <div className="absolute inset-0 pointer-events-none ri-shine-wrap opacity-30"/>
-
           <div className="relative px-8 py-10">
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
               <div className="ri-up" style={{animationDelay:".05s"}}>
@@ -688,17 +969,16 @@ export default function RevenueIntelligencePage() {
                   {new Date(data.asOf).toLocaleString("ar-SA",{weekday:"long",day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}
                 </p>
               </div>
-              {/* Glass stat pills */}
               <div className="flex flex-wrap gap-3 ri-up" style={{animationDelay:".12s"}}>
                 {[
                   {label:"خط المبيعات",    val:sarK(data.totalPipelineSAR),    sub:`${data.deals.length} صفقة نشطة`, hi:true},
                   {label:"الإيراد المرجّح",val:sarK(data.weightedPipelineSAR), sub:"بعد تطبيق الاحتماليات",         hi:false},
                   {label:"مُغلق الشهر",   val:sarK(data.wonThisMonthSAR),     sub:`${data.wonThisMonthCount} صفقة`, hi:false},
                 ].map(({label,val,sub,hi})=>(
-                  <div key={label} className="ri-hover-lift rounded-2xl px-5 py-4 min-w-[150px] backdrop-blur-sm border ri-shine-wrap"
+                  <div key={label} className="ri-hover-lift rounded-2xl px-5 py-4 min-w-[148px] backdrop-blur-sm border ri-shine-wrap"
                     style={{background:hi?"rgba(255,255,255,.13)":"rgba(255,255,255,.07)",borderColor:hi?"rgba(255,255,255,.24)":"rgba(255,255,255,.1)",boxShadow:hi?"inset 0 1px 0 rgba(255,255,255,.15)":"none"}}>
                     <p className="text-[10px] text-white/40 mb-2 font-semibold">{label}</p>
-                    <p className="text-[22px] font-black text-white leading-none">{val} <span className="text-[11px] font-medium text-white/45">ر.س</span></p>
+                    <p className="text-[22px] font-black text-white leading-none tabular-nums">{val} <span className="text-[11px] font-medium text-white/45">ر.س</span></p>
                     <p className="text-[10px] text-white/25 mt-2">{sub}</p>
                   </div>
                 ))}
@@ -707,58 +987,51 @@ export default function RevenueIntelligencePage() {
           </div>
         </div>
 
-        {/* ── KPI CARDS ─────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard label="صفقات في خطر عالٍ" note="لا تواصل منذ 14+ يوم"
-            value={data.atRiskCount} fmt={n=>`${n}`} unit="صفقة"
-            accent={C.red} topFrom="#dc2626" topTo="#f87171"
-            spark={data.weeklyHistory.slice(-8).map((w,i)=>Math.max(0,data.atRiskCount-i%2))}
-            icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}/>
-          <KpiCard label="نسبة الفوز" note={`${data.wonThisMonthCount} ربح · ${data.lostThisMonthCount} خسارة الشهر`}
-            value={data.winRateThisMonth} fmt={n=>`${n}%`}
-            accent="#065f46" topFrom="#059669" topTo="#34d399"
-            ring={{pct:data.winRateThisMonth}}
-            icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><circle cx="12" cy="8" r="6"/><path d="m9 11 3 3 3-3M12 22v-6"/></svg>}/>
-          <KpiCard label="متوسط قيمة الصفقة" note="للصفقات النشطة في الخط"
-            value={data.avgDealSAR} unit="ر.س"
-            accent={C.blue} topFrom="#2563eb" topTo="#60a5fa"
-            spark={wonSpark}
-            icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}/>
-          <KpiCard label="خسائر هذا الشهر" note="راجع أسباب الخسارة"
-            value={data.lostThisMonthCount} fmt={n=>`${n}`} unit="صفقة"
-            accent={C.amber} topFrom="#d97706" topTo="#fbbf24"
-            icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>}/>
+        {/* ── NEW: Pipeline Health + KPI in a bento row ─────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Health card spans 1 col on lg */}
+          <div className="lg:col-span-1">
+            <HealthCard data={data} ctx={ctx}/>
+          </div>
+          {/* 3 KPI cards in remaining 2 cols */}
+          <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <KpiCard label="نسبة الفوز" note={`${data.wonThisMonthCount} ربح · ${data.lostThisMonthCount} خسارة`}
+              value={data.winRateThisMonth} fmt={n=>`${n}%`}
+              accent="#065f46" topFrom="#059669" topTo="#34d399"
+              ring={{pct:data.winRateThisMonth}}
+              icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><circle cx="12" cy="8" r="6"/><path d="m9 11 3 3 3-3M12 22v-6"/></svg>}/>
+            <KpiCard label="متوسط الصفقة" note="للصفقات النشطة"
+              value={data.avgDealSAR} unit="ر.س"
+              accent={C.blue} topFrom="#2563eb" topTo="#60a5fa"
+              spark={wonSpark}
+              icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}/>
+            <KpiCard label="في خطر عالٍ" note="تحتاج تدخل فوري"
+              value={data.atRiskCount} fmt={n=>`${n}`} unit="صفقة"
+              accent={C.red} topFrom="#dc2626" topTo="#f87171"
+              spark={data.weeklyHistory.slice(-8).map((_,i)=>Math.max(0,data.atRiskCount-i%2))}
+              icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}/>
+          </div>
         </div>
 
-        {/* ── MAIN GRID ─────────────────────────────────────────────── */}
+        {/* MAIN GRID */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-          {/* Charts */}
           <div className="xl:col-span-2 flex flex-col gap-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Forecast */}
-              <div className="ri-up bg-white rounded-2xl border border-gray-100 p-6" style={{animationDelay:".1s",boxShadow:"0 1px 4px rgba(0,0,0,.07),0 0 0 1px rgba(0,0,0,.04)"}}>
-                <SectionHead
-                  icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M3 3v18h18"/><path d="m7 16 4-4 4 4 4-4"/></svg>}
-                  title="توقعات الإيرادات" sub="3 سيناريوهات لنهاية الشهر" accent={C.brand2}/>
+              <div className="ri-up bg-white rounded-2xl border border-gray-100 p-6" style={{animationDelay:".1s",boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
+                <SectionHead icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M3 3v18h18"/><path d="m7 16 4-4 4 4 4-4"/></svg>} title="توقعات الإيرادات" sub="3 سيناريوهات لنهاية الشهر" accent={C.brand2}/>
                 <ForecastBars scenarios={data.forecast}/>
                 <div className="mt-5 rounded-xl px-4 py-3 border" style={{background:"#f0fdf4",borderColor:"#bbf7d0"}}>
                   <p className="text-[11px] font-semibold text-emerald-700">✓ يشمل <strong>{sarFull(data.wonThisMonthSAR)} ر.س</strong> مُغلق بالفعل هذا الشهر</p>
                 </div>
               </div>
-              {/* Distribution */}
-              <div className="ri-up bg-white rounded-2xl border border-gray-100 p-6" style={{animationDelay:".16s",boxShadow:"0 1px 4px rgba(0,0,0,.07),0 0 0 1px rgba(0,0,0,.04)"}}>
-                <SectionHead
-                  icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>}
-                  title="توزيع خط المبيعات" sub="حسب احتمالية الإغلاق" accent={C.blue}/>
+              <div className="ri-up bg-white rounded-2xl border border-gray-100 p-6" style={{animationDelay:".16s",boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
+                <SectionHead icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>} title="توزيع خط المبيعات" sub="حسب احتمالية الإغلاق" accent={C.blue}/>
                 <DistPills categories={data.categories}/>
               </div>
             </div>
-            {/* Weekly */}
-            <div className="ri-up bg-white rounded-2xl border border-gray-100 p-6" style={{animationDelay:".22s",boxShadow:"0 1px 4px rgba(0,0,0,.07),0 0 0 1px rgba(0,0,0,.04)"}}>
+            <div className="ri-up bg-white rounded-2xl border border-gray-100 p-6" style={{animationDelay:".22s",boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
               <div className="flex items-center justify-between mb-6">
-                <SectionHead
-                  icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>}
-                  title="الأداء الأسبوعي" sub="آخر 12 أسبوع" accent={C.amber}/>
+                <SectionHead icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>} title="الأداء الأسبوعي" sub="آخر 12 أسبوع" accent={C.amber}/>
                 <div className="text-left mr-4">
                   <p className="text-[9px] text-gray-400 uppercase tracking-wider mb-1">مُغلق الشهر</p>
                   <p className="text-[15px] font-black tabular-nums" style={{color:C.green}}>{sarK(data.wonThisMonthSAR)} ر.س</p>
@@ -767,8 +1040,6 @@ export default function RevenueIntelligencePage() {
               <WeeklyChart data={data.weeklyHistory}/>
             </div>
           </div>
-
-          {/* AI */}
           <div className="xl:col-span-1">
             <div className="relative rounded-2xl overflow-hidden sticky top-20" style={{height:630,boxShadow:"0 20px 60px rgba(0,0,0,.25),0 0 0 1px rgba(0,0,0,.08)"}}>
               <AiPanel ctx={ctx}/>
@@ -776,7 +1047,7 @@ export default function RevenueIntelligencePage() {
           </div>
         </div>
 
-        {/* ── AT-RISK ───────────────────────────────────────────────── */}
+        {/* AT-RISK with Coach button */}
         {atRisk.length>0&&(
           <div className="ri-up" style={{animationDelay:".28s"}}>
             <div className="flex items-center gap-4 mb-5">
@@ -795,63 +1066,75 @@ export default function RevenueIntelligencePage() {
               {atRisk.slice(0,6).map(deal=>{
                 const w=Math.round(deal.valueSAR*deal.probabilityPct/100);
                 return (
-                  <button key={deal.id} onClick={()=>setSel(deal)}
-                    className="ri-hover-lift group text-right bg-white rounded-2xl border border-red-100 p-5 space-y-4"
-                    style={{boxShadow:"0 1px 4px rgba(239,68,68,.06),0 0 0 1px rgba(239,68,68,.06)"}}
-                    onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.boxShadow="0 12px 32px rgba(239,68,68,.14),0 0 0 1px rgba(239,68,68,.14)";}}
-                    onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.boxShadow="0 1px 4px rgba(239,68,68,.06),0 0 0 1px rgba(239,68,68,.06)";}}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-bold text-gray-900 truncate group-hover:text-red-700 transition-colors">{deal.name}</p>
-                        {deal.leadName&&<p className="text-[11px] text-gray-400 mt-0.5 truncate">{deal.leadName}</p>}
-                      </div>
-                      <div className="relative flex-none mt-0.5">
-                        <span className="h-2.5 w-2.5 rounded-full bg-red-500 block"/>
-                        <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-40"/>
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      {deal.riskReasons.map(r=>(
-                        <div key={r} className="flex items-start gap-1.5 flex-row-reverse">
-                          <span className="h-1.5 w-1.5 rounded-full bg-red-300 flex-none mt-1.5"/>
-                          <span className="text-[11px] text-red-600 leading-snug">{r}</span>
+                  <div key={deal.id} className="ri-hover-lift group bg-white rounded-2xl border border-red-100 overflow-hidden"
+                    style={{boxShadow:"0 1px 4px rgba(239,68,68,.06)"}}
+                    onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.boxShadow="0 12px 32px rgba(239,68,68,.14)";}}
+                    onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.boxShadow="0 1px 4px rgba(239,68,68,.06)";}}>
+                    {/* Card body — clickable for modal */}
+                    <button className="w-full text-right p-5 space-y-4" onClick={()=>setSel(deal)}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[13px] font-bold text-gray-900 truncate group-hover:text-red-700 transition-colors">{deal.name}</p>
+                          {deal.leadName&&<p className="text-[11px] text-gray-400 mt-0.5 truncate">{deal.leadName}</p>}
                         </div>
-                      ))}
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between text-[10px] mb-1.5">
-                        <span className="font-bold text-red-600">{deal.probabilityPct}%</span>
-                        <span className="text-gray-400">الاحتمالية</span>
+                        <div className="relative flex-none mt-0.5">
+                          <span className="h-2.5 w-2.5 rounded-full bg-red-500 block"/>
+                          <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-40"/>
+                        </div>
                       </div>
-                      <div className="h-1.5 w-full rounded-full bg-red-100 overflow-hidden">
-                        <div className="h-full rounded-full transition-all duration-700"
-                          style={{width:`${Math.max(4,deal.probabilityPct)}%`,background:"linear-gradient(90deg,#fca5a5,#ef4444)"}}/>
+                      <div className="space-y-1.5">
+                        {deal.riskReasons.map(r=>(
+                          <div key={r} className="flex items-start gap-1.5 flex-row-reverse">
+                            <span className="h-1.5 w-1.5 rounded-full bg-red-300 flex-none mt-1.5"/>
+                            <span className="text-[11px] text-red-600 leading-snug">{r}</span>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                    <div className="flex items-end justify-between pt-3 border-t border-red-100/80">
                       <div>
-                        <p className="text-[9px] text-gray-400 uppercase tracking-wider">المرجّحة</p>
-                        <p className="text-[13px] font-black tabular-nums" style={{color:"#065f46"}}>{sarFull(w)}</p>
+                        <div className="flex items-center justify-between text-[10px] mb-1.5">
+                          <span className="font-bold text-red-600">{deal.probabilityPct}%</span>
+                          <span className="text-gray-400">الاحتمالية</span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-red-100 overflow-hidden">
+                          <div className="h-full rounded-full transition-all duration-700"
+                            style={{width:`${Math.max(4,deal.probabilityPct)}%`,background:"linear-gradient(90deg,#fca5a5,#ef4444)"}}/>
+                        </div>
                       </div>
-                      <div className="text-left">
-                        <p className="text-[9px] text-gray-400 uppercase tracking-wider">القيمة الكاملة</p>
-                        <p className="text-[13px] font-bold text-gray-700 tabular-nums">{sarFull(deal.valueSAR)}</p>
+                      <div className="flex items-end justify-between pt-3 border-t border-red-100/80">
+                        <div>
+                          <p className="text-[9px] text-gray-400 uppercase tracking-wider">المرجّحة</p>
+                          <p className="text-[13px] font-black tabular-nums" style={{color:"#065f46"}}>{sarFull(w)}</p>
+                        </div>
+                        <div className="text-left">
+                          <p className="text-[9px] text-gray-400 uppercase tracking-wider">القيمة الكاملة</p>
+                          <p className="text-[13px] font-bold text-gray-700 tabular-nums">{sarFull(deal.valueSAR)}</p>
+                        </div>
                       </div>
-                    </div>
-                  </button>
+                    </button>
+                    {/* AI Coach button at bottom of card */}
+                    <button onClick={()=>setCoachDeal(deal)}
+                      className="w-full flex items-center justify-center gap-2 py-3 text-[11px] font-bold border-t border-red-100 transition-all hover:opacity-90 ri-shine-wrap"
+                      style={{background:"linear-gradient(135deg,#0d3d33,#1a5c4f)",color:"white"}}>
+                      <svg viewBox="0 0 16 16" fill="none" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+                        <path d="M8 1.5a1 1 0 0 1 .894.553l5.5 11A1 1 0 0 1 13.5 14.5h-11a1 1 0 0 1-.894-1.447l5.5-11A1 1 0 0 1 8 1.5z"/>
+                        <path d="M8 6v3M8 11h.01"/>
+                      </svg>
+                      احصل على خطة إغلاق AI
+                    </button>
+                  </div>
                 );
               })}
             </div>
           </div>
         )}
 
-        {/* ── DEALS TABLE ───────────────────────────────────────────── */}
-        <div className="ri-up bg-white rounded-2xl border border-gray-100 overflow-hidden" style={{animationDelay:".34s",boxShadow:"0 1px 4px rgba(0,0,0,.07),0 0 0 1px rgba(0,0,0,.04)"}}>
+        {/* DEALS TABLE */}
+        <div className="ri-up bg-white rounded-2xl border border-gray-100 overflow-hidden" style={{animationDelay:".34s",boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
           <div className="px-6 py-5 border-b border-gray-100">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
               <div>
                 <h2 className="text-[14px] font-bold text-gray-900">جميع الصفقات النشطة</h2>
-                <p className="text-[10px] text-gray-400 mt-0.5">مرتبة حسب مستوى الخطر ثم القيمة · انقر لعرض التفاصيل</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">انقر لعرض التفاصيل أو طلب خطة إغلاق من AI</p>
               </div>
               <div className="relative">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"
@@ -868,13 +1151,10 @@ export default function RevenueIntelligencePage() {
                 const active=filter===key, isRisk=key==="high_risk";
                 return (
                   <button key={key} onClick={()=>setFilter(key)}
-                    className="px-3.5 py-1.5 rounded-full text-[11px] font-semibold border transition-all duration-150"
-                    style={{
-                      background:active?(isRisk?"linear-gradient(135deg,#dc2626,#ef4444)":`linear-gradient(135deg,${C.brand},${C.brand2})`):"#f9fafb",
-                      color:active?"white":"#6b7280",
-                      borderColor:active?"transparent":"#e5e7eb",
-                      boxShadow:active?(isRisk?"0 2px 10px rgba(239,68,68,.3)":`0 2px 10px ${C.brand}30`):"none",
-                    }}>
+                    className="px-3.5 py-1.5 rounded-full text-[11px] font-semibold border transition-all"
+                    style={{background:active?(isRisk?"linear-gradient(135deg,#dc2626,#ef4444)":`linear-gradient(135deg,${C.brand},${C.brand2})`):"#f9fafb",
+                      color:active?"white":"#6b7280",borderColor:active?"transparent":"#e5e7eb",
+                      boxShadow:active?(isRisk?"0 2px 10px rgba(239,68,68,.3)":`0 2px 10px ${C.brand}30`):"none"}}>
                     {label}{count!==undefined&&<span className="mr-1.5 opacity-65">({count})</span>}
                   </button>
                 );
@@ -893,14 +1173,7 @@ export default function RevenueIntelligencePage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100" style={{background:"#fafafa"}}>
-                  {[
-                    {t:"الصفقة",     c:"px-6 py-3 text-right"},
-                    {t:"المرحلة",    c:"px-4 py-3 text-right hidden sm:table-cell"},
-                    {t:"التصنيف",    c:"px-4 py-3 text-right hidden md:table-cell"},
-                    {t:"الاحتمالية",c:"px-4 py-3 text-right hidden lg:table-cell"},
-                    {t:"آخر تواصل", c:"px-4 py-3 text-right hidden xl:table-cell"},
-                    {t:"القيمة",    c:"px-6 py-3 text-left"},
-                  ].map(h=>(
+                  {[{t:"الصفقة",c:"px-6 py-3 text-right"},{t:"المرحلة",c:"px-4 py-3 text-right hidden sm:table-cell"},{t:"التصنيف",c:"px-4 py-3 text-right hidden md:table-cell"},{t:"الاحتمالية",c:"px-4 py-3 text-right hidden lg:table-cell"},{t:"آخر تواصل",c:"px-4 py-3 text-right hidden xl:table-cell"},{t:"القيمة",c:"px-6 py-3 text-left"}].map(h=>(
                     <th key={h.t} className={`${h.c} text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]`}>{h.t}</th>
                   ))}
                 </tr>
@@ -908,16 +1181,14 @@ export default function RevenueIntelligencePage() {
               <tbody>
                 {filtered.length===0
                   ?<tr><td colSpan={6} className="py-20 text-center text-gray-300 text-sm">لا توجد صفقات مطابقة</td></tr>
-                  :filtered.map(d=><Row key={d.id} deal={d} onClick={()=>setSel(d)}/>)
-                }
+                  :filtered.map(d=><Row key={d.id} deal={d} onClick={()=>setSel(d)}/>)}
               </tbody>
             </table>
           </div>
           {filtered.length>0&&(
             <div className="px-6 py-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3" style={{background:"#fafafa"}}>
               <p className="text-[11px] text-gray-400">
-                <strong className="text-gray-700">{filtered.length}</strong> صفقة ·
-                إجمالي: <strong className="text-gray-700 tabular-nums">{sarFull(filtered.reduce((s,d)=>s+d.valueSAR,0))} ر.س</strong>
+                <strong className="text-gray-700">{filtered.length}</strong> صفقة · إجمالي: <strong className="text-gray-700 tabular-nums">{sarFull(filtered.reduce((s,d)=>s+d.valueSAR,0))} ر.س</strong>
               </p>
               <p className="text-[11px] text-gray-400">
                 مرجّح: <strong className="font-bold tabular-nums" style={{color:C.brand2}}>{sarFull(filtered.reduce((s,d)=>s+Math.round(d.valueSAR*d.probabilityPct/100),0))} ر.س</strong>
@@ -926,7 +1197,8 @@ export default function RevenueIntelligencePage() {
           )}
         </div>
 
-        {sel&&<DealModal deal={sel} onClose={()=>setSel(null)}/>}
+        {sel    && <DealModal deal={sel}       ctx={ctx} onClose={()=>setSel(null)}/>}
+        {coachDeal && <CoachModal deal={coachDeal} ctx={ctx} onClose={()=>setCoachDeal(null)}/>}
       </div>
     </>
   );
