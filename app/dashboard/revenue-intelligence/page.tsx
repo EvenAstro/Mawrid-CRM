@@ -889,8 +889,7 @@ export default function RevenueIntelligencePage() {
                   </span>
                   <span className="text-[9px] font-semibold text-white/40 tracking-[.18em] uppercase">لوحة مبيعات مباشرة</span>
                 </div>
-                <h1 className="text-[40px] lg:text-[48px] font-black leading-[.9] tracking-tight"
-                  style={{background:"linear-gradient(135deg,#fff 20%,rgba(255,255,255,.5) 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>
+                <h1 className="text-[40px] lg:text-[48px] font-black leading-[.9] tracking-tight text-white">
                   ذكاء الإيرادات
                 </h1>
                 <p className="text-white/20 text-[10px] mt-3 font-medium">
