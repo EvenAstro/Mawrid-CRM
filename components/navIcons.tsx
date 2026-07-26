@@ -160,6 +160,15 @@ export const PlaybookIcon = ({ className }: P) => (
   </Svg>
 );
 
+/* revenue intelligence — pipeline chart with signal dot */
+export const RevenueIntelIcon = ({ className }: P) => (
+  <Svg className={className}>
+    <path d="M3 3v18h18" />
+    <path d="m7 16 4-4 4 4 4-4" />
+    <circle cx="19" cy="5" r="2.5" fill="currentColor" stroke="none" />
+  </Svg>
+);
+
 /* logout */
 export const LogoutIcon = ({ className }: P) => (
   <Svg className={className}>

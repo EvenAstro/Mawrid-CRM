@@ -21,6 +21,7 @@ import {
   ScoringIcon,
   PlaybookIcon,
   InsightsIcon,
+  RevenueIntelIcon,
   BellIcon,
   LogoutIcon,
 } from "@/components/navIcons";
@@ -50,6 +51,7 @@ const navGroups = [
       { label: "التحليلات", href: "/dashboard/analytics", Icon: AnalyticsIcon },
       { label: "تقييم العملاء", href: "/dashboard/lead-scoring", Icon: ScoringIcon },
       { label: "الدليل التكتيكي", href: "/dashboard/playbook", Icon: PlaybookIcon },
+      { label: "ذكاء الإيرادات", href: "/dashboard/revenue-intelligence", Icon: RevenueIntelIcon },
     ],
   },
 ];
