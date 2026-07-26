@@ -8,6 +8,7 @@ import Button from "@/components/ui/Button";
 import SlideOver from "@/components/ui/SlideOver";
 import Skeleton from "@/components/ui/Skeleton";
 import { Input, Textarea, Select } from "@/components/ui/Field";
+import CompleteTaskModal from "@/components/CompleteTaskModal";
 
 interface Task {
   id: string;
@@ -15,6 +16,7 @@ interface Task {
   description: string | null;
   due_at: string | null;
   entity_type: string | null;
+  completion_note: string | null;
   task_types: { label: string; color: string | null } | null;
 }
 interface TaskType {
@@ -38,6 +40,7 @@ export default function TasksPage() {
   const [dayFilter, setDayFilter] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
   const [detail, setDetail] = useState<Task | null>(null);
+  const [completeTarget, setCompleteTarget] = useState<Task | null>(null);
 
   const [nt, setNt] = useState({ title: "", description: "", due: "", time: "09:00", typeId: "" });
   const [saving, setSaving] = useState(false);
@@ -87,20 +90,26 @@ export default function TasksPage() {
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const isCurrentMonth = month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth();
 
-  const complete = useCallback(async (t: Task) => {
+  const complete = useCallback(async (t: Task, note: string) => {
     if (completing.has(t.id)) return;
     setCompleting((p) => new Set(p).add(t.id));
-    const { error } = await supabase.from("tasks").update({ completed_at: new Date().toISOString() }).eq("id", t.id);
+    const { error } = await supabase
+      .from("tasks")
+      .update({ completed_at: new Date().toISOString(), completion_note: note })
+      .eq("id", t.id);
     if (error) {
       console.error("[Tasks] complete failed", error);
-      toast("Could not update task", "error");
+      toast("تعذّر تحديث المهمة", "error");
       setCompleting((p) => { const n = new Set(p); n.delete(t.id); return n; });
       return;
     }
+    setCompleteTarget(null);
+    setDetail(null);
+    toast("تم إنهاء المهمة");
     setTimeout(() => {
       setTasks((prev) => prev.filter((x) => x.id !== t.id));
       setCompleting((p) => { const n = new Set(p); n.delete(t.id); return n; });
-    }, 1000);
+    }, 800);
   }, [completing, toast]);
 
   async function createTask() {
@@ -134,7 +143,7 @@ export default function TasksPage() {
     const done = completing.has(t.id);
     return (
       <div className={`flex items-start gap-3 rounded-xl border border-border-light bg-white p-3 shadow-sm transition-all ${done ? "opacity-40" : "hover:shadow-md"}`}>
-        <button onClick={() => complete(t)} aria-label="Complete task" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 transition-colors ${done ? "border-primary bg-primary text-white" : `${tone} hover:border-primary`}`}>
+        <button onClick={() => setCompleteTarget(t)} aria-label="Complete task" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 transition-colors ${done ? "border-primary bg-primary text-white" : `${tone} hover:border-primary`}`}>
           {done && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3"><path d="M20 6 9 17l-5-5" /></svg>}
         </button>
         <button onClick={() => setDetail(t)} className="min-w-0 flex-1 text-left">
@@ -260,10 +269,23 @@ export default function TasksPage() {
               <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">Due</p>
               <p className="mt-1 text-[15px] text-ink">{detail.due_at ? new Date(detail.due_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" }) : "—"}</p>
             </div>
-            <Button onClick={() => { complete(detail); setDetail(null); }}>Mark Complete</Button>
+            {detail.completion_note && (
+              <div>
+                <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">ملاحظة الإنجاز</p>
+                <p dir="auto" className="mt-1 text-[15px] text-ink-secondary">{detail.completion_note}</p>
+              </div>
+            )}
+            <Button onClick={() => setCompleteTarget(detail)}>Mark Complete</Button>
           </div>
         )}
       </SlideOver>
+
+      <CompleteTaskModal
+        open={!!completeTarget}
+        taskTitle={completeTarget?.title ?? null}
+        onClose={() => setCompleteTarget(null)}
+        onConfirm={(note) => { if (completeTarget) return complete(completeTarget, note); }}
+      />
     </div>
   );
 }

@@ -22,12 +22,14 @@ export default function NewDealSlideOver({
   onCreated,
   stages,
   defaultStageId,
+  prefillLead,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated?: () => void;
   stages: Stage[];
   defaultStageId?: string | null;
+  prefillLead?: LeadHit | null;
 }) {
   const toast = useToast();
   const [name, setName] = useState("");
@@ -46,6 +48,13 @@ export default function NewDealSlideOver({
   useEffect(() => {
     if (open) setStageId(defaultStageId || stages[0]?.id || "");
   }, [open, defaultStageId, stages]);
+
+  useEffect(() => {
+    if (open && prefillLead) {
+      setCustomer(prefillLead);
+      setName((prev) => prev || prefillLead.full_name || "");
+    }
+  }, [open, prefillLead]);
 
   useEffect(() => {
     if (customer || query.trim().length < 2) {

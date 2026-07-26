@@ -474,7 +474,7 @@ export default function LeadsPage() {
       </div>
 
       {/* Slide-over detail panel */}
-      <LeadSlideOver lead={selectedLead} onClose={() => setSelectedLead(null)} />
+      <LeadSlideOver lead={selectedLead} onClose={() => setSelectedLead(null)} onUpdated={load} />
       <NewLeadSlideOver open={newLeadOpen} onClose={() => setNewLeadOpen(false)} onCreated={load} />
     </>
   );
