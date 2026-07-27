@@ -625,14 +625,6 @@ export default function LeadSlideOver({
 
                       {addingActivity && (
                         <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50/50 p-5 space-y-4">
-                          <div className="flex gap-3">
-                            <button type="button" onClick={() => setActDirection("outbound")} className={`h-11 flex-1 rounded-xl border-2 text-[14px] font-semibold transition ${actDirection === "outbound" ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>
-                              📤 اتصلت بالعميل
-                            </button>
-                            <button type="button" onClick={() => setActDirection("inbound")} className={`h-11 flex-1 rounded-xl border-2 text-[14px] font-semibold transition ${actDirection === "inbound" ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>
-                              📥 رد العميل
-                            </button>
-                          </div>
                           <select value={actTypeId} onChange={(e) => setActTypeId(e.target.value)} className={selectCls}>
                             <option value="">اختر نوع التواصل…</option>
                             {activityTypes.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
@@ -660,13 +652,12 @@ export default function LeadSlideOver({
                         <div className="max-h-[420px] space-y-3 overflow-y-auto">
                           {activities.map((a) => (
                             <div key={a.id} className="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-slate-200">
-                              <div className={`mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-xl text-[14px] ${a.direction === "inbound" ? "bg-emerald-100 text-emerald-600" : "bg-blue-100 text-blue-600"}`}>
-                                {a.direction === "inbound" ? "📥" : "📤"}
+                              <div className="mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-emerald-100 text-[14px] text-emerald-600">
+                                📞
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
                                   <span className="text-[14px] font-semibold text-slate-800">{a.activity_types?.label ?? "نشاط"}</span>
-                                  <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-400">{a.direction === "inbound" ? "وارد" : "صادر"}</span>
                                 </div>
                                 <p className="mt-0.5 text-[12px] text-slate-400">{formatDateTime(a.occurred_at)}</p>
                                 {a.body && <p dir="auto" className="mt-1.5 text-[13px] leading-relaxed text-slate-600">{a.body}</p>}
