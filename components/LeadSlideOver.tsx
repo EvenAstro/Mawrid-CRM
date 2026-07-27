@@ -366,13 +366,15 @@ export default function LeadSlideOver({
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className={`fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300 ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}
+        className={`fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-200 ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}
       />
 
-      {/* ─── Main Panel ─────────────────────────────────────────── */}
-      <aside
-        className={`fixed right-0 top-0 z-50 flex h-screen w-full max-w-[920px] flex-col bg-gradient-to-b from-slate-50 to-white shadow-2xl transition-transform duration-300 ease-[cubic-bezier(.32,.72,0,1)] ${open ? "translate-x-0" : "translate-x-full"}`}
-      >
+      {/* ─── Centered Modal ─────────────────────────────────────── */}
+      <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 transition-opacity duration-200 ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}>
+        <aside
+          onClick={(e) => e.stopPropagation()}
+          className={`relative flex h-full max-h-[92vh] w-full max-w-[1100px] flex-col overflow-hidden rounded-3xl bg-gradient-to-b from-slate-50 to-white shadow-2xl ring-1 ring-slate-200/60 transition-transform duration-200 ${open ? "scale-100" : "scale-95"}`}
+        >
         {data && (
           <>
             {/* ─── Header ──────────────────────────────────────── */}
@@ -749,7 +751,8 @@ export default function LeadSlideOver({
             </div>
           </>
         )}
-      </aside>
+        </aside>
+      </div>
 
       {data && (
         <NewDealSlideOver
