@@ -98,6 +98,7 @@ export default function NewDealSlideOver({
     setSaving(true);
     const now = new Date().toISOString();
     const minor = amount.trim() ? Math.round(parseFloat(amount) * 100) : null;
+    const { data: userData } = await supabase.auth.getUser();
     const { error } = await supabase.from("deals").insert({
       id: crypto.randomUUID(),
       name: name.trim(),
@@ -108,6 +109,7 @@ export default function NewDealSlideOver({
       probability_pct: probability.trim() ? Math.round(parseFloat(probability)) : 0,
       target_close_date: closeDate || null,
       notes: notes.trim() || null,
+      owner_id: userData.user?.id ?? null,
       created_at: now,
       updated_at: now,
     });

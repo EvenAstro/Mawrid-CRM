@@ -12,6 +12,8 @@ import Skeleton from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import NewDealSlideOver from "@/components/NewDealSlideOver";
 import NextBestActionCard from "@/components/NextBestActionCard";
+import { useRole } from "@/components/RoleProvider";
+import { canViewAllData } from "@/lib/permissions";
 
 interface Deal {
   id: string;
@@ -49,6 +51,7 @@ function columnTint(t: string | null): string {
 export default function DealsPage() {
   const toast = useToast();
   const router = useRouter();
+  const { role, userId, loading: roleLoading } = useRole();
   const [lostDeal, setLostDeal] = useState<Deal | null>(null);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [stages, setStages] = useState<StageCol[]>([]);
@@ -63,8 +66,13 @@ export default function DealsPage() {
 
   async function load() {
     setError(false);
+    let dealsQuery = supabase.from("deals").select("*, pipeline_stages(label, color, terminal_type), lost_reasons(label)").is("deleted_at", null);
+    // Sales reps only see deals assigned to them; managers/admins see all.
+    if (!canViewAllData(role) && userId) {
+      dealsQuery = dealsQuery.eq("owner_id", userId);
+    }
     const [d, s] = await Promise.all([
-      supabase.from("deals").select("*, pipeline_stages(label, color, terminal_type), lost_reasons(label)").is("deleted_at", null),
+      dealsQuery,
       supabase.from("pipeline_stages").select("*").eq("pipeline", "deal").order("sort_order"),
     ]);
     if (d.error || s.error) {
@@ -77,8 +85,9 @@ export default function DealsPage() {
     setLoading(false);
   }
   useEffect(() => {
+    if (roleLoading) return;
     load();
-  }, []);
+  }, [roleLoading, role, userId]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();

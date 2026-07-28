@@ -10,6 +10,8 @@ import Skeleton from "@/components/ui/Skeleton";
 import { Input, Textarea, Select } from "@/components/ui/Field";
 import CompleteTaskModal from "@/components/CompleteTaskModal";
 import { fetchProfiles, type Profile } from "@/lib/profiles";
+import { useRole } from "@/components/RoleProvider";
+import { canViewAllData } from "@/lib/permissions";
 
 interface Task {
   id: string;
@@ -39,6 +41,7 @@ function startOfDay(d: Date) {
 
 export default function TasksPage() {
   const toast = useToast();
+  const { role, userId, loading: roleLoading } = useRole();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [types, setTypes] = useState<TaskType[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -60,8 +63,13 @@ export default function TasksPage() {
   const profileMap = useMemo(() => new Map(profiles.map((p) => [p.id, p])), [profiles]);
 
   const load = useCallback(async () => {
+    let tasksQuery = supabase.from("tasks").select("*, task_types(label, color)").is("completed_at", null).order("due_at", { ascending: true }).limit(200);
+    // Sales reps only see tasks assigned to them; managers/admins see all.
+    if (!canViewAllData(role) && userId) {
+      tasksQuery = tasksQuery.eq("assignee_id", userId);
+    }
     const [tk, tt, pf] = await Promise.all([
-      supabase.from("tasks").select("*, task_types(label, color)").is("completed_at", null).order("due_at", { ascending: true }).limit(200),
+      tasksQuery,
       supabase.from("task_types").select("id, label"),
       fetchProfiles(),
     ]);
@@ -69,10 +77,11 @@ export default function TasksPage() {
     if (tt.data) setTypes(tt.data as TaskType[]);
     setProfiles(pf);
     setLoading(false);
-  }, []);
+  }, [role, userId]);
   useEffect(() => {
+    if (roleLoading) return;
     load();
-  }, [load]);
+  }, [roleLoading, load]);
 
   const today = startOfDay(new Date());
 

@@ -6,6 +6,8 @@ import { SearchIcon, LeadsIcon } from "@/components/navIcons";
 import LeadSlideOver, { type Lead } from "@/components/LeadSlideOver";
 import NewLeadSlideOver from "@/components/NewLeadSlideOver";
 import { fetchLeadScoreModel, scoreWithModel, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
+import { useRole } from "@/components/RoleProvider";
+import { canViewAllData } from "@/lib/permissions";
 
 const PAGE_SIZE = 15;
 
@@ -103,6 +105,7 @@ function StatCard({
 }
 
 export default function LeadsPage() {
+  const { role, userId, loading: roleLoading } = useRole();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -128,13 +131,20 @@ export default function LeadsPage() {
   async function load() {
     setError(false);
     // Alias normalized_phone/normalized_email to the phone/email the UI expects.
-    const { data, error: err } = await supabase
+    let query = supabase
       .from("leads")
       .select(
         `*, phone:normalized_phone, email:normalized_email, pipeline_stages(label, color), sources(label), junk_reasons(label)`,
       )
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
+
+    // Sales reps only see leads assigned to them; managers/admins see all.
+    if (!canViewAllData(role) && userId) {
+      query = query.eq("owner_id", userId);
+    }
+
+    const { data, error: err } = await query;
 
     if (err) {
       console.error("[Leads] Supabase fetch failed", err);
@@ -146,7 +156,11 @@ export default function LeadsPage() {
   }
 
   useEffect(() => {
+    if (roleLoading) return; // wait for the current user's role to resolve first
     load();
+  }, [roleLoading, role, userId]);
+
+  useEffect(() => {
     fetchLeadScoreModel()
       .then(setScoreModel)
       .catch((err) => console.error("[Leads] lead score model failed", err));

@@ -9,7 +9,9 @@ import CopilotProvider from "@/components/copilot/CopilotProvider";
 import CopilotWidget from "@/components/copilot/CopilotWidget";
 import DailyBriefing from "@/components/DailyBriefing";
 import { initials as initialsOf } from "@/lib/format";
-import { fetchCurrentProfile } from "@/lib/profiles";
+import { fetchCurrentProfile, type Role } from "@/lib/profiles";
+import { isPathRestricted } from "@/lib/permissions";
+import RoleProvider from "@/components/RoleProvider";
 import { UsersIcon } from "@/components/navIcons";
 import {
   DashboardIcon,
@@ -70,7 +72,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(true);
-  const [canManageUsers, setCanManageUsers] = useState(false);
+  const [role, setRole] = useState<Role | null>(null);
+  const canManageUsers = role === "admin" || role === "manager";
   const [collapsed, setCollapsed] = useState(false);
 
   // Restore collapse state
@@ -101,11 +104,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setFullName((user.user_metadata?.full_name as string) ?? "");
       setLoading(false);
       fetchCurrentProfile()
-        .then((p) => setCanManageUsers(p?.role === "admin" || p?.role === "manager"))
-        .catch(() => setCanManageUsers(false));
+        .then((p) => setRole(p?.role ?? null))
+        .catch(() => setRole(null));
     }
     checkUser();
   }, [router]);
+
+  // Guard: a sales rep can't linger on a page reserved for managers/admins.
+  useEffect(() => {
+    if (role && isPathRestricted(role, pathname)) {
+      router.replace("/dashboard");
+    }
+  }, [role, pathname, router]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -158,7 +168,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {(canManageUsers
               ? [...navGroups, { heading: "الإدارة", items: [{ label: "المستخدمون", href: "/dashboard/users", Icon: UsersIcon }] }]
               : navGroups
-            ).map((group) => (
+            )
+              .map((group) => ({ ...group, items: group.items.filter((it) => !isPathRestricted(role, it.href)) }))
+              .filter((group) => group.items.length > 0)
+              .map((group) => (
               <div key={group.heading} className="mt-4 first:mt-0">
                 {!collapsed && (
                   <p className="mb-2 px-3 text-[10px] font-medium uppercase tracking-[0.15em] text-muted">
@@ -237,7 +250,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           style={{ marginLeft: w, paddingRight: "var(--briefing-rail-width, 52px)" }}
           className="min-h-screen bg-gray-25 pt-16 transition-all duration-300"
         >
-          <div key={pathname} className="page-content mx-auto max-w-[1280px] p-8">{children}</div>
+          <div key={pathname} className="page-content mx-auto max-w-[1280px] p-8">
+            <RoleProvider>{children}</RoleProvider>
+          </div>
         </main>
         <CopilotWidget />
         <DailyBriefing />
