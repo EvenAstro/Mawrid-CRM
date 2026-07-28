@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 import { fetchCurrentProfile, fetchProfiles, type Profile, type Role } from "@/lib/profiles";
+import UserPermissionsModal from "@/components/UserPermissionsModal";
 
 const roleMeta: Record<Role, { label: string; cls: string }> = {
   admin: { label: "أدمن", cls: "bg-red-50 text-red-600 ring-1 ring-red-200" },
@@ -37,6 +38,7 @@ export default function UsersPage() {
   const [createErr, setCreateErr] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [permsTarget, setPermsTarget] = useState<Profile | null>(null);
 
   const load = useCallback(async () => {
     const [list, mine] = await Promise.all([fetchProfiles(), fetchCurrentProfile()]);
@@ -171,17 +173,18 @@ export default function UsersPage() {
               <th className="px-6 py-3.5">المستخدم</th>
               <th className="px-6 py-3.5">الدور الحالي</th>
               <th className="px-6 py-3.5">تغيير الدور</th>
+              {canEdit && <th className="px-6 py-3.5">صلاحيات المميزات</th>}
               {canDelete && <th className="px-6 py-3.5"></th>}
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={4} className="px-6 py-16 text-center text-[14px] text-slate-500">جارِ التحميل…</td>
+                <td colSpan={5} className="px-6 py-16 text-center text-[14px] text-slate-500">جارِ التحميل…</td>
               </tr>
             ) : profiles.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-6 py-16 text-center text-[14px] text-slate-500">لا يوجد مستخدمون</td>
+                <td colSpan={5} className="px-6 py-16 text-center text-[14px] text-slate-500">لا يوجد مستخدمون</td>
               </tr>
             ) : (
               profiles.map((p) => {
@@ -219,6 +222,21 @@ export default function UsersPage() {
                         <option value="admin">أدمن</option>
                       </select>
                     </td>
+                    {canEdit && (
+                      <td className="px-6 py-4">
+                        {p.role === "admin" ? (
+                          <span className="text-[12px] text-slate-300">وصول كامل</span>
+                        ) : (
+                          <button
+                            onClick={() => setPermsTarget(p)}
+                            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+                          >
+                            <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5"><path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" /></svg>
+                            الصلاحيات
+                          </button>
+                        )}
+                      </td>
+                    )}
                     {canDelete && (
                       <td className="px-6 py-4 text-right">
                         {isSelf ? null : confirmDeleteId === p.id ? (
@@ -322,6 +340,14 @@ export default function UsersPage() {
           </div>
         </div>
       )}
+
+      <UserPermissionsModal
+        open={!!permsTarget}
+        userId={permsTarget?.id ?? null}
+        userName={permsTarget ? profileName(permsTarget) : ""}
+        userRole={permsTarget?.role ?? "sales"}
+        onClose={() => setPermsTarget(null)}
+      />
     </>
   );
 }

@@ -9,9 +9,8 @@ import CopilotProvider from "@/components/copilot/CopilotProvider";
 import CopilotWidget from "@/components/copilot/CopilotWidget";
 import DailyBriefing from "@/components/DailyBriefing";
 import { initials as initialsOf } from "@/lib/format";
-import { fetchCurrentProfile, type Role } from "@/lib/profiles";
-import { isPathRestricted } from "@/lib/permissions";
-import RoleProvider from "@/components/RoleProvider";
+import RoleProvider, { useRole } from "@/components/RoleProvider";
+import { FEATURES } from "@/lib/features";
 import { UsersIcon } from "@/components/navIcons";
 import {
   DashboardIcon,
@@ -30,36 +29,23 @@ import {
   LogoutIcon,
 } from "@/components/navIcons";
 
-const navGroups = [
-  {
-    heading: "مساحة العمل",
-    items: [
-      { label: "الرئيسية", href: "/dashboard", Icon: DashboardIcon },
-      { label: "جهات الاتصال", href: "/dashboard/contacts", Icon: ContactsIcon },
-      { label: "العملاء المحتملون", href: "/dashboard/leads", Icon: LeadsIcon },
-      { label: "الصفقات", href: "/dashboard/deals", Icon: DealsIcon },
-    ],
-  },
-  {
-    heading: "التفاعل",
-    items: [
-      { label: "النشاطات", href: "/dashboard/activities", Icon: ActivitiesIcon },
-      { label: "المهام", href: "/dashboard/tasks", Icon: TasksIcon },
-      { label: "التذاكر", href: "/dashboard/tickets", Icon: TicketsIcon },
-    ],
-  },
-  {
-    heading: "الذكاء",
-    items: [
-      { label: "لوحة الرؤى", href: "/dashboard/insights", Icon: InsightsIcon },
-      { label: "التحليلات", href: "/dashboard/analytics", Icon: AnalyticsIcon },
-      { label: "تقييم العملاء", href: "/dashboard/lead-scoring", Icon: ScoringIcon },
-      { label: "الدليل التكتيكي", href: "/dashboard/playbook", Icon: PlaybookIcon },
-      { label: "ذكاء الإيرادات", href: "/dashboard/revenue-intelligence", Icon: RevenueIntelIcon },
-    ],
-  },
-];
-const allItems = navGroups.flatMap((g) => g.items);
+const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  dashboard: DashboardIcon,
+  contacts: ContactsIcon,
+  leads: LeadsIcon,
+  deals: DealsIcon,
+  activities: ActivitiesIcon,
+  tasks: TasksIcon,
+  tickets: TicketsIcon,
+  insights: InsightsIcon,
+  analytics: AnalyticsIcon,
+  lead_scoring: ScoringIcon,
+  playbook: PlaybookIcon,
+  revenue_intelligence: RevenueIntelIcon,
+  users: UsersIcon,
+};
+
+const GROUP_ORDER = ["مساحة العمل", "التفاعل", "الذكاء", "الإدارة"];
 
 function isActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === "/dashboard";
@@ -68,33 +54,12 @@ function isActive(pathname: string, href: string) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname();
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState<Role | null>(null);
-  const canManageUsers = role === "admin" || role === "manager";
-  const [collapsed, setCollapsed] = useState(false);
-
-  // Restore collapse state
-  useEffect(() => {
-    setCollapsed(localStorage.getItem("mawrid_sidebar_collapsed") === "1");
-  }, []);
-  function toggleCollapse() {
-    setCollapsed((c) => {
-      const next = !c;
-      localStorage.setItem("mawrid_sidebar_collapsed", next ? "1" : "0");
-      return next;
-    });
-  }
-
-  const pageName = allItems.find((n) => isActive(pathname, n.href))?.label ?? "الرئيسية";
-  useEffect(() => {
-    document.title = `${pageName} · Mawrid CRM`;
-  }, [pageName]);
 
   useEffect(() => {
-    async function applyUser(user: { email?: string | null; user_metadata?: Record<string, unknown> } | null) {
+    function applyUser(user: { email?: string | null; user_metadata?: Record<string, unknown> } | null) {
       if (!user) {
         router.replace("/");
         return;
@@ -102,9 +67,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setEmail(user.email ?? "");
       setFullName((user.user_metadata?.full_name as string) ?? "");
       setLoading(false);
-      fetchCurrentProfile()
-        .then((p) => setRole(p?.role ?? null))
-        .catch(() => setRole(null));
     }
 
     supabase.auth.getUser().then(({ data: { user } }) => applyUser(user));
@@ -118,20 +80,63 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => sub.subscription.unsubscribe();
   }, [router]);
 
-  // Guard: a sales rep can't linger on a page reserved for managers/admins.
+  if (loading) {
+    return <div className="flex min-h-screen items-center justify-center bg-ivory text-muted">Loading…</div>;
+  }
+
+  return (
+    <ToastProvider>
+      <RoleProvider>
+        <CopilotProvider>
+          <DashboardShell email={email} fullName={fullName}>{children}</DashboardShell>
+        </CopilotProvider>
+      </RoleProvider>
+    </ToastProvider>
+  );
+}
+
+function DashboardShell({ children, email, fullName }: { children: React.ReactNode; email: string; fullName: string }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { role, permissions, loading: roleLoading, can } = useRole();
+  const [collapsed, setCollapsed] = useState(false);
+
   useEffect(() => {
-    if (role && isPathRestricted(role, pathname)) {
-      router.replace("/dashboard");
-    }
-  }, [role, pathname, router]);
+    setCollapsed(localStorage.getItem("mawrid_sidebar_collapsed") === "1");
+  }, []);
+  function toggleCollapse() {
+    setCollapsed((c) => {
+      const next = !c;
+      localStorage.setItem("mawrid_sidebar_collapsed", next ? "1" : "0");
+      return next;
+    });
+  }
+
+  const currentFeature = FEATURES.find((f) => isActive(pathname, f.href));
+  const pageName = currentFeature?.label ?? "الرئيسية";
+  useEffect(() => {
+    document.title = `${pageName} · Mawrid CRM`;
+  }, [pageName]);
+
+  // Guard: redirect away from a page this user isn't allowed to see —
+  // either by role default or an explicit per-user permission override.
+  useEffect(() => {
+    if (roleLoading || !currentFeature) return;
+    if (!can(currentFeature.key)) router.replace("/dashboard");
+  }, [roleLoading, currentFeature, can, router, permissions]);
+
+  const navGroups = GROUP_ORDER.map((heading) => ({
+    heading,
+    items: FEATURES.filter((f) => f.group === heading && can(f.key)).map((f) => ({
+      label: f.label,
+      href: f.href,
+      Icon: ICONS[f.key] ?? DashboardIcon,
+    })),
+  })).filter((g) => g.items.length > 0);
 
   async function handleLogout() {
     await supabase.auth.signOut();
     router.replace("/");
-  }
-
-  if (loading) {
-    return <div className="flex min-h-screen items-center justify-center bg-ivory text-muted">Loading…</div>;
   }
 
   const displayName = fullName || email.split("@")[0];
@@ -139,133 +144,123 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const w = collapsed ? 72 : 240;
 
   return (
-    <ToastProvider>
-      <CopilotProvider>
-      <div className="min-h-screen bg-white">
-        {/* Sidebar */}
-        <div
-          style={{ width: w }}
-          className="fixed inset-y-0 left-0 z-30 flex flex-col border-r border-border-light bg-white transition-all duration-300"
-        >
-          {/* Logo + collapse */}
-          <div className="flex h-16 items-center justify-between px-4">
-            <div className="flex min-w-0 items-center gap-2.5">
-              <div className="flex h-10 w-10 flex-none items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)]">
-                <span className="text-lg font-black text-white">م</span>
-              </div>
-              {!collapsed && (
-                <div className="min-w-0">
-                  <span className="block truncate text-[20px] font-extrabold leading-tight text-ink">Mawrid</span>
-                  <span className="text-[11px] font-medium text-muted">CRM Platform</span>
-                </div>
-              )}
+    <div className="min-h-screen bg-white">
+      {/* Sidebar */}
+      <div
+        style={{ width: w }}
+        className="fixed inset-y-0 left-0 z-30 flex flex-col border-r border-border-light bg-white transition-all duration-300"
+      >
+        {/* Logo + collapse */}
+        <div className="flex h-16 items-center justify-between px-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="flex h-10 w-10 flex-none items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)]">
+              <span className="text-lg font-black text-white">م</span>
             </div>
-            <button
-              onClick={toggleCollapse}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className={`flex-none rounded-lg p-1.5 text-muted transition hover:bg-mint hover:text-primary ${collapsed ? "absolute -right-3 top-4 z-10 border border-border-light bg-white shadow-md" : ""}`}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={`h-4 w-4 transition-transform ${collapsed ? "rotate-180" : ""}`}>
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Nav */}
-          <nav className="flex-1 overflow-y-auto px-3 py-2">
-            {(canManageUsers
-              ? [...navGroups, { heading: "الإدارة", items: [{ label: "المستخدمون", href: "/dashboard/users", Icon: UsersIcon }] }]
-              : navGroups
-            )
-              .map((group) => ({ ...group, items: group.items.filter((it) => !isPathRestricted(role, it.href)) }))
-              .filter((group) => group.items.length > 0)
-              .map((group) => (
-              <div key={group.heading} className="mt-4 first:mt-0">
-                {!collapsed && (
-                  <p className="mb-2 px-3 text-[10px] font-medium uppercase tracking-[0.15em] text-muted">
-                    {group.heading}
-                  </p>
-                )}
-                <div className="space-y-1">
-                  {group.items.map(({ label, href, Icon }) => {
-                    const active = isActive(pathname, href);
-                    return (
-                      <Link
-                        key={label}
-                        href={href}
-                        title={collapsed ? label : undefined}
-                        className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition-all ${
-                          active
-                            ? "bg-primary font-semibold text-white"
-                            : "font-medium text-ink-secondary hover:bg-mint hover:text-primary"
-                        } ${collapsed ? "justify-center px-0" : ""}`}
-                      >
-                        <Icon className="h-5 w-5 flex-shrink-0" />
-                        {!collapsed && label}
-                      </Link>
-                    );
-                  })}
-                </div>
+            {!collapsed && (
+              <div className="min-w-0">
+                <span className="block truncate text-[20px] font-extrabold leading-tight text-ink">Mawrid</span>
+                <span className="text-[11px] font-medium text-muted">CRM Platform</span>
               </div>
-            ))}
-          </nav>
-
-          {/* User */}
-          <div className="border-t border-border-light px-3 pb-3 pt-4">
-            <div className={`flex items-center gap-3 rounded-xl px-2 py-2 ${collapsed ? "justify-center" : ""}`}>
-              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)]">
-                <span className="text-sm font-bold text-white">{userInitials}</span>
-              </div>
-              {!collapsed && (
-                <>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-ink">{displayName}</p>
-                    <p className="truncate text-xs text-muted">{email}</p>
-                  </div>
-                  <button onClick={handleLogout} aria-label="Log out" className="flex-none rounded-lg p-1.5 text-muted transition-colors hover:bg-red-50 hover:text-red-500">
-                    <LogoutIcon className="h-4 w-4" />
-                  </button>
-                </>
-              )}
-            </div>
-            {!collapsed && <p className="mt-2 px-2 text-[11px] font-medium text-muted">v1.0</p>}
+            )}
           </div>
+          <button
+            onClick={toggleCollapse}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={`flex-none rounded-lg p-1.5 text-muted transition hover:bg-mint hover:text-primary ${collapsed ? "absolute -right-3 top-4 z-10 border border-border-light bg-white shadow-md" : ""}`}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={`h-4 w-4 transition-transform ${collapsed ? "rotate-180" : ""}`}>
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
         </div>
 
-        {/* Top bar */}
-        <div
-          style={{ left: w }}
-          className="fixed right-0 top-0 z-20 flex h-16 items-center justify-between border-b border-border-light bg-white/90 px-8 backdrop-blur-sm transition-all duration-300"
-        >
-          <div className="flex items-center gap-1.5 text-sm">
-            <span className="text-muted">مساحة العمل</span>
-            <span className="text-[#d1d5db]">/</span>
-            <span className="font-semibold text-ink">{pageName}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <button aria-label="Notifications" className="relative text-muted transition-colors hover:text-primary">
-              <BellIcon className="h-[18px] w-[18px]" />
-              <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-red-500" />
-            </button>
-            <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)]">
-              <span className="text-xs font-bold text-white">{userInitials}</span>
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto px-3 py-2">
+          {navGroups.map((group) => (
+            <div key={group.heading} className="mt-4 first:mt-0">
+              {!collapsed && (
+                <p className="mb-2 px-3 text-[10px] font-medium uppercase tracking-[0.15em] text-muted">
+                  {group.heading}
+                </p>
+              )}
+              <div className="space-y-1">
+                {group.items.map(({ label, href, Icon }) => {
+                  const active = isActive(pathname, href);
+                  return (
+                    <Link
+                      key={label}
+                      href={href}
+                      title={collapsed ? label : undefined}
+                      className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition-all ${
+                        active
+                          ? "bg-primary font-semibold text-white"
+                          : "font-medium text-ink-secondary hover:bg-mint hover:text-primary"
+                      } ${collapsed ? "justify-center px-0" : ""}`}
+                    >
+                      <Icon className="h-5 w-5 flex-shrink-0" />
+                      {!collapsed && label}
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        </div>
+          ))}
+        </nav>
 
-        {/* Main */}
-        <main
-          style={{ marginLeft: w, paddingRight: "var(--briefing-rail-width, 52px)" }}
-          className="min-h-screen bg-gray-25 pt-16 transition-all duration-300"
-        >
-          <div key={pathname} className="page-content mx-auto max-w-[1280px] p-8">
-            <RoleProvider>{children}</RoleProvider>
+        {/* User */}
+        <div className="border-t border-border-light px-3 pb-3 pt-4">
+          <div className={`flex items-center gap-3 rounded-xl px-2 py-2 ${collapsed ? "justify-center" : ""}`}>
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)]">
+              <span className="text-sm font-bold text-white">{userInitials}</span>
+            </div>
+            {!collapsed && (
+              <>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-ink">{displayName}</p>
+                  <p className="truncate text-xs text-muted">{email}</p>
+                </div>
+                <button onClick={handleLogout} aria-label="Log out" className="flex-none rounded-lg p-1.5 text-muted transition-colors hover:bg-red-50 hover:text-red-500">
+                  <LogoutIcon className="h-4 w-4" />
+                </button>
+              </>
+            )}
           </div>
-        </main>
-        <CopilotWidget />
-        <DailyBriefing />
+          {!collapsed && <p className="mt-2 px-2 text-[11px] font-medium text-muted">v1.0</p>}
+        </div>
       </div>
-      </CopilotProvider>
-    </ToastProvider>
+
+      {/* Top bar */}
+      <div
+        style={{ left: w }}
+        className="fixed right-0 top-0 z-20 flex h-16 items-center justify-between border-b border-border-light bg-white/90 px-8 backdrop-blur-sm transition-all duration-300"
+      >
+        <div className="flex items-center gap-1.5 text-sm">
+          <span className="text-muted">مساحة العمل</span>
+          <span className="text-[#d1d5db]">/</span>
+          <span className="font-semibold text-ink">{pageName}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <button aria-label="Notifications" className="relative text-muted transition-colors hover:text-primary">
+            <BellIcon className="h-[18px] w-[18px]" />
+            <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-red-500" />
+          </button>
+          <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)]">
+            <span className="text-xs font-bold text-white">{userInitials}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main */}
+      <main
+        style={{ marginLeft: w, paddingRight: "var(--briefing-rail-width, 52px)" }}
+        className="min-h-screen bg-gray-25 pt-16 transition-all duration-300"
+      >
+        <div key={pathname} className="page-content mx-auto max-w-[1280px] p-8">
+          {roleLoading ? null : currentFeature && !can(currentFeature.key) ? null : children}
+        </div>
+      </main>
+      <CopilotWidget />
+      <DailyBriefing />
+    </div>
   );
 }

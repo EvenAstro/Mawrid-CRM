@@ -2,15 +2,26 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { fetchCurrentProfile, type Role } from "@/lib/profiles";
+import { fetchUserPermissions, type PermissionOverrides } from "@/lib/userPermissions";
+import { resolveFeatureAccess } from "@/lib/permissions";
 import { supabase } from "@/lib/supabase";
 
 interface RoleContextValue {
   role: Role | null;
   userId: string | null;
+  permissions: PermissionOverrides | null;
   loading: boolean;
+  /** Convenience: resolveFeatureAccess bound to this user's role + overrides. */
+  can: (featureKey: string) => boolean;
 }
 
-const RoleContext = createContext<RoleContextValue>({ role: null, userId: null, loading: true });
+const RoleContext = createContext<RoleContextValue>({
+  role: null,
+  userId: null,
+  permissions: null,
+  loading: true,
+  can: () => false,
+});
 
 export function useRole() {
   return useContext(RoleContext);
@@ -19,6 +30,7 @@ export function useRole() {
 export default function RoleProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<Role | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [permissions, setPermissions] = useState<PermissionOverrides | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,13 +40,15 @@ export default function RoleProvider({ children }: { children: React.ReactNode }
       if (!uid) {
         if (!cancelled) {
           setRole(null);
+          setPermissions(null);
           setLoading(false);
         }
         return;
       }
-      const profile = await fetchCurrentProfile();
+      const [profile, perms] = await Promise.all([fetchCurrentProfile(), fetchUserPermissions(uid)]);
       if (cancelled) return;
       setRole(profile?.role ?? null);
+      setPermissions(perms);
       setLoading(false);
     }
 
@@ -51,5 +65,7 @@ export default function RoleProvider({ children }: { children: React.ReactNode }
     };
   }, []);
 
-  return <RoleContext.Provider value={{ role, userId, loading }}>{children}</RoleContext.Provider>;
+  const can = (featureKey: string) => resolveFeatureAccess(role, permissions, featureKey);
+
+  return <RoleContext.Provider value={{ role, userId, permissions, loading, can }}>{children}</RoleContext.Provider>;
 }

@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useCopilot } from "@/components/copilot/CopilotProvider";
 import Button from "@/components/ui/Button";
 import { fetchBriefingData, type BriefingData, type BriefingTask, type StuckDeal } from "@/lib/dailyBriefing";
+import CompleteTaskModal from "@/components/CompleteTaskModal";
 
 const BRIEFING_KEY = "mawrid_briefing_seen";
 const PANEL_KEY = "mawrid_briefing_panel_collapsed";
@@ -218,10 +219,15 @@ export default function DailyBriefing() {
     if (next) setOpenSuggestionId(null);
   }, []);
 
-  const completeTask = useCallback(async (task: BriefingTask) => {
+  const [completeTarget, setCompleteTarget] = useState<BriefingTask | null>(null);
+
+  const completeTask = useCallback(async (task: BriefingTask, note: string) => {
     if (completing.has(task.id)) return;
     setCompleting((prev) => new Set(prev).add(task.id));
-    const { error } = await supabase.from("tasks").update({ completed_at: new Date().toISOString() }).eq("id", task.id);
+    const { error } = await supabase
+      .from("tasks")
+      .update({ completed_at: new Date().toISOString(), completion_note: note })
+      .eq("id", task.id);
     if (error) {
       console.error("[DailyBriefing] Failed to complete task", error);
       setCompleting((prev) => {
@@ -231,6 +237,7 @@ export default function DailyBriefing() {
       });
       return;
     }
+    setCompleteTarget(null);
     setTimeout(() => {
       setData((prev) => {
         if (!prev) return prev;
@@ -465,7 +472,7 @@ export default function DailyBriefing() {
                             >
                               {overdue && <span className="absolute bottom-1 left-0 top-1 w-1 rounded-full bg-danger" />}
                               <button
-                                onClick={() => completeTask(t)}
+                                onClick={() => setCompleteTarget(t)}
                                 aria-label="إتمام المهمة"
                                 className={`flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full border-2 transition-colors ${
                                   done ? "border-primary bg-primary" : overdue ? "ml-1 border-red-200 hover:border-primary" : "border-gray-200 hover:border-primary"
@@ -586,6 +593,13 @@ export default function DailyBriefing() {
           to { opacity: 0; transform: scale(0.9) translateX(60px); }
         }
       `}</style>
+
+      <CompleteTaskModal
+        open={!!completeTarget}
+        taskTitle={completeTarget?.title ?? null}
+        onClose={() => setCompleteTarget(null)}
+        onConfirm={(note) => { if (completeTarget) return completeTask(completeTarget, note); }}
+      />
     </>
   );
 }
