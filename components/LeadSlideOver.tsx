@@ -7,6 +7,12 @@ import NextBestActionCard from "@/components/NextBestActionCard";
 import NewDealSlideOver from "@/components/NewDealSlideOver";
 import CompleteTaskModal from "@/components/CompleteTaskModal";
 import { fetchLeadScoreModel, scoreWithModel } from "@/lib/leadScore/computeLeadScore";
+import { fetchProfiles, type Profile } from "@/lib/profiles";
+
+function profileName(p: Profile | undefined): string {
+  if (!p) return "";
+  return p.full_name?.trim() || [p.first_name, p.last_name].filter(Boolean).join(" ") || "";
+}
 
 export interface Lead {
   id: string | number;
@@ -41,6 +47,7 @@ interface Task {
   title: string | null;
   description: string | null;
   due_at: string | null;
+  assignee_id: string | null;
   task_types: { label: string; color: string | null } | null;
 }
 interface TaskType { id: string; label: string }
@@ -141,6 +148,7 @@ export default function LeadSlideOver({
   const [dealStages, setDealStages] = useState<DealStage[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [leadScore, setLeadScore] = useState<LeadScore | null>(null);
 
   const [outcomeMode, setOutcomeMode] = useState<"responded" | "junk" | null>(null);
@@ -161,6 +169,7 @@ export default function LeadSlideOver({
   const [taskDue, setTaskDue] = useState("");
   const [taskTime, setTaskTime] = useState("09:00");
   const [taskTypeId, setTaskTypeId] = useState("");
+  const [taskAssigneeId, setTaskAssigneeId] = useState("");
   const [savingTask, setSavingTask] = useState(false);
   const [completeTarget, setCompleteTarget] = useState<Task | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
@@ -216,6 +225,7 @@ export default function LeadSlideOver({
         supabase.from("junk_reasons").select("id, label").then(({ data }) => data && setJunkReasons(data as JunkReason[])),
         supabase.from("pipeline_stages").select("id, label").eq("pipeline", "deal").order("sort_order", { ascending: true }).then(({ data }) => data && setDealStages(data as DealStage[])),
         supabase.from("task_types").select("id, label").then(({ data }) => data && setTaskTypes(data as TaskType[])),
+        fetchProfiles().then(setProfiles),
       ]);
 
       const has_campaign = tps.data?.some((t: { campaign_id: string | null }) => t.campaign_id && t.campaign_id !== "--") || false;
@@ -336,13 +346,13 @@ export default function LeadSlideOver({
     const dueAt = taskDue ? new Date(`${taskDue}T${taskTime || "09:00"}:00`).toISOString() : null;
     const { error } = await supabase.from("tasks").insert({
       id: crypto.randomUUID(), title: taskTitle.trim(), description: null, due_at: dueAt,
-      task_type_id: taskTypeId || null, entity_type: "lead", entity_id: data.id,
+      task_type_id: taskTypeId || null, assignee_id: taskAssigneeId || null, entity_type: "lead", entity_id: data.id,
       created_at: now, updated_at: now,
     });
     setSavingTask(false);
     if (error) { toast("تعذّر إضافة المهمة", "error"); return; }
     toast("تمت إضافة المهمة");
-    setTaskTitle(""); setTaskDue(""); setTaskTime("09:00"); setTaskTypeId(""); setAddingTask(false);
+    setTaskTitle(""); setTaskDue(""); setTaskTime("09:00"); setTaskTypeId(""); setTaskAssigneeId(""); setAddingTask(false);
     refetchTasks(data.id);
   }
 
@@ -741,6 +751,10 @@ export default function LeadSlideOver({
                             <option value="">بدون نوع</option>
                             {taskTypes.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
                           </select>
+                          <select value={taskAssigneeId} onChange={(e) => setTaskAssigneeId(e.target.value)} className={selectCls}>
+                            <option value="">بدون مسؤول</option>
+                            {profiles.map((p) => <option key={p.id} value={p.id}>{profileName(p)}</option>)}
+                          </select>
                           <button onClick={submitTask} disabled={savingTask} className={btnPrimary}>
                             {savingTask ? "جارِ الحفظ…" : "إضافة المهمة"}
                           </button>
@@ -774,6 +788,11 @@ export default function LeadSlideOver({
                                     <span className="flex items-center gap-1 text-[12px] text-slate-400">
                                       <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5"><path fillRule="evenodd" d="M4 1.75a.75.75 0 01.75.75V3h6.5V2.5a.75.75 0 011.5 0V3h.25A2.75 2.75 0 0115.75 5.75v6.5A2.75 2.75 0 0113 15H3A2.75 2.75 0 01.25 12.25v-6.5A2.75 2.75 0 013 3h.25V2.5A.75.75 0 014 1.75z" clipRule="evenodd" /></svg>
                                       {formatDateTime(t.due_at)}
+                                    </span>
+                                  )}
+                                  {t.assignee_id && (
+                                    <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[12px] font-medium text-slate-500">
+                                      👤 {profileName(profiles.find((p) => p.id === t.assignee_id))}
                                     </span>
                                   )}
                                 </div>

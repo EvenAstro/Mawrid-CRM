@@ -36,6 +36,9 @@ export async function fetchBriefingData(): Promise<BriefingData> {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
+  const { data: userRes } = await supabase.auth.getUser();
+  const userId = userRes.user?.id;
+
   const [todayRes, overdueRes, dealsRes] = await Promise.all([
     supabase
       .from("tasks")
@@ -43,12 +46,14 @@ export async function fetchBriefingData(): Promise<BriefingData> {
       .gte("due_at", todayStr)
       .lt("due_at", tomorrow.toISOString())
       .is("completed_at", null)
+      .eq("assignee_id", userId ?? "")
       .order("due_at", { ascending: true }),
     supabase
       .from("tasks")
       .select("id, title, due_at")
       .lt("due_at", todayStr)
       .is("completed_at", null)
+      .eq("assignee_id", userId ?? "")
       .order("due_at", { ascending: true })
       .limit(5),
     supabase

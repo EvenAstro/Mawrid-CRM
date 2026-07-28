@@ -9,6 +9,8 @@ import CopilotProvider from "@/components/copilot/CopilotProvider";
 import CopilotWidget from "@/components/copilot/CopilotWidget";
 import DailyBriefing from "@/components/DailyBriefing";
 import { initials as initialsOf } from "@/lib/format";
+import { fetchCurrentProfile } from "@/lib/profiles";
+import { UsersIcon } from "@/components/navIcons";
 import {
   DashboardIcon,
   ContactsIcon,
@@ -68,6 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [canManageUsers, setCanManageUsers] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
   // Restore collapse state
@@ -97,6 +100,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setEmail(user.email ?? "");
       setFullName((user.user_metadata?.full_name as string) ?? "");
       setLoading(false);
+      fetchCurrentProfile()
+        .then((p) => setCanManageUsers(p?.role === "admin" || p?.role === "manager"))
+        .catch(() => setCanManageUsers(false));
     }
     checkUser();
   }, [router]);
@@ -149,7 +155,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Nav */}
           <nav className="flex-1 overflow-y-auto px-3 py-2">
-            {navGroups.map((group) => (
+            {(canManageUsers
+              ? [...navGroups, { heading: "الإدارة", items: [{ label: "المستخدمون", href: "/dashboard/users", Icon: UsersIcon }] }]
+              : navGroups
+            ).map((group) => (
               <div key={group.heading} className="mt-4 first:mt-0">
                 {!collapsed && (
                   <p className="mb-2 px-3 text-[10px] font-medium uppercase tracking-[0.15em] text-muted">

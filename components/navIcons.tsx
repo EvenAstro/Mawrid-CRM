@@ -176,3 +176,13 @@ export const LogoutIcon = ({ className }: P) => (
     <path d="M10 17l-5-5 5-5M5 12h11" />
   </Svg>
 );
+
+/* team / users management */
+export const UsersIcon = ({ className }: P) => (
+  <Svg className={className}>
+    <circle cx="9" cy="8" r="3.2" />
+    <path d="M3.5 19.5c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5" />
+    <circle cx="17" cy="8.5" r="2.4" />
+    <path d="M15.8 14.2c2.4.3 4.2 2.3 4.2 5.3" />
+  </Svg>
+);
