@@ -21,12 +21,20 @@ function initials(p: Profile): string {
   return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "—";
 }
 
+const inputCls = "h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition";
+const selectCls = "h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-[14px] text-slate-700 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition appearance-none";
+
 export default function UsersPage() {
   const toast = useToast();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [me, setMe] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+
+  const [addOpen, setAddOpen] = useState(false);
+  const [nf, setNf] = useState({ firstName: "", lastName: "", email: "", password: "", role: "sales" as Role });
+  const [creating, setCreating] = useState(false);
+  const [createErr, setCreateErr] = useState("");
 
   const load = useCallback(async () => {
     const [list, mine] = await Promise.all([fetchProfiles(), fetchCurrentProfile()]);
@@ -56,15 +64,63 @@ export default function UsersPage() {
     setProfiles((prev) => prev.map((x) => (x.id === p.id ? { ...x, role } : x)));
   }
 
+  async function createUser() {
+    setCreateErr("");
+    if (!nf.firstName.trim() || !nf.lastName.trim()) return setCreateErr("اكتب الاسم الأول والأخير");
+    if (!nf.email.trim()) return setCreateErr("اكتب الإيميل");
+    if (nf.password.length < 6) return setCreateErr("كلمة المرور 6 أحرف على الأقل");
+    setCreating(true);
+    const { data: sessionRes } = await supabase.auth.getSession();
+    const token = sessionRes.session?.access_token;
+    if (!token) {
+      setCreating(false);
+      setCreateErr("انتهت الجلسة، سجّل الدخول من جديد");
+      return;
+    }
+    try {
+      const res = await fetch("/api/admin/create-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(nf),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setCreateErr(json.error || "تعذّر إنشاء الحساب");
+        setCreating(false);
+        return;
+      }
+      toast(`تم إنشاء حساب ${nf.firstName} ${nf.lastName}`);
+      setNf({ firstName: "", lastName: "", email: "", password: "", role: "sales" });
+      setAddOpen(false);
+      setCreating(false);
+      load();
+    } catch (err) {
+      console.error("[Users] create failed", err);
+      setCreateErr("تعذّر الاتصال بالخادم");
+      setCreating(false);
+    }
+  }
+
   const canEdit = me?.role === "admin" || me?.role === "manager";
 
   return (
     <>
-      <div className="mb-6">
-        <h1 dir="auto" className="text-[28px] font-bold text-slate-900">المستخدمون والصلاحيات</h1>
-        <p className="mt-1 text-[14px] text-slate-500">
-          إدارة أدوار الفريق — أدمن، مدير، أو مندوب مبيعات
-        </p>
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 dir="auto" className="text-[28px] font-bold text-slate-900">المستخدمون والصلاحيات</h1>
+          <p className="mt-1 text-[14px] text-slate-500">
+            إدارة أدوار الفريق — أدمن، مدير، أو مندوب مبيعات
+          </p>
+        </div>
+        {!loading && (me?.role === "admin" || me?.role === "manager") && (
+          <button
+            onClick={() => { setAddOpen(true); setCreateErr(""); }}
+            className="flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-5 text-[14px] font-bold text-white shadow-md shadow-emerald-600/25 transition hover:shadow-lg hover:shadow-emerald-600/30 active:scale-[0.98]"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
+            إضافة مستخدم
+          </button>
+        )}
       </div>
 
       {!loading && !canEdit && (
@@ -134,6 +190,73 @@ export default function UsersPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Add user modal */}
+      {addOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setAddOpen(false)}>
+          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" />
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-[480px] rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
+          >
+            <div className="mb-5 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-[18px] font-bold text-slate-900">إضافة مستخدم جديد</h3>
+                <p className="mt-0.5 text-[13px] text-slate-400">أنشئ حساب مباشرة بكلمة مرور وصلاحية</p>
+              </div>
+              <button onClick={() => setAddOpen(false)} className="flex-none text-slate-400 transition hover:text-slate-600">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-5 w-5"><path d="M6 6l12 12M18 6 6 18" /></svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-slate-600">الاسم الأول</label>
+                  <input dir="auto" value={nf.firstName} onChange={(e) => setNf({ ...nf, firstName: e.target.value })} placeholder="خالد" className={inputCls} autoFocus />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-slate-600">الاسم الأخير</label>
+                  <input dir="auto" value={nf.lastName} onChange={(e) => setNf({ ...nf, lastName: e.target.value })} placeholder="محمد" className={inputCls} />
+                </div>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[13px] font-medium text-slate-600">الإيميل</label>
+                <input type="email" value={nf.email} onChange={(e) => setNf({ ...nf, email: e.target.value })} placeholder="name@company.com" className={inputCls} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[13px] font-medium text-slate-600">كلمة المرور</label>
+                <input type="text" value={nf.password} onChange={(e) => setNf({ ...nf, password: e.target.value })} placeholder="6 أحرف على الأقل" className={inputCls} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[13px] font-medium text-slate-600">الصلاحية</label>
+                <select value={nf.role} onChange={(e) => setNf({ ...nf, role: e.target.value as Role })} className={selectCls}>
+                  <option value="sales">مندوب مبيعات</option>
+                  <option value="manager">مدير</option>
+                  {me?.role === "admin" && <option value="admin">أدمن</option>}
+                </select>
+              </div>
+
+              {createErr && (
+                <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-[13px] font-medium text-red-700">{createErr}</div>
+              )}
+
+              <div className="flex gap-3 pt-1">
+                <button onClick={() => setAddOpen(false)} className="h-11 flex-1 rounded-xl border border-slate-200 bg-white text-[14px] font-semibold text-slate-600 transition hover:bg-slate-50">
+                  إلغاء
+                </button>
+                <button
+                  onClick={createUser}
+                  disabled={creating}
+                  className="h-11 flex-1 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-[14px] font-bold text-white shadow-md shadow-emerald-600/20 transition hover:shadow-lg disabled:opacity-50"
+                >
+                  {creating ? "جارِ الإنشاء…" : "إنشاء الحساب"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
