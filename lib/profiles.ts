@@ -7,13 +7,14 @@ export interface Profile {
   first_name: string | null;
   last_name: string | null;
   full_name: string | null;
+  email: string | null;
   role: Role;
 }
 
 export async function fetchProfiles(): Promise<Profile[]> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, first_name, last_name, full_name, role")
+    .select("id, first_name, last_name, full_name, email, role")
     .order("full_name", { ascending: true });
   if (error) {
     console.error("[profiles] fetchProfiles failed", error);
@@ -27,7 +28,7 @@ export async function fetchCurrentProfile(): Promise<Profile | null> {
   if (!userRes.user) return null;
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, first_name, last_name, full_name, role")
+    .select("id, first_name, last_name, full_name, email, role")
     .eq("id", userRes.user.id)
     .maybeSingle();
   if (error) {

@@ -71,6 +71,7 @@ export default function RegisterPage() {
         id: data.user.id,
         first_name: firstName.trim(),
         last_name: lastName.trim(),
+        email: email.trim(),
       });
     }
     setLoading(false);

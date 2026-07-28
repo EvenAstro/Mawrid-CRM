@@ -80,6 +80,7 @@ export async function POST(req: NextRequest) {
     id: created.user.id,
     first_name: firstName.trim(),
     last_name: lastName.trim(),
+    email: email.trim(),
     role,
     updated_at: new Date().toISOString(),
   });
