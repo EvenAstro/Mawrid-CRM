@@ -11,7 +11,7 @@ import { Input, Textarea, Select } from "@/components/ui/Field";
 import CompleteTaskModal from "@/components/CompleteTaskModal";
 import { fetchProfiles, type Profile } from "@/lib/profiles";
 import { useRole } from "@/components/RoleProvider";
-import { canViewAllData } from "@/lib/permissions";
+import { canViewAllData, canActOnTask } from "@/lib/permissions";
 
 interface Task {
   id: string;
@@ -199,11 +199,16 @@ export default function TasksPage() {
   function TaskRow({ t, tone }: { t: Task; tone: string }) {
     const done = completing.has(t.id);
     const assignee = t.assignee_uid ? profileMap.get(t.assignee_uid) : undefined;
+    const canAct = canActOnTask(role, userId, t.assignee_uid);
     return (
       <div className={`flex items-start gap-3 rounded-xl border border-border-light bg-white p-3 shadow-sm transition-all ${done ? "opacity-40" : "hover:shadow-md"}`}>
-        <button onClick={() => setCompleteTarget(t)} aria-label="Complete task" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 transition-colors ${done ? "border-primary bg-primary text-white" : `${tone} hover:border-primary`}`}>
-          {done && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3"><path d="M20 6 9 17l-5-5" /></svg>}
-        </button>
+        {canAct ? (
+          <button onClick={() => setCompleteTarget(t)} aria-label="Complete task" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 transition-colors ${done ? "border-primary bg-primary text-white" : `${tone} hover:border-primary`}`}>
+            {done && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3"><path d="M20 6 9 17l-5-5" /></svg>}
+          </button>
+        ) : (
+          <span title="بس المسؤول عن المهمة يقدر ينهيها" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 border-gray-200 opacity-50 ${tone}`} />
+        )}
         <button onClick={() => openDetail(t)} className="min-w-0 flex-1 text-left">
           <p dir="auto" className={`text-[15px] font-medium text-ink ${done ? "line-through" : ""}`}>{t.title || "Untitled task"}</p>
           {t.description && <p dir="auto" className="mt-0.5 line-clamp-1 text-[13px] text-muted">{t.description}</p>}
@@ -327,7 +332,7 @@ export default function TasksPage() {
         title={editingDetail ? "تعديل المهمة" : detail?.title || "Task"}
         subtitle={detail?.task_types?.label ?? undefined}
         footer={
-          detail && (
+          detail && canActOnTask(role, userId, detail.assignee_uid) && (
             <div className="flex gap-3">
               {editingDetail ? (
                 <>
@@ -346,6 +351,11 @@ export default function TasksPage() {
       >
         {detail && (
           <div className="flex flex-col gap-5">
+            {!canActOnTask(role, userId, detail.assignee_uid) && (
+              <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-2.5 text-[13px] font-medium text-amber-700">
+                للعرض فقط — بس المسؤول عن هذي المهمة يقدر يعدّلها أو ينهيها
+              </div>
+            )}
             {editingDetail ? (
               <>
                 <Input id="tk-edit-title" label="العنوان" dir="auto" value={editDraft.title} onChange={(e) => setEditDraft({ ...editDraft, title: e.target.value })} autoFocus />

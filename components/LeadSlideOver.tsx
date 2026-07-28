@@ -8,6 +8,8 @@ import NewDealSlideOver from "@/components/NewDealSlideOver";
 import CompleteTaskModal from "@/components/CompleteTaskModal";
 import { fetchLeadScoreModel, scoreWithModel } from "@/lib/leadScore/computeLeadScore";
 import { fetchProfiles, type Profile } from "@/lib/profiles";
+import { useRole } from "@/components/RoleProvider";
+import { canActOnTask } from "@/lib/permissions";
 
 function profileName(p: Profile | undefined): string {
   if (!p) return "";
@@ -141,6 +143,7 @@ export default function LeadSlideOver({
   onUpdated?: () => void;
 }) {
   const toast = useToast();
+  const { role, userId } = useRole();
   const [shown, setShown] = useState<Lead | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
@@ -771,13 +774,19 @@ export default function LeadSlideOver({
                         </div>
                       ) : (
                         <div className="max-h-[420px] space-y-3 overflow-y-auto">
-                          {tasks.map((t) => (
+                          {tasks.map((t) => {
+                            const canAct = canActOnTask(role, userId, t.assignee_uid);
+                            return (
                             <div key={t.id} className={`group flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-slate-200 ${completingId === t.id ? "opacity-40" : ""}`}>
-                              <button
-                                onClick={() => setCompleteTarget(t)}
-                                aria-label="إنهاء المهمة"
-                                className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full border-2 border-slate-300 transition hover:border-emerald-500 hover:bg-emerald-50 group-hover:border-emerald-400"
-                              />
+                              {canAct ? (
+                                <button
+                                  onClick={() => setCompleteTarget(t)}
+                                  aria-label="إنهاء المهمة"
+                                  className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full border-2 border-slate-300 transition hover:border-emerald-500 hover:bg-emerald-50 group-hover:border-emerald-400"
+                                />
+                              ) : (
+                                <span title="بس المسؤول عن المهمة يقدر ينهيها" className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full border-2 border-slate-200 opacity-50" />
+                              )}
                               <div className="min-w-0 flex-1">
                                 <p dir="auto" className="text-[14px] font-semibold text-slate-800">{t.title || "مهمة بدون عنوان"}</p>
                                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
@@ -798,7 +807,7 @@ export default function LeadSlideOver({
                                 </div>
                               </div>
                             </div>
-                          ))}
+                          );})}
                         </div>
                       )}
                     </>

@@ -35,6 +35,8 @@ export default function UsersPage() {
   const [nf, setNf] = useState({ firstName: "", lastName: "", email: "", password: "", role: "sales" as Role });
   const [creating, setCreating] = useState(false);
   const [createErr, setCreateErr] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const [list, mine] = await Promise.all([fetchProfiles(), fetchCurrentProfile()]);
@@ -101,7 +103,40 @@ export default function UsersPage() {
     }
   }
 
+  async function deleteUser(p: Profile) {
+    setDeletingId(p.id);
+    const { data: sessionRes } = await supabase.auth.getSession();
+    const token = sessionRes.session?.access_token;
+    if (!token) {
+      setDeletingId(null);
+      toast("انتهت الجلسة، سجّل الدخول من جديد", "error");
+      return;
+    }
+    try {
+      const res = await fetch("/api/admin/delete-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId: p.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast(json.error || "تعذّر حذف الحساب", "error");
+        setDeletingId(null);
+        return;
+      }
+      toast(`تم حذف حساب ${profileName(p)}`);
+      setProfiles((prev) => prev.filter((x) => x.id !== p.id));
+      setConfirmDeleteId(null);
+      setDeletingId(null);
+    } catch (err) {
+      console.error("[Users] delete failed", err);
+      toast("تعذّر الاتصال بالخادم", "error");
+      setDeletingId(null);
+    }
+  }
+
   const canEdit = me?.role === "admin" || me?.role === "manager";
+  const canDelete = me?.role === "admin";
 
   return (
     <>
@@ -136,16 +171,17 @@ export default function UsersPage() {
               <th className="px-6 py-3.5">المستخدم</th>
               <th className="px-6 py-3.5">الدور الحالي</th>
               <th className="px-6 py-3.5">تغيير الدور</th>
+              {canDelete && <th className="px-6 py-3.5"></th>}
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={3} className="px-6 py-16 text-center text-[14px] text-slate-500">جارِ التحميل…</td>
+                <td colSpan={4} className="px-6 py-16 text-center text-[14px] text-slate-500">جارِ التحميل…</td>
               </tr>
             ) : profiles.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-6 py-16 text-center text-[14px] text-slate-500">لا يوجد مستخدمون</td>
+                <td colSpan={4} className="px-6 py-16 text-center text-[14px] text-slate-500">لا يوجد مستخدمون</td>
               </tr>
             ) : (
               profiles.map((p) => {
@@ -183,6 +219,35 @@ export default function UsersPage() {
                         <option value="admin">أدمن</option>
                       </select>
                     </td>
+                    {canDelete && (
+                      <td className="px-6 py-4 text-right">
+                        {isSelf ? null : confirmDeleteId === p.id ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <span className="text-[12px] font-medium text-slate-500">متأكد؟</span>
+                            <button
+                              onClick={() => deleteUser(p)}
+                              disabled={deletingId === p.id}
+                              className="rounded-lg bg-red-600 px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+                            >
+                              {deletingId === p.id ? "..." : "احذف"}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteId(null)}
+                              className="rounded-lg border border-slate-200 px-3 py-1.5 text-[12px] font-semibold text-slate-500 transition hover:bg-slate-50"
+                            >
+                              إلغاء
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDeleteId(p.id)}
+                            className="rounded-lg px-3 py-1.5 text-[12px] font-semibold text-red-600 transition hover:bg-red-50"
+                          >
+                            حذف الحساب
+                          </button>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 );
               })

@@ -25,3 +25,14 @@ export function canManageUsers(role: Role | null): boolean {
 export function canCreateAdmin(role: Role | null): boolean {
   return role === "admin";
 }
+
+export function canDeleteUsers(role: Role | null): boolean {
+  return role === "admin";
+}
+
+/** Only the task's assignee can complete it or edit it — everyone else can
+ * only view. The admin (site owner) is the one exception with full override. */
+export function canActOnTask(role: Role | null, userId: string | null, assigneeUid: string | null): boolean {
+  if (role === "admin") return true;
+  return !!userId && !!assigneeUid && userId === assigneeUid;
+}
