@@ -47,7 +47,7 @@ interface Task {
   title: string | null;
   description: string | null;
   due_at: string | null;
-  assignee_id: string | null;
+  assignee_uid: string | null;
   task_types: { label: string; color: string | null } | null;
 }
 interface TaskType { id: string; label: string }
@@ -346,7 +346,7 @@ export default function LeadSlideOver({
     const dueAt = taskDue ? new Date(`${taskDue}T${taskTime || "09:00"}:00`).toISOString() : null;
     const { error } = await supabase.from("tasks").insert({
       id: crypto.randomUUID(), title: taskTitle.trim(), description: null, due_at: dueAt,
-      task_type_id: taskTypeId || null, assignee_id: taskAssigneeId || null, entity_type: "lead", entity_id: data.id,
+      task_type_id: taskTypeId || null, assignee_uid: taskAssigneeId || null, entity_type: "lead", entity_id: data.id,
       created_at: now, updated_at: now,
     });
     setSavingTask(false);
@@ -790,9 +790,9 @@ export default function LeadSlideOver({
                                       {formatDateTime(t.due_at)}
                                     </span>
                                   )}
-                                  {t.assignee_id && (
+                                  {t.assignee_uid && (
                                     <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[12px] font-medium text-slate-500">
-                                      👤 {profileName(profiles.find((p) => p.id === t.assignee_id))}
+                                      👤 {profileName(profiles.find((p) => p.id === t.assignee_uid))}
                                     </span>
                                   )}
                                 </div>

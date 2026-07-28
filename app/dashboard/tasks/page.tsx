@@ -20,7 +20,7 @@ interface Task {
   due_at: string | null;
   entity_type: string | null;
   completion_note: string | null;
-  assignee_id: string | null;
+  assignee_uid: string | null;
   task_types: { label: string; color: string | null } | null;
 }
 interface TaskType {
@@ -66,7 +66,7 @@ export default function TasksPage() {
     let tasksQuery = supabase.from("tasks").select("*, task_types(label, color)").is("completed_at", null).order("due_at", { ascending: true }).limit(200);
     // Sales reps only see tasks assigned to them; managers/admins see all.
     if (!canViewAllData(role) && userId) {
-      tasksQuery = tasksQuery.eq("assignee_id", userId);
+      tasksQuery = tasksQuery.eq("assignee_uid", userId);
     }
     const [tk, tt, pf] = await Promise.all([
       tasksQuery,
@@ -147,7 +147,7 @@ export default function TasksPage() {
       description: nt.description.trim() || null,
       due_at: dueAt,
       task_type_id: nt.typeId || null,
-      assignee_id: nt.assigneeId || null,
+      assignee_uid: nt.assigneeId || null,
       created_at: now,
       updated_at: now,
     });
@@ -198,7 +198,7 @@ export default function TasksPage() {
 
   function TaskRow({ t, tone }: { t: Task; tone: string }) {
     const done = completing.has(t.id);
-    const assignee = t.assignee_id ? profileMap.get(t.assignee_id) : undefined;
+    const assignee = t.assignee_uid ? profileMap.get(t.assignee_uid) : undefined;
     return (
       <div className={`flex items-start gap-3 rounded-xl border border-border-light bg-white p-3 shadow-sm transition-all ${done ? "opacity-40" : "hover:shadow-md"}`}>
         <button onClick={() => setCompleteTarget(t)} aria-label="Complete task" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 transition-colors ${done ? "border-primary bg-primary text-white" : `${tone} hover:border-primary`}`}>
@@ -366,7 +366,7 @@ export default function TasksPage() {
                 </div>
                 <div>
                   <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">المسؤول</p>
-                  <p className="mt-1 text-[15px] text-ink">{detail.assignee_id ? profileName(profileMap.get(detail.assignee_id)) || "—" : "—"}</p>
+                  <p className="mt-1 text-[15px] text-ink">{detail.assignee_uid ? profileName(profileMap.get(detail.assignee_uid)) || "—" : "—"}</p>
                 </div>
                 {detail.completion_note && (
                   <div>

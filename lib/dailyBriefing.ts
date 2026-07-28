@@ -46,14 +46,14 @@ export async function fetchBriefingData(): Promise<BriefingData> {
       .gte("due_at", todayStr)
       .lt("due_at", tomorrow.toISOString())
       .is("completed_at", null)
-      .eq("assignee_id", userId ?? "")
+      .eq("assignee_uid", userId ?? "")
       .order("due_at", { ascending: true }),
     supabase
       .from("tasks")
       .select("id, title, due_at")
       .lt("due_at", todayStr)
       .is("completed_at", null)
-      .eq("assignee_id", userId ?? "")
+      .eq("assignee_uid", userId ?? "")
       .order("due_at", { ascending: true })
       .limit(5),
     supabase
