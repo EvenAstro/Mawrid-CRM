@@ -94,8 +94,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [pageName]);
 
   useEffect(() => {
-    async function checkUser() {
-      const { data: { user } } = await supabase.auth.getUser();
+    async function applyUser(user: { email?: string | null; user_metadata?: Record<string, unknown> } | null) {
       if (!user) {
         router.replace("/");
         return;
@@ -107,7 +106,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .then((p) => setRole(p?.role ?? null))
         .catch(() => setRole(null));
     }
-    checkUser();
+
+    supabase.auth.getUser().then(({ data: { user } }) => applyUser(user));
+
+    // Keep this tab in sync when the session changes — either from logging
+    // in/out here, or from another tab overwriting the shared localStorage
+    // session (Supabase auth state is per-browser, not per-tab).
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      applyUser(session?.user ?? null);
+    });
+    return () => sub.subscription.unsubscribe();
   }, [router]);
 
   // Guard: a sales rep can't linger on a page reserved for managers/admins.
