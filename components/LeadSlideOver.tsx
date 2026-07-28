@@ -145,6 +145,8 @@ export default function LeadSlideOver({
 
   const [outcomeMode, setOutcomeMode] = useState<"responded" | "junk" | null>(null);
   const [savingOutcome, setSavingOutcome] = useState(false);
+  const [respondedMethodId, setRespondedMethodId] = useState<string | null>(null);
+  const [respondedNote, setRespondedNote] = useState("");
 
   const [addingActivity, setAddingActivity] = useState(false);
   const [actTypeId, setActTypeId] = useState("");
@@ -202,6 +204,8 @@ export default function LeadSlideOver({
     setAddingActivity(false);
     setAddingTask(false);
     setActiveTab("activities");
+    setRespondedMethodId(null);
+    setRespondedNote("");
 
     const fetchAll = async () => {
       const [tps] = await Promise.all([
@@ -248,15 +252,16 @@ export default function LeadSlideOver({
     setShown((prev) => (prev ? { ...prev, ...patch } : prev));
   }
 
-  async function markResponded(activityTypeId: string) {
-    if (!data) return;
+  async function markResponded() {
+    if (!data || !respondedMethodId) return;
+    if (!respondedNote.trim()) { toast("اكتب ملخص ما دار في التواصل", "error"); return; }
     setSavingOutcome(true);
     const now = new Date().toISOString();
-    const t = activityTypes.find((x) => x.id === activityTypeId);
+    const t = activityTypes.find((x) => x.id === respondedMethodId);
     const { data: userData } = await supabase.auth.getUser();
     const { error: actErr } = await supabase.from("activities").insert({
       id: crypto.randomUUID(), entity_type: "lead", entity_id: data.id,
-      activity_type_id: activityTypeId, body: null, direction: "inbound",
+      activity_type_id: respondedMethodId, body: respondedNote.trim(), direction: "inbound",
       occurred_at: now, user_id: userData.user?.id ?? null, created_at: now, updated_at: now,
     });
     const { error: leadErr } = await supabase
@@ -268,6 +273,8 @@ export default function LeadSlideOver({
     toast(`تم تسجيل الرد عبر ${t?.label ?? "اتصال"}`);
     patchShown({ contact_outcome: "responded", contact_outcome_at: now });
     setOutcomeMode(null);
+    setRespondedMethodId(null);
+    setRespondedNote("");
     refetchActivities(data.id);
     onUpdated?.();
   }
@@ -419,7 +426,11 @@ export default function LeadSlideOver({
               <Section title="تصنيف التواصل">
                 <div className="flex flex-wrap gap-3">
                   <button
-                    onClick={() => setOutcomeMode(outcomeMode === "responded" ? null : "responded")}
+                    onClick={() => {
+                      setOutcomeMode(outcomeMode === "responded" ? null : "responded");
+                      setRespondedMethodId(null);
+                      setRespondedNote("");
+                    }}
                     className={`flex items-center gap-2 rounded-xl border-2 px-5 py-3 text-[14px] font-semibold transition-all ${
                       outcomeMode === "responded" || isResponded
                         ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-500/10"
@@ -465,20 +476,57 @@ export default function LeadSlideOver({
                 </div>
 
                 {outcomeMode === "responded" && (
-                  <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50/50 p-5">
-                    <p className="mb-3 text-[13px] font-semibold text-emerald-700">طريقة الرد:</p>
-                    <div className="flex flex-wrap gap-2.5">
-                      {activityTypes.map((t) => (
-                        <button
-                          key={t.id}
-                          onClick={() => markResponded(t.id)}
-                          disabled={savingOutcome}
-                          className="rounded-xl border border-emerald-300 bg-white px-5 py-2.5 text-[14px] font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100 hover:shadow disabled:opacity-50"
-                        >
-                          {t.label}
-                        </button>
-                      ))}
+                  <div className="mt-5 space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-5">
+                    <div>
+                      <p className="mb-3 text-[13px] font-semibold text-emerald-700">1. اختر طريقة الرد:</p>
+                      <div className="flex flex-wrap gap-2.5">
+                        {activityTypes.map((t) => (
+                          <button
+                            key={t.id}
+                            onClick={() => setRespondedMethodId(t.id)}
+                            className={`rounded-xl border-2 px-5 py-2.5 text-[14px] font-semibold shadow-sm transition ${
+                              respondedMethodId === t.id
+                                ? "border-emerald-600 bg-emerald-600 text-white shadow-emerald-600/20"
+                                : "border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-100"
+                            }`}
+                          >
+                            {t.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
+
+                    {respondedMethodId && (
+                      <div className="border-t border-emerald-200 pt-4">
+                        <p className="mb-2 text-[13px] font-semibold text-emerald-700">
+                          2. وش صار في التواصل؟ <span className="text-red-500">*</span>
+                        </p>
+                        <textarea
+                          dir="auto"
+                          value={respondedNote}
+                          onChange={(e) => setRespondedNote(e.target.value)}
+                          rows={4}
+                          autoFocus
+                          placeholder="اكتب ملخص التواصل… مثلاً: العميل مهتم بنظام كاشير لمطعمه، طلب عرض سعر بكرة"
+                          className="w-full rounded-xl border-2 border-emerald-200 bg-white px-4 py-3 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition resize-none"
+                        />
+                        <div className="mt-3 flex gap-2.5">
+                          <button
+                            onClick={markResponded}
+                            disabled={savingOutcome || !respondedNote.trim()}
+                            className="flex-1 h-11 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-[14px] font-bold text-white shadow-md shadow-emerald-600/20 transition hover:shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {savingOutcome ? "جارِ الحفظ…" : "✓ حفظ الرد"}
+                          </button>
+                          <button
+                            onClick={() => { setRespondedMethodId(null); setRespondedNote(""); }}
+                            className="h-11 rounded-xl border-2 border-slate-200 bg-white px-5 text-[14px] font-semibold text-slate-500 transition hover:bg-slate-50"
+                          >
+                            إلغاء
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
