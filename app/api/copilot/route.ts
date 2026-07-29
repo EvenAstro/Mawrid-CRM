@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildSnapshot } from "@/lib/copilot/snapshot";
 
-const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct";
 
 const BASE_SYSTEM = `أنت مساعد مبيعات ذكي مدمج في نظام Mawrid CRM.
 أجب دائماً بالعربية بأسلوب مهني وودود.
@@ -42,6 +42,23 @@ type SectionKey = "leads" | "dealsOverview" | "closest" | "stuck" | "lost" | "we
  */
 function routeRequest(lastUser: string): { sections: SectionKey[]; instruction: string } {
   const t = lastUser;
+  if (/خطط\s*لي|خطة\s*يومي|رتب\s*يومي|رتب\s*أولوياتي|نظم\s*يومي|جدول\s*يومي/.test(t)) {
+    return {
+      sections: ["tasks", "stuck"],
+      instruction: `المستخدم يطلب خطة يومه. رتّب الرد بالضبط بهذا الشكل ولا تكتب أي نص خارجه — كل بند سطر واحد فقط، بلا شرح أو تكرار:
+
+### 📋 مهامك اليوم
+- عنوان المهمة — الوقت (من قسم «المهام القادمة» أعلاه فقط؛ إن لم توجد اكتب "لا توجد مهام مجدولة اليوم")
+
+### 🎯 صفقات تحتاج تواصل
+- اسم العميل — عدد الأيام — إجراء مقترح في أقل من 8 كلمات (من قسم «صفقات عالقة» أعلاه فقط؛ إن لم توجد اكتب "لا توجد صفقات عالقة")
+
+### ابدأ بهذا الآن
+جملة واحدة فقط تحدد أول بند يبدأ فيه المستخدم.
+
+ممنوع كتابة فقرات، ممنوع تكرار نفس المعلومة بجملتين، وممنوع أي نص قبل العنوان الأول أو بعد السطر الأخير.`,
+    };
+  }
   if (/اكتب|رسالة|عرض\s*سعر|صيغة|صِغ|واتساب|إيميل|ايميل/.test(t)) {
     return {
       sections: ["stuck", "closest"],
@@ -112,9 +129,12 @@ export async function POST(req: NextRequest) {
   }
   const context = typeof body.context === "string" ? body.context.trim() : "";
 
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "GROQ_API_KEY is not configured" }, { status: 500 });
+    return NextResponse.json(
+      { error: "config", message: "مفتاح OPENROUTER_API_KEY غير مُعرّف. أضفه في .env.local وأعد تشغيل الخادم." },
+      { status: 500 },
+    );
   }
 
   const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
@@ -142,11 +162,11 @@ ${CAPABILITIES}${context ? `\n\nسياق: ${context}` : ""}${
 
   let upstream: Response;
   try {
-    upstream = await fetch(GROQ_ENDPOINT, {
+    upstream = await fetch(OPENROUTER_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: GROQ_MODEL,
+        model: OPENROUTER_MODEL,
         temperature: 0.4,
         max_tokens: 700,
         stream: true,
@@ -154,22 +174,22 @@ ${CAPABILITIES}${context ? `\n\nسياق: ${context}` : ""}${
       }),
     });
   } catch (err) {
-    console.error("[copilot] Groq call failed", err);
-    return NextResponse.json({ error: "Copilot model request failed" }, { status: 502 });
+    console.error("[copilot] OpenRouter call failed", err);
+    return NextResponse.json({ error: "network", message: "تعذّر الاتصال بمزوّد الذكاء الاصطناعي. تحقّق من الاتصال بالإنترنت." }, { status: 502 });
   }
 
   if (!upstream.ok || !upstream.body) {
     const detail = await upstream.text().catch(() => "");
-    // Log the EXACT status + raw body Groq returned, so the real cause is always visible.
-    console.error(`[copilot] Groq returned HTTP ${upstream.status}. Raw body: ${detail}`);
+    // Log the EXACT status + raw body OpenRouter returned, so the real cause is always visible.
+    console.error(`[copilot] OpenRouter returned HTTP ${upstream.status}. Raw body: ${detail}`);
 
-    // Pull Groq's own human-readable reason out of the error body when present.
-    let groqReason = "";
+    // Pull OpenRouter's own human-readable reason out of the error body when present.
+    let providerReason = "";
     let retryIn = "";
     try {
       const parsed = JSON.parse(detail) as { error?: { message?: string } };
-      groqReason = parsed.error?.message ?? "";
-      const m = /try again in ([^.]+)/i.exec(groqReason);
+      providerReason = parsed.error?.message ?? "";
+      const m = /try again in ([^.]+)/i.exec(providerReason);
       if (m) retryIn = m[1].trim();
     } catch {
       /* body may not be JSON */
@@ -177,20 +197,23 @@ ${CAPABILITIES}${context ? `\n\nسياق: ${context}` : ""}${
 
     if (upstream.status === 429) {
       const message = retryIn
-        ? `تم بلوغ حد Groq المجاني (100 ألف رمز/يوم لكامل الحساب — ليس لكل مفتاح). حاول مرة أخرى خلال ${retryIn}.`
-        : "تم بلوغ حد Groq المجاني (100 ألف رمز/يوم لكامل الحساب — ليس لكل مفتاح). سيعود العمل بعد إعادة تعيين الحصة.";
-      return NextResponse.json({ error: "rate_limit", message, groqReason }, { status: 429 });
+        ? `تم بلوغ حد الاستخدام المجاني لـ OpenRouter. حاول مرة أخرى خلال ${retryIn}.`
+        : "تم بلوغ حد الاستخدام المجاني لـ OpenRouter. سيعود العمل بعد إعادة تعيين الحصة.";
+      return NextResponse.json({ error: "rate_limit", message, providerReason }, { status: 429 });
     }
     if (upstream.status === 401) {
       return NextResponse.json(
-        { error: "auth", message: "مفتاح Groq غير صالح أو غير مُحمّل. تحقّق من GROQ_API_KEY وأعد تشغيل الخادم.", groqReason },
+        { error: "auth", message: "مفتاح OpenRouter غير صالح أو غير مُحمّل. تحقّق من OPENROUTER_API_KEY وأعد تشغيل الخادم.", providerReason },
         { status: 401 },
       );
     }
-    return NextResponse.json({ error: "model_error", message: "تعذّر الحصول على رد من المساعد.", groqReason }, { status: 502 });
+    return NextResponse.json(
+      { error: "model_error", message: providerReason ? `تعذّر الحصول على رد من المساعد: ${providerReason}` : "تعذّر الحصول على رد من المساعد.", providerReason },
+      { status: 502 },
+    );
   }
 
-  // Re-stream Groq's OpenAI-style SSE as plain text deltas.
+  // Re-stream OpenRouter's OpenAI-style SSE as plain text deltas.
   const reader = upstream.body.getReader();
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();

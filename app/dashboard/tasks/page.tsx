@@ -8,6 +8,10 @@ import Button from "@/components/ui/Button";
 import SlideOver from "@/components/ui/SlideOver";
 import Skeleton from "@/components/ui/Skeleton";
 import { Input, Textarea, Select } from "@/components/ui/Field";
+import CompleteTaskModal from "@/components/CompleteTaskModal";
+import { fetchProfiles, type Profile } from "@/lib/profiles";
+import { useRole } from "@/components/RoleProvider";
+import { canViewAllData, canActOnTask } from "@/lib/permissions";
 
 interface Task {
   id: string;
@@ -15,11 +19,18 @@ interface Task {
   description: string | null;
   due_at: string | null;
   entity_type: string | null;
+  completion_note: string | null;
+  assignee_uid: string | null;
   task_types: { label: string; color: string | null } | null;
 }
 interface TaskType {
   id: string;
   label: string;
+}
+
+function profileName(p: Profile | undefined): string {
+  if (!p) return "";
+  return p.full_name?.trim() || [p.first_name, p.last_name].filter(Boolean).join(" ") || "";
 }
 
 function startOfDay(d: Date) {
@@ -30,31 +41,47 @@ function startOfDay(d: Date) {
 
 export default function TasksPage() {
   const toast = useToast();
+  const { role, userId, loading: roleLoading } = useRole();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [types, setTypes] = useState<TaskType[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState<Set<string>>(new Set());
   const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [dayFilter, setDayFilter] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
   const [detail, setDetail] = useState<Task | null>(null);
+  const [editingDetail, setEditingDetail] = useState(false);
+  const [editDraft, setEditDraft] = useState({ title: "", due: "", time: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [completeTarget, setCompleteTarget] = useState<Task | null>(null);
 
-  const [nt, setNt] = useState({ title: "", description: "", due: "", time: "09:00", typeId: "" });
+  const [nt, setNt] = useState({ title: "", description: "", due: "", time: "09:00", typeId: "", assigneeId: "" });
   const [saving, setSaving] = useState(false);
   const [ntErr, setNtErr] = useState("");
 
+  const profileMap = useMemo(() => new Map(profiles.map((p) => [p.id, p])), [profiles]);
+
   const load = useCallback(async () => {
-    const [tk, tt] = await Promise.all([
-      supabase.from("tasks").select("*, task_types(label, color)").is("completed_at", null).order("due_at", { ascending: true }).limit(200),
+    let tasksQuery = supabase.from("tasks").select("*, task_types(label, color)").is("completed_at", null).order("due_at", { ascending: true }).limit(200);
+    // Sales reps only see tasks assigned to them; managers/admins see all.
+    if (!canViewAllData(role) && userId) {
+      tasksQuery = tasksQuery.eq("assignee_uid", userId);
+    }
+    const [tk, tt, pf] = await Promise.all([
+      tasksQuery,
       supabase.from("task_types").select("id, label"),
+      fetchProfiles(),
     ]);
     if (tk.data) setTasks(tk.data as unknown as Task[]);
     if (tt.data) setTypes(tt.data as TaskType[]);
+    setProfiles(pf);
     setLoading(false);
-  }, []);
+  }, [role, userId]);
   useEffect(() => {
+    if (roleLoading) return;
     load();
-  }, [load]);
+  }, [roleLoading, load]);
 
   const today = startOfDay(new Date());
 
@@ -87,20 +114,26 @@ export default function TasksPage() {
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const isCurrentMonth = month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth();
 
-  const complete = useCallback(async (t: Task) => {
+  const complete = useCallback(async (t: Task, note: string) => {
     if (completing.has(t.id)) return;
     setCompleting((p) => new Set(p).add(t.id));
-    const { error } = await supabase.from("tasks").update({ completed_at: new Date().toISOString() }).eq("id", t.id);
+    const { error } = await supabase
+      .from("tasks")
+      .update({ completed_at: new Date().toISOString(), completion_note: note })
+      .eq("id", t.id);
     if (error) {
       console.error("[Tasks] complete failed", error);
-      toast("Could not update task", "error");
+      toast("تعذّر تحديث المهمة", "error");
       setCompleting((p) => { const n = new Set(p); n.delete(t.id); return n; });
       return;
     }
+    setCompleteTarget(null);
+    setDetail(null);
+    toast("تم إنهاء المهمة");
     setTimeout(() => {
       setTasks((prev) => prev.filter((x) => x.id !== t.id));
       setCompleting((p) => { const n = new Set(p); n.delete(t.id); return n; });
-    }, 1000);
+    }, 800);
   }, [completing, toast]);
 
   async function createTask() {
@@ -114,6 +147,7 @@ export default function TasksPage() {
       description: nt.description.trim() || null,
       due_at: dueAt,
       task_type_id: nt.typeId || null,
+      assignee_uid: nt.assigneeId || null,
       created_at: now,
       updated_at: now,
     });
@@ -124,25 +158,64 @@ export default function TasksPage() {
       return;
     }
     toast("Task created");
-    setNt({ title: "", description: "", due: "", time: "09:00", typeId: "" });
+    setNt({ title: "", description: "", due: "", time: "09:00", typeId: "", assigneeId: "" });
     setNtErr("");
     setNewOpen(false);
     load();
   }
 
+  function openDetail(t: Task) {
+    setDetail(t);
+    setEditingDetail(false);
+    const d = t.due_at ? new Date(t.due_at) : null;
+    setEditDraft({
+      title: t.title || "",
+      due: d ? d.toISOString().slice(0, 10) : "",
+      time: d ? `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}` : "09:00",
+    });
+  }
+
+  async function saveEdit() {
+    if (!detail) return;
+    if (!editDraft.title.trim()) { toast("العنوان مطلوب", "error"); return; }
+    setSavingEdit(true);
+    const dueAt = editDraft.due ? new Date(`${editDraft.due}T${editDraft.time || "09:00"}:00`).toISOString() : null;
+    const { error } = await supabase
+      .from("tasks")
+      .update({ title: editDraft.title.trim(), due_at: dueAt, updated_at: new Date().toISOString() })
+      .eq("id", detail.id);
+    setSavingEdit(false);
+    if (error) {
+      console.error("[Tasks] edit failed", error);
+      toast("تعذّر حفظ التعديل", "error");
+      return;
+    }
+    toast("تم حفظ التعديل");
+    setDetail((prev) => (prev ? { ...prev, title: editDraft.title.trim(), due_at: dueAt } : prev));
+    setEditingDetail(false);
+    load();
+  }
+
   function TaskRow({ t, tone }: { t: Task; tone: string }) {
     const done = completing.has(t.id);
+    const assignee = t.assignee_uid ? profileMap.get(t.assignee_uid) : undefined;
+    const canAct = canActOnTask(role, userId, t.assignee_uid);
     return (
       <div className={`flex items-start gap-3 rounded-xl border border-border-light bg-white p-3 shadow-sm transition-all ${done ? "opacity-40" : "hover:shadow-md"}`}>
-        <button onClick={() => complete(t)} aria-label="Complete task" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 transition-colors ${done ? "border-primary bg-primary text-white" : `${tone} hover:border-primary`}`}>
-          {done && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3"><path d="M20 6 9 17l-5-5" /></svg>}
-        </button>
-        <button onClick={() => setDetail(t)} className="min-w-0 flex-1 text-left">
+        {canAct ? (
+          <button onClick={() => setCompleteTarget(t)} aria-label="Complete task" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 transition-colors ${done ? "border-primary bg-primary text-white" : `${tone} hover:border-primary`}`}>
+            {done && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3"><path d="M20 6 9 17l-5-5" /></svg>}
+          </button>
+        ) : (
+          <span title="بس المسؤول عن المهمة يقدر ينهيها" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 border-gray-200 opacity-50 ${tone}`} />
+        )}
+        <button onClick={() => openDetail(t)} className="min-w-0 flex-1 text-left">
           <p dir="auto" className={`text-[15px] font-medium text-ink ${done ? "line-through" : ""}`}>{t.title || "Untitled task"}</p>
           {t.description && <p dir="auto" className="mt-0.5 line-clamp-1 text-[13px] text-muted">{t.description}</p>}
           <div className="mt-1.5 flex items-center gap-2">
             {t.task_types?.label && <span className="rounded-full bg-mint px-2 py-0.5 text-[11px] font-semibold text-primary">{t.task_types.label}</span>}
             {t.due_at && <span className="text-[12px] text-muted">{formatTime(t.due_at)}</span>}
+            {assignee && <span className="rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-ink-secondary">{profileName(assignee)}</span>}
           </div>
         </button>
       </div>
@@ -245,25 +318,84 @@ export default function TasksPage() {
             <option value="">No type</option>
             {types.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
           </Select>
+          <Select id="tk-assignee" label="Assigned To" value={nt.assigneeId} onChange={(e) => setNt({ ...nt, assigneeId: e.target.value })}>
+            <option value="">Unassigned</option>
+            {profiles.map((p) => <option key={p.id} value={p.id}>{profileName(p)}</option>)}
+          </Select>
         </div>
       </SlideOver>
 
       {/* Task detail */}
-      <SlideOver open={!!detail} onClose={() => setDetail(null)} title={detail?.title || "Task"} subtitle={detail?.task_types?.label ?? undefined}>
+      <SlideOver
+        open={!!detail}
+        onClose={() => setDetail(null)}
+        title={editingDetail ? "تعديل المهمة" : detail?.title || "Task"}
+        subtitle={detail?.task_types?.label ?? undefined}
+        footer={
+          detail && canActOnTask(role, userId, detail.assignee_uid) && (
+            <div className="flex gap-3">
+              {editingDetail ? (
+                <>
+                  <Button variant="secondary" fullWidth onClick={() => setEditingDetail(false)}>إلغاء</Button>
+                  <Button fullWidth loading={savingEdit} onClick={saveEdit}>حفظ التعديل</Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="secondary" fullWidth onClick={() => setEditingDetail(true)}>✏️ تعديل</Button>
+                  <Button fullWidth onClick={() => setCompleteTarget(detail)}>Mark Complete</Button>
+                </>
+              )}
+            </div>
+          )
+        }
+      >
         {detail && (
           <div className="flex flex-col gap-5">
-            <div>
-              <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">Description</p>
-              <p dir="auto" className="mt-1 text-[15px] text-ink-secondary">{detail.description || "—"}</p>
-            </div>
-            <div>
-              <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">Due</p>
-              <p className="mt-1 text-[15px] text-ink">{detail.due_at ? new Date(detail.due_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" }) : "—"}</p>
-            </div>
-            <Button onClick={() => { complete(detail); setDetail(null); }}>Mark Complete</Button>
+            {!canActOnTask(role, userId, detail.assignee_uid) && (
+              <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-2.5 text-[13px] font-medium text-amber-700">
+                للعرض فقط — بس المسؤول عن هذي المهمة يقدر يعدّلها أو ينهيها
+              </div>
+            )}
+            {editingDetail ? (
+              <>
+                <Input id="tk-edit-title" label="العنوان" dir="auto" value={editDraft.title} onChange={(e) => setEditDraft({ ...editDraft, title: e.target.value })} autoFocus />
+                <div className="grid grid-cols-2 gap-4">
+                  <Input id="tk-edit-due" label="تاريخ الاستحقاق" type="date" value={editDraft.due} onChange={(e) => setEditDraft({ ...editDraft, due: e.target.value })} />
+                  <Input id="tk-edit-time" label="الوقت" type="time" value={editDraft.time} onChange={(e) => setEditDraft({ ...editDraft, time: e.target.value })} />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">Description</p>
+                  <p dir="auto" className="mt-1 text-[15px] text-ink-secondary">{detail.description || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">Due</p>
+                  <p className="mt-1 text-[15px] text-ink">{detail.due_at ? new Date(detail.due_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" }) : "—"}</p>
+                </div>
+                <div>
+                  <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">المسؤول</p>
+                  <p className="mt-1 text-[15px] text-ink">{detail.assignee_uid ? profileName(profileMap.get(detail.assignee_uid)) || "—" : "—"}</p>
+                </div>
+                {detail.completion_note && (
+                  <div>
+                    <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">ملاحظة الإنجاز</p>
+                    <p dir="auto" className="mt-1 text-[15px] text-ink-secondary">{detail.completion_note}</p>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
       </SlideOver>
+
+      <CompleteTaskModal
+        open={!!completeTarget}
+        taskTitle={completeTarget?.title ?? null}
+        onClose={() => setCompleteTarget(null)}
+        onConfirm={(note) => { if (completeTarget) return complete(completeTarget, note); }}
+      />
     </div>
   );
 }

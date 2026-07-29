@@ -22,12 +22,14 @@ export default function NewDealSlideOver({
   onCreated,
   stages,
   defaultStageId,
+  prefillLead,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated?: () => void;
   stages: Stage[];
   defaultStageId?: string | null;
+  prefillLead?: LeadHit | null;
 }) {
   const toast = useToast();
   const [name, setName] = useState("");
@@ -46,6 +48,13 @@ export default function NewDealSlideOver({
   useEffect(() => {
     if (open) setStageId(defaultStageId || stages[0]?.id || "");
   }, [open, defaultStageId, stages]);
+
+  useEffect(() => {
+    if (open && prefillLead) {
+      setCustomer(prefillLead);
+      setName((prev) => prev || prefillLead.full_name || "");
+    }
+  }, [open, prefillLead]);
 
   useEffect(() => {
     if (customer || query.trim().length < 2) {
@@ -89,6 +98,7 @@ export default function NewDealSlideOver({
     setSaving(true);
     const now = new Date().toISOString();
     const minor = amount.trim() ? Math.round(parseFloat(amount) * 100) : null;
+    const { data: userData } = await supabase.auth.getUser();
     const { error } = await supabase.from("deals").insert({
       id: crypto.randomUUID(),
       name: name.trim(),
@@ -99,6 +109,7 @@ export default function NewDealSlideOver({
       probability_pct: probability.trim() ? Math.round(parseFloat(probability)) : 0,
       target_close_date: closeDate || null,
       notes: notes.trim() || null,
+      owner_id: userData.user?.id ?? null,
       created_at: now,
       updated_at: now,
     });

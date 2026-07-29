@@ -71,6 +71,7 @@ export default function NewLeadSlideOver({
     }
     setSaving(true);
     const now = new Date().toISOString();
+    const { data: userData } = await supabase.auth.getUser();
     const { error } = await supabase.from("leads").insert({
       id: crypto.randomUUID(),
       full_name: fullName.trim(),
@@ -78,6 +79,7 @@ export default function NewLeadSlideOver({
       primary_source_id: sourceId || null,
       stage_id: defaultStageId,
       notes: notes.trim() || null,
+      owner_id: userData.user?.id ?? null,
       created_at: now,
       updated_at: now,
     });

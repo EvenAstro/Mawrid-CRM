@@ -5,8 +5,8 @@ import type { SituationalTag } from "@/lib/classifyActivity";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct";
 
 /** Inbound tags that mark the moment a deal starts to slip away. */
 export const TURNING_POINT_TAGS: SituationalTag[] = [
@@ -384,12 +384,12 @@ export async function analyzeDeal(dealId: string): Promise<InvestigationPayload 
   };
 
   // AI call
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   let report: AiReport | null = null;
   let aiFailed = false;
 
   if (!apiKey) {
-    console.error("[investigation] GROQ_API_KEY not set — returning raw data");
+    console.error("[investigation] OPENROUTER_API_KEY not set — returning raw data");
     aiFailed = true;
   } else {
     const userPrompt = buildUserPrompt(
@@ -402,11 +402,11 @@ export async function analyzeDeal(dealId: string): Promise<InvestigationPayload 
       lost.map((s) => s.summary),
     );
     try {
-      const res = await fetch(GROQ_ENDPOINT, {
+      const res = await fetch(OPENROUTER_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({
-          model: GROQ_MODEL,
+          model: OPENROUTER_MODEL,
           temperature: 0.4,
           max_tokens: 1200,
           messages: [
@@ -416,7 +416,7 @@ export async function analyzeDeal(dealId: string): Promise<InvestigationPayload 
         }),
       });
       if (!res.ok) {
-        console.error("[investigation] Groq API error", res.status, await res.text());
+        console.error("[investigation] OpenRouter API error", res.status, await res.text());
         aiFailed = true;
       } else {
         const data = (await res.json()) as GroqChatResponse;

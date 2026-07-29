@@ -36,7 +36,8 @@ const strengthMeta = [
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -49,12 +50,31 @@ export default function RegisterPage() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    if (!firstName.trim() || !lastName.trim()) return setError("Please enter your first and last name.");
     if (password !== confirmPassword) return setError("Passwords do not match.");
     if (password.length < 6) return setError("Password must be at least 6 characters long.");
     setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
+    const fullName = `${firstName.trim()} ${lastName.trim()}`;
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { first_name: firstName.trim(), last_name: lastName.trim(), full_name: fullName } },
+    });
+    if (error) {
+      setLoading(false);
+      return setError("Could not create account. This email may already be in use.");
+    }
+    // Belt-and-suspenders: the DB trigger creates this row too, but insert
+    // here in case the trigger isn't set up yet on this Supabase project.
+    if (data.user) {
+      await supabase.from("profiles").upsert({
+        id: data.user.id,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        email: email.trim(),
+      });
+    }
     setLoading(false);
-    if (error) return setError("Could not create account. This email may already be in use.");
     router.push("/dashboard");
   }
 
@@ -102,11 +122,17 @@ export default function RegisterPage() {
             <input type="text" name="fake-user" style={{ display: "none" }} />
             <input type="password" name="fake-pass" style={{ display: "none" }} />
 
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-[#475569]">Full name</label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8]"><UserIcon className="h-4 w-4" /></span>
-                <input type="text" autoComplete="off" readOnly onFocus={(e) => e.target.removeAttribute("readonly")} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Jane Doe" className={inputCls} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-[#475569]">First name</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8]"><UserIcon className="h-4 w-4" /></span>
+                  <input type="text" autoComplete="off" readOnly onFocus={(e) => e.target.removeAttribute("readonly")} value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Jane" className={inputCls} />
+                </div>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-[#475569]">Last name</label>
+                <input type="text" autoComplete="off" readOnly onFocus={(e) => e.target.removeAttribute("readonly")} value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Doe" className="h-12 w-full rounded-xl border border-[#e8ece9] bg-white px-4 text-[15px] text-[#1e1b4b] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/10 transition-all" />
               </div>
             </div>
 

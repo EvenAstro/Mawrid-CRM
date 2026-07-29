@@ -144,10 +144,45 @@ export const ChevronDownIcon = ({ className }: P) => (
   </Svg>
 );
 
+/* sparkle-chart */
+export const InsightsIcon = ({ className }: P) => (
+  <Svg className={className}>
+    <path d="M4 20V11M10 20V6M16 20v-8M20 20v-4" />
+    <path d="M18.5 3.5v3M17 5h3" />
+  </Svg>
+);
+
+/* open-book */
+export const PlaybookIcon = ({ className }: P) => (
+  <Svg className={className}>
+    <path d="M12 6.5c-1.8-1.3-4-2-6.5-2-.6 0-1 .4-1 1v11c0 .6.4 1 1 1 2.5 0 4.7.7 6.5 2 1.8-1.3 4-2 6.5-2 .6 0 1-.4 1-1v-11c0-.6-.4-1-1-1-2.5 0-4.7.7-6.5 2Z" />
+    <path d="M12 6.5v13" />
+  </Svg>
+);
+
+/* revenue intelligence — pipeline chart with signal dot */
+export const RevenueIntelIcon = ({ className }: P) => (
+  <Svg className={className}>
+    <path d="M3 3v18h18" />
+    <path d="m7 16 4-4 4 4 4-4" />
+    <circle cx="19" cy="5" r="2.5" fill="currentColor" stroke="none" />
+  </Svg>
+);
+
 /* logout */
 export const LogoutIcon = ({ className }: P) => (
   <Svg className={className}>
     <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" />
     <path d="M10 17l-5-5 5-5M5 12h11" />
+  </Svg>
+);
+
+/* team / users management */
+export const UsersIcon = ({ className }: P) => (
+  <Svg className={className}>
+    <circle cx="9" cy="8" r="3.2" />
+    <path d="M3.5 19.5c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5" />
+    <circle cx="17" cy="8.5" r="2.4" />
+    <path d="M15.8 14.2c2.4.3 4.2 2.3 4.2 5.3" />
   </Svg>
 );

@@ -32,7 +32,8 @@ export default function CopilotWidget() {
         <button
           onClick={() => setOpen(true)}
           aria-label="افتح مساعد مورد"
-          className="fixed bottom-6 right-6 z-[55] flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] text-white shadow-[0_8px_24px_rgba(26,92,79,0.35)] transition-transform hover:scale-105"
+          style={{ right: "calc(var(--briefing-rail-width, 52px) + 24px)" }}
+          className="fixed bottom-6 z-[55] flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] text-white shadow-[0_8px_24px_rgba(26,92,79,0.35)] transition-all hover:scale-105"
         >
           <SparkleRobot />
           {unread && (

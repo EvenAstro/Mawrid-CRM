@@ -5,6 +5,9 @@ import { supabase } from "@/lib/supabase";
 import { SearchIcon, LeadsIcon } from "@/components/navIcons";
 import LeadSlideOver, { type Lead } from "@/components/LeadSlideOver";
 import NewLeadSlideOver from "@/components/NewLeadSlideOver";
+import { fetchLeadScoreModel, scoreWithModel, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
+import { useRole } from "@/components/RoleProvider";
+import { canViewAllData } from "@/lib/permissions";
 
 const PAGE_SIZE = 15;
 
@@ -14,21 +17,13 @@ function initials(name: string | null): string {
   return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "—";
 }
 
-const AI_SOURCE_RATES: Record<string, number> = {
-  "Employee Referral": 0.0,
-  "Partner Referral": 0.0,
-  Snapchat: 0.388,
-  TikTok: 0.667,
-  Website: 0.75,
-  Instagram: 0.805,
-};
-
-function getAIScore(lead: Lead): number {
-  const source = lead.sources?.label || "Instagram";
-  let p_junk = AI_SOURCE_RATES[source] ?? 0.5;
-  if (lead.establishment_id) p_junk *= 0.05;
-  p_junk = Math.min(1, Math.max(0, p_junk));
-  return Math.round((1 - p_junk) * 100);
+function getAIScore(lead: Lead, model: LeadScoreModel | null): number {
+  if (!model) return 50;
+  return scoreWithModel(model, {
+    source: lead.sources?.label || "غير محدد",
+    matched: !!lead.establishment_id,
+    hasCampaign: false,
+  }).score;
 }
 
 function scoreHex(score: number): string {
@@ -80,35 +75,37 @@ function formatDate(iso: string | null): string {
 function StatCard({
   value,
   label,
-  tint,
-  emoji,
+  accent,
+  icon,
   active,
   onClick,
 }: {
   value: number;
   label: string;
-  tint: string;
-  emoji: string;
+  accent: string;
+  icon: React.ReactNode;
   active?: boolean;
   onClick?: () => void;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-3 rounded-full border bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-[#1a5c4f] ${active ? "border-[#1a5c4f] ring-2 ring-[#1a5c4f]/15" : "border-gray-100"}`}
+      className={`group relative flex items-center gap-4 overflow-hidden rounded-2xl border bg-white p-5 text-left shadow-sm transition-all hover:shadow-md ${active ? "border-emerald-500 ring-2 ring-emerald-500/15" : "border-slate-200 hover:border-slate-300"}`}
     >
-      <span className={`flex h-9 w-9 flex-none items-center justify-center rounded-full text-base ${tint}`}>
-        {emoji}
+      <span className={`flex h-12 w-12 flex-none items-center justify-center rounded-xl ${accent}`}>
+        {icon}
       </span>
-      <div>
-        <p className="text-lg font-extrabold leading-none text-[#1e1b4b]">{value}</p>
-        <p className="mt-0.5 text-[13px] text-[#94a3b8]">{label}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-[26px] font-bold leading-none text-slate-900 tabular-nums">{value}</p>
+        <p className="mt-1 text-[13px] font-medium text-slate-500">{label}</p>
       </div>
+      {active && <span className="absolute top-3 left-3 h-2 w-2 rounded-full bg-emerald-500" />}
     </button>
   );
 }
 
 export default function LeadsPage() {
+  const { role, userId, loading: roleLoading } = useRole();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -120,6 +117,7 @@ export default function LeadsPage() {
   const [newLeadOpen, setNewLeadOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "clean" | "junk">("all");
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
+  const [scoreModel, setScoreModel] = useState<LeadScoreModel | null>(null);
 
   // Honor ?filter= and ?open= params from dashboard deep-links.
   useEffect(() => {
@@ -133,13 +131,20 @@ export default function LeadsPage() {
   async function load() {
     setError(false);
     // Alias normalized_phone/normalized_email to the phone/email the UI expects.
-    const { data, error: err } = await supabase
+    let query = supabase
       .from("leads")
       .select(
         `*, phone:normalized_phone, email:normalized_email, pipeline_stages(label, color), sources(label), junk_reasons(label)`,
       )
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
+
+    // Sales reps only see leads assigned to them; managers/admins see all.
+    if (!canViewAllData(role) && userId) {
+      query = query.eq("owner_id", userId);
+    }
+
+    const { data, error: err } = await query;
 
     if (err) {
       console.error("[Leads] Supabase fetch failed", err);
@@ -151,15 +156,22 @@ export default function LeadsPage() {
   }
 
   useEffect(() => {
+    if (roleLoading) return; // wait for the current user's role to resolve first
     load();
+  }, [roleLoading, role, userId]);
+
+  useEffect(() => {
+    fetchLeadScoreModel()
+      .then(setScoreModel)
+      .catch((err) => console.error("[Leads] lead score model failed", err));
   }, []);
 
   // Cache AI scores per lead id so they aren't recomputed on every render.
   const scoreCache = useMemo(() => {
     const map = new Map<string | number, number>();
-    for (const l of leads) map.set(l.id, getAIScore(l));
+    for (const l of leads) map.set(l.id, getAIScore(l, scoreModel));
     return map;
-  }, [leads]);
+  }, [leads, scoreModel]);
 
   // Open the deep-linked lead once data has loaded.
   useEffect(() => {
@@ -221,90 +233,115 @@ export default function LeadsPage() {
   return (
     <>
       {/* Header */}
-      <div className="mb-6">
-        <h1 dir="auto" className="text-2xl font-extrabold text-[#1e1b4b]">العملاء المحتملون</h1>
-        <p className="mt-1 text-[15px] text-[#94a3b8]">
-          إدارة ومتابعة مسار العملاء المحتملين
-        </p>
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 dir="auto" className="text-[28px] font-bold text-slate-900">العملاء المحتملون</h1>
+          <p className="mt-1 text-[14px] text-slate-500">
+            إدارة ومتابعة مسار العملاء المحتملين
+          </p>
+        </div>
+        <button
+          onClick={() => setNewLeadOpen(true)}
+          className="flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-5 text-[14px] font-bold text-white shadow-md shadow-emerald-600/25 transition hover:shadow-lg hover:shadow-emerald-600/30 active:scale-[0.98]"
+        >
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
+          إضافة عميل
+        </button>
       </div>
 
       {/* Stats bar */}
-      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <StatCard value={leads.length} label="إجمالي العملاء" emoji="🎯" tint="bg-[#f0faf8]" active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
-        <StatCard value={cleanCount} label="عملاء مؤهلون" emoji="✅" tint="bg-emerald-50" active={statusFilter === "clean"} onClick={() => setStatusFilter("clean")} />
-        <StatCard value={junkCount} label="غير مؤهلين" emoji="🗑️" tint="bg-red-50" active={statusFilter === "junk"} onClick={() => setStatusFilter("junk")} />
+      <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <StatCard
+          value={leads.length}
+          label="إجمالي العملاء"
+          accent="bg-gradient-to-br from-slate-100 to-slate-50 text-slate-600"
+          icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zM6 8a2 2 0 11-4 0 2 2 0 014 0zM1.49 15.326a.78.78 0 01-.358-.442 3 3 0 014.308-3.516 6.484 6.484 0 00-1.905 3.959c-.023.222-.014.442.025.654a4.97 4.97 0 01-2.07-.655zM16.44 15.98a4.97 4.97 0 002.07-.654.78.78 0 00.357-.442 3 3 0 00-4.308-3.517 6.484 6.484 0 011.907 3.96 2.32 2.32 0 01-.026.654zM18 8a2 2 0 11-4 0 2 2 0 014 0zM5.304 16.19a.844.844 0 01-.277-.71 5 5 0 019.947 0 .843.843 0 01-.277.71A6.975 6.975 0 0110 18a6.974 6.974 0 01-4.696-1.81z" /></svg>}
+          active={statusFilter === "all"}
+          onClick={() => setStatusFilter("all")}
+        />
+        <StatCard
+          value={cleanCount}
+          label="عملاء مؤهلون"
+          accent="bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600"
+          icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></svg>}
+          active={statusFilter === "clean"}
+          onClick={() => setStatusFilter("clean")}
+        />
+        <StatCard
+          value={junkCount}
+          label="غير مؤهلين"
+          accent="bg-gradient-to-br from-red-100 to-red-50 text-red-600"
+          icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4z" clipRule="evenodd" /></svg>}
+          active={statusFilter === "junk"}
+          onClick={() => setStatusFilter("junk")}
+        />
       </div>
 
       {/* Search & filter bar */}
-      <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:flex-row">
+      <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row">
         <div className="relative flex-1">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]">
+          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
             <SearchIcon />
           </span>
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, phone or email…"
-            className="h-11 w-full rounded-xl border border-gray-100 bg-white pl-10 pr-4 text-[15px] text-[#334155] placeholder:text-[#94a3b8]"
+            placeholder="ابحث بالاسم، الجوال، أو الإيميل…"
+            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-11 pr-4 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition"
           />
         </div>
 
         <select
           value={stageFilter}
           onChange={(e) => setStageFilter(e.target.value)}
-          className="h-11 rounded-xl border border-gray-100 bg-white px-3 text-[15px] text-[#334155] focus:border-[#1a5c4f] focus:outline-none"
+          className="h-11 rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-[14px] font-medium text-slate-700 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition"
         >
-          <option value="all">All Stages</option>
+          <option value="all">جميع المراحل</option>
           {stageOptions.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
+            <option key={s} value={s}>{s}</option>
           ))}
         </select>
 
         <select
           value={sourceFilter}
           onChange={(e) => setSourceFilter(e.target.value)}
-          className="h-11 rounded-xl border border-gray-100 bg-white px-3 text-[15px] text-[#334155] focus:border-[#1a5c4f] focus:outline-none"
+          className="h-11 rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-[14px] font-medium text-slate-700 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition"
         >
-          <option value="all">All Sources</option>
+          <option value="all">جميع المصادر</option>
           {sourceOptions.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
+            <option key={s} value={s}>{s}</option>
           ))}
         </select>
-
-        <button
-          onClick={() => setNewLeadOpen(true)}
-          className="h-11 flex-none rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] px-6 text-[15px] font-semibold text-white shadow-[0_2px_8px_rgba(26,92,79,0.2)] transition-all hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(26,92,79,0.28)]"
-        >
-          + Add Lead
-        </button>
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[880px] border-collapse text-left">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-25 text-[12px] font-semibold uppercase tracking-wider text-[#94a3b8]">
-                <th className="px-6 py-3">Name</th>
-                <th className="px-6 py-3">Source</th>
-                <th className="px-6 py-3">Stage</th>
-                <th className="px-6 py-3">Status</th>
-                <th className="px-6 py-3">AI Score</th>
-                <th className="px-6 py-3">Owner</th>
-                <th className="px-6 py-3">Created</th>
-                <th className="px-6 py-3 text-right">Actions</th>
+              <tr className="border-b border-slate-100 bg-slate-50/60 text-[12px] font-semibold uppercase tracking-wider text-slate-500">
+                <th className="px-6 py-3.5">العميل</th>
+                <th className="px-6 py-3.5">المصدر</th>
+                <th className="px-6 py-3.5">المرحلة</th>
+                <th className="px-6 py-3.5">الحالة</th>
+                <th className="px-6 py-3.5">تقييم AI</th>
+                <th className="px-6 py-3.5">المسؤول</th>
+                <th className="px-6 py-3.5">التاريخ</th>
+                <th className="px-6 py-3.5 text-right"></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-16 text-center text-[15px] text-[#94a3b8]">
-                    Loading leads…
+                  <td colSpan={8} className="px-6 py-20 text-center">
+                    <div className="inline-flex items-center gap-3 text-[14px] text-slate-500">
+                      <svg className="h-4 w-4 animate-spin text-emerald-600" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z" />
+                      </svg>
+                      جارِ تحميل العملاء…
+                    </div>
                   </td>
                 </tr>
               ) : error ? (
@@ -312,29 +349,29 @@ export default function LeadsPage() {
                   <td colSpan={8} className="px-6 py-16">
                     <div className="flex flex-col items-center justify-center gap-3 text-center">
                       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-2xl">🔌</div>
-                      <p className="text-[15px] font-semibold text-[#334155]">Connection error</p>
-                      <p className="text-[13px] text-[#94a3b8]">We couldn&apos;t load your leads.</p>
+                      <p className="text-[15px] font-semibold text-slate-700">تعذّر الاتصال</p>
+                      <p className="text-[13px] text-slate-400">لم نستطع تحميل بيانات العملاء</p>
                       <button
                         onClick={() => { setLoading(true); load(); }}
-                        className="mt-1 rounded-lg bg-[#1a5c4f] px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#15503f]"
+                        className="mt-1 rounded-lg bg-emerald-600 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-emerald-700"
                       >
-                        Retry
+                        إعادة المحاولة
                       </button>
                     </div>
                   </td>
                 </tr>
               ) : pageRows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-16">
+                  <td colSpan={8} className="px-6 py-20">
                     <div className="flex flex-col items-center justify-center text-center">
-                      <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f0faf8] text-[#1a5c4f]">
+                      <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
                         <LeadsIcon />
                       </div>
-                      <p className="text-[15px] font-semibold text-[#94a3b8]">
-                        No leads found
+                      <p className="text-[15px] font-semibold text-slate-700">
+                        لا توجد عملاء
                       </p>
-                      <p className="mt-1 text-[13px] text-[#94a3b8]">
-                        Try adjusting your search or filters.
+                      <p className="mt-1 text-[13px] text-slate-400">
+                        جرّب تعديل البحث أو الفلاتر
                       </p>
                     </div>
                   </td>
@@ -342,24 +379,25 @@ export default function LeadsPage() {
               ) : (
                 pageRows.map((lead) => {
                   const isJunk = lead.junk_reason_id != null;
-                  const stageColor = lead.pipeline_stages?.color || "#1a5c4f";
+                  const stageColor = lead.pipeline_stages?.color || "#059669";
+                  const outcome = lead.contact_outcome;
                   return (
                     <tr
                       key={lead.id}
                       onClick={() => setSelectedLead(lead)}
-                      className={`cursor-pointer border-b border-gray-50 transition-colors duration-100 last:border-0 hover:bg-teal-50 ${isJunk ? "opacity-50 grayscale-[20%]" : ""}`}
+                      className={`group cursor-pointer border-b border-slate-100 transition-all duration-100 last:border-0 hover:bg-emerald-50/40 ${isJunk ? "opacity-60" : ""}`}
                     >
                       {/* Name */}
-                      <td className="px-6 py-3.5">
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-[#1a5c4f] text-[13px] font-bold text-white">
+                          <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-700 text-[13px] font-bold text-white shadow-sm">
                             {initials(lead.full_name)}
                           </span>
                           <div className="min-w-0">
-                            <p dir="auto" className="truncate text-[15px] font-semibold text-[#1e1b4b]">
+                            <p dir="auto" className="truncate text-[14px] font-semibold text-slate-900">
                               {lead.full_name || "Unnamed lead"}
                             </p>
-                            <p className="truncate text-[13px] text-[#94a3b8]">
+                            <p className="truncate text-[12px] text-slate-400">
                               {lead.phone || lead.email || "—"}
                             </p>
                           </div>
@@ -367,69 +405,75 @@ export default function LeadsPage() {
                       </td>
 
                       {/* Source */}
-                      <td className="px-6 py-3.5">
+                      <td className="px-6 py-4">
                         {lead.sources?.label ? (
-                          <span className="rounded-full border border-teal-100 bg-teal-50 px-3 py-1 text-[11px] font-semibold text-teal-700">
+                          <span className="inline-flex rounded-lg bg-slate-100 px-2.5 py-1 text-[12px] font-semibold text-slate-600">
                             {lead.sources.label}
                           </span>
                         ) : (
-                          <span className="text-[13px] text-[#d1d5db]">—</span>
+                          <span className="text-[13px] text-slate-300">—</span>
                         )}
                       </td>
 
                       {/* Stage */}
-                      <td className="px-6 py-3.5">
+                      <td className="px-6 py-4">
                         {lead.pipeline_stages?.label ? (
                           <span
-                            className="rounded-full px-2 py-1 text-[13px] font-medium"
+                            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-semibold"
                             style={{
-                              backgroundColor: `${stageColor}1a`,
+                              backgroundColor: `${stageColor}15`,
                               color: stageColor,
                             }}
                           >
+                            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: stageColor }} />
                             {lead.pipeline_stages.label}
                           </span>
                         ) : (
-                          <span className="text-[13px] text-[#d1d5db]">—</span>
+                          <span className="text-[13px] text-slate-300">—</span>
                         )}
                       </td>
 
                       {/* Status */}
-                      <td className="px-6 py-3.5">
+                      <td className="px-6 py-4">
                         {isJunk ? (
-                          <span className="rounded-full bg-red-50 px-2.5 py-1 text-[13px] font-medium text-red-700">
-                            Junk
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-[12px] font-semibold text-red-600 ring-1 ring-red-100">
+                            🚫 جنك
+                          </span>
+                        ) : outcome === "responded" ? (
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-600 ring-1 ring-emerald-100">
+                            ✅ رد
+                          </span>
+                        ) : outcome === "no_response" ? (
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2.5 py-1 text-[12px] font-semibold text-amber-600 ring-1 ring-amber-100">
+                            ⏳ لم يرد
                           </span>
                         ) : (
-                          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[13px] font-medium text-emerald-700">
-                            Active
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-slate-50 px-2.5 py-1 text-[12px] font-semibold text-slate-500 ring-1 ring-slate-100">
+                            جديد
                           </span>
                         )}
                       </td>
 
                       {/* AI Score */}
-                      <td className="px-6 py-3.5">
-                        <AiScoreRing score={scoreCache.get(lead.id) ?? getAIScore(lead)} />
+                      <td className="px-6 py-4">
+                        <AiScoreRing score={scoreCache.get(lead.id) ?? getAIScore(lead, scoreModel)} />
                       </td>
 
                       {/* Owner */}
-                      <td className="px-6 py-3.5 text-[15px] text-[#334155]">
-                        {lead.owner || "—"}
+                      <td className="px-6 py-4 text-[13px] font-medium text-slate-600">
+                        {lead.owner || <span className="text-slate-300">—</span>}
                       </td>
 
                       {/* Created */}
-                      <td className="px-6 py-3.5 text-[13px] text-[#94a3b8]">
+                      <td className="px-6 py-4 text-[12px] text-slate-400">
                         {formatDate(lead.created_at)}
                       </td>
 
                       {/* Actions */}
-                      <td className="px-6 py-3.5 text-right">
-                        <button
-                          onClick={() => setSelectedLead(lead)}
-                          className="rounded-lg border border-[#1a5c4f] px-3 py-1.5 text-[13px] font-semibold text-[#1a5c4f] transition hover:bg-[#1a5c4f] hover:text-white"
-                        >
-                          View
-                        </button>
+                      <td className="px-6 py-4 text-right">
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-[12px] font-semibold text-slate-500 opacity-0 transition group-hover:bg-emerald-600 group-hover:text-white group-hover:opacity-100">
+                          فتح ←
+                        </span>
                       </td>
                     </tr>
                   );
@@ -441,35 +485,35 @@ export default function LeadsPage() {
 
         {/* Pagination */}
         {!loading && filtered.length > 0 && (
-          <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4">
-            <p className="text-[13px] text-[#94a3b8]">
-              Showing{" "}
-              <span className="font-semibold text-[#334155]">
+          <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/40 px-6 py-3.5">
+            <p className="text-[13px] text-slate-500">
+              عرض{" "}
+              <span className="font-bold text-slate-700 tabular-nums">
                 {(currentPage - 1) * PAGE_SIZE + 1}–
                 {Math.min(currentPage * PAGE_SIZE, filtered.length)}
               </span>{" "}
-              of{" "}
-              <span className="font-semibold text-[#334155]">
+              من{" "}
+              <span className="font-bold text-slate-700 tabular-nums">
                 {filtered.length}
               </span>
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="rounded-lg border border-gray-100 px-3 py-1.5 text-[13px] font-semibold text-[#334155] transition hover:bg-gray-25 disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-emerald-400 hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:text-slate-500"
               >
-                Previous
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06L11.19 8 7.72 4.53a.75.75 0 011.06-1.06l4 4a.75.75 0 010 1.06l-4 4a.75.75 0 01-1.06 0z" clipRule="evenodd" /></svg>
               </button>
-              <span className="text-[13px] font-medium text-[#94a3b8]">
-                Page {currentPage} of {totalPages}
+              <span className="min-w-[80px] text-center text-[13px] font-semibold text-slate-600 tabular-nums">
+                {currentPage} / {totalPages}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="rounded-lg border border-gray-100 px-3 py-1.5 text-[13px] font-semibold text-[#334155] transition hover:bg-gray-25 disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-emerald-400 hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:text-slate-500"
               >
-                Next
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M12.28 7.47a.75.75 0 010 1.06L8.81 12l3.47 3.47a.75.75 0 11-1.06 1.06l-4-4a.75.75 0 010-1.06l4-4a.75.75 0 011.06 0z" clipRule="evenodd" /></svg>
               </button>
             </div>
           </div>
@@ -477,7 +521,7 @@ export default function LeadsPage() {
       </div>
 
       {/* Slide-over detail panel */}
-      <LeadSlideOver lead={selectedLead} onClose={() => setSelectedLead(null)} />
+      <LeadSlideOver lead={selectedLead} onClose={() => setSelectedLead(null)} onUpdated={load} />
       <NewLeadSlideOver open={newLeadOpen} onClose={() => setNewLeadOpen(false)} onCreated={load} />
     </>
   );

@@ -10,6 +10,7 @@ import NewLeadSlideOver from "@/components/NewLeadSlideOver";
 import LogActivitySlideOver from "@/components/LogActivitySlideOver";
 import AddContactSlideOver from "@/components/AddContactSlideOver";
 import { dayHeader, dayKey, formatDateTime } from "@/lib/format";
+import { fetchLeadScoreModel, scoreWithModel, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
 
 /* ---------- Types ---------- */
 type Stage = { label: string; terminal_type: string | null } | null;
@@ -123,15 +124,13 @@ function compactSAR(n: number) {
   if (n >= 1000) return Math.round(n / 1000) + "K";
   return String(Math.round(n));
 }
-const AI_SOURCE_RATES: Record<string, number> = {
-  "Employee Referral": 0.0, "Partner Referral": 0.0, Snapchat: 0.388, TikTok: 0.667, Website: 0.75, Instagram: 0.805,
-};
-function getAIScore(lead: Lead): number {
-  const source = lead.sources?.label || "Instagram";
-  let p = AI_SOURCE_RATES[source] ?? 0.5;
-  if (lead.establishment_id) p *= 0.05;
-  p = Math.min(1, Math.max(0, p));
-  return Math.round((1 - p) * 100);
+function getAIScore(lead: Lead, model: LeadScoreModel | null): number {
+  if (!model) return 50;
+  return scoreWithModel(model, {
+    source: lead.sources?.label || "غير محدد",
+    matched: !!lead.establishment_id,
+    hasCampaign: false, // touchpoints aren't fetched for the dashboard's recent-leads list
+  }).score;
 }
 function activityColor(label?: string | null) {
   const l = (label || "").toLowerCase();
@@ -246,6 +245,7 @@ export default function DashboardPage() {
   const [logActivityOpen, setLogActivityOpen] = useState(false);
   const [addContactOpen, setAddContactOpen] = useState(false);
   const [completing, setCompleting] = useState<Set<string | number>>(new Set());
+  const [scoreModel, setScoreModel] = useState<LeadScoreModel | null>(null);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -274,6 +274,9 @@ export default function DashboardPage() {
       setDeals((d.data as unknown as Deal[]) ?? []);
       setActivities((a.data as unknown as Activity[]) ?? []);
       setTasks((t.data as unknown as Task[]) ?? []);
+      fetchLeadScoreModel()
+        .then(setScoreModel)
+        .catch((err) => console.error("[Dashboard] lead score model failed", err));
     } catch (err) {
       console.error("[Dashboard] Unexpected error loading dashboard", err);
       setError(true);
@@ -490,7 +493,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             m.recentLeads.map((l) => {
-              const score = getAIScore(l);
+              const score = getAIScore(l, scoreModel);
               return (
                 <Link key={l.id} href={`/dashboard/leads?open=${l.id}`} className="flex items-center gap-3 border-b border-gray-50 py-2.5 transition-colors last:border-0 hover:bg-[#f0faf8]">
                   <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#1a5c4f]">

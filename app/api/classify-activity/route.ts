@@ -7,7 +7,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /**
  * Fire-and-forget classification endpoint called from LogActivitySlideOver
- * after an inbound activity is inserted. Keeps GROQ_API_KEY server-side —
+ * after an inbound activity is inserted. Keeps OPENROUTER_API_KEY server-side —
  * classifyActivity() must never run in client code.
  */
 export async function POST(req: NextRequest) {
