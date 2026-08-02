@@ -220,14 +220,14 @@ function Skeleton() {
   return (
     <div className="flex flex-col gap-6">
       <div className="h-9 w-64 animate-pulse rounded-lg bg-white" />
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <div key={i} className={`${box} h-36 border border-gray-100`} />)}</div>
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3"><div className={`${box} h-80 border border-gray-100 lg:col-span-2`} /><div className={`${box} h-80 border border-gray-100`} /></div>
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className={`${box} h-64 border border-gray-100`} />)}</div>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <div key={i} className={`${box} h-36 border border-[#d6ece5]`} />)}</div>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3"><div className={`${box} h-80 border border-[#d6ece5] lg:col-span-2`} /><div className={`${box} h-80 border border-[#d6ece5]`} /></div>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className={`${box} h-64 border border-[#d6ece5]`} />)}</div>
     </div>
   );
 }
 
-const CARD = "rounded-2xl border border-gray-100 bg-white p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.02)] transition-all duration-200 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05),0_12px_32px_rgba(0,0,0,0.03)]";
+const CARD = "rounded-2xl border border-[#d6ece5] bg-white p-6 shadow-[0_2px_8px_rgba(26,92,79,0.04)] transition-all duration-200 hover:shadow-[0_4px_16px_rgba(26,92,79,0.08)]";
 
 /* ---------- Page ---------- */
 export default function DashboardPage() {
@@ -400,16 +400,16 @@ export default function DashboardPage() {
           <p className="mt-1 text-sm text-[#94a3b8]">{longDate(now)}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setNewLeadOpen(true)} className="rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(26,92,79,0.25)] transition-all hover:scale-[1.02]">+ عميل جديد</button>
-          <button onClick={() => setLogActivityOpen(true)} className="rounded-full border-2 border-[#1a5c4f] bg-white px-5 py-2.5 text-sm font-semibold text-[#1a5c4f] transition-all hover:bg-[#f0faf8]">تسجيل نشاط</button>
-          <button onClick={() => setAddContactOpen(true)} className="rounded-full px-5 py-2.5 text-sm font-semibold text-[#334155] transition-all hover:bg-[#f0faf8] hover:text-[#1a5c4f]">إضافة جهة اتصال</button>
+          <button onClick={() => setNewLeadOpen(true)} className="rounded-xl bg-[#1a5c4f] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(26,92,79,0.25)] transition-all hover:bg-[#15503f]">+ عميل جديد</button>
+          <button onClick={() => setLogActivityOpen(true)} className="rounded-xl border border-[#d6ece5] bg-white px-5 py-2.5 text-sm font-semibold text-[#1a5c4f] transition-all hover:bg-[#f0faf8]">تسجيل نشاط</button>
+          <button onClick={() => setAddContactOpen(true)} className="rounded-xl border border-[#e8efed] bg-white px-5 py-2.5 text-sm font-semibold text-[#334155] transition-all hover:bg-[#f0faf8] hover:text-[#1a5c4f]">إضافة جهة اتصال</button>
         </div>
       </div>
 
       {/* KPIs */}
       <div className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map(({ label, value, Icon, color, trend, href }) => (
-          <Link key={label} href={href} className="group relative overflow-hidden rounded-2xl border border-[#e8efed] bg-white p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.02)] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(0,0,0,0.06),0_12px_32px_rgba(0,0,0,0.04)]">
+          <Link key={label} href={href} className="group relative overflow-hidden rounded-2xl border border-[#d6ece5] bg-gradient-to-bl from-white to-[#f5faf8] p-6 shadow-[0_2px_8px_rgba(26,92,79,0.05)] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(26,92,79,0.1)]">
             <span className="absolute bottom-4 right-0 top-4 w-1 rounded-full" style={{ background: color }} />
             <span className="absolute left-5 top-5 flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-105" style={{ backgroundColor: `${color}1a`, color }}>
               <Icon className="h-5 w-5" />
@@ -429,10 +429,10 @@ export default function DashboardPage() {
               <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">نشاط الصفقات</h3>
               <p className="mt-0.5 text-sm text-[#94a3b8]">قيمة الصفقات · {m.seriesRange}</p>
             </div>
-            <span className="rounded-full border border-gray-100 bg-gray-25 px-3 py-1 text-xs text-[#94a3b8]">آخر ٧ أيام</span>
+            <span className="rounded-full border border-[#d6ece5] bg-gray-25 px-3 py-1 text-xs text-[#94a3b8]">آخر ٧ أيام</span>
           </div>
           <PipelineChart points={m.series} />
-          <div className="mt-4 flex gap-8 border-t border-gray-50 pt-4">
+          <div className="mt-4 flex gap-8 border-t border-[#e8f0ec] pt-4">
             <div><p className="text-lg font-bold text-[#1e1b4b]">{m.total_deals}</p><p className="text-xs text-[#94a3b8]">إجمالي الصفقات</p></div>
             <div><p className="text-lg font-bold text-green-600">{m.won}</p><p className="text-xs text-[#94a3b8]">مكسوبة</p></div>
             <div><p className="text-lg font-bold text-red-600">{m.lost}</p><p className="text-xs text-[#94a3b8]">خاسرة</p></div>
@@ -443,7 +443,7 @@ export default function DashboardPage() {
           <h3 className="mb-1 text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">اليوم</h3>
           <p className="text-4xl font-black tabular-nums text-[#1a5c4f]">{now.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>
           <p className="mb-4 text-sm text-[#94a3b8]">{longDate(now)}</p>
-          <div className="flex-1 border-t border-gray-50 pt-4">
+          <div className="flex-1 border-t border-[#e8f0ec] pt-4">
             <p className="mb-3 text-xs font-semibold tracking-wider text-[#94a3b8]">المهام القادمة</p>
             {tasks.length === 0 ? (
               <p className="py-6 text-center text-sm text-[#94a3b8]">🎉 لا مهام لليوم!</p>
@@ -451,7 +451,7 @@ export default function DashboardPage() {
               tasks.map((t) => {
                 const done = completing.has(t.id);
                 return (
-                  <div key={t.id} className="flex items-center gap-3 border-b border-gray-50 py-2.5 last:border-0">
+                  <div key={t.id} className="flex items-center gap-3 border-b border-[#e8f0ec] py-2.5 last:border-0">
                     <button
                       type="button"
                       onClick={() => completeTask(t)}
@@ -495,7 +495,7 @@ export default function DashboardPage() {
             m.recentLeads.map((l) => {
               const score = getAIScore(l, scoreModel);
               return (
-                <Link key={l.id} href={`/dashboard/leads?open=${l.id}`} className="flex items-center gap-3 border-b border-gray-50 py-2.5 transition-colors last:border-0 hover:bg-[#f0faf8]">
+                <Link key={l.id} href={`/dashboard/leads?open=${l.id}`} className="flex items-center gap-3 border-b border-[#e8f0ec] py-2.5 transition-colors last:border-0 hover:bg-[#f0faf8]">
                   <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#1a5c4f]">
                     <span className="text-xs font-bold text-white">{initials(l.full_name)}</span>
                   </div>
@@ -552,7 +552,7 @@ export default function DashboardPage() {
         <div className={CARD}>
           <h3 className="mb-4 text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">ملخص المبيعات</h3>
           {overview.map((o) => (
-            <div key={o.label} className="flex items-center justify-between border-b border-gray-50 py-2.5 last:border-0">
+            <div key={o.label} className="flex items-center justify-between border-b border-[#e8f0ec] py-2.5 last:border-0">
               <div className="flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: o.dot }} />
                 <span className="text-sm text-[#334155]">{o.label}</span>
@@ -560,12 +560,12 @@ export default function DashboardPage() {
               <span className={`rounded-md px-2 py-0.5 text-sm font-bold ${o.badge}`}>{o.value}</span>
             </div>
           ))}
-          <div className="mt-4 border-t border-gray-50 pt-4">
+          <div className="mt-4 border-t border-[#e8f0ec] pt-4">
             <div className="mb-2 flex justify-between text-xs text-[#94a3b8]">
               <span>نسبة الفوز</span>
               <span className="font-semibold text-[#334155]">{m.win_rate.toFixed(1)}%</span>
             </div>
-            <div className="h-2 rounded-full bg-[#f1f5f9]">
+            <div className="h-2 rounded-full bg-[#e0efe9]">
               <div className="h-full rounded-full bg-[#1a5c4f]" style={{ width: `${Math.min(100, m.win_rate)}%` }} />
             </div>
           </div>
