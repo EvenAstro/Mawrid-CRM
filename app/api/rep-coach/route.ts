@@ -1,47 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { calcRepScore, type RepScoreData } from "@/lib/repScore";
+import { supabase } from "@/lib/supabase";
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct";
+const MS_PER_DAY = 86_400_000;
 
-function buildCoachPrompt(data: RepScoreData): string {
-  return `أنت مدرب مبيعات محترف في نظام Mawrid CRM. مهمتك تحليل أداء الموظف اليوم وتقديم 3 نصائح عملية محددة.
-
-## بيانات اليوم:
-- النتيجة الإجمالية: ${data.score}/100
-- المهام المنجزة: ${data.tasksCompleted} من ${data.tasksTotal}
-- مهام متأخرة: ${data.overdueTasks}
-- عملاء تم التواصل معهم: ${data.contacts}
-- صفقات تم تحريكها: ${data.dealsAdvanced}
-- متوسط وقت الرد: ${data.avgResponseHours !== null ? `${data.avgResponseHours} ساعة` : "غير متوفر"}
-- صفقات راكدة (7+ أيام): ${data.staleLeads}
-
-## المهام المنجزة اليوم:
-${data.topCompletedTasks.length ? data.topCompletedTasks.map((t) => `- ${t.title}`).join("\n") : "لا يوجد"}
-
-## المهام المتأخرة:
-${data.missedTasks.length ? data.missedTasks.map((t) => `- ${t.title}`).join("\n") : "لا يوجد"}
-
-## صفقات راكدة:
-${data.staleLeadNames.length ? data.staleLeadNames.map((s) => `- ${s.name} (${s.daysSince} يوم بدون تحديث)`).join("\n") : "لا يوجد"}
-
----
-أجب بالعربية بصيغة JSON فقط بدون أي نص إضافي:
-{
-  "summary": "ملخص قصير جداً عن أداء اليوم (جملة واحدة)",
-  "mood": "excellent" | "good" | "needs_work" | "critical",
-  "tips": [
-    { "icon": "emoji مناسب", "title": "عنوان قصير", "body": "شرح مختصر عملي" }
-  ],
-  "priority_action": "أهم خطوة يسويها الحين"
-}`;
-}
-
-interface CoachResponse {
-  summary: string;
-  mood: "excellent" | "good" | "needs_work" | "critical";
-  tips: { icon: string; title: string; body: string }[];
-  priority_action: string;
+interface Directive {
+  id: string;
+  type: "urgent" | "warning" | "remind" | "praise";
+  icon: string;
+  message: string;
+  action?: string;
+  actionHref?: string;
+  entity?: string;
+  detail?: string;
 }
 
 function stripFences(text: string): string {
@@ -53,83 +25,280 @@ export async function GET(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 });
 
   try {
-    const data = await calcRepScore(userId);
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1);
+    const ds = todayStart.toISOString();
+    const de = todayEnd.toISOString();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * MS_PER_DAY).toISOString();
 
-    const weekScores: { date: string; score: number }[] = [];
-    const today = new Date();
-    for (let i = 6; i >= 1; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const ds = d.toISOString().slice(0, 10);
-      try {
-        const past = await calcRepScore(userId, ds);
-        weekScores.push({ date: ds, score: past.score });
-      } catch {
-        weekScores.push({ date: ds, score: 0 });
+    const [
+      overdueTasksRes,
+      todayTasksRes,
+      completedRes,
+      staleDealsRes,
+      recentActivitiesRes,
+      unansweredLeadsRes,
+      bigDealsRes,
+    ] = await Promise.all([
+      supabase
+        .from("tasks")
+        .select("id, title, due_at")
+        .eq("assignee_uid", userId)
+        .lt("due_at", ds)
+        .is("completed_at", null)
+        .order("due_at", { ascending: true })
+        .limit(10),
+      supabase
+        .from("tasks")
+        .select("id, title, due_at")
+        .eq("assignee_uid", userId)
+        .gte("due_at", ds)
+        .lt("due_at", de)
+        .is("completed_at", null)
+        .order("due_at", { ascending: true })
+        .limit(10),
+      supabase
+        .from("tasks")
+        .select("id, title, completed_at")
+        .eq("assignee_uid", userId)
+        .gte("completed_at", ds)
+        .lt("completed_at", de)
+        .limit(20),
+      supabase
+        .from("deals")
+        .select("id, name, updated_at, expected_value, leads(full_name)")
+        .is("deleted_at", null)
+        .is("closed_at", null)
+        .lt("updated_at", sevenDaysAgo)
+        .order("updated_at", { ascending: true })
+        .limit(10),
+      supabase
+        .from("activities")
+        .select("id, entity_type, entity_id, direction, occurred_at")
+        .eq("user_id", userId)
+        .gte("occurred_at", ds)
+        .lt("occurred_at", de),
+      supabase
+        .from("leads")
+        .select("id, full_name, company_name, created_at")
+        .is("deleted_at", null)
+        .gte("created_at", new Date(now.getTime() - 2 * MS_PER_DAY).toISOString())
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("deals")
+        .select("id, name, expected_value, stage, updated_at, leads(full_name)")
+        .is("deleted_at", null)
+        .is("closed_at", null)
+        .order("expected_value", { ascending: false })
+        .limit(5),
+    ]);
+
+    type Task = { id: string; title: string | null; due_at: string | null };
+    type StaleDeal = { id: string; name: string | null; updated_at: string | null; expected_value: number | null; leads: { full_name: string | null } | null };
+    type Lead = { id: string; full_name: string | null; company_name: string | null; created_at: string };
+    type BigDeal = { id: string; name: string | null; expected_value: number | null; stage: string | null; updated_at: string | null; leads: { full_name: string | null } | null };
+
+    const overdueTasks = (overdueTasksRes.data as unknown as Task[]) ?? [];
+    const todayTasks = (todayTasksRes.data as unknown as Task[]) ?? [];
+    const completed = (completedRes.data ?? []);
+    const staleDeals = (staleDealsRes.data as unknown as StaleDeal[]) ?? [];
+    const todayActivities = (recentActivitiesRes.data ?? []);
+    const newLeads = (unansweredLeadsRes.data as unknown as Lead[]) ?? [];
+    const bigDeals = (bigDealsRes.data as unknown as BigDeal[]) ?? [];
+
+    const outboundCount = todayActivities.filter((a: { direction: string | null }) => a.direction === "outbound").length;
+    const contactedEntityIds = new Set(
+      todayActivities
+        .filter((a: { direction: string | null }) => a.direction === "outbound")
+        .map((a: { entity_id: string }) => a.entity_id),
+    );
+
+    const directives: Directive[] = [];
+    let idx = 0;
+
+    overdueTasks.forEach((t) => {
+      const days = Math.ceil((now.getTime() - new Date(t.due_at!).getTime()) / MS_PER_DAY);
+      directives.push({
+        id: `d${idx++}`,
+        type: "urgent",
+        icon: "🔴",
+        message: `عندك مهمة "${t.title || "بدون عنوان"}" متأخرة ${days} ${days === 1 ? "يوم" : "أيام"} — أنهِها الحين`,
+        action: "روح للمهام",
+        actionHref: "/dashboard/tasks",
+        entity: t.title || undefined,
+      });
+    });
+
+    staleDeals.forEach((d) => {
+      const days = Math.ceil((now.getTime() - new Date(d.updated_at!).getTime()) / MS_PER_DAY);
+      const name = d.leads?.full_name || d.name || "عميل";
+      const val = d.expected_value ? ` (${(d.expected_value / 100).toLocaleString("ar-SA")} ر.س)` : "";
+      directives.push({
+        id: `d${idx++}`,
+        type: "warning",
+        icon: "⚠️",
+        message: `صفقة "${name}"${val} واقفة من ${days} يوم — اتصل عليه أو أرسل له عرض`,
+        action: "افتح الصفقات",
+        actionHref: "/dashboard/deals",
+        entity: name,
+        detail: `${days} يوم بدون تحديث`,
+      });
+    });
+
+    const contactedIds = new Set(
+      todayActivities.map((a: { entity_id: string }) => a.entity_id),
+    );
+    const untouchedLeads = newLeads.filter((l) => !contactedIds.has(l.id));
+    untouchedLeads.forEach((l) => {
+      const name = l.full_name || l.company_name || "عميل جديد";
+      directives.push({
+        id: `d${idx++}`,
+        type: "remind",
+        icon: "📞",
+        message: `"${name}" عميل جديد ما تواصلت معه — اتصل عليه قبل ما يبرد`,
+        action: "افتح العملاء",
+        actionHref: "/dashboard/leads",
+        entity: name,
+      });
+    });
+
+    todayTasks.forEach((t) => {
+      const dueTime = new Date(t.due_at!);
+      const h = dueTime.getHours();
+      const m = dueTime.getMinutes();
+      const timeStr = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+      const isUpcoming = dueTime.getTime() - now.getTime() < 2 * 3600 * 1000 && dueTime > now;
+      directives.push({
+        id: `d${idx++}`,
+        type: isUpcoming ? "warning" : "remind",
+        icon: isUpcoming ? "⏰" : "📋",
+        message: isUpcoming
+          ? `مهمة "${t.title || "بدون عنوان"}" مستحقة الساعة ${timeStr} — جهّز لها`
+          : `لا تنسى مهمة "${t.title || "بدون عنوان"}" اليوم الساعة ${timeStr}`,
+        action: "روح للمهام",
+        actionHref: "/dashboard/tasks",
+      });
+    });
+
+    bigDeals.forEach((d) => {
+      if (staleDeals.some((sd) => sd.id === d.id)) return;
+      const daysSince = Math.ceil((now.getTime() - new Date(d.updated_at!).getTime()) / MS_PER_DAY);
+      if (daysSince >= 3 && daysSince < 7) {
+        const name = d.leads?.full_name || d.name || "صفقة كبيرة";
+        directives.push({
+          id: `d${idx++}`,
+          type: "remind",
+          icon: "💰",
+          message: `صفقة "${name}" كبيرة وما حركتها من ${daysSince} أيام — تابعها`,
+          action: "افتح الصفقات",
+          actionHref: "/dashboard/deals",
+        });
       }
+    });
+
+    if (outboundCount === 0 && now.getHours() >= 10) {
+      directives.push({
+        id: `d${idx++}`,
+        type: "warning",
+        icon: "📵",
+        message: "ما سويت أي تواصل اليوم — ابدأ اتصل على عملائك",
+        action: "افتح النشاطات",
+        actionHref: "/dashboard/activities",
+      });
+    } else if (outboundCount > 0 && outboundCount < 3 && now.getHours() >= 12) {
+      directives.push({
+        id: `d${idx++}`,
+        type: "remind",
+        icon: "📱",
+        message: `تواصلت مع ${outboundCount} بس — حاول توصل ٥ على الأقل اليوم`,
+      });
     }
-    weekScores.push({ date: today.toISOString().slice(0, 10), score: data.score });
 
+    if (completed.length > 0) {
+      directives.push({
+        id: `d${idx++}`,
+        type: "praise",
+        icon: "✅",
+        message: completed.length === 1
+          ? `أنجزت مهمة وحدة اليوم — كمّل`
+          : `أنجزت ${completed.length} مهام اليوم — شغل حلو، كمّل`,
+      });
+    }
+
+    if (outboundCount >= 5) {
+      directives.push({
+        id: `d${idx++}`,
+        type: "praise",
+        icon: "🔥",
+        message: `تواصلت مع ${contactedEntityIds.size} عميل اليوم — أداء ممتاز!`,
+      });
+    }
+
+    directives.sort((a, b) => {
+      const order = { urgent: 0, warning: 1, remind: 2, praise: 3 };
+      return order[a.type] - order[b.type];
+    });
+
+    let aiSummary: string | null = null;
     const apiKey = process.env.OPENROUTER_API_KEY;
-    let coaching: CoachResponse | null = null;
-
-    if (apiKey) {
+    if (apiKey && directives.length > 0) {
       try {
+        const context = directives.slice(0, 8).map((d) => `- ${d.message}`).join("\n");
         const res = await fetch(OPENROUTER_ENDPOINT, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
           body: JSON.stringify({
             model: OPENROUTER_MODEL,
             messages: [
-              { role: "system", content: "أنت مدرب مبيعات خبير. أجب بـ JSON فقط." },
-              { role: "user", content: buildCoachPrompt(data) },
+              { role: "system", content: "أنت مشرف مبيعات صارم بس حنون. كلامك مباشر وقصير. تتكلم بالعامية السعودية. أجب بـ JSON فقط." },
+              { role: "user", content: `هذي أهم الأشياء اللي لازم المندوب يسويها اليوم:\n${context}\n\nاكتب رسالة تحفيزية قصيرة (جملتين-ثلاث) كأنك مشرفه وتلاحقه وراه. كن محدد وعملي.\n\nأجب بـ JSON:\n{"message": "..."}` },
             ],
-            temperature: 0.7,
-            max_tokens: 600,
+            temperature: 0.8,
+            max_tokens: 200,
           }),
         });
         if (res.ok) {
           const json = await res.json();
           const raw = json?.choices?.[0]?.message?.content;
-          if (raw) coaching = JSON.parse(stripFences(raw));
+          if (raw) {
+            const parsed = JSON.parse(stripFences(raw));
+            aiSummary = parsed.message;
+          }
         }
       } catch (e) {
-        console.error("[rep-coach] AI call failed", e);
+        console.error("[rep-coach] AI summary failed", e);
       }
     }
 
-    if (!coaching) {
-      coaching = fallbackCoaching(data);
+    if (!aiSummary) {
+      const urgentCount = directives.filter((d) => d.type === "urgent").length;
+      const warningCount = directives.filter((d) => d.type === "warning").length;
+      if (urgentCount > 0) {
+        aiSummary = `عندك ${urgentCount} شيء عاجل لازم تخلصه الحين. لا تأجل — ابدأ بالأهم وخلّص.`;
+      } else if (warningCount > 0) {
+        aiSummary = `فيه أشياء تحتاج انتباهك اليوم. ركّز عليها وخلّصها قبل نهاية الدوام.`;
+      } else if (directives.length === 0) {
+        aiSummary = `ما عندك شيء عالق — شغلك تمام. دوّر فرص جديدة وتواصل مع عملائك.`;
+      } else {
+        aiSummary = `يومك ماشي — بس لا تنسى الأشياء اللي تحت. خلّصها وبعدها ارتاح.`;
+      }
     }
 
-    return NextResponse.json({ score: data, coaching, weekScores });
+    const stats = {
+      completedToday: completed.length,
+      pendingToday: todayTasks.length,
+      overdueCount: overdueTasks.length,
+      outboundToday: outboundCount,
+      staleCount: staleDeals.length,
+    };
+
+    return NextResponse.json({ directives, aiSummary, stats });
   } catch (e) {
     console.error("[rep-coach] error", e);
     return NextResponse.json({ error: "failed" }, { status: 500 });
   }
-}
-
-function fallbackCoaching(data: RepScoreData): CoachResponse {
-  const tips: CoachResponse["tips"] = [];
-
-  if (data.overdueTasks > 0) {
-    tips.push({ icon: "⏰", title: "أنهِ المهام المتأخرة", body: `عندك ${data.overdueTasks} مهام متأخرة — أنهِها قبل أي شيء ثاني` });
-  }
-  if (data.staleLeads > 0) {
-    tips.push({ icon: "📞", title: "حرّك الصفقات الراكدة", body: `${data.staleLeads} صفقات ما اتحدثت من أسبوع. تواصل مع ${data.staleLeadNames[0]?.name || "العميل"} أول` });
-  }
-  if (data.contacts < 3) {
-    tips.push({ icon: "🎯", title: "زِد التواصل", body: "حاول تتواصل مع 5 عملاء على الأقل اليوم" });
-  }
-  if (tips.length === 0) {
-    tips.push({ icon: "🚀", title: "أداء ممتاز", body: "كمّل على هالمستوى وركز على الصفقات الكبيرة" });
-  }
-
-  const mood = data.score >= 80 ? "excellent" : data.score >= 60 ? "good" : data.score >= 40 ? "needs_work" : "critical";
-  return {
-    summary: data.score >= 70 ? "أداء جيد اليوم — استمر!" : "فيه مجال للتحسين — ركز على المهام المتأخرة",
-    mood,
-    tips,
-    priority_action: data.overdueTasks > 0 ? "أنهِ المهام المتأخرة الحين" : data.staleLeads > 0 ? "تواصل مع أول صفقة راكدة" : "سجّل نشاطات جديدة",
-  };
 }

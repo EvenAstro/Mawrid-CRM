@@ -22,7 +22,7 @@ export const FEATURES: FeatureDef[] = [
   { key: "insights", label: "الرؤى والإيرادات", description: "رؤى تحليلية وذكاء الإيرادات", group: "الذكاء", href: "/dashboard/insights" },
   { key: "lead_scoring", label: "تقييم العملاء", description: "نموذج الذكاء الاصطناعي لتقييم العملاء", group: "الذكاء", href: "/dashboard/lead-scoring" },
   { key: "playbook", label: "الدليل التكتيكي", description: "الدليل التكتيكي للمبيعات", group: "الذكاء", href: "/dashboard/playbook" },
-  { key: "coach", label: "مدرب الأداء", description: "تحليل ذكي لأدائك اليومي مع نصائح مخصصة", group: "الذكاء", href: "/dashboard/coach" },
+  { key: "coach", label: "المشرف الذكي", description: "مشرف يلاحقك ويقولك وش تسوي", group: "الذكاء", href: "/dashboard/coach" },
   { key: "users", label: "إدارة المستخدمين", description: "إدارة حسابات الفريق وصلاحياتهم", group: "الإدارة", href: "/dashboard/users" },
 ];
 
