@@ -53,6 +53,7 @@ interface Task {
   depends_on_task_id: string | null;
   lead_id: string | null;
   completed_at: string | null;
+  completion_note: string | null;
   task_types: { label: string; color: string | null } | null;
 }
 interface TaskType { id: string; label: string }
@@ -182,6 +183,8 @@ export default function LeadSlideOver({
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [allLeadTasks, setAllLeadTasks] = useState<Task[]>([]);
 
+  const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const [dealOpen, setDealOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"activities" | "tasks">("activities");
 
@@ -201,22 +204,31 @@ export default function LeadSlideOver({
   }
 
   async function refetchTasks(leadId: string | number) {
-    const [openRes, allRes] = await Promise.all([
+    const filter = `lead_id.eq.${leadId},and(entity_id.eq.${leadId},entity_type.eq.lead)`;
+    const [openRes, doneRes, allRes] = await Promise.all([
       supabase
         .from("tasks")
         .select("*, task_types(label, color)")
-        .or(`lead_id.eq.${leadId},and(entity_id.eq.${leadId},entity_type.eq.lead)`)
+        .or(filter)
         .is("completed_at", null)
         .order("due_at", { ascending: true, nullsFirst: false })
         .limit(30),
       supabase
         .from("tasks")
+        .select("*, task_types(label, color)")
+        .or(filter)
+        .not("completed_at", "is", null)
+        .order("completed_at", { ascending: false })
+        .limit(20),
+      supabase
+        .from("tasks")
         .select("id, title, completed_at, depends_on_task_id, lead_id")
-        .or(`lead_id.eq.${leadId},and(entity_id.eq.${leadId},entity_type.eq.lead)`)
+        .or(filter)
         .order("due_at", { ascending: true, nullsFirst: false })
         .limit(50),
     ]);
     setTasks((openRes.data as unknown as Task[]) || []);
+    setCompletedTasks((doneRes.data as unknown as Task[]) || []);
     setAllLeadTasks((allRes.data as unknown as Task[]) || []);
   }
 
@@ -224,6 +236,9 @@ export default function LeadSlideOver({
     if (!lead) return;
     setActivities([]);
     setTasks([]);
+    setCompletedTasks([]);
+    setAllLeadTasks([]);
+    setShowHistory(false);
     setLeadScore(null);
     setOutcomeMode(null);
     setAddingActivity(false);
@@ -790,61 +805,129 @@ export default function LeadSlideOver({
                         </div>
                       )}
 
-                      {tasks.length === 0 ? (
+                      {tasks.length === 0 && completedTasks.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-10 text-center">
                           <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
                             <svg viewBox="0 0 20 20" fill="currentColor" className="h-6 w-6 text-slate-400"><path fillRule="evenodd" d="M6 4.75A.75.75 0 016.75 4h10.5a.75.75 0 010 1.5H6.75A.75.75 0 016 4.75zM6 10a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H6.75A.75.75 0 016 10zm0 5.25a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H6.75a.75.75 0 01-.75-.75zM1.99 4.75a1 1 0 011-1h.01a1 1 0 010 2h-.01a1 1 0 01-1-1zM1.99 10a1 1 0 011-1h.01a1 1 0 110 2h-.01a1 1 0 01-1-1zM1.99 15.25a1 1 0 011-1h.01a1 1 0 110 2h-.01a1 1 0 01-1-1z" clipRule="evenodd" /></svg>
                           </div>
-                          <p className="text-[14px] font-medium text-slate-500">لا توجد مهام مفتوحة</p>
+                          <p className="text-[14px] font-medium text-slate-500">لا توجد مهام</p>
                           <p className="mt-1 text-[13px] text-slate-400">أضف مهمة لمتابعة هذا العميل</p>
                         </div>
                       ) : (
-                        <div className="max-h-[420px] space-y-3 overflow-y-auto">
-                          {tasks.map((t) => {
-                            const canAct = canActOnTask(role, userId, t.assignee_uid);
-                            const depTask = t.depends_on_task_id ? allLeadTasks.find((x) => x.id === t.depends_on_task_id) : null;
-                            const isBlocked = !!depTask && !depTask.completed_at;
-                            return (
-                            <div key={t.id} className={`group flex items-start gap-3 rounded-xl border p-4 transition ${isBlocked ? "border-slate-200 bg-slate-100/60 opacity-60" : "border-slate-100 bg-slate-50/50 hover:border-slate-200"} ${completingId === t.id ? "opacity-40" : ""}`}>
-                              {isBlocked ? (
-                                <span title="معلّقة بانتظار مهمة أخرى" className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full border-2 border-dashed border-slate-300">
-                                  <svg viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3 text-slate-400"><path fillRule="evenodd" d="M8 1a7 7 0 100 14A7 7 0 008 1zM7.25 4.5a.75.75 0 011.5 0v3.25H11a.75.75 0 010 1.5H7.25V4.5z" clipRule="evenodd" /></svg>
-                                </span>
-                              ) : canAct ? (
-                                <button
-                                  onClick={() => setCompleteTarget(t)}
-                                  aria-label="إنهاء المهمة"
-                                  className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full border-2 border-slate-300 transition hover:border-emerald-500 hover:bg-emerald-50 group-hover:border-emerald-400"
-                                />
-                              ) : (
-                                <span title="بس المسؤول عن المهمة يقدر ينهيها" className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full border-2 border-slate-200 opacity-50" />
-                              )}
-                              <div className="min-w-0 flex-1">
-                                <p dir="auto" className={`text-[14px] font-semibold ${isBlocked ? "text-slate-500" : "text-slate-800"}`}>{t.title || "مهمة بدون عنوان"}</p>
-                                <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                                  {isBlocked && (
-                                    <span className="flex items-center gap-1 rounded-lg bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-600">
-                                      ⏳ معلّقة بانتظار: {depTask?.title || "مهمة"}
-                                    </span>
-                                  )}
-                                  {t.task_types?.label && (
-                                    <span className="rounded-lg bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-700">{t.task_types.label}</span>
-                                  )}
-                                  {t.due_at && (
-                                    <span className="flex items-center gap-1 text-[12px] text-slate-400">
-                                      <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5"><path fillRule="evenodd" d="M4 1.75a.75.75 0 01.75.75V3h6.5V2.5a.75.75 0 011.5 0V3h.25A2.75 2.75 0 0115.75 5.75v6.5A2.75 2.75 0 0113 15H3A2.75 2.75 0 01.25 12.25v-6.5A2.75 2.75 0 013 3h.25V2.5A.75.75 0 014 1.75z" clipRule="evenodd" /></svg>
-                                      {formatDateTime(t.due_at)}
-                                    </span>
-                                  )}
-                                  {t.assignee_uid && (
-                                    <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[12px] font-medium text-slate-500">
-                                      👤 {profileName(profiles.find((p) => p.id === t.assignee_uid))}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
+                        <div className="max-h-[420px] overflow-y-auto">
+                          {/* Open tasks with sequence visualization */}
+                          {tasks.length > 0 && (
+                            <div className="relative">
+                              {tasks.map((t, idx) => {
+                                const canAct = canActOnTask(role, userId, t.assignee_uid);
+                                const depTask = t.depends_on_task_id ? allLeadTasks.find((x) => x.id === t.depends_on_task_id) : null;
+                                const isBlocked = !!depTask && !depTask.completed_at;
+                                const hasDependent = allLeadTasks.some((x) => x.depends_on_task_id === t.id && !x.completed_at);
+                                const isPartOfChain = !!t.depends_on_task_id || hasDependent;
+                                return (
+                                  <div key={t.id} className="relative">
+                                    {/* Vertical connector line between chained tasks */}
+                                    {isPartOfChain && idx < tasks.length - 1 && allLeadTasks.some((x) => x.depends_on_task_id === t.id) && (
+                                      <div className="absolute right-[19px] top-[52px] bottom-0 w-0.5 bg-gradient-to-b from-emerald-300 to-amber-300 z-0" />
+                                    )}
+                                    <div className={`relative z-10 group flex items-start gap-3 rounded-xl border p-4 transition mb-2 ${isBlocked ? "border-amber-200 bg-amber-50/30" : "border-slate-100 bg-slate-50/50 hover:border-slate-200"} ${completingId === t.id ? "opacity-40" : ""}`}>
+                                      {/* Step indicator */}
+                                      <div className="flex flex-col items-center gap-1 flex-none">
+                                        {isBlocked ? (
+                                          <span title="معلّقة بانتظار مهمة أخرى" className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-dashed border-amber-400 bg-amber-50">
+                                            <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5 text-amber-500"><path fillRule="evenodd" d="M8 1a7 7 0 100 14A7 7 0 008 1zM7.25 4.5a.75.75 0 011.5 0v3.25H11a.75.75 0 010 1.5H7.25V4.5z" clipRule="evenodd" /></svg>
+                                          </span>
+                                        ) : canAct ? (
+                                          <button
+                                            onClick={() => setCompleteTarget(t)}
+                                            aria-label="إنهاء المهمة"
+                                            className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-emerald-400 bg-white transition hover:bg-emerald-50 group-hover:border-emerald-500"
+                                          />
+                                        ) : (
+                                          <span title="بس المسؤول عن المهمة يقدر ينهيها" className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-slate-200 opacity-50" />
+                                        )}
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <p dir="auto" className={`text-[14px] font-semibold ${isBlocked ? "text-slate-500" : "text-slate-800"}`}>{t.title || "مهمة بدون عنوان"}</p>
+                                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                          {isBlocked && (
+                                            <span className="flex items-center gap-1 rounded-lg bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                                              ⏳ بانتظار: {depTask?.title || "مهمة"}
+                                            </span>
+                                          )}
+                                          {!isBlocked && isPartOfChain && !t.depends_on_task_id && (
+                                            <span className="rounded-lg bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-600">الخطوة الأولى</span>
+                                          )}
+                                          {t.task_types?.label && (
+                                            <span className="rounded-lg bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-700">{t.task_types.label}</span>
+                                          )}
+                                          {t.due_at && (
+                                            <span className="flex items-center gap-1 text-[12px] text-slate-400">
+                                              <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5"><path fillRule="evenodd" d="M4 1.75a.75.75 0 01.75.75V3h6.5V2.5a.75.75 0 011.5 0V3h.25A2.75 2.75 0 0115.75 5.75v6.5A2.75 2.75 0 0113 15H3A2.75 2.75 0 01.25 12.25v-6.5A2.75 2.75 0 013 3h.25V2.5A.75.75 0 014 1.75z" clipRule="evenodd" /></svg>
+                                              {formatDateTime(t.due_at)}
+                                            </span>
+                                          )}
+                                          {t.assignee_uid && (
+                                            <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[12px] font-medium text-slate-500">
+                                              {profileName(profiles.find((p) => p.id === t.assignee_uid))}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
-                          );})}
+                          )}
+
+                          {/* Completed tasks history */}
+                          {completedTasks.length > 0 && (
+                            <div className="mt-4">
+                              <button
+                                onClick={() => setShowHistory(!showHistory)}
+                                className="flex w-full items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-[13px] font-semibold text-slate-500 transition hover:bg-slate-100"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-slate-400"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" /></svg>
+                                  مهام منجزة ({completedTasks.length})
+                                </span>
+                                <svg viewBox="0 0 20 20" fill="currentColor" className={`h-4 w-4 text-slate-400 transition-transform ${showHistory ? "rotate-180" : ""}`}><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
+                              </button>
+                              {showHistory && (
+                                <div className="mt-2 space-y-2">
+                                  {completedTasks.map((t) => (
+                                    <div key={t.id} className="rounded-xl border border-slate-100 bg-white p-4">
+                                      <div className="flex items-start gap-3">
+                                        <span className="mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full bg-emerald-100">
+                                          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-emerald-600"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></svg>
+                                        </span>
+                                        <div className="min-w-0 flex-1">
+                                          <p dir="auto" className="text-[14px] font-semibold text-slate-600 line-through">{t.title || "مهمة"}</p>
+                                          {t.completion_note && (
+                                            <div className="mt-2 rounded-lg bg-emerald-50 px-3 py-2">
+                                              <p className="text-[11px] font-semibold text-emerald-700 mb-0.5">ملاحظة الإنجاز:</p>
+                                              <p dir="auto" className="text-[13px] leading-relaxed text-emerald-800">{t.completion_note}</p>
+                                            </div>
+                                          )}
+                                          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                            {t.completed_at && (
+                                              <span className="text-[12px] text-slate-400">تم بتاريخ {formatDateTime(t.completed_at)}</span>
+                                            )}
+                                            {t.assignee_uid && (
+                                              <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[12px] font-medium text-slate-500">
+                                                {profileName(profiles.find((p) => p.id === t.assignee_uid))}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
                     </>

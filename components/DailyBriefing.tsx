@@ -238,15 +238,20 @@ export default function DailyBriefing() {
       return;
     }
     setCompleteTarget(null);
-    setTimeout(() => {
-      setData((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          todayTasks: prev.todayTasks.filter((t) => t.id !== task.id),
-          overdueTasks: prev.overdueTasks.filter((t) => t.id !== task.id),
-        };
-      });
+    setTimeout(async () => {
+      try {
+        const refreshed = await fetchBriefingData();
+        setData((prev) => prev ? { ...prev, todayTasks: refreshed.todayTasks, overdueTasks: refreshed.overdueTasks } : prev);
+      } catch {
+        setData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            todayTasks: prev.todayTasks.filter((t) => t.id !== task.id),
+            overdueTasks: prev.overdueTasks.filter((t) => t.id !== task.id),
+          };
+        });
+      }
       setCompleting((prev) => {
         const n = new Set(prev);
         n.delete(task.id);
