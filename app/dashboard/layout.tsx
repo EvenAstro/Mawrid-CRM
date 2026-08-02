@@ -13,6 +13,7 @@ import RoleProvider, { useRole } from "@/components/RoleProvider";
 import { FEATURES } from "@/lib/features";
 import { UsersIcon } from "@/components/navIcons";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
+import SupervisorBot from "@/components/SupervisorBot";
 import {
   DashboardIcon,
   ContactsIcon,
@@ -24,7 +25,6 @@ import {
   ScoringIcon,
   PlaybookIcon,
   InsightsIcon,
-  CoachIcon,
   LogoutIcon,
 } from "@/components/navIcons";
 
@@ -39,7 +39,6 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   insights: InsightsIcon,
   lead_scoring: ScoringIcon,
   playbook: PlaybookIcon,
-  coach: CoachIcon,
   users: UsersIcon,
 };
 
@@ -252,6 +251,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
         </div>
       </main>
       <CopilotWidget />
+      <SupervisorBot />
       <DailyBriefing />
     </div>
   );
