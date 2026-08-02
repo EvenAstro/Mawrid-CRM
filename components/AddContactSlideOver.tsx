@@ -55,8 +55,8 @@ export default function AddContactSlideOver({
 
   async function handleSubmit() {
     const errs: typeof errors = {};
-    if (!fullName.trim()) errs.name = "Full name is required";
-    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errs.email = "Enter a valid email";
+    if (!fullName.trim()) errs.name = "الاسم الكامل مطلوب";
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errs.email = "أدخل بريد إلكتروني صحيح";
     setErrors(errs);
     if (Object.keys(errs).length) return;
 
@@ -76,10 +76,10 @@ export default function AddContactSlideOver({
     setSaving(false);
     if (error) {
       console.error("[AddContact] insert failed", error);
-      toast("Could not save contact — please try again", "error");
+      toast("تعذّر حفظ جهة الاتصال", "error");
       return;
     }
-    toast("Contact added");
+    toast("تم إضافة جهة الاتصال");
     reset();
     onCreated?.();
     onClose();
@@ -89,27 +89,27 @@ export default function AddContactSlideOver({
     <SlideOver
       open={open}
       onClose={onClose}
-      title="Add Contact"
-      subtitle="Create a new contact record"
+      title="جهة اتصال جديدة"
+      subtitle="أضف جهة اتصال جديدة"
       footer={
         <div className="flex gap-3">
-          <Button variant="secondary" fullWidth onClick={onClose}>Cancel</Button>
-          <Button fullWidth loading={saving} onClick={handleSubmit}>Save Contact</Button>
+          <Button variant="secondary" fullWidth onClick={onClose}>إلغاء</Button>
+          <Button fullWidth loading={saving} onClick={handleSubmit}>{saving ? "جاري الحفظ..." : "حفظ جهة الاتصال"}</Button>
         </div>
       }
     >
       <div className="flex flex-col gap-5">
-        <Input id="ac-name" label="Full Name *" dir="auto" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="e.g. Khalid Al-Harbi" error={errors.name} autoFocus />
-        <Input id="ac-phone" label="Phone" dir="auto" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+966 5X XXX XXXX" />
-        <Input id="ac-email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" error={errors.email} />
-        <Select id="ac-company" label="Company" value={companyId} onChange={(e) => setCompanyId(e.target.value)}>
-          <option value="">No company</option>
+        <Input id="ac-name" label="الاسم الكامل *" dir="auto" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="مثلاً: خالد الحربي" error={errors.name} autoFocus />
+        <Input id="ac-phone" label="الجوال" dir="auto" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+966 5X XXX XXXX" />
+        <Input id="ac-email" label="الإيميل" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" error={errors.email} />
+        <Select id="ac-company" label="الشركة" value={companyId} onChange={(e) => setCompanyId(e.target.value)}>
+          <option value="">بدون شركة</option>
           {companies.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </Select>
-        <Input id="ac-role" label="Role" dir="auto" value={role} onChange={(e) => setRole(e.target.value)} placeholder="e.g. Purchasing Manager" />
-        <Textarea id="ac-notes" label="Notes" dir="auto" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Anything worth remembering…" />
+        <Input id="ac-role" label="المنصب" dir="auto" value={role} onChange={(e) => setRole(e.target.value)} placeholder="مثلاً: مدير المشتريات" />
+        <Textarea id="ac-notes" label="الملاحظات" dir="auto" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="أي ملاحظات تود تذكرها..." />
       </div>
     </SlideOver>
   );
