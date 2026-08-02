@@ -115,7 +115,7 @@ function SuggestionPopover({ suggestion, onClose }: { suggestion: Suggestion; on
   return (
     <div
       className="absolute top-0 z-50 w-64 rounded-xl border border-border-light bg-white p-3 shadow-[0_12px_32px_rgba(15,23,20,0.18)]"
-      style={{ left: -272 }}
+      style={{ right: -272 }}
     >
       <div className="mb-1.5 flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-[11px] font-bold text-primary">
@@ -410,7 +410,7 @@ export default function DailyBriefing() {
           --briefing-rail-width custom property set above, so it still pushes <main>
           instead of overlaying it. */}
       <div
-        className="fixed right-0 top-20 z-30 flex overflow-hidden rounded-l-2xl border border-e-0 border-border-light bg-white shadow-[0_8px_28px_rgba(15,23,20,0.12)] transition-[width] duration-300 ease-in-out"
+        className="fixed left-0 top-20 z-30 flex overflow-hidden rounded-r-2xl border border-s-0 border-border-light bg-white shadow-[0_8px_28px_rgba(15,23,20,0.12)] transition-[width] duration-300 ease-in-out"
         style={{ width: collapsed ? RAIL_COLLAPSED : RAIL_EXPANDED, maxHeight: collapsed ? undefined : "min(72vh, 560px)" }}
       >
         {/* Always-visible tab — the permanent, unmistakable "you have things to do" affordance. */}

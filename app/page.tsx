@@ -95,8 +95,8 @@ export default function LandingPage() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] shadow-[0_2px_8px_rgba(26,92,79,0.25)]">
             <span className="text-lg font-bold text-white">م</span>
           </div>
-          <span className="text-[18px] font-bold text-[#1e1b4b]">Mawrid</span>
-          <span className="rounded-md bg-[#f0faf8] px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-[#1a5c4f]">CRM</span>
+          <span className="text-[18px] font-bold text-[#1e1b4b]">مَوْرد</span>
+          <span className="rounded-md bg-[#f0faf8] px-1.5 py-0.5 text-[11px] font-semibold tracking-wider text-[#1a5c4f]">CRM</span>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           <Link href="/login" className="rounded-full px-4 py-2 text-sm font-medium text-[#3f554e] transition hover:bg-[#f4f8f7] hover:text-[#1a5c4f]">
@@ -197,11 +197,11 @@ export default function LandingPage() {
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)]">
               <span className="text-lg font-bold text-white">م</span>
             </div>
-            <span className="text-[18px] font-bold">Mawrid CRM</span>
+            <span className="text-[18px] font-bold">مَوْرد CRM</span>
           </div>
           <p className="mt-3 text-sm text-white/50">منصة المبيعات الداخلية لفريقنا.</p>
           <div className="mt-10 border-t border-white/10 pt-6 text-[13px] text-white/40">
-            © 2026 Mawrid · الرياض، المملكة العربية السعودية
+            © 2026 مَوْرد · الرياض، المملكة العربية السعودية
           </div>
         </div>
       </footer>

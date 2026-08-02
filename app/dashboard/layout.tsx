@@ -115,7 +115,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
   const currentFeature = FEATURES.find((f) => isActive(pathname, f.href));
   const pageName = currentFeature?.label ?? "الرئيسية";
   useEffect(() => {
-    document.title = `${pageName} · Mawrid CRM`;
+    document.title = `${pageName} · مَوْرد CRM`;
   }, [pageName]);
 
   // Guard: redirect away from a page this user isn't allowed to see —
@@ -148,7 +148,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
       {/* Sidebar */}
       <div
         style={{ width: w }}
-        className="fixed inset-y-0 left-0 z-30 flex flex-col border-r border-border-light bg-white transition-all duration-300"
+        className="fixed inset-y-0 right-0 z-30 flex flex-col border-l border-border-light bg-white transition-all duration-300"
       >
         {/* Logo + collapse */}
         <div className="flex h-16 items-center justify-between px-4">
@@ -158,18 +158,18 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
             </div>
             {!collapsed && (
               <div className="min-w-0">
-                <span className="block truncate text-[20px] font-extrabold leading-tight text-ink">Mawrid</span>
-                <span className="text-[11px] font-medium text-muted">CRM Platform</span>
+                <span className="block truncate text-[20px] font-extrabold leading-tight text-ink">مَوْرد</span>
+                <span className="text-[11px] font-medium text-muted">منصة إدارة العملاء</span>
               </div>
             )}
           </div>
           <button
             onClick={toggleCollapse}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className={`flex-none rounded-lg p-1.5 text-muted transition hover:bg-mint hover:text-primary ${collapsed ? "absolute -right-3 top-4 z-10 border border-border-light bg-white shadow-md" : ""}`}
+            aria-label={collapsed ? "توسيع القائمة" : "طي القائمة"}
+            className={`flex-none rounded-lg p-1.5 text-muted transition hover:bg-mint hover:text-primary ${collapsed ? "absolute -left-3 top-4 z-10 border border-border-light bg-white shadow-md" : ""}`}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={`h-4 w-4 transition-transform ${collapsed ? "rotate-180" : ""}`}>
-              <path d="M15 18l-6-6 6-6" />
+              <path d="M9 18l6-6-6-6" />
             </svg>
           </button>
         </div>
@@ -231,8 +231,8 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
 
       {/* Top bar */}
       <div
-        style={{ left: w }}
-        className="fixed right-0 top-0 z-20 flex h-16 items-center justify-between border-b border-border-light bg-white/90 px-8 backdrop-blur-sm transition-all duration-300"
+        style={{ right: w }}
+        className="fixed left-0 top-0 z-20 flex h-16 items-center justify-between border-b border-border-light bg-white/90 px-8 backdrop-blur-sm transition-all duration-300"
       >
         <div className="flex items-center gap-1.5 text-sm">
           <span className="text-muted">مساحة العمل</span>
@@ -252,7 +252,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
 
       {/* Main */}
       <main
-        style={{ marginLeft: w, paddingRight: "var(--briefing-rail-width, 52px)" }}
+        style={{ marginRight: w, paddingLeft: "var(--briefing-rail-width, 52px)" }}
         className="min-h-screen bg-gray-25 pt-16 transition-all duration-300"
       >
         <div key={pathname} className="page-content mx-auto max-w-[1280px] p-8">

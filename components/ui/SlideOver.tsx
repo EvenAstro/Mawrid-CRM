@@ -36,8 +36,8 @@ export default function SlideOver({
       />
       <aside
         style={{ maxWidth: width }}
-        className={`fixed right-0 top-0 z-50 flex h-screen w-full flex-col border-l border-border-light bg-ivory shadow-2xl transition-transform duration-300 ease-in-out ${
-          open ? "translate-x-0" : "translate-x-full"
+        className={`fixed left-0 top-0 z-50 flex h-screen w-full flex-col border-r border-border-light bg-ivory shadow-2xl transition-transform duration-300 ease-in-out ${
+          open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex items-start justify-between border-b border-border-light bg-white p-6">
