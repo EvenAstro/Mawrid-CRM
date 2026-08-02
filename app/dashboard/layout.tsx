@@ -12,6 +12,7 @@ import { initials as initialsOf } from "@/lib/format";
 import RoleProvider, { useRole } from "@/components/RoleProvider";
 import { FEATURES } from "@/lib/features";
 import { UsersIcon } from "@/components/navIcons";
+import NotificationsDropdown from "@/components/NotificationsDropdown";
 import {
   DashboardIcon,
   ContactsIcon,
@@ -24,7 +25,6 @@ import {
   PlaybookIcon,
   InsightsIcon,
   CoachIcon,
-  BellIcon,
   LogoutIcon,
 } from "@/components/navIcons";
 
@@ -235,10 +235,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
           <span className="font-semibold text-[#1e1b4b]">{pageName}</span>
         </div>
         <div className="flex items-center gap-3">
-          <button aria-label="الإشعارات" className="relative rounded-lg p-2 text-[#94a3b8] transition-colors hover:bg-[#f0faf8] hover:text-[#3a9080]">
-            <BellIcon className="h-[18px] w-[18px]" />
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
-          </button>
+          <NotificationsDropdown />
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#141c2e]">
             <span className="text-xs font-bold text-white">{userInitials}</span>
           </div>
