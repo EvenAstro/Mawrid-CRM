@@ -151,14 +151,14 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
         className="fixed inset-y-0 right-0 z-30 flex flex-col bg-[#141c2e] transition-all duration-300"
       >
         {/* Logo */}
-        <div className="flex h-[68px] items-center justify-between px-4">
-          <div className="flex min-w-0 items-center gap-2.5">
+        <div className="flex h-[72px] items-center justify-between px-4">
+          <div className="flex min-w-0 items-center gap-3">
             <svg viewBox="0 0 36 36" className="h-9 w-9 flex-none" fill="none">
               <rect width="36" height="36" rx="9" fill="#3a9080" />
               <path d="M18 5C11.37 5 6 10.37 6 17c0 6.63 5.37 12 12 12h7v-7h-7a5 5 0 1 1 0-10c2.76 0 5 2.24 5 5v12h7V17C30 10.37 24.63 5 18 5z" fill="white" />
             </svg>
             {!collapsed && (
-              <span className="block truncate text-[20px] font-extrabold leading-tight text-white">مَوْرد</span>
+              <span className="block truncate text-[28px] font-black tracking-wide text-white" style={{ fontFamily: "var(--font-cairo), system-ui, sans-serif" }}>مَــوْرد</span>
             )}
           </div>
           <button
