@@ -92,7 +92,7 @@ export default function NewDealSlideOver({
 
   async function handleSubmit() {
     if (!name.trim()) {
-      setErr({ name: "Deal name is required" });
+      setErr({ name: "اسم الصفقة مطلوب" });
       return;
     }
     setSaving(true);
@@ -116,10 +116,10 @@ export default function NewDealSlideOver({
     setSaving(false);
     if (error) {
       console.error("[NewDeal] insert failed", error);
-      toast("Could not create deal — please try again", "error");
+      toast("تعذّر حفظ الصفقة", "error");
       return;
     }
-    toast("Deal created");
+    toast("تم إنشاء الصفقة");
     reset();
     onCreated?.();
     onClose();
@@ -129,33 +129,33 @@ export default function NewDealSlideOver({
     <SlideOver
       open={open}
       onClose={onClose}
-      title="Add Deal"
-      subtitle="Create a new deal in your pipeline"
+      title="صفقة جديدة"
+      subtitle="أنشئ صفقة جديدة"
       footer={
         <div className="flex gap-3">
-          <Button variant="secondary" fullWidth onClick={onClose}>Cancel</Button>
-          <Button fullWidth loading={saving} onClick={handleSubmit}>Create Deal</Button>
+          <Button variant="secondary" fullWidth onClick={onClose}>إلغاء</Button>
+          <Button fullWidth loading={saving} onClick={handleSubmit}>{saving ? "جاري الإنشاء..." : "إنشاء الصفقة"}</Button>
         </div>
       }
     >
       <div className="flex flex-col gap-5">
-        <Input id="nd-name" label="Deal Name *" dir="auto" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. POS system — Al-Faihan" error={err.name} autoFocus />
+        <Input id="nd-name" label="اسم الصفقة *" dir="auto" value={name} onChange={(e) => setName(e.target.value)} placeholder="مثلاً: نظام نقاط بيع — الفيحان" error={err.name} autoFocus />
 
         <div className="relative">
-          <label className="mb-1.5 block text-[13px] font-semibold uppercase tracking-wide text-muted">Customer</label>
+          <label className="mb-1.5 block text-[13px] font-semibold uppercase tracking-wide text-muted">العميل</label>
           {customer ? (
             <div className="flex items-center justify-between rounded-xl border border-primary/30 bg-mint px-3.5 py-2.5">
-              <span dir="auto" className="text-[15px] font-medium text-ink">{customer.full_name || "Unnamed"}</span>
-              <button type="button" onClick={() => { setCustomer(null); setQuery(""); }} className="text-[13px] font-semibold text-primary hover:underline">Change</button>
+              <span dir="auto" className="text-[15px] font-medium text-ink">{customer.full_name || "بدون اسم"}</span>
+              <button type="button" onClick={() => { setCustomer(null); setQuery(""); }} className="text-[13px] font-semibold text-primary hover:underline">تغيير</button>
             </div>
           ) : (
-            <input dir="auto" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search a lead by name…" autoComplete="off" className="h-11 w-full rounded-xl border border-border-light bg-white px-3.5 text-[15px] text-ink-secondary placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            <input dir="auto" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث عن عميل بالاسم..." autoComplete="off" className="h-11 w-full rounded-xl border border-border-light bg-white px-3.5 text-[15px] text-ink-secondary placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
           )}
           {!customer && hits.length > 0 && (
             <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-border-light bg-white shadow-lg">
               {hits.map((h) => (
                 <button key={h.id} type="button" dir="auto" onClick={() => { setCustomer(h); setHits([]); }} className="block w-full px-3.5 py-2.5 text-left text-[15px] text-ink-secondary transition hover:bg-mint">
-                  {h.full_name || "Unnamed"}
+                  {h.full_name || "بدون اسم"}
                 </button>
               ))}
             </div>
@@ -163,26 +163,26 @@ export default function NewDealSlideOver({
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Input id="nd-amount" label="Amount" type="number" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
-          <Select id="nd-currency" label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+          <Input id="nd-amount" label="المبلغ" type="number" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
+          <Select id="nd-currency" label="العملة" value={currency} onChange={(e) => setCurrency(e.target.value)}>
             <option>SAR</option>
             <option>USD</option>
             <option>AED</option>
           </Select>
         </div>
 
-        <Select id="nd-stage" label="Stage" value={stageId} onChange={(e) => setStageId(e.target.value)}>
+        <Select id="nd-stage" label="المرحلة" value={stageId} onChange={(e) => setStageId(e.target.value)}>
           {stages.map((s) => (
             <option key={s.id} value={s.id}>{s.label}</option>
           ))}
         </Select>
 
         <div className="grid grid-cols-2 gap-4">
-          <Input id="nd-close" label="Expected Close" type="date" value={closeDate} onChange={(e) => setCloseDate(e.target.value)} />
-          <Input id="nd-prob" label="Probability %" type="number" min="0" max="100" value={probability} onChange={(e) => setProbability(e.target.value)} placeholder="0" />
+          <Input id="nd-close" label="تاريخ الإغلاق المتوقع" type="date" value={closeDate} onChange={(e) => setCloseDate(e.target.value)} />
+          <Input id="nd-prob" label="الاحتمالية %" type="number" min="0" max="100" value={probability} onChange={(e) => setProbability(e.target.value)} placeholder="0" />
         </div>
 
-        <Textarea id="nd-notes" label="Notes" dir="auto" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Context about this deal…" />
+        <Textarea id="nd-notes" label="الملاحظات" dir="auto" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات عن هذه الصفقة..." />
       </div>
     </SlideOver>
   );

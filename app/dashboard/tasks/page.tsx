@@ -150,10 +150,10 @@ export default function TasksPage() {
     setSaving(false);
     if (error) {
       console.error("[Tasks] create failed", error);
-      toast("Could not create task", "error");
+      toast("تعذّر إنشاء المهمة", "error");
       return;
     }
-    toast("Task created");
+    toast("تم إنشاء المهمة");
     setNt({ title: "", description: "", due: "", time: "09:00", typeId: "", assigneeId: "" });
     setNtErr("");
     setNewOpen(false);
@@ -206,7 +206,7 @@ export default function TasksPage() {
           <span title="بس المسؤول عن المهمة يقدر ينهيها" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 border-gray-200 opacity-50 ${tone}`} />
         )}
         <button onClick={() => openDetail(t)} className="min-w-0 flex-1 text-left">
-          <p dir="auto" className={`text-[15px] font-medium text-ink ${done ? "line-through" : ""}`}>{t.title || "Untitled task"}</p>
+          <p dir="auto" className={`text-[15px] font-medium text-ink ${done ? "line-through" : ""}`}>{t.title || "مهمة بدون عنوان"}</p>
           {t.description && <p dir="auto" className="mt-0.5 line-clamp-1 text-[13px] text-muted">{t.description}</p>}
           <div className="mt-1.5 flex items-center gap-2">
             {t.task_types?.label && <span className="rounded-full bg-mint px-2 py-0.5 text-[11px] font-semibold text-primary">{t.task_types.label}</span>}
@@ -225,14 +225,14 @@ export default function TasksPage() {
           <h1 dir="auto" className="text-2xl font-extrabold text-ink">المهام</h1>
           <p className="mt-1 text-[15px] text-muted">{loading ? "جارِ التحميل…" : `${tasks.length} مهمة مفتوحة`}</p>
         </div>
-        <Button onClick={() => setNewOpen(true)}>+ New Task</Button>
+        <Button onClick={() => setNewOpen(true)}>+ مهمة جديدة</Button>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
         {/* List */}
         <div className="flex flex-col gap-5 lg:col-span-3">
           {dayFilter && (
-            <button onClick={() => setDayFilter(null)} className="self-start rounded-full bg-mint px-3 py-1 text-[13px] font-semibold text-primary">Showing {dayFilter} · clear ✕</button>
+            <button onClick={() => setDayFilter(null)} className="self-start rounded-full bg-mint px-3 py-1 text-[13px] font-semibold text-primary">عرض {dayFilter} · مسح ✕</button>
           )}
           {loading ? (
             Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16" />)
@@ -240,27 +240,27 @@ export default function TasksPage() {
             <>
               {groups.overdue.length > 0 && (
                 <section>
-                  <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-red-50 text-red-500">Overdue · {groups.overdue.length}</h2>
+                  <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-red-50 text-red-500">متأخرة · {groups.overdue.length}</h2>
                   <div className="flex flex-col gap-2">{groups.overdue.map((t) => <TaskRow key={t.id} t={t} tone="border-red-300" />)}</div>
                 </section>
               )}
               <section>
                 <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-teal-50 text-teal-700">اليوم · {groups.todayT.length}</h2>
                 {groups.todayT.length === 0 ? (
-                  <p className="rounded-xl border border-dashed border-border-light py-5 text-center text-[15px] text-muted">🎉 All clear for today!</p>
+                  <p className="rounded-xl border border-dashed border-border-light py-5 text-center text-[15px] text-muted">🎉 لا توجد مهام لليوم!</p>
                 ) : (
                   <div className="flex flex-col gap-2">{groups.todayT.map((t) => <TaskRow key={t.id} t={t} tone="border-primary/40" />)}</div>
                 )}
               </section>
               {groups.week.length > 0 && (
                 <section>
-                  <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-gray-50 text-gray-600">This Week · {groups.week.length}</h2>
+                  <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-gray-50 text-gray-600">هذا الأسبوع · {groups.week.length}</h2>
                   <div className="flex flex-col gap-2">{groups.week.map((t) => <TaskRow key={t.id} t={t} tone="border-border-light" />)}</div>
                 </section>
               )}
               {groups.upcoming.length > 0 && (
                 <section>
-                  <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-gray-50 text-gray-500">Upcoming · {groups.upcoming.length}</h2>
+                  <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-gray-50 text-gray-500">قادمة · {groups.upcoming.length}</h2>
                   <div className="flex flex-col gap-2">{groups.upcoming.map((t) => <TaskRow key={t.id} t={t} tone="border-border-light" />)}</div>
                 </section>
               )}
@@ -301,21 +301,21 @@ export default function TasksPage() {
       </div>
 
       {/* New task */}
-      <SlideOver open={newOpen} onClose={() => setNewOpen(false)} title="New Task" subtitle="Add a follow-up"
-        footer={<div className="flex gap-3"><Button variant="secondary" fullWidth onClick={() => setNewOpen(false)}>Cancel</Button><Button fullWidth loading={saving} onClick={createTask}>Create Task</Button></div>}>
+      <SlideOver open={newOpen} onClose={() => setNewOpen(false)} title="مهمة جديدة" subtitle="أضف متابعة"
+        footer={<div className="flex gap-3"><Button variant="secondary" fullWidth onClick={() => setNewOpen(false)}>إلغاء</Button><Button fullWidth loading={saving} onClick={createTask}>{saving ? "جاري الإنشاء..." : "إنشاء مهمة"}</Button></div>}>
         <div className="flex flex-col gap-5">
-          <Input id="tk-title" label="Title *" dir="auto" value={nt.title} onChange={(e) => setNt({ ...nt, title: e.target.value })} placeholder="e.g. Follow up with Al-Faihan" error={ntErr} autoFocus />
-          <Textarea id="tk-desc" label="Description" dir="auto" value={nt.description} onChange={(e) => setNt({ ...nt, description: e.target.value })} placeholder="Details…" />
+          <Input id="tk-title" label="العنوان *" dir="auto" value={nt.title} onChange={(e) => setNt({ ...nt, title: e.target.value })} placeholder="مثلاً: متابعة مع الفيحان" error={ntErr} autoFocus />
+          <Textarea id="tk-desc" label="الوصف" dir="auto" value={nt.description} onChange={(e) => setNt({ ...nt, description: e.target.value })} placeholder="التفاصيل…" />
           <div className="grid grid-cols-2 gap-4">
-            <Input id="tk-due" label="Due Date" type="date" value={nt.due} onChange={(e) => setNt({ ...nt, due: e.target.value })} />
-            <Input id="tk-time" label="Time" type="time" value={nt.time} onChange={(e) => setNt({ ...nt, time: e.target.value })} />
+            <Input id="tk-due" label="تاريخ الاستحقاق" type="date" value={nt.due} onChange={(e) => setNt({ ...nt, due: e.target.value })} />
+            <Input id="tk-time" label="الوقت" type="time" value={nt.time} onChange={(e) => setNt({ ...nt, time: e.target.value })} />
           </div>
-          <Select id="tk-type" label="Type" value={nt.typeId} onChange={(e) => setNt({ ...nt, typeId: e.target.value })}>
-            <option value="">No type</option>
+          <Select id="tk-type" label="النوع" value={nt.typeId} onChange={(e) => setNt({ ...nt, typeId: e.target.value })}>
+            <option value="">بدون نوع</option>
             {types.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
           </Select>
-          <Select id="tk-assignee" label="Assigned To" value={nt.assigneeId} onChange={(e) => setNt({ ...nt, assigneeId: e.target.value })}>
-            <option value="">Unassigned</option>
+          <Select id="tk-assignee" label="المسؤول" value={nt.assigneeId} onChange={(e) => setNt({ ...nt, assigneeId: e.target.value })}>
+            <option value="">غير محدد</option>
             {profiles.map((p) => <option key={p.id} value={p.id}>{profileName(p)}</option>)}
           </Select>
         </div>
@@ -338,7 +338,7 @@ export default function TasksPage() {
               ) : (
                 <>
                   <Button variant="secondary" fullWidth onClick={() => setEditingDetail(true)}>✏️ تعديل</Button>
-                  <Button fullWidth onClick={() => setCompleteTarget(detail)}>Mark Complete</Button>
+                  <Button fullWidth onClick={() => setCompleteTarget(detail)}>إنجاز المهمة</Button>
                 </>
               )}
             </div>
@@ -363,11 +363,11 @@ export default function TasksPage() {
             ) : (
               <>
                 <div>
-                  <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">Description</p>
+                  <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">الوصف</p>
                   <p dir="auto" className="mt-1 text-[15px] text-ink-secondary">{detail.description || "—"}</p>
                 </div>
                 <div>
-                  <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">Due</p>
+                  <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">تاريخ الاستحقاق</p>
                   <p className="mt-1 text-[15px] text-ink">{detail.due_at ? new Date(detail.due_at).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" }) : "—"}</p>
                 </div>
                 <div>
