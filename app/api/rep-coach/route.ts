@@ -47,6 +47,7 @@ export async function GET(req: NextRequest) {
     const [
       overdueTasksRes,
       todayTasksRes,
+      upcomingTasksRes,
       completedRes,
       allPendingTasksRes,
       staleDealsRes,
@@ -63,6 +64,10 @@ export async function GET(req: NextRequest) {
         .order("due_at", { ascending: true }).limit(10),
       supabase.from("tasks").select("id, title, due_at")
         .eq("assignee_uid", userId).gte("due_at", ds).lt("due_at", de).is("completed_at", null)
+        .order("due_at", { ascending: true }).limit(10),
+      // Upcoming tasks — tomorrow to 3 days from now
+      supabase.from("tasks").select("id, title, due_at")
+        .eq("assignee_uid", userId).gte("due_at", de).lte("due_at", threeDaysFromNow).is("completed_at", null)
         .order("due_at", { ascending: true }).limit(10),
       supabase.from("tasks").select("id, title, completed_at")
         .eq("assignee_uid", userId).gte("completed_at", ds).lt("completed_at", de).limit(20),
@@ -107,6 +112,7 @@ export async function GET(req: NextRequest) {
 
     const overdueTasks = (overdueTasksRes.data as unknown as Task[]) ?? [];
     const todayTasks = (todayTasksRes.data as unknown as Task[]) ?? [];
+    const upcomingTasks = (upcomingTasksRes.data as unknown as Task[]) ?? [];
     const completed = completedRes.data ?? [];
     const noDueTasks = (allPendingTasksRes.data as unknown as { id: string; title: string | null; created_at: string }[]) ?? [];
     const staleDeals = (staleDealsRes.data as unknown as StaleDeal[]) ?? [];
@@ -218,7 +224,22 @@ export async function GET(req: NextRequest) {
       });
     });
 
-    // 5b. Tasks with no due date
+    // 5b. Upcoming tasks (tomorrow+)
+    upcomingTasks.forEach((t) => {
+      const dueDate = new Date(t.due_at!);
+      const daysDiff = Math.ceil((dueDate.getTime() - now.getTime()) / MS_PER_DAY);
+      const dayLabel = daysDiff <= 1 ? "بكرة" : `بعد ${daysDiff} أيام`;
+      const h = dueDate.getHours();
+      const m = dueDate.getMinutes();
+      const timeStr = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+      directives.push({
+        id: `d${idx++}`, type: "remind", icon: "📅",
+        message: `${ya}عندك مهمة "${t.title || "بدون عنوان"}" ${dayLabel} الساعة ${timeStr} — جهّز لها`,
+        action: "روح للمهام", actionHref: "/dashboard/tasks",
+      });
+    });
+
+    // 5c. Tasks with no due date
     noDueTasks.forEach((t) => {
       directives.push({
         id: `d${idx++}`, type: "remind", icon: "📌",
