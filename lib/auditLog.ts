@@ -33,6 +33,7 @@ const FIELD_LABELS: Record<string, string> = {
   phone: "الجوال",
   email: "الإيميل",
   notes: "الملاحظات",
+  owner: "المسؤول",
 };
 
 /** Builds a human-readable Arabic audit message for a set of changed lead fields. */

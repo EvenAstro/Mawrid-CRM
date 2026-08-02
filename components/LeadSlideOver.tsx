@@ -155,6 +155,8 @@ export default function LeadSlideOver({
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [junkReasons, setJunkReasons] = useState<JunkReason[]>([]);
   const [dealStages, setDealStages] = useState<DealStage[]>([]);
+  const [leadStages, setLeadStages] = useState<DealStage[]>([]);
+  const [sourcesList, setSourcesList] = useState<{ id: string; label: string }[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -195,6 +197,9 @@ export default function LeadSlideOver({
   const [editPhone, setEditPhone] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editNotes, setEditNotes] = useState("");
+  const [editStageId, setEditStageId] = useState("");
+  const [editSourceId, setEditSourceId] = useState("");
+  const [editOwnerId, setEditOwnerId] = useState("");
   const [savingInfo, setSavingInfo] = useState(false);
 
   const open = lead != null;
@@ -264,6 +269,8 @@ export default function LeadSlideOver({
         supabase.from("activity_types").select("id, label").eq("is_archived", false).order("sort_order", { ascending: true }).then(({ data }) => data && setActivityTypes(data as ActivityType[])),
         supabase.from("junk_reasons").select("id, label").then(({ data }) => data && setJunkReasons(data as JunkReason[])),
         supabase.from("pipeline_stages").select("id, label").eq("pipeline", "deal").order("sort_order", { ascending: true }).then(({ data }) => data && setDealStages(data as DealStage[])),
+        supabase.from("pipeline_stages").select("id, label").eq("pipeline", "lead").order("sort_order", { ascending: true }).then(({ data }) => data && setLeadStages(data as DealStage[])),
+        supabase.from("sources").select("id, label").then(({ data }) => data && setSourcesList(data as { id: string; label: string }[])),
         supabase.from("task_types").select("id, label").then(({ data }) => data && setTaskTypes(data as TaskType[])),
         fetchProfiles().then(setProfiles),
       ]);
@@ -427,6 +434,7 @@ export default function LeadSlideOver({
     setEditPhone(data.phone || "");
     setEditEmail(data.email || "");
     setEditNotes(data.notes || "");
+    setEditOwnerId(data.owner || "");
     setEditingInfo(true);
   }
 
@@ -439,6 +447,11 @@ export default function LeadSlideOver({
     if (editPhone.trim() !== (data.phone || "")) changes.push({ field: "phone", oldValue: data.phone, newValue: editPhone.trim() });
     if (editEmail.trim() !== (data.email || "")) changes.push({ field: "email", oldValue: data.email, newValue: editEmail.trim() });
     if (editNotes.trim() !== (data.notes || "")) changes.push({ field: "notes", oldValue: data.notes ?? null, newValue: editNotes.trim() });
+    if (editOwnerId !== (data.owner || "")) {
+      const oldOwnerName = data.owner ? profileName(profiles.find((p) => p.id === data.owner)) || data.owner : null;
+      const newOwnerName = editOwnerId ? profileName(profiles.find((p) => p.id === editOwnerId)) || editOwnerId : null;
+      changes.push({ field: "owner", oldValue: oldOwnerName, newValue: newOwnerName });
+    }
 
     if (changes.length === 0) { setSavingInfo(false); setEditingInfo(false); return; }
 
@@ -449,6 +462,7 @@ export default function LeadSlideOver({
         phone: editPhone.trim() || null,
         email: editEmail.trim() || null,
         notes: editNotes.trim() || null,
+        owner: editOwnerId || null,
         updated_at: now,
       })
       .eq("id", data.id);
@@ -456,7 +470,7 @@ export default function LeadSlideOver({
     if (error) { toast("تعذّر حفظ التعديلات", "error"); return; }
     toast("تم حفظ بيانات العميل");
     await logAudit(data.id, userId, fieldChangeMessage(changes));
-    patchShown({ full_name: editName.trim() || null, phone: editPhone.trim() || null, email: editEmail.trim() || null, notes: editNotes.trim() || null });
+    patchShown({ full_name: editName.trim() || null, phone: editPhone.trim() || null, email: editEmail.trim() || null, notes: editNotes.trim() || null, owner: editOwnerId || null });
     setEditingInfo(false);
     refetchActivities(data.id);
     onUpdated?.();
@@ -676,45 +690,87 @@ export default function LeadSlideOver({
                 }
               >
                 {editingInfo ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-3">
+                    {/* Row: الاسم + الجوال */}
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
-                        <label className="mb-1.5 block text-[12px] font-medium uppercase tracking-wider text-slate-400">الاسم</label>
+                        <label className="mb-1 block text-[13px] font-semibold text-slate-500">الاسم</label>
                         <input dir="auto" value={editName} onChange={(e) => setEditName(e.target.value)} className={inputCls} />
                       </div>
                       <div>
-                        <label className="mb-1.5 block text-[12px] font-medium uppercase tracking-wider text-slate-400">الجوال</label>
-                        <input dir="auto" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className={inputCls} />
-                      </div>
-                      <div>
-                        <label className="mb-1.5 block text-[12px] font-medium uppercase tracking-wider text-slate-400">الإيميل</label>
-                        <input dir="auto" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className={inputCls} />
+                        <label className="mb-1 block text-[13px] font-semibold text-slate-500">الجوال</label>
+                        <input dir="ltr" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className={`${inputCls} text-left`} />
                       </div>
                     </div>
+                    {/* Row: الإيميل + المسؤول */}
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-[13px] font-semibold text-slate-500">الإيميل</label>
+                        <input dir="ltr" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className={`${inputCls} text-left`} />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[13px] font-semibold text-slate-500">المسؤول</label>
+                        <select value={editOwnerId} onChange={(e) => setEditOwnerId(e.target.value)} className={selectCls}>
+                          <option value="">بدون مسؤول</option>
+                          {profiles.map((p) => <option key={p.id} value={p.id}>{profileName(p)}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    {/* Row: ملاحظات */}
                     <div>
-                      <label className="mb-1.5 block text-[12px] font-medium uppercase tracking-wider text-slate-400">ملاحظات</label>
+                      <label className="mb-1 block text-[13px] font-semibold text-slate-500">ملاحظات</label>
                       <textarea dir="auto" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={3} className={textareaCls} />
                     </div>
                   </div>
                 ) : (
-                  <>
-                    <div className="grid grid-cols-1 gap-x-8 gap-y-1 sm:grid-cols-2">
-                      <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" /></svg>} label="الاسم" value={data.full_name} />
-                      <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M4 16.5v-13h-.25a.75.75 0 010-1.5h12.5a.75.75 0 010 1.5H16v13h.25a.75.75 0 010 1.5h-3.5a.75.75 0 01-.75-.75v-2.5a.75.75 0 00-.75-.75h-2.5a.75.75 0 00-.75.75v2.5a.75.75 0 01-.75.75h-3.5a.75.75 0 010-1.5z" clipRule="evenodd" /></svg>} label="الشركة" value={data.establishment_name ?? null} />
-                      <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5H15c-1.149 0-2.263-.15-3.326-.43A13.022 13.022 0 012.43 8.326 13.019 13.019 0 012 5V3.5z" /></svg>} label="الجوال" value={data.phone} />
-                      <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path d="M3 4a2 2 0 00-2 2v1.161l8.441 4.221a1.25 1.25 0 001.118 0L19 7.161V6a2 2 0 00-2-2H3z" /><path d="M19 8.839l-7.77 3.885a2.75 2.75 0 01-2.46 0L1 8.839V14a2 2 0 002 2h14a2 2 0 002-2V8.839z" /></svg>} label="الإيميل" value={data.email} />
-                      <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M2 3.5A1.5 1.5 0 013.5 2h9A1.5 1.5 0 0114 3.5v11.75A2.75 2.75 0 0016.75 18h-12A2.75 2.75 0 012 15.25V3.5zm3.75 7a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5zm0-3a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5z" clipRule="evenodd" /></svg>} label="المرحلة" value={data.pipeline_stages?.label ?? null} />
-                      <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" /></svg>} label="المصدر" value={data.sources?.label ?? null} />
-                      <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" /></svg>} label="المسؤول" value={data.owner} />
-                      <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M5.75 2a.75.75 0 01.75.75V4h7V2.75a.75.75 0 011.5 0V4h.25A2.75 2.75 0 0118 6.75v8.5A2.75 2.75 0 0115.25 18H4.75A2.75 2.75 0 012 15.25v-8.5A2.75 2.75 0 014.75 4H5V2.75A.75.75 0 015.75 2zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75z" clipRule="evenodd" /></svg>} label="تاريخ الإنشاء" value={formatDate(data.created_at)} />
+                  <div className="divide-y divide-slate-100">
+                    <div className="grid grid-cols-2 gap-x-6">
+                      <div className="flex items-center justify-between border-b border-slate-100 py-3">
+                        <span className="text-[13px] font-semibold text-slate-400">الاسم</span>
+                        <span className="text-[14px] font-medium text-slate-800">{data.full_name || "—"}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-b border-slate-100 py-3">
+                        <span className="text-[13px] font-semibold text-slate-400">الجوال</span>
+                        <span dir="ltr" className="text-[14px] font-medium text-slate-800">{data.phone || "—"}</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-6">
+                      <div className="flex items-center justify-between border-b border-slate-100 py-3">
+                        <span className="text-[13px] font-semibold text-slate-400">الإيميل</span>
+                        <span dir="ltr" className="text-[14px] font-medium text-slate-800">{data.email || "—"}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-b border-slate-100 py-3">
+                        <span className="text-[13px] font-semibold text-slate-400">الشركة</span>
+                        <span className="text-[14px] font-medium text-slate-800">{data.establishment_name || "—"}</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-6">
+                      <div className="flex items-center justify-between border-b border-slate-100 py-3">
+                        <span className="text-[13px] font-semibold text-slate-400">المرحلة</span>
+                        <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[13px] font-semibold text-slate-700">{data.pipeline_stages?.label || "—"}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-b border-slate-100 py-3">
+                        <span className="text-[13px] font-semibold text-slate-400">المصدر</span>
+                        <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[13px] font-semibold text-slate-700">{data.sources?.label || "—"}</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-6">
+                      <div className="flex items-center justify-between py-3">
+                        <span className="text-[13px] font-semibold text-slate-400">المسؤول</span>
+                        <span className="text-[14px] font-medium text-slate-800">{data.owner ? profileName(profiles.find((p) => p.id === data.owner)) || data.owner : "—"}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-3">
+                        <span className="text-[13px] font-semibold text-slate-400">تاريخ الإنشاء</span>
+                        <span className="text-[14px] font-medium text-slate-800">{formatDate(data.created_at)}</span>
+                      </div>
                     </div>
                     {data.notes && (
-                      <div className="mt-4 rounded-xl bg-slate-50 p-4">
-                        <p className="mb-1 text-[12px] font-medium uppercase tracking-wider text-slate-400">ملاحظات</p>
-                        <p dir="auto" className="whitespace-pre-wrap text-[14px] leading-relaxed text-slate-700">{data.notes}</p>
+                      <div className="pt-3">
+                        <p className="mb-1.5 text-[13px] font-semibold text-slate-400">ملاحظات</p>
+                        <p dir="auto" className="whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-[14px] leading-relaxed text-slate-700">{data.notes}</p>
                       </div>
                     )}
-                  </>
+                  </div>
                 )}
               </Section>
 
