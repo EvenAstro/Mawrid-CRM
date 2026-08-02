@@ -56,7 +56,7 @@ function greeting() {
   return "مساء الخير";
 }
 function longDate(d: Date) {
-  return d.toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+  return d.toLocaleDateString("ar-SA", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
 }
 function dateTimeNice(iso: string | null) {
   if (!iso) return "—";
@@ -105,9 +105,9 @@ function latestDate(iso: (string | null)[]): Date {
 function trendText(cur: number, prev: number): { text: string; cls: string } {
   if (prev === 0) return { text: "أول شهر", cls: "text-[#94a3b8]" };
   const pct = Math.round(((cur - prev) / prev) * 100);
-  if (pct === 0) return { text: "No change from last month", cls: "text-[#94a3b8]" };
-  if (pct > 0) return { text: `↑ ${pct}% from last month`, cls: "text-[#10b981]" };
-  return { text: `↓ ${Math.abs(pct)}% from last month`, cls: "text-[#ef4444]" };
+  if (pct === 0) return { text: "لا تغيير عن الشهر الماضي", cls: "text-[#94a3b8]" };
+  if (pct > 0) return { text: `↑ ${pct}% عن الشهر الماضي`, cls: "text-[#10b981]" };
+  return { text: `↓ ${Math.abs(pct)}% عن الشهر الماضي`, cls: "text-[#ef4444]" };
 }
 function initials(name: string | null | undefined) {
   if (!name) return "—";
@@ -115,7 +115,7 @@ function initials(name: string | null | undefined) {
   return ((p[0]?.[0] ?? "") + (p[1]?.[0] ?? "")).toUpperCase() || "—";
 }
 function taskTitle(t: Task) {
-  return t.title || t.name || "Untitled task";
+  return t.title || t.name || "مهمة بدون عنوان";
 }
 const nf = new Intl.NumberFormat("en-US");
 const money = (n: number) => nf.format(Math.round(n));
@@ -299,7 +299,7 @@ export default function DashboardPage() {
         .eq("id", task.id);
       if (upErr) {
         console.error("[Dashboard] Failed to complete task", upErr);
-        toast("Could not update task", "error");
+        toast("تعذّر تحديث المهمة", "error");
         setCompleting((prev) => {
           const next = new Set(prev);
           next.delete(task.id);
@@ -335,10 +335,10 @@ export default function DashboardPage() {
     const anchor = latestDate([...deals.map((d) => d.created_at), ...leads.map((l) => l.created_at)]);
     const days = last7Days(anchor);
     const series = days.map((day) => ({
-      label: day.toLocaleDateString("en-US", { weekday: "short" }),
+      label: day.toLocaleDateString("ar-SA", { weekday: "short" }),
       value: deals.filter((d) => sameDay(d.created_at, day)).reduce((s, d) => s + dealValue(d), 0),
     }));
-    const seriesRange = `${days[0].toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${days[6].toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+    const seriesRange = `${days[0].toLocaleDateString("ar-SA", { month: "short", day: "numeric" })} – ${days[6].toLocaleDateString("ar-SA", { month: "short", day: "numeric" })}`;
 
     // Recent Leads: exclude bot-stage leads (fake signups), newest first.
     const recentLeads = [...leads]
@@ -360,35 +360,35 @@ export default function DashboardPage() {
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-3xl">🔌</div>
         <div>
-          <h2 className="text-xl font-bold text-[#1e1b4b]">Connection error</h2>
+          <h2 className="text-xl font-bold text-[#1e1b4b]">خطأ في الاتصال</h2>
           <p className="mt-1 max-w-sm text-sm text-[#94a3b8]">
-            We couldn&apos;t reach the server. Check your connection and try again.
+            لم نتمكن من الوصول للخادم. تحقق من اتصالك وحاول مرة أخرى.
           </p>
         </div>
         <button
           onClick={() => { setLoading(true); load(); }}
           className="rounded-xl bg-[#1a5c4f] px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-[#1a5c4f]/20 transition hover:bg-[#15503f]"
         >
-          Retry
+          إعادة المحاولة
         </button>
       </div>
     );
   }
 
   const kpis = [
-    { label: "Total Leads", value: String(m.total_leads), Icon: LeadsIcon, color: "#1a5c4f", trend: m.leadsTrend, href: "/dashboard/leads" },
-    { label: "Clean Leads", value: String(m.clean_leads), Icon: CheckCircleIcon, color: "#10b981", trend: m.cleanTrend, href: "/dashboard/leads?filter=clean" },
-    { label: "Active Deals", value: String(m.total_deals), Icon: RevenueIcon, color: "#f59e0b", trend: m.dealsTrend, href: "/dashboard/deals?filter=active" },
-    { label: "Pipeline Value", value: `SAR ${compactSAR(m.pipeline_value)}`, Icon: TrendingUpIcon, color: "#6366f1", trend: m.pipeTrend, href: "/dashboard/analytics" },
+    { label: "إجمالي العملاء", value: String(m.total_leads), Icon: LeadsIcon, color: "#1a5c4f", trend: m.leadsTrend, href: "/dashboard/leads" },
+    { label: "عملاء نظيفون", value: String(m.clean_leads), Icon: CheckCircleIcon, color: "#10b981", trend: m.cleanTrend, href: "/dashboard/leads?filter=clean" },
+    { label: "صفقات نشطة", value: String(m.total_deals), Icon: RevenueIcon, color: "#f59e0b", trend: m.dealsTrend, href: "/dashboard/deals?filter=active" },
+    { label: "قيمة الصفقات", value: `SAR ${compactSAR(m.pipeline_value)}`, Icon: TrendingUpIcon, color: "#6366f1", trend: m.pipeTrend, href: "/dashboard/analytics" },
   ];
 
   const overview = [
-    { dot: "#1a5c4f", label: "Pipeline Value", value: `SAR ${money(m.pipeline_value)}`, badge: "bg-[#f0faf8] text-[#1a5c4f]" },
-    { dot: "#10b981", label: "Won Deals", value: m.won, badge: "bg-green-50 text-green-700" },
-    { dot: "#ef4444", label: "Lost Deals", value: m.lost, badge: "bg-red-50 text-red-700" },
-    { dot: "#10b981", label: "Clean Leads", value: m.clean_leads, badge: "bg-green-50 text-green-700" },
-    { dot: "#ef4444", label: "Junk Leads", value: m.junk_leads, badge: "bg-red-50 text-red-700" },
-    { dot: "#94a3b8", label: "Open Tickets", value: 11, badge: "bg-[#f1f5f9] text-[#334155]" },
+    { dot: "#1a5c4f", label: "قيمة الصفقات", value: `SAR ${money(m.pipeline_value)}`, badge: "bg-[#f0faf8] text-[#1a5c4f]" },
+    { dot: "#10b981", label: "صفقات مكسوبة", value: m.won, badge: "bg-green-50 text-green-700" },
+    { dot: "#ef4444", label: "صفقات خاسرة", value: m.lost, badge: "bg-red-50 text-red-700" },
+    { dot: "#10b981", label: "عملاء نظيفون", value: m.clean_leads, badge: "bg-green-50 text-green-700" },
+    { dot: "#ef4444", label: "عملاء غير مؤهلين", value: m.junk_leads, badge: "bg-red-50 text-red-700" },
+    { dot: "#94a3b8", label: "تذاكر مفتوحة", value: 11, badge: "bg-[#f1f5f9] text-[#334155]" },
   ];
 
   return (
@@ -400,9 +400,9 @@ export default function DashboardPage() {
           <p className="mt-1 text-sm text-[#94a3b8]">{longDate(now)}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setNewLeadOpen(true)} className="rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(26,92,79,0.25)] transition-all hover:scale-[1.02]">+ New Lead</button>
-          <button onClick={() => setLogActivityOpen(true)} className="rounded-full border-2 border-[#1a5c4f] bg-white px-5 py-2.5 text-sm font-semibold text-[#1a5c4f] transition-all hover:bg-[#f0faf8]">Log Activity</button>
-          <button onClick={() => setAddContactOpen(true)} className="rounded-full px-5 py-2.5 text-sm font-semibold text-[#334155] transition-all hover:bg-[#f0faf8] hover:text-[#1a5c4f]">Add Contact</button>
+          <button onClick={() => setNewLeadOpen(true)} className="rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(26,92,79,0.25)] transition-all hover:scale-[1.02]">+ عميل جديد</button>
+          <button onClick={() => setLogActivityOpen(true)} className="rounded-full border-2 border-[#1a5c4f] bg-white px-5 py-2.5 text-sm font-semibold text-[#1a5c4f] transition-all hover:bg-[#f0faf8]">تسجيل نشاط</button>
+          <button onClick={() => setAddContactOpen(true)} className="rounded-full px-5 py-2.5 text-sm font-semibold text-[#334155] transition-all hover:bg-[#f0faf8] hover:text-[#1a5c4f]">إضافة جهة اتصال</button>
         </div>
       </div>
 
@@ -410,8 +410,8 @@ export default function DashboardPage() {
       <div className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map(({ label, value, Icon, color, trend, href }) => (
           <Link key={label} href={href} className="group relative overflow-hidden rounded-2xl border border-[#e8efed] bg-white p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.02)] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(0,0,0,0.06),0_12px_32px_rgba(0,0,0,0.04)]">
-            <span className="absolute bottom-4 left-0 top-4 w-1 rounded-full" style={{ background: color }} />
-            <span className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-105" style={{ backgroundColor: `${color}1a`, color }}>
+            <span className="absolute bottom-4 right-0 top-4 w-1 rounded-full" style={{ background: color }} />
+            <span className="absolute left-5 top-5 flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-105" style={{ backgroundColor: `${color}1a`, color }}>
               <Icon className="h-5 w-5" />
             </span>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-[#94a3b8]">{label}</p>
@@ -426,27 +426,27 @@ export default function DashboardPage() {
         <div className={`${CARD} lg:col-span-2`}>
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">Pipeline Activity</h3>
-              <p className="mt-0.5 text-sm text-[#94a3b8]">Deal value · {m.seriesRange}</p>
+              <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">نشاط الصفقات</h3>
+              <p className="mt-0.5 text-sm text-[#94a3b8]">قيمة الصفقات · {m.seriesRange}</p>
             </div>
-            <span className="rounded-full border border-gray-100 bg-gray-25 px-3 py-1 text-xs text-[#94a3b8]">Last 7 days</span>
+            <span className="rounded-full border border-gray-100 bg-gray-25 px-3 py-1 text-xs text-[#94a3b8]">آخر ٧ أيام</span>
           </div>
           <PipelineChart points={m.series} />
           <div className="mt-4 flex gap-8 border-t border-gray-50 pt-4">
-            <div><p className="text-lg font-bold text-[#1e1b4b]">{m.total_deals}</p><p className="text-xs text-[#94a3b8]">Total Deals</p></div>
-            <div><p className="text-lg font-bold text-green-600">{m.won}</p><p className="text-xs text-[#94a3b8]">Won</p></div>
-            <div><p className="text-lg font-bold text-red-600">{m.lost}</p><p className="text-xs text-[#94a3b8]">Lost</p></div>
+            <div><p className="text-lg font-bold text-[#1e1b4b]">{m.total_deals}</p><p className="text-xs text-[#94a3b8]">إجمالي الصفقات</p></div>
+            <div><p className="text-lg font-bold text-green-600">{m.won}</p><p className="text-xs text-[#94a3b8]">مكسوبة</p></div>
+            <div><p className="text-lg font-bold text-red-600">{m.lost}</p><p className="text-xs text-[#94a3b8]">خاسرة</p></div>
           </div>
         </div>
 
         <div className={`${CARD} flex flex-col`}>
-          <h3 className="mb-1 text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">Today</h3>
-          <p className="text-4xl font-black tabular-nums text-[#1a5c4f]">{now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>
+          <h3 className="mb-1 text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">اليوم</h3>
+          <p className="text-4xl font-black tabular-nums text-[#1a5c4f]">{now.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>
           <p className="mb-4 text-sm text-[#94a3b8]">{longDate(now)}</p>
           <div className="flex-1 border-t border-gray-50 pt-4">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#94a3b8]">Upcoming Tasks</p>
+            <p className="mb-3 text-xs font-semibold tracking-wider text-[#94a3b8]">المهام القادمة</p>
             {tasks.length === 0 ? (
-              <p className="py-6 text-center text-sm text-[#94a3b8]">🎉 All clear for today!</p>
+              <p className="py-6 text-center text-sm text-[#94a3b8]">🎉 لا مهام لليوم!</p>
             ) : (
               tasks.map((t) => {
                 const done = completing.has(t.id);
@@ -483,13 +483,13 @@ export default function DashboardPage() {
         {/* Recent Leads */}
         <div className={CARD}>
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">Recent Leads</h3>
-            <Link href="/dashboard/leads" className="text-xs font-semibold text-[#1a5c4f] hover:underline">View all →</Link>
+            <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">أحدث العملاء</h3>
+            <Link href="/dashboard/leads" className="text-xs font-semibold text-[#1a5c4f] hover:underline">عرض الكل ←</Link>
           </div>
           {m.recentLeads.length === 0 ? (
             <div className="py-6 text-center">
-              <p className="text-sm text-[#94a3b8]">No leads yet — add your first lead</p>
-              <button onClick={() => setNewLeadOpen(true)} className="mt-3 rounded-full bg-[#1a5c4f] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#15503f]">+ New Lead</button>
+              <p className="text-sm text-[#94a3b8]">لا يوجد عملاء بعد — أضف أول عميل</p>
+              <button onClick={() => setNewLeadOpen(true)} className="mt-3 rounded-full bg-[#1a5c4f] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#15503f]">+ عميل جديد</button>
             </div>
           ) : (
             m.recentLeads.map((l) => {
@@ -500,7 +500,7 @@ export default function DashboardPage() {
                     <span className="text-xs font-bold text-white">{initials(l.full_name)}</span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p dir="auto" className="truncate text-sm font-semibold text-[#1e1b4b]">{l.full_name || "Unnamed lead"}</p>
+                    <p dir="auto" className="truncate text-sm font-semibold text-[#1e1b4b]">{l.full_name || "عميل بدون اسم"}</p>
                     <p className="text-xs text-[#94a3b8]">{l.sources?.label || "—"}</p>
                   </div>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${aiPill(score)}`}>{score}%</span>
@@ -513,11 +513,11 @@ export default function DashboardPage() {
         {/* Activity Feed */}
         <div className={CARD}>
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">Activity Feed</h3>
-            <Link href="/dashboard/activities" className="text-xs font-semibold text-[#1a5c4f] hover:underline">View all →</Link>
+            <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">آخر النشاطات</h3>
+            <Link href="/dashboard/activities" className="text-xs font-semibold text-[#1a5c4f] hover:underline">عرض الكل ←</Link>
           </div>
           {activities.length === 0 ? (
-            <p className="py-6 text-center text-sm text-[#94a3b8]">No activities recorded</p>
+            <p className="py-6 text-center text-sm text-[#94a3b8]">لا توجد نشاطات مسجلة</p>
           ) : (
             (() => {
               const groups: { key: string; header: string; items: Activity[] }[] = [];
@@ -550,7 +550,7 @@ export default function DashboardPage() {
 
         {/* Sales Overview */}
         <div className={CARD}>
-          <h3 className="mb-4 text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">Sales Overview</h3>
+          <h3 className="mb-4 text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">ملخص المبيعات</h3>
           {overview.map((o) => (
             <div key={o.label} className="flex items-center justify-between border-b border-gray-50 py-2.5 last:border-0">
               <div className="flex items-center gap-2">
@@ -562,7 +562,7 @@ export default function DashboardPage() {
           ))}
           <div className="mt-4 border-t border-gray-50 pt-4">
             <div className="mb-2 flex justify-between text-xs text-[#94a3b8]">
-              <span>Win Rate</span>
+              <span>نسبة الفوز</span>
               <span className="font-semibold text-[#334155]">{m.win_rate.toFixed(1)}%</span>
             </div>
             <div className="h-2 rounded-full bg-[#f1f5f9]">
