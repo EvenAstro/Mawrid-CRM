@@ -24,6 +24,7 @@ export const FEATURES: FeatureDef[] = [
   { key: "lead_scoring", label: "تقييم العملاء", description: "نموذج الذكاء الاصطناعي لتقييم العملاء", group: "الذكاء", href: "/dashboard/lead-scoring" },
   { key: "playbook", label: "الدليل التكتيكي", description: "الدليل التكتيكي للمبيعات", group: "الذكاء", href: "/dashboard/playbook" },
   { key: "revenue_intelligence", label: "ذكاء الإيرادات", description: "تحليل الإيرادات وصحة الصفقات", group: "الذكاء", href: "/dashboard/revenue-intelligence" },
+  { key: "coach", label: "مدرب الأداء", description: "تحليل ذكي لأدائك اليومي مع نصائح مخصصة", group: "الذكاء", href: "/dashboard/coach" },
   { key: "users", label: "إدارة المستخدمين", description: "إدارة حسابات الفريق وصلاحياتهم", group: "الإدارة", href: "/dashboard/users" },
 ];
 
