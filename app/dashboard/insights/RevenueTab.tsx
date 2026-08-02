@@ -896,7 +896,7 @@ function SectionHead({icon,title,sub,grad,accent}:{icon:React.ReactNode;title:st
 /* ═══ Page ════════════════════════════════════════════════════════════════ */
 type FK="all"|DealCategory|"high_risk";
 
-export default function RevenueIntelligencePage() {
+export default function RevenueTab() {
   const [data,setData]=useState<RevenueIntelligenceData|null>(null);
   const [loading,setLoading]=useState(true);
   const [sel,setSel]=useState<RIDeal|null>(null);

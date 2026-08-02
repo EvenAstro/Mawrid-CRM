@@ -23,7 +23,6 @@ import {
   ScoringIcon,
   PlaybookIcon,
   InsightsIcon,
-  RevenueIntelIcon,
   CoachIcon,
   BellIcon,
   LogoutIcon,
@@ -40,7 +39,6 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   insights: InsightsIcon,
   lead_scoring: ScoringIcon,
   playbook: PlaybookIcon,
-  revenue_intelligence: RevenueIntelIcon,
   coach: CoachIcon,
   users: UsersIcon,
 };
