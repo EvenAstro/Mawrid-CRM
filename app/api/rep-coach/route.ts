@@ -42,6 +42,8 @@ export async function GET(req: NextRequest) {
       .maybeSingle();
     const firstName = profileRes.data?.first_name || profileRes.data?.full_name?.split(" ")[0] || null;
 
+    const threeDaysFromNow = new Date(now.getTime() + 3 * MS_PER_DAY).toISOString();
+
     const [
       overdueTasksRes,
       todayTasksRes,
@@ -51,8 +53,9 @@ export async function GET(req: NextRequest) {
       recentActivitiesRes,
       newLeadsRes,
       bigDealsRes,
-      openTicketsRes,
       pipelineRes,
+      meetingsRes,
+      quoteDealsRes,
       yesterdayCompletedRes,
     ] = await Promise.all([
       supabase.from("tasks").select("id, title, due_at")
@@ -63,7 +66,6 @@ export async function GET(req: NextRequest) {
         .order("due_at", { ascending: true }).limit(10),
       supabase.from("tasks").select("id, title, completed_at")
         .eq("assignee_uid", userId).gte("completed_at", ds).lt("completed_at", de).limit(20),
-      // Tasks with no due date — still pending
       supabase.from("tasks").select("id, title, created_at")
         .eq("assignee_uid", userId).is("due_at", null).is("completed_at", null)
         .order("created_at", { ascending: false }).limit(10),
@@ -78,11 +80,19 @@ export async function GET(req: NextRequest) {
       supabase.from("deals").select("id, name, expected_value, stage, updated_at, leads(full_name)")
         .is("deleted_at", null).is("closed_at", null)
         .order("expected_value", { ascending: false }).limit(5),
-      supabase.from("tickets").select("id, title, status, priority, created_at")
-        .in("status", ["open", "in_progress"]).order("created_at", { ascending: true }).limit(10),
       supabase.from("deals").select("id, name, stage, expected_value, leads(full_name)")
         .is("deleted_at", null).is("closed_at", null)
         .order("created_at", { ascending: false }).limit(20),
+      // Upcoming meetings — activities with "meeting" type in the next 3 days
+      supabase.from("activities").select("id, body, occurred_at, activity_types!inner(label)")
+        .eq("user_id", userId).gte("occurred_at", ds).lte("occurred_at", threeDaysFromNow)
+        .ilike("activity_types.label", "%meeting%")
+        .order("occurred_at", { ascending: true }).limit(10),
+      // Deals in quote/proposal stage — need follow-up if not updated in 3+ days
+      supabase.from("deals").select("id, name, expected_value, updated_at, leads(full_name), pipeline_stages!inner(label)")
+        .is("deleted_at", null).is("closed_at", null).lt("updated_at", threeDaysAgo)
+        .ilike("pipeline_stages.label", "%عرض%")
+        .order("updated_at", { ascending: true }).limit(10),
       supabase.from("tasks").select("id").eq("assignee_uid", userId)
         .gte("completed_at", new Date(todayStart.getTime() - MS_PER_DAY).toISOString())
         .lt("completed_at", ds),
@@ -92,7 +102,8 @@ export async function GET(req: NextRequest) {
     type StaleDeal = { id: string; name: string | null; updated_at: string | null; expected_value: number | null; leads: { full_name: string | null } | null };
     type Lead = { id: string; full_name: string | null; company_name: string | null; created_at: string };
     type BigDeal = { id: string; name: string | null; expected_value: number | null; stage: string | null; updated_at: string | null; leads: { full_name: string | null } | null };
-    type Ticket = { id: string; title: string | null; status: string; priority: string | null; created_at: string };
+    type Meeting = { id: string; body: string | null; occurred_at: string | null; activity_types: { label: string } };
+    type QuoteDeal = { id: string; name: string | null; expected_value: number | null; updated_at: string | null; leads: { full_name: string | null } | null; pipeline_stages: { label: string } };
 
     const overdueTasks = (overdueTasksRes.data as unknown as Task[]) ?? [];
     const todayTasks = (todayTasksRes.data as unknown as Task[]) ?? [];
@@ -102,8 +113,9 @@ export async function GET(req: NextRequest) {
     const todayActivities = recentActivitiesRes.data ?? [];
     const newLeads = (newLeadsRes.data as unknown as Lead[]) ?? [];
     const bigDeals = (bigDealsRes.data as unknown as BigDeal[]) ?? [];
-    const openTickets = (openTicketsRes.data as unknown as Ticket[]) ?? [];
     const pipeline = (pipelineRes.data as unknown as BigDeal[]) ?? [];
+    const meetings = (meetingsRes.data as unknown as Meeting[]) ?? [];
+    const quoteDeals = (quoteDealsRes.data as unknown as QuoteDeal[]) ?? [];
     const yesterdayCompleted = yesterdayCompletedRes.data ?? [];
 
     const outboundCount = todayActivities.filter((a: { direction: string | null }) => a.direction === "outbound").length;
@@ -141,23 +153,42 @@ export async function GET(req: NextRequest) {
       });
     });
 
-    // 3. Open tickets
-    const urgentTickets = openTickets.filter((t) => t.priority === "high" || t.priority === "urgent");
-    urgentTickets.forEach((t) => {
+    // 3. Upcoming meetings
+    meetings.forEach((m) => {
+      const mDate = new Date(m.occurred_at!);
+      const isToday = mDate >= todayStart && mDate < todayEnd;
+      const isTomorrow = mDate >= todayEnd && mDate < new Date(todayEnd.getTime() + MS_PER_DAY);
+      const h = mDate.getHours();
+      const min = mDate.getMinutes();
+      const timeStr = `${h.toString().padStart(2, "0")}:${min.toString().padStart(2, "0")}`;
+      const desc = m.body ? ` — ${m.body.slice(0, 50)}` : "";
+      if (isToday) {
+        const hoursLeft = (mDate.getTime() - now.getTime()) / 3600000;
+        directives.push({
+          id: `d${idx++}`, type: hoursLeft <= 2 ? "urgent" : "warning", icon: "🗓️",
+          message: `${ya}عندك اجتماع الساعة ${timeStr}${desc} — جهّز له`,
+          action: "افتح النشاطات", actionHref: "/dashboard/activities",
+        });
+      } else if (isTomorrow) {
+        directives.push({
+          id: `d${idx++}`, type: "remind", icon: "🗓️",
+          message: `${ya}عندك اجتماع بكرة الساعة ${timeStr}${desc}`,
+          action: "افتح النشاطات", actionHref: "/dashboard/activities",
+        });
+      }
+    });
+
+    // 3b. Quote/proposal deals needing follow-up
+    quoteDeals.forEach((d) => {
+      const days = Math.ceil((now.getTime() - new Date(d.updated_at!).getTime()) / MS_PER_DAY);
+      const name = d.leads?.full_name || d.name || "عميل";
+      const val = d.expected_value ? ` (${(d.expected_value / 100).toLocaleString("ar-SA")} ر.س)` : "";
       directives.push({
-        id: `d${idx++}`, type: "urgent", icon: "🎫",
-        message: `تذكرة "${t.title || "بدون عنوان"}" مفتوحة وأولويتها عالية — تابعها`,
-        action: "افتح التذاكر", actionHref: "/dashboard/tickets",
+        id: `d${idx++}`, type: "warning", icon: "📄",
+        message: `${ya}عرض سعر لـ "${name}"${val} ما تابعته من ${days} يوم — تواصل معه`,
+        action: "افتح الصفقات", actionHref: "/dashboard/deals",
       });
     });
-    const normalTickets = openTickets.filter((t) => t.priority !== "high" && t.priority !== "urgent");
-    if (normalTickets.length > 0) {
-      directives.push({
-        id: `d${idx++}`, type: "remind", icon: "🎫",
-        message: `عندك ${normalTickets.length} ${normalTickets.length === 1 ? "تذكرة مفتوحة" : "تذاكر مفتوحة"} — لا تنساها`,
-        action: "افتح التذاكر", actionHref: "/dashboard/tickets",
-      });
-    }
 
     // 4. Untouched new leads
     const untouchedLeads = newLeads.filter((l) => !contactedIds.has(l.id));
@@ -275,7 +306,8 @@ ${firstName ? `اسم المندوب: ${firstName}. خاطبه باسمه (يا 
 - مهام متأخرة: ${overdueTasks.length}
 - تواصل اليوم: ${outboundCount} (${contactedEntityIds.size} عميل)
 - صفقات واقفة (7+ أيام): ${staleDeals.length}
-- تذاكر مفتوحة: ${openTickets.length}
+- اجتماعات قادمة: ${meetings.length}
+- عروض أسعار تحتاج متابعة: ${quoteDeals.length}
 - عملاء جدد بدون تواصل: ${untouchedLeads.length}
 - مسار الصفقات: ${pipelineStr || "فاضي"}
 - قيمة المسار: ${totalPipelineValue > 0 ? (totalPipelineValue / 100).toLocaleString("ar-SA") + " ر.س" : "—"}
@@ -338,7 +370,8 @@ ${directivesList || "لا توجيهات — كل شيء تمام"}
       overdueCount: overdueTasks.length,
       outboundToday: outboundCount,
       staleCount: staleDeals.length,
-      openTickets: openTickets.length,
+      meetingsCount: meetings.length,
+      quoteDealsCount: quoteDeals.length,
       pipelineCount: pipeline.length,
       pipelineValue: totalPipelineValue,
       newLeads: newLeads.length,

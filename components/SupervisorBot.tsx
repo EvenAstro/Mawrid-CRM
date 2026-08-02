@@ -19,7 +19,8 @@ interface Stats {
   overdueCount: number;
   outboundToday: number;
   staleCount: number;
-  openTickets: number;
+  meetingsCount: number;
+  quoteDealsCount: number;
   pipelineCount: number;
   pipelineValue: number;
   newLeads: number;
@@ -501,8 +502,8 @@ export default function SupervisorBot() {
                       { icon: "📋", v: data.stats.pendingToday, l: "باقي", alert: data.stats.pendingToday > 5 },
                       { icon: "🔴", v: data.stats.overdueCount, l: "متأخرة", alert: data.stats.overdueCount > 0 },
                       { icon: "📞", v: data.stats.outboundToday, l: "تواصل", alert: false },
-                      { icon: "💼", v: data.stats.pipelineCount, l: "صفقات", alert: false },
-                      { icon: "🎫", v: data.stats.openTickets, l: "تذاكر", alert: data.stats.openTickets > 0 },
+                      { icon: "🗓️", v: data.stats.meetingsCount, l: "اجتماعات", alert: data.stats.meetingsCount > 0 },
+                      { icon: "📄", v: data.stats.quoteDealsCount, l: "عروض أسعار", alert: data.stats.quoteDealsCount > 0 },
                     ].map((s, i) => (
                       <div key={i} className={`flex-shrink-0 flex items-center gap-2 rounded-2xl border px-3.5 py-2.5 ${s.alert ? "border-red-200 bg-red-50/80" : "border-[#e4ebe7] bg-white"}`}>
                         <span className="text-sm">{s.icon}</span>
