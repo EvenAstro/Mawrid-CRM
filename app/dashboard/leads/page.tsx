@@ -8,7 +8,7 @@ import NewLeadSlideOver from "@/components/NewLeadSlideOver";
 import { fetchLeadScoreModel, getAIScore, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
 import { useRole } from "@/components/RoleProvider";
 import { canViewAllData } from "@/lib/permissions";
-import { initials } from "@/lib/format";
+import { initials, formatDate } from "@/lib/format";
 
 const PAGE_SIZE = 15;
 
@@ -47,16 +47,6 @@ function AiScoreRing({ score }: { score: number }) {
   );
 }
 
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 function StatCard({
   value,

@@ -8,15 +8,11 @@ import NewDealSlideOver from "@/components/NewDealSlideOver";
 import CompleteTaskModal from "@/components/CompleteTaskModal";
 import { fetchLeadScoreModel, scoreWithModel } from "@/lib/leadScore/computeLeadScore";
 import { fetchProfiles, type Profile } from "@/lib/profiles";
-import { initials } from "@/lib/format";
+import { initials, formatDate, formatDateTime, todayInput, profileName } from "@/lib/format";
 import { useRole } from "@/components/RoleProvider";
 import { canActOnTask } from "@/lib/permissions";
 import { logAudit, fieldChangeMessage } from "@/lib/auditLog";
 
-function profileName(p: Profile | undefined): string {
-  if (!p) return "";
-  return p.full_name?.trim() || [p.first_name, p.last_name].filter(Boolean).join(" ") || "";
-}
 
 export interface Lead {
   id: string | number;
@@ -72,19 +68,6 @@ interface LeadScore {
 }
 
 
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("ar-SA", { year: "numeric", month: "short", day: "numeric" });
-}
-
-function formatDateTime(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString("ar-SA", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-}
 
 function scoreColor(pct: number): string {
   if (pct >= 70) return "#059669";
@@ -92,11 +75,6 @@ function scoreColor(pct: number): string {
   return "#dc2626";
 }
 
-function todayInput() {
-  const d = new Date();
-  const off = d.getTimezoneOffset();
-  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10);
-}
 function nowTimeInput() {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;

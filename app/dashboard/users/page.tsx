@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 import { fetchCurrentProfile, fetchProfiles, type Profile, type Role } from "@/lib/profiles";
-import { initials } from "@/lib/format";
+import { initials, profileName } from "@/lib/format";
 import UserPermissionsModal from "@/components/UserPermissionsModal";
 
 const roleMeta: Record<Role, { label: string; cls: string }> = {
@@ -12,10 +12,6 @@ const roleMeta: Record<Role, { label: string; cls: string }> = {
   manager: { label: "مدير", cls: "bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200" },
   sales: { label: "مندوب مبيعات", cls: "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200" },
 };
-
-function profileName(p: Profile): string {
-  return p.full_name?.trim() || [p.first_name, p.last_name].filter(Boolean).join(" ") || "—";
-}
 
 function profileInitials(p: Profile): string {
   return initials(profileName(p));

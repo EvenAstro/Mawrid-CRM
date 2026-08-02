@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
-import { formatTime } from "@/lib/format";
+import { formatTime, profileName } from "@/lib/format";
 import Button from "@/components/ui/Button";
 import SlideOver from "@/components/ui/SlideOver";
 import Skeleton from "@/components/ui/Skeleton";
@@ -28,10 +28,6 @@ interface TaskType {
   label: string;
 }
 
-function profileName(p: Profile | undefined): string {
-  if (!p) return "";
-  return p.full_name?.trim() || [p.first_name, p.last_name].filter(Boolean).join(" ") || "";
-}
 
 function startOfDay(d: Date) {
   const x = new Date(d);

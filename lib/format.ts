@@ -2,33 +2,33 @@
 
 const nf = new Intl.NumberFormat("en-US");
 
-/** "Jul 2 · 1:00 PM" — the canonical timestamp format for the whole app. */
+/** "٢ يوليو · ١:٠٠ م" — the canonical timestamp format for the whole app. */
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  const date = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  const date = d.toLocaleDateString("ar-SA", { month: "short", day: "numeric" });
+  const time = d.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
   return `${date} · ${time}`;
 }
 
-/** "Jul 2, 2026" — date only. */
+/** "٢ يوليو ٢٠٢٦" — date only. */
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString("ar-SA", { year: "numeric", month: "short", day: "numeric" });
 }
 
-/** "1:00 PM" — time only. */
+/** "١:٠٠ م" — time only. */
 export function formatTime(iso: string | null | undefined): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return d.toLocaleTimeString("ar-SA", { hour: "numeric", minute: "2-digit" });
 }
 
-/** Day-group header: "Today", "Yesterday", else "Jul 2". */
+/** Day-group header: "اليوم", "أمس", else "٢ يوليو". */
 export function dayHeader(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -38,9 +38,9 @@ export function dayHeader(iso: string | null | undefined): string {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const diff = Math.round((today.getTime() - day.getTime()) / 86_400_000);
-  if (diff === 0) return "Today";
-  if (diff === 1) return "Yesterday";
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (diff === 0) return "اليوم";
+  if (diff === 1) return "أمس";
+  return d.toLocaleDateString("ar-SA", { month: "short", day: "numeric" });
 }
 
 /** Sortable day key (YYYY-MM-DD) for grouping. */
@@ -82,4 +82,17 @@ export function initials(name: string | null | undefined): string {
   if (!name) return "—";
   const p = name.trim().split(/\s+/).filter(Boolean);
   return ((p[0]?.[0] ?? "") + (p[1]?.[0] ?? "")).toUpperCase() || "—";
+}
+
+/** Today's date as YYYY-MM-DD for <input type="date">. */
+export function todayInput(): string {
+  const d = new Date();
+  const off = d.getTimezoneOffset();
+  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10);
+}
+
+/** Build a display name from a Profile record. */
+export function profileName(p: { full_name?: string | null; first_name?: string | null; last_name?: string | null } | undefined | null): string {
+  if (!p) return "";
+  return p.full_name?.trim() || [p.first_name, p.last_name].filter(Boolean).join(" ") || "";
 }

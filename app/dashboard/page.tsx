@@ -57,12 +57,6 @@ function greeting() {
 function longDate(d: Date) {
   return d.toLocaleDateString("ar-SA", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
 }
-function dateTimeNice(iso: string | null) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return `${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })} at ${d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
-}
 function timeOf(iso: string | null) {
   if (!iso) return "—";
   const d = new Date(iso);

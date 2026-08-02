@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
+import { todayInput } from "@/lib/format";
 
 interface ActivityType {
   id: string;
@@ -11,12 +12,6 @@ interface ActivityType {
 interface LeadHit {
   id: string;
   full_name: string | null;
-}
-
-function todayInput() {
-  const d = new Date();
-  const off = d.getTimezoneOffset();
-  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10);
 }
 
 export default function LogActivitySlideOver({
