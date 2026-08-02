@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 import { fetchCurrentProfile, fetchProfiles, type Profile, type Role } from "@/lib/profiles";
+import { initials } from "@/lib/format";
 import UserPermissionsModal from "@/components/UserPermissionsModal";
 
 const roleMeta: Record<Role, { label: string; cls: string }> = {
@@ -16,10 +17,8 @@ function profileName(p: Profile): string {
   return p.full_name?.trim() || [p.first_name, p.last_name].filter(Boolean).join(" ") || "—";
 }
 
-function initials(p: Profile): string {
-  const n = profileName(p);
-  const parts = n.trim().split(/\s+/).filter(Boolean);
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "—";
+function profileInitials(p: Profile): string {
+  return initials(profileName(p));
 }
 
 const inputCls = "h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition";
@@ -245,7 +244,7 @@ export default function UsersPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-700 text-[13px] font-bold text-white shadow-sm">
-                          {initials(p)}
+                          {profileInitials(p)}
                         </span>
                         <div className="min-w-0">
                           <p dir="auto" className="truncate text-[14px] font-semibold text-slate-900">

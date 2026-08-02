@@ -5,26 +5,12 @@ import { supabase } from "@/lib/supabase";
 import { SearchIcon, LeadsIcon } from "@/components/navIcons";
 import LeadSlideOver, { type Lead } from "@/components/LeadSlideOver";
 import NewLeadSlideOver from "@/components/NewLeadSlideOver";
-import { fetchLeadScoreModel, scoreWithModel, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
+import { fetchLeadScoreModel, getAIScore, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
 import { useRole } from "@/components/RoleProvider";
 import { canViewAllData } from "@/lib/permissions";
+import { initials } from "@/lib/format";
 
 const PAGE_SIZE = 15;
-
-function initials(name: string | null): string {
-  if (!name) return "—";
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "—";
-}
-
-function getAIScore(lead: Lead, model: LeadScoreModel | null): number {
-  if (!model) return 50;
-  return scoreWithModel(model, {
-    source: lead.sources?.label || "غير محدد",
-    matched: !!lead.establishment_id,
-    hasCampaign: false,
-  }).score;
-}
 
 function scoreHex(score: number): string {
   if (score >= 70) return "#10b981"; // green

@@ -8,6 +8,7 @@ import NewDealSlideOver from "@/components/NewDealSlideOver";
 import CompleteTaskModal from "@/components/CompleteTaskModal";
 import { fetchLeadScoreModel, scoreWithModel } from "@/lib/leadScore/computeLeadScore";
 import { fetchProfiles, type Profile } from "@/lib/profiles";
+import { initials } from "@/lib/format";
 import { useRole } from "@/components/RoleProvider";
 import { canActOnTask } from "@/lib/permissions";
 import { logAudit, fieldChangeMessage } from "@/lib/auditLog";
@@ -70,11 +71,6 @@ interface LeadScore {
   source: string;
 }
 
-function initials(name: string | null): string {
-  if (!name) return "—";
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "—";
-}
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";

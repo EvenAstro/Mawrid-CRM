@@ -147,3 +147,15 @@ export function scoreWithModel(model: LeadScoreModel, input: LeadScoreInput): Le
     reasons,
   };
 }
+
+export function getAIScore(
+  lead: { sources?: { label?: string } | null; establishment_id?: string | number | null },
+  model: LeadScoreModel | null,
+): number {
+  if (!model) return 50;
+  return scoreWithModel(model, {
+    source: lead.sources?.label || "غير محدد",
+    matched: !!lead.establishment_id,
+    hasCampaign: false,
+  }).score;
+}

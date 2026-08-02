@@ -2,15 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { LeadsIcon, CheckCircleIcon, RevenueIcon, TrendingUpIcon } from "@/components/navIcons";
 import { useToast } from "@/components/Toast";
 import NewLeadSlideOver from "@/components/NewLeadSlideOver";
 import LogActivitySlideOver from "@/components/LogActivitySlideOver";
 import AddContactSlideOver from "@/components/AddContactSlideOver";
-import { dayHeader, dayKey, formatDateTime } from "@/lib/format";
-import { fetchLeadScoreModel, scoreWithModel, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
+import { dayHeader, dayKey, formatDateTime, initials, money, compactSAR } from "@/lib/format";
+import { fetchLeadScoreModel, getAIScore, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
 
 /* ---------- Types ---------- */
 type Stage = { label: string; terminal_type: string | null } | null;
@@ -109,28 +108,8 @@ function trendText(cur: number, prev: number): { text: string; cls: string } {
   if (pct > 0) return { text: `↑ ${pct}% عن الشهر الماضي`, cls: "text-[#10b981]" };
   return { text: `↓ ${Math.abs(pct)}% عن الشهر الماضي`, cls: "text-[#ef4444]" };
 }
-function initials(name: string | null | undefined) {
-  if (!name) return "—";
-  const p = name.trim().split(/\s+/).filter(Boolean);
-  return ((p[0]?.[0] ?? "") + (p[1]?.[0] ?? "")).toUpperCase() || "—";
-}
 function taskTitle(t: Task) {
   return t.title || t.name || "مهمة بدون عنوان";
-}
-const nf = new Intl.NumberFormat("en-US");
-const money = (n: number) => nf.format(Math.round(n));
-function compactSAR(n: number) {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
-  if (n >= 1000) return Math.round(n / 1000) + "K";
-  return String(Math.round(n));
-}
-function getAIScore(lead: Lead, model: LeadScoreModel | null): number {
-  if (!model) return 50;
-  return scoreWithModel(model, {
-    source: lead.sources?.label || "غير محدد",
-    matched: !!lead.establishment_id,
-    hasCampaign: false, // touchpoints aren't fetched for the dashboard's recent-leads list
-  }).score;
 }
 function activityColor(label?: string | null) {
   const l = (label || "").toLowerCase();
@@ -232,7 +211,6 @@ const CARD = "rounded-2xl border border-[#d6ece5] bg-white p-6 shadow-[0_2px_8px
 /* ---------- Page ---------- */
 export default function DashboardPage() {
   const toast = useToast();
-  const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
