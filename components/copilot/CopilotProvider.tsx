@@ -40,7 +40,6 @@ export function useCopilot(): CopilotContextValue {
 /** Maps the current route to a short Arabic context string fed silently to the model. */
 function contextForPath(pathname: string): string {
   if (pathname === "/dashboard") return "أنا على الصفحة الرئيسية للوحة التحكم";
-  if (pathname === "/dashboard/copilot") return "";
   if (/^\/dashboard\/deals\/[^/]+\/investigation/.test(pathname)) return "أنا أشاهد تقرير تحقيق صفقة مخسورة";
   if (/^\/dashboard\/deals\/[^/]+/.test(pathname)) return "أنا أشاهد تفاصيل صفقة محددة";
   if (pathname.startsWith("/dashboard/deals")) return "أنا على صفحة الصفقات";
@@ -48,7 +47,6 @@ function contextForPath(pathname: string): string {
   if (pathname.startsWith("/dashboard/activities")) return "أنا على صفحة النشاطات";
   if (pathname.startsWith("/dashboard/tasks")) return "أنا على صفحة المهام";
   if (pathname.startsWith("/dashboard/tickets")) return "أنا على صفحة التذاكر";
-  if (pathname.startsWith("/dashboard/analytics")) return "أنا على صفحة التحليلات";
   if (pathname.startsWith("/dashboard/lead-scoring")) return "أنا على صفحة تقييم العملاء";
   if (pathname.startsWith("/dashboard/contacts")) return "أنا على صفحة جهات الاتصال";
   return "";

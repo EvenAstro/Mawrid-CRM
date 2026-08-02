@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useCopilot } from "./CopilotProvider";
 import ChatThread from "./ChatThread";
 import Composer from "./Composer";
@@ -19,11 +17,7 @@ function SparkleRobot({ className = "h-6 w-6" }: { className?: string }) {
 }
 
 export default function CopilotWidget() {
-  const pathname = usePathname();
   const { open, setOpen, unread } = useCopilot();
-
-  // The full page is its own Copilot surface — no floating bubble there.
-  if (pathname === "/dashboard/copilot") return null;
 
   return (
     <>
@@ -70,17 +64,6 @@ export default function CopilotWidget() {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <Link
-              href="/dashboard/copilot"
-              onClick={() => setOpen(false)}
-              title="فتح في صفحة كاملة"
-              aria-label="فتح في صفحة كاملة"
-              className="rounded-lg p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
-                <path d="M15 3h6v6M21 3l-9 9M10 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-5" />
-              </svg>
-            </Link>
             <button
               onClick={() => setOpen(false)}
               aria-label="إغلاق"
