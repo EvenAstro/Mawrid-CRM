@@ -144,29 +144,28 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
   const w = collapsed ? 72 : 240;
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Sidebar */}
+    <div className="min-h-screen bg-[#f7f9f8]">
+      {/* Sidebar — dark teal matching mawrid.sa */}
       <div
         style={{ width: w }}
-        className="fixed inset-y-0 right-0 z-30 flex flex-col border-l border-border-light bg-white transition-all duration-300"
+        className="fixed inset-y-0 right-0 z-30 flex flex-col bg-[#0d2923] transition-all duration-300"
       >
-        {/* Logo + collapse */}
-        <div className="flex h-16 items-center justify-between px-4">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-10 w-10 flex-none items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)]">
-              <span className="text-lg font-black text-white">م</span>
+        {/* Logo */}
+        <div className="flex h-[72px] items-center justify-between px-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-white/10">
+              <span className="text-xl font-black text-white">م</span>
             </div>
             {!collapsed && (
               <div className="min-w-0">
-                <span className="block truncate text-[20px] font-extrabold leading-tight text-ink">مَوْرد</span>
-                <span className="text-[11px] font-medium text-muted">منصة إدارة العملاء</span>
+                <span className="block truncate text-[22px] font-extrabold leading-tight text-white">مَوْرد</span>
               </div>
             )}
           </div>
           <button
             onClick={toggleCollapse}
             aria-label={collapsed ? "توسيع القائمة" : "طي القائمة"}
-            className={`flex-none rounded-lg p-1.5 text-muted transition hover:bg-mint hover:text-primary ${collapsed ? "absolute -left-3 top-4 z-10 border border-border-light bg-white shadow-md" : ""}`}
+            className={`flex-none rounded-lg p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white ${collapsed ? "absolute -left-3 top-5 z-10 rounded-full border border-[#e8ece9] bg-white text-[#0d2923] shadow-lg" : ""}`}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={`h-4 w-4 transition-transform ${collapsed ? "rotate-180" : ""}`}>
               <path d="M9 18l6-6-6-6" />
@@ -175,15 +174,15 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-2">
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
           {navGroups.map((group) => (
-            <div key={group.heading} className="mt-4 first:mt-0">
+            <div key={group.heading} className="mt-6 first:mt-0">
               {!collapsed && (
-                <p className="mb-2 px-3 text-[10px] font-medium uppercase tracking-[0.15em] text-muted">
+                <p className="mb-2 px-3 text-[11px] font-semibold tracking-wider text-white/30">
                   {group.heading}
                 </p>
               )}
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {group.items.map(({ label, href, Icon }) => {
                   const active = isActive(pathname, href);
                   return (
@@ -191,13 +190,13 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
                       key={label}
                       href={href}
                       title={collapsed ? label : undefined}
-                      className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition-all ${
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] transition-all ${
                         active
-                          ? "bg-primary font-semibold text-white"
-                          : "font-medium text-ink-secondary hover:bg-mint hover:text-primary"
+                          ? "bg-white/15 font-semibold text-white"
+                          : "font-medium text-white/60 hover:bg-white/8 hover:text-white/90"
                       } ${collapsed ? "justify-center px-0" : ""}`}
                     >
-                      <Icon className="h-5 w-5 flex-shrink-0" />
+                      <Icon className="h-[18px] w-[18px] flex-shrink-0" />
                       {!collapsed && label}
                     </Link>
                   );
@@ -208,43 +207,42 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
         </nav>
 
         {/* User */}
-        <div className="border-t border-border-light px-3 pb-3 pt-4">
-          <div className={`flex items-center gap-3 rounded-xl px-2 py-2 ${collapsed ? "justify-center" : ""}`}>
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)]">
+        <div className="border-t border-white/10 px-3 pb-4 pt-4">
+          <div className={`flex items-center gap-3 rounded-lg px-2 py-2 ${collapsed ? "justify-center" : ""}`}>
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#1a5c4f] ring-2 ring-white/20">
               <span className="text-sm font-bold text-white">{userInitials}</span>
             </div>
             {!collapsed && (
               <>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-ink">{displayName}</p>
-                  <p className="truncate text-xs text-muted">{email}</p>
+                  <p className="truncate text-[13px] font-medium text-white">{displayName}</p>
+                  <p className="truncate text-[11px] text-white/40">{email}</p>
                 </div>
-                <button onClick={handleLogout} aria-label="Log out" className="flex-none rounded-lg p-1.5 text-muted transition-colors hover:bg-red-50 hover:text-red-500">
+                <button onClick={handleLogout} aria-label="تسجيل الخروج" className="flex-none rounded-lg p-1.5 text-white/30 transition-colors hover:bg-white/10 hover:text-red-400">
                   <LogoutIcon className="h-4 w-4" />
                 </button>
               </>
             )}
           </div>
-          {!collapsed && <p className="mt-2 px-2 text-[11px] font-medium text-muted">v1.0</p>}
         </div>
       </div>
 
       {/* Top bar */}
       <div
         style={{ right: w }}
-        className="fixed left-0 top-0 z-20 flex h-16 items-center justify-between border-b border-border-light bg-white/90 px-8 backdrop-blur-sm transition-all duration-300"
+        className="fixed left-0 top-0 z-20 flex h-[56px] items-center justify-between border-b border-[#e8ece9] bg-white px-8 transition-all duration-300"
       >
-        <div className="flex items-center gap-1.5 text-sm">
-          <span className="text-muted">مساحة العمل</span>
+        <div className="flex items-center gap-2 text-[14px]">
+          <span className="text-[#94a3b8]">مساحة العمل</span>
           <span className="text-[#d1d5db]">/</span>
-          <span className="font-semibold text-ink">{pageName}</span>
+          <span className="font-semibold text-[#1e1b4b]">{pageName}</span>
         </div>
         <div className="flex items-center gap-3">
-          <button aria-label="Notifications" className="relative text-muted transition-colors hover:text-primary">
+          <button aria-label="الإشعارات" className="relative rounded-lg p-2 text-[#94a3b8] transition-colors hover:bg-[#f0faf8] hover:text-[#1a5c4f]">
             <BellIcon className="h-[18px] w-[18px]" />
-            <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-red-500" />
+            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
           </button>
-          <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)]">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0d2923]">
             <span className="text-xs font-bold text-white">{userInitials}</span>
           </div>
         </div>
@@ -253,7 +251,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
       {/* Main */}
       <main
         style={{ marginRight: w, paddingLeft: "var(--briefing-rail-width, 52px)" }}
-        className="min-h-screen bg-gray-25 pt-16 transition-all duration-300"
+        className="min-h-screen bg-[#f7f9f8] pt-[56px] transition-all duration-300"
       >
         <div key={pathname} className="page-content mx-auto max-w-[1280px] p-8">
           {roleLoading ? null : currentFeature && !can(currentFeature.key) ? null : children}

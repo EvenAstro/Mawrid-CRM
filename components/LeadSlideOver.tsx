@@ -200,6 +200,7 @@ export default function LeadSlideOver({
   const [editStageId, setEditStageId] = useState("");
   const [editSourceId, setEditSourceId] = useState("");
   const [editOwnerId, setEditOwnerId] = useState("");
+  const [editCompany, setEditCompany] = useState("");
   const [savingInfo, setSavingInfo] = useState(false);
 
   const open = lead != null;
@@ -435,6 +436,9 @@ export default function LeadSlideOver({
     setEditEmail(data.email || "");
     setEditNotes(data.notes || "");
     setEditOwnerId(data.owner || "");
+    setEditStageId("");
+    setEditSourceId("");
+    setEditCompany(data.establishment_name || "");
     setEditingInfo(true);
   }
 
@@ -452,25 +456,43 @@ export default function LeadSlideOver({
       const newOwnerName = editOwnerId ? profileName(profiles.find((p) => p.id === editOwnerId)) || editOwnerId : null;
       changes.push({ field: "owner", oldValue: oldOwnerName, newValue: newOwnerName });
     }
+    if (editStageId) {
+      const newStage = leadStages.find((s) => s.id === editStageId);
+      changes.push({ field: "stage", oldValue: data.pipeline_stages?.label ?? null, newValue: newStage?.label ?? null });
+    }
+    if (editSourceId) {
+      const newSource = sourcesList.find((s) => s.id === editSourceId);
+      changes.push({ field: "source", oldValue: data.sources?.label ?? null, newValue: newSource?.label ?? null });
+    }
 
     if (changes.length === 0) { setSavingInfo(false); setEditingInfo(false); return; }
 
-    const { error } = await supabase
-      .from("leads")
-      .update({
-        full_name: editName.trim() || null,
-        phone: editPhone.trim() || null,
-        email: editEmail.trim() || null,
-        notes: editNotes.trim() || null,
-        owner: editOwnerId || null,
-        updated_at: now,
-      })
-      .eq("id", data.id);
+    const patch: Record<string, unknown> = {
+      full_name: editName.trim() || null,
+      normalized_phone: editPhone.trim() || null,
+      normalized_email: editEmail.trim() || null,
+      notes: editNotes.trim() || null,
+      owner_id: editOwnerId || null,
+      updated_at: now,
+    };
+    if (editStageId) patch.stage_id = editStageId;
+    if (editSourceId) patch.primary_source_id = editSourceId;
+
+    const { error } = await supabase.from("leads").update(patch).eq("id", data.id);
     setSavingInfo(false);
-    if (error) { toast("تعذّر حفظ التعديلات", "error"); return; }
+    if (error) { toast("تعذّر حفظ التعديلات", "error"); console.error("[saveInfoEdit]", error); return; }
     toast("تم حفظ بيانات العميل");
     await logAudit(data.id, userId, fieldChangeMessage(changes));
-    patchShown({ full_name: editName.trim() || null, phone: editPhone.trim() || null, email: editEmail.trim() || null, notes: editNotes.trim() || null, owner: editOwnerId || null });
+    const newPatch: Partial<Lead> = { full_name: editName.trim() || null, phone: editPhone.trim() || null, email: editEmail.trim() || null, notes: editNotes.trim() || null, owner: editOwnerId || null };
+    if (editStageId) {
+      const s = leadStages.find((x) => x.id === editStageId);
+      newPatch.pipeline_stages = s ? { label: s.label, color: null } : data.pipeline_stages;
+    }
+    if (editSourceId) {
+      const s = sourcesList.find((x) => x.id === editSourceId);
+      newPatch.sources = s ? { label: s.label } : data.sources;
+    }
+    patchShown(newPatch);
     setEditingInfo(false);
     refetchActivities(data.id);
     onUpdated?.();
@@ -691,7 +713,6 @@ export default function LeadSlideOver({
               >
                 {editingInfo ? (
                   <div className="space-y-3">
-                    {/* Row: الاسم + الجوال */}
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
                         <label className="mb-1 block text-[13px] font-semibold text-slate-500">الاسم</label>
@@ -702,7 +723,6 @@ export default function LeadSlideOver({
                         <input dir="ltr" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className={`${inputCls} text-left`} />
                       </div>
                     </div>
-                    {/* Row: الإيميل + المسؤول */}
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
                         <label className="mb-1 block text-[13px] font-semibold text-slate-500">الإيميل</label>
@@ -716,7 +736,22 @@ export default function LeadSlideOver({
                         </select>
                       </div>
                     </div>
-                    {/* Row: ملاحظات */}
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-[13px] font-semibold text-slate-500">المرحلة</label>
+                        <select value={editStageId} onChange={(e) => setEditStageId(e.target.value)} className={selectCls}>
+                          <option value="">{data.pipeline_stages?.label || "بدون مرحلة"}</option>
+                          {leadStages.filter((s) => s.id !== editStageId).map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[13px] font-semibold text-slate-500">المصدر</label>
+                        <select value={editSourceId} onChange={(e) => setEditSourceId(e.target.value)} className={selectCls}>
+                          <option value="">{data.sources?.label || "بدون مصدر"}</option>
+                          {sourcesList.filter((s) => s.id !== editSourceId).map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                        </select>
+                      </div>
+                    </div>
                     <div>
                       <label className="mb-1 block text-[13px] font-semibold text-slate-500">ملاحظات</label>
                       <textarea dir="auto" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={3} className={textareaCls} />

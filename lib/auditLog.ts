@@ -34,6 +34,8 @@ const FIELD_LABELS: Record<string, string> = {
   email: "الإيميل",
   notes: "الملاحظات",
   owner: "المسؤول",
+  stage: "المرحلة",
+  source: "المصدر",
 };
 
 /** Builds a human-readable Arabic audit message for a set of changed lead fields. */
