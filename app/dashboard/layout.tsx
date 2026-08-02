@@ -145,17 +145,18 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
 
   return (
     <div className="min-h-screen bg-[#f7f9f8]">
-      {/* Sidebar — dark teal matching mawrid.sa */}
+      {/* Sidebar — mawrid teal */}
       <div
         style={{ width: w }}
-        className="fixed inset-y-0 right-0 z-30 flex flex-col bg-[#0d2923] transition-all duration-300"
+        className="fixed inset-y-0 right-0 z-30 flex flex-col bg-[#1a6b5c] transition-all duration-300"
       >
         {/* Logo */}
         <div className="flex h-[72px] items-center justify-between px-4">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-white/10">
-              <span className="text-xl font-black text-white">م</span>
-            </div>
+            <svg viewBox="0 0 40 40" className="h-10 w-10 flex-none" fill="none">
+              <rect width="40" height="40" rx="10" fill="white" fillOpacity="0.15" />
+              <path d="M20 6C12.27 6 6 12.27 6 20c0 7.73 6.27 14 14 14h8V26h-8a6 6 0 1 1 0-12h0c3.31 0 6 2.69 6 6v14h8V20c0-7.73-6.27-14-14-14z" fill="white" />
+            </svg>
             {!collapsed && (
               <div className="min-w-0">
                 <span className="block truncate text-[22px] font-extrabold leading-tight text-white">مَوْرد</span>
@@ -165,7 +166,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
           <button
             onClick={toggleCollapse}
             aria-label={collapsed ? "توسيع القائمة" : "طي القائمة"}
-            className={`flex-none rounded-lg p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white ${collapsed ? "absolute -left-3 top-5 z-10 rounded-full border border-[#e8ece9] bg-white text-[#0d2923] shadow-lg" : ""}`}
+            className={`flex-none rounded-lg p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white ${collapsed ? "absolute -left-3 top-5 z-10 rounded-full border border-[#e8ece9] bg-white text-[#1a6b5c] shadow-lg" : ""}`}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={`h-4 w-4 transition-transform ${collapsed ? "rotate-180" : ""}`}>
               <path d="M9 18l6-6-6-6" />
@@ -209,7 +210,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
         {/* User */}
         <div className="border-t border-white/10 px-3 pb-4 pt-4">
           <div className={`flex items-center gap-3 rounded-lg px-2 py-2 ${collapsed ? "justify-center" : ""}`}>
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#1a5c4f] ring-2 ring-white/20">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white/20 ring-2 ring-white/10">
               <span className="text-sm font-bold text-white">{userInitials}</span>
             </div>
             {!collapsed && (
