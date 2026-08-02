@@ -145,16 +145,16 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
 
   return (
     <div className="min-h-screen bg-[#f7f9f8]">
-      {/* Sidebar — navy-teal blend */}
+      {/* Sidebar — navy bg, teal accents */}
       <div
         style={{ width: w }}
-        className="fixed inset-y-0 right-0 z-30 flex flex-col bg-gradient-to-b from-[#162a3a] to-[#1a3d3a] transition-all duration-300"
+        className="fixed inset-y-0 right-0 z-30 flex flex-col bg-[#141c2e] transition-all duration-300"
       >
         {/* Logo */}
         <div className="flex h-[68px] items-center justify-between px-4">
           <div className="flex min-w-0 items-center gap-2.5">
             <svg viewBox="0 0 36 36" className="h-9 w-9 flex-none" fill="none">
-              <rect width="36" height="36" rx="9" fill="white" fillOpacity="0.12" />
+              <rect width="36" height="36" rx="9" fill="#3a9080" />
               <path d="M18 5C11.37 5 6 10.37 6 17c0 6.63 5.37 12 12 12h7v-7h-7a5 5 0 1 1 0-10c2.76 0 5 2.24 5 5v12h7V17C30 10.37 24.63 5 18 5z" fill="white" />
             </svg>
             {!collapsed && (
@@ -164,7 +164,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
           <button
             onClick={toggleCollapse}
             aria-label={collapsed ? "توسيع القائمة" : "طي القائمة"}
-            className={`flex-none rounded-lg p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white ${collapsed ? "absolute -left-3 top-5 z-10 rounded-full border border-[#e8ece9] bg-white text-[#162a3a] shadow-lg" : ""}`}
+            className={`flex-none rounded-lg p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white ${collapsed ? "absolute -left-3 top-5 z-10 rounded-full border border-[#e8ece9] bg-white text-[#141c2e] shadow-lg" : ""}`}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={`h-4 w-4 transition-transform ${collapsed ? "rotate-180" : ""}`}>
               <path d="M9 18l6-6-6-6" />
@@ -177,7 +177,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
           {navGroups.map((group) => (
             <div key={group.heading} className="mt-5 first:mt-0">
               {!collapsed && (
-                <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-widest text-white/25">
+                <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-widest text-[#3a9080]">
                   {group.heading}
                 </p>
               )}
@@ -191,11 +191,11 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
                       title={collapsed ? label : undefined}
                       className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all ${
                         active
-                          ? "bg-white/12 font-bold text-white"
+                          ? "bg-[#3a9080]/20 font-bold text-[#5ec4b0]"
                           : "font-medium text-white/50 hover:bg-white/6 hover:text-white/85"
                       } ${collapsed ? "justify-center px-0" : ""}`}
                     >
-                      <Icon className="h-[16px] w-[16px] flex-shrink-0" />
+                      <Icon className={`h-[16px] w-[16px] flex-shrink-0 ${active ? "text-[#5ec4b0]" : ""}`} />
                       {!collapsed && label}
                     </Link>
                   );
@@ -208,7 +208,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
         {/* User */}
         <div className="border-t border-white/8 px-3 pb-3 pt-3">
           <div className={`flex items-center gap-2.5 rounded-lg px-2 py-1.5 ${collapsed ? "justify-center" : ""}`}>
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#2a7a6a] ring-1 ring-white/15">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#3a9080]">
               <span className="text-xs font-bold text-white">{userInitials}</span>
             </div>
             {!collapsed && (
@@ -237,11 +237,11 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
           <span className="font-semibold text-[#1e1b4b]">{pageName}</span>
         </div>
         <div className="flex items-center gap-3">
-          <button aria-label="الإشعارات" className="relative rounded-lg p-2 text-[#94a3b8] transition-colors hover:bg-[#f0faf8] hover:text-[#1a5c4f]">
+          <button aria-label="الإشعارات" className="relative rounded-lg p-2 text-[#94a3b8] transition-colors hover:bg-[#f0faf8] hover:text-[#3a9080]">
             <BellIcon className="h-[18px] w-[18px]" />
             <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
           </button>
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0d2923]">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#141c2e]">
             <span className="text-xs font-bold text-white">{userInitials}</span>
           </div>
         </div>
