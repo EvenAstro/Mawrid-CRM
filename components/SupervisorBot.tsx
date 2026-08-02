@@ -412,129 +412,107 @@ export default function SupervisorBot() {
 
       {/* Panel */}
       <div
-        className={`fixed left-0 top-0 z-[59] flex h-screen w-full max-w-[440px] flex-col overflow-hidden bg-[#f8faf9] shadow-[0_0_60px_rgba(0,0,0,0.12)] transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`fixed left-0 top-0 z-[59] flex h-screen w-full max-w-[420px] flex-col overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.15)] transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
+        style={{ background: "linear-gradient(180deg, #111827 0%, #141c2e 100%)" }}
       >
-        {/* Header */}
-        <div className="relative flex-none overflow-hidden" style={{ background: "linear-gradient(160deg, #0a1a14 0%, #111827 40%, #1a2e3a 100%)" }}>
-          <div className="pointer-events-none absolute inset-0">
-            <div className="absolute left-6 top-2 h-44 w-44 rounded-full bg-[#38d39f] opacity-[0.06] blur-[70px]" />
-            <div className="absolute right-4 bottom-6 h-32 w-32 rounded-full bg-[#60a5fa] opacity-[0.04] blur-[50px]" />
-            <svg className="absolute inset-0 h-full w-full opacity-[0.025]">
-              <defs><pattern id="sv-grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="white" strokeWidth="0.5" /></pattern></defs>
-              <rect width="100%" height="100%" fill="url(#sv-grid)" />
-            </svg>
-            {/* Floating particles */}
-            {[...Array(5)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute h-1 w-1 rounded-full bg-[#38d39f]"
-                style={{
-                  left: `${20 + i * 15}%`,
-                  bottom: "20%",
-                  animation: `sv-particles ${2 + i * 0.5}s ease-out ${i * 0.8}s infinite`,
-                }}
-              />
+        {/* Header with robot inline */}
+        <div className="relative flex-none px-5 pt-5 pb-4">
+          {/* Background effects */}
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-[#38d39f] opacity-[0.08] blur-[60px]" />
+            <div className="absolute right-0 top-0 h-24 w-24 rounded-full bg-[#60a5fa] opacity-[0.05] blur-[40px]" />
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="absolute h-1 w-1 rounded-full bg-[#38d39f]" style={{ left: `${15 + i * 20}%`, top: `${60 + i * 5}%`, animation: `sv-particles ${2.5 + i * 0.6}s ease-out ${i * 0.5}s infinite` }} />
             ))}
           </div>
 
-          <div className="relative flex items-center justify-between px-5 pt-4 pb-1">
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h2 className="text-[20px] font-black text-white tracking-tight">المشرف الذكي</h2>
-                <span className="flex items-center gap-1.5 rounded-full bg-emerald-400/15 px-2.5 py-0.5 text-[10px] font-bold text-emerald-300 backdrop-blur-sm border border-emerald-400/20">
+          <div className="relative flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              {/* Compact robot */}
+              <div className="w-[60px] h-[65px] flex-shrink-0" style={{ animation: "sv-float 6s ease-in-out infinite" }}>
+                <Robot talking={loading || (showIntro && introStep < 3)} mood={mood} />
+              </div>
+              <div>
+                <h2 className="text-[18px] font-black text-white tracking-tight">المشرف الذكي</h2>
+                <p className="text-[11px] text-white/40 mt-0.5">مشرفك الشخصي من مَوْرد</p>
+                <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-2 py-0.5 text-[9px] font-bold text-emerald-300 border border-emerald-400/15">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  نشط
+                  يراقب بياناتك
                 </span>
               </div>
-              <p className="text-[11px] text-white/35 mt-0.5">مشرفك الشخصي من مورد</p>
             </div>
-            <button onClick={() => setOpen(false)} className="rounded-xl p-2 text-white/30 transition hover:bg-white/10 hover:text-white">
+            <button onClick={() => setOpen(false)} className="rounded-xl p-2 text-white/25 transition hover:bg-white/10 hover:text-white">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-5 w-5"><path d="M6 6l12 12M18 6 6 18" /></svg>
             </button>
           </div>
 
-          <div className="relative mx-auto w-[180px] h-[195px] -mb-1">
-            <Robot talking={loading || (showIntro && introStep < 3)} mood={mood} />
-          </div>
+          {/* Greeting message in header */}
+          {showIntro && data && introStep >= 1 && (
+            <div className="relative mt-4 rounded-2xl bg-white/[0.07] backdrop-blur-sm border border-white/[0.08] px-4 py-3" style={{ animation: "sv-entry 0.5s ease-out both" }}>
+              {introStep < 3 ? (
+                <div className="flex items-center gap-3">
+                  <TypingDots />
+                  <span className="text-[12px] text-white/40">
+                    {introStep === 1 ? `${greeting}${nameGreet}! أشيّك على بياناتك...` : "جاري التحليل..."}
+                  </span>
+                </div>
+              ) : (
+                <p className="text-[13px] font-medium text-white/80">خلصت تحليل بياناتك ✅ — شف التقرير تحت</p>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Chat-like content area */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+        {/* Content area — white rounded container */}
+        <div className="flex-1 flex flex-col min-h-0 rounded-t-[28px] bg-[#f8faf9] overflow-hidden">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
 
-          {/* Intro sequence */}
-          {showIntro && data && (
-            <>
-              {introStep >= 1 && (
-                <ChatBubble delay={0}>
-                  <p className="text-[14px] font-semibold text-[#1e1b4b]">{greeting}{nameGreet}! 👋</p>
-                  <p className="text-[13px] text-[#475569] mt-1">أنا مشرفك الذكي من مورد — أراقب شغلك وأقولك وش تسوي</p>
-                </ChatBubble>
-              )}
-              {introStep >= 2 && (
-                <ChatBubble delay={0}>
-                  <p className="text-[13px] text-[#475569]">
-                    خلّني أشيّك على بياناتك...
-                    <span className="text-[12px] text-[#94a3b8] block mt-1">
-                      📋 المهام • 💼 الصفقات • 📞 التواصل • 🎫 التذاكر • 👥 العملاء
-                    </span>
-                  </p>
-                </ChatBubble>
-              )}
-              {introStep >= 3 && (
-                <ChatBubble delay={0}>
-                  <p className="text-[13px] text-[#1e1b4b] font-medium">شيّكت على كل شيء ✅ هذا تقريري:</p>
-                </ChatBubble>
-              )}
-              {introStep < 3 && (
-                <div className="flex gap-2.5 items-start" style={{ animation: "sv-entry 0.3s ease-out both" }}>
-                  <div className="flex-shrink-0 mt-1 h-7 w-7 rounded-full bg-[#141c2e] flex items-center justify-center">
-                    <svg viewBox="0 0 200 200" className="h-4 w-4">
-                      <rect x="48" y="30" width="104" height="85" rx="36" fill="#e8f2ed" />
-                      <rect x="56" y="46" width="88" height="50" rx="22" fill="#1a2e3a" />
-                      <ellipse cx="78" cy="70" rx="8" ry="7" fill="#38d39f" />
-                      <ellipse cx="122" cy="70" rx="8" ry="7" fill="#38d39f" />
-                    </svg>
-                  </div>
-                  <div className="rounded-2xl rounded-tr-md bg-white border border-[#e8ece9] px-4 py-3 shadow-sm">
-                    <TypingDots />
-                  </div>
+            {/* Loading state */}
+            {loading && !data && (
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <div className="relative h-12 w-12">
+                  <div className="absolute inset-0 animate-spin rounded-full border-[3px] border-[#e8ece9] border-t-[#38d39f]" />
                 </div>
-              )}
-            </>
-          )}
+                <p className="text-[13px] font-medium text-[#94a3b8]">أجمع بياناتك...</p>
+              </div>
+            )}
 
-          {/* Main content — after intro */}
-          {!showIntro && data && (
-            <>
-              {/* AI Message */}
-              <ChatBubble delay={0}>
-                <p className="text-[14px] font-medium leading-[1.8] text-[#1e1b4b] whitespace-pre-line">{data.aiSummary}</p>
-              </ChatBubble>
+            {/* Main content */}
+            {!showIntro && data && (
+              <>
+                {/* AI Message — hero card */}
+                <div className="rounded-2xl bg-gradient-to-br from-[#141c2e] to-[#1a3a4a] p-5 shadow-[0_8px_32px_rgba(20,28,46,0.2)]" style={{ animation: "sv-entry 0.5s ease-out both" }}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-6 w-6 rounded-lg bg-[#38d39f]/20 flex items-center justify-center">
+                      <span className="text-xs">💬</span>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/30">كلمة المشرف</span>
+                  </div>
+                  <p className="text-[14px] font-medium leading-[1.9] text-white/90 whitespace-pre-line">{data.aiSummary}</p>
+                </div>
 
-              {/* Stats as a card */}
-              <div style={{ animation: "sv-entry 0.4s ease-out 150ms both" }}>
-                <div className="rounded-2xl border border-[#e8ece9] bg-white p-4 shadow-sm">
-                  <p className="text-[11px] font-bold text-[#94a3b8] uppercase tracking-wider mb-3">ملخص يومك</p>
-                  <div className="grid grid-cols-3 gap-2">
+                {/* Stats — horizontal scroll pills */}
+                <div style={{ animation: "sv-entry 0.4s ease-out 120ms both" }}>
+                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
                     {[
-                      { icon: "✅", v: data.stats.completedToday, l: "أنجزت", c: "text-emerald-600" },
-                      { icon: "📋", v: data.stats.pendingToday, l: "باقي", c: data.stats.pendingToday > 0 ? "text-amber-600" : "text-[#475569]" },
-                      { icon: "🔴", v: data.stats.overdueCount, l: "متأخرة", c: data.stats.overdueCount > 0 ? "text-red-600" : "text-[#475569]" },
-                      { icon: "📞", v: data.stats.outboundToday, l: "تواصل", c: data.stats.outboundToday >= 5 ? "text-emerald-600" : "text-[#475569]" },
-                      { icon: "💼", v: data.stats.pipelineCount, l: "صفقات", c: "text-[#475569]" },
-                      { icon: "🎫", v: data.stats.openTickets, l: "تذاكر", c: data.stats.openTickets > 0 ? "text-amber-600" : "text-[#475569]" },
+                      { icon: "✅", v: data.stats.completedToday, l: "أنجزت", alert: false },
+                      { icon: "📋", v: data.stats.pendingToday, l: "باقي", alert: data.stats.pendingToday > 5 },
+                      { icon: "🔴", v: data.stats.overdueCount, l: "متأخرة", alert: data.stats.overdueCount > 0 },
+                      { icon: "📞", v: data.stats.outboundToday, l: "تواصل", alert: false },
+                      { icon: "💼", v: data.stats.pipelineCount, l: "صفقات", alert: false },
+                      { icon: "🎫", v: data.stats.openTickets, l: "تذاكر", alert: data.stats.openTickets > 0 },
                     ].map((s, i) => (
-                      <div key={i} className="flex flex-col items-center rounded-xl bg-[#fafcfb] border border-[#f0f0f0] py-2.5">
-                        <span className="text-base">{s.icon}</span>
-                        <span className={`text-[18px] font-black tabular-nums ${s.c}`}>{s.v}</span>
+                      <div key={i} className={`flex-shrink-0 flex items-center gap-2 rounded-2xl border px-3.5 py-2.5 ${s.alert ? "border-red-200 bg-red-50/80" : "border-[#e4ebe7] bg-white"}`}>
+                        <span className="text-sm">{s.icon}</span>
+                        <span className={`text-[16px] font-black tabular-nums ${s.alert ? "text-red-600" : "text-[#1e1b4b]"}`}>{s.v}</span>
                         <span className="text-[10px] text-[#94a3b8] font-medium">{s.l}</span>
                       </div>
                     ))}
                   </div>
                   {data.stats.pipelineValue > 0 && (
-                    <div className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-[#f0faf8] py-2 border border-[#d6ece5]">
+                    <div className="mt-2 flex items-center gap-2 rounded-2xl bg-gradient-to-l from-[#f0faf8] to-white border border-[#d6ece5] px-4 py-2.5">
                       <span className="text-sm">💰</span>
                       <span className="text-[13px] font-bold text-[#1a5c4f]">
                         قيمة المسار: {(data.stats.pipelineValue / 100).toLocaleString("ar-SA")} ر.س
@@ -542,106 +520,105 @@ export default function SupervisorBot() {
                     </div>
                   )}
                 </div>
-              </div>
 
-              {/* Directives */}
-              {visible.length > 0 && (
-                <div style={{ animation: "sv-entry 0.4s ease-out 300ms both" }}>
-                  <ChatBubble delay={0}>
-                    <p className="text-[13px] font-bold text-[#1e1b4b]">
-                      {urgentCount > 0
-                        ? `🚨 عندك ${urgentCount} شيء مهم — ابدأ فيها:`
-                        : "📝 هذي توجيهاتي لك اليوم:"}
-                    </p>
-                  </ChatBubble>
-
-                  <div className="flex flex-col gap-2 mt-3 mr-9">
-                    {visible.map((d, i) => {
-                      const style = TYPE_STYLES[d.type];
-                      return (
-                        <div
-                          key={d.id}
-                          className={`group relative overflow-hidden rounded-xl border border-[#e8ece9] border-r-[3px] ${style.border} ${style.bg} p-3.5 transition-all duration-200 hover:shadow-md`}
-                          style={{ animation: `sv-entry 0.35s ease-out ${400 + i * 80}ms both` }}
-                        >
-                          <div className="flex items-start gap-2.5">
-                            <span className="text-lg flex-shrink-0">{d.icon}</span>
-                            <div className="flex-1 min-w-0">
-                              <span className={`inline-block rounded-md px-1.5 py-[2px] text-[9px] font-black uppercase tracking-wider ${style.badge} mb-1`}>{style.label}</span>
-                              <p className="text-[13px] font-medium leading-[1.7] text-[#1e1b4b]">{d.message}</p>
-                              {d.action && d.actionHref && (
-                                <button
-                                  onClick={() => { router.push(d.actionHref!); setOpen(false); }}
-                                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[#141c2e] px-3 py-1.5 text-[11px] font-bold text-white transition-all hover:bg-[#1a3040] hover:shadow-md active:scale-[0.97]"
-                                >
-                                  {d.action}
-                                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} className="h-3 w-3 rtl:rotate-180"><path d="M3 8h10M8 3l5 5-5 5" /></svg>
-                                </button>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => setDismissed((prev) => new Set(prev).add(d.id))}
-                              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#c0c8c4] opacity-0 transition group-hover:opacity-100 hover:bg-emerald-100 hover:text-emerald-600"
-                              title="تم"
-                            >
-                              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-3.5 w-3.5"><path d="M2 8l4.5 5L14 3" /></svg>
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {visible.length === 0 && (
-                <div style={{ animation: "sv-entry 0.4s ease-out 300ms both" }}>
-                  <ChatBubble delay={0}>
-                    <div className="text-center py-2">
-                      <span className="text-3xl">🎉</span>
-                      <p className="text-[15px] font-black text-[#1e1b4b] mt-2">ما عندك شيء عالق!</p>
-                      <p className="text-[12px] text-[#94a3b8] mt-1">خلّصت كل شيء — أنا فخور فيك!</p>
+                {/* Directives */}
+                {visible.length > 0 && (
+                  <div style={{ animation: "sv-entry 0.4s ease-out 250ms both" }}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${urgentCount > 0 ? "bg-red-100" : "bg-[#e8f2ed]"}`}>
+                        <span className="text-sm">{urgentCount > 0 ? "🚨" : "📝"}</span>
+                      </div>
+                      <span className="text-[13px] font-black text-[#1e1b4b]">
+                        {urgentCount > 0 ? `${urgentCount} شيء يحتاج انتباهك` : "توجيهات اليوم"}
+                      </span>
                     </div>
-                  </ChatBubble>
-                </div>
-              )}
-            </>
-          )}
 
-          {/* Loading state */}
-          {loading && !data && (
-            <ChatBubble>
-              <div className="flex items-center gap-3">
-                <div className="relative h-5 w-5">
-                  <div className="absolute inset-0 animate-spin rounded-full border-2 border-[#d6ece5] border-t-[#38d39f]" />
-                </div>
-                <p className="text-[13px] text-[#94a3b8]">أجمع بياناتك...</p>
-              </div>
-            </ChatBubble>
-          )}
-        </div>
+                    <div className="flex flex-col gap-2.5">
+                      {visible.map((d, i) => {
+                        const s = TYPE_STYLES[d.type];
+                        return (
+                          <div
+                            key={d.id}
+                            className={`group relative rounded-2xl border border-[#e8ece9] border-r-[3px] ${s.border} bg-white p-4 transition-all duration-200 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)]`}
+                            style={{ animation: `sv-entry 0.35s ease-out ${350 + i * 70}ms both` }}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`flex-shrink-0 mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl ${s.bg}`}>
+                                <span className="text-lg">{d.icon}</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                  <span className={`rounded-lg px-2 py-[3px] text-[9px] font-black tracking-wider ${s.badge}`}>{s.label}</span>
+                                </div>
+                                <p className="text-[13px] font-medium leading-[1.8] text-[#2d2b46]">{d.message}</p>
+                                {d.action && d.actionHref && (
+                                  <button
+                                    onClick={() => { router.push(d.actionHref!); setOpen(false); }}
+                                    className="mt-2.5 inline-flex items-center gap-1.5 rounded-xl bg-[#1a5c4f] px-4 py-2 text-[11px] font-bold text-white transition-all hover:bg-[#145043] hover:shadow-md active:scale-[0.97]"
+                                  >
+                                    {d.action}
+                                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} className="h-3 w-3 rtl:rotate-180"><path d="M3 8h10M8 3l5 5-5 5" /></svg>
+                                  </button>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => setDismissed((prev) => new Set(prev).add(d.id))}
+                                className="flex-shrink-0 flex h-8 w-8 items-center justify-center rounded-xl text-[#c8d0cc] opacity-0 transition group-hover:opacity-100 hover:bg-emerald-50 hover:text-emerald-600"
+                                title="تم"
+                              >
+                                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-3.5 w-3.5"><path d="M2 8l4.5 5L14 3" /></svg>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
-        {/* Footer */}
-        <div className="flex-none border-t border-[#e8ece9] bg-white p-4">
-          <button
-            onClick={load}
-            disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-[#141c2e] to-[#1a3040] py-3 text-[13px] font-bold text-white transition-all hover:shadow-lg disabled:opacity-50 active:scale-[0.98]"
-          >
-            {loading ? (
-              <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                يحلل بياناتك...
-              </>
-            ) : (
-              <>
-                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
-                  <path d="M1 8a7 7 0 0114 0A7 7 0 011 8z" /><path d="M11 3.5A5.5 5.5 0 005 8" />
-                </svg>
-                تحديث التقرير
+                {visible.length === 0 && (
+                  <div className="rounded-2xl bg-white border border-[#e8ece9] py-10 text-center shadow-sm" style={{ animation: "sv-entry 0.4s ease-out 250ms both" }}>
+                    <span className="text-4xl">🎉</span>
+                    <p className="text-[16px] font-black text-[#1e1b4b] mt-3">ما عندك شيء عالق!</p>
+                    <p className="text-[12px] text-[#94a3b8] mt-1">خلّصت كل شيء — أنا فخور فيك!</p>
+                  </div>
+                )}
               </>
             )}
-          </button>
+
+            {/* Intro waiting state — show nothing in content during intro */}
+            {showIntro && data && introStep >= 3 && (
+              <div className="flex items-center justify-center py-8" style={{ animation: "sv-entry 0.4s ease-out both" }}>
+                <div className="flex items-center gap-3 rounded-2xl bg-white border border-[#e8ece9] px-5 py-3 shadow-sm">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#e8ece9] border-t-[#38d39f]" />
+                  <span className="text-[13px] font-medium text-[#94a3b8]">أجهّز التقرير...</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="flex-none border-t border-[#e8ece9] bg-white/80 backdrop-blur-sm p-4">
+            <button
+              onClick={load}
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#141c2e] to-[#1a3a4a] py-3.5 text-[13px] font-bold text-white transition-all hover:shadow-[0_4px_20px_rgba(20,28,46,0.3)] disabled:opacity-50 active:scale-[0.98]"
+            >
+              {loading ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  يحلل بياناتك...
+                </>
+              ) : (
+                <>
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+                    <path d="M1 8a7 7 0 0114 0A7 7 0 011 8z" /><path d="M11 3.5A5.5 5.5 0 005 8" />
+                  </svg>
+                  تحديث التقرير
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </>

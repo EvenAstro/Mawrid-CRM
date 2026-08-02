@@ -42,9 +42,6 @@ export async function GET(req: NextRequest) {
       .maybeSingle();
     const firstName = profileRes.data?.first_name || profileRes.data?.full_name?.split(" ")[0] || null;
 
-    // Tasks: include both assigned to user AND unassigned (null assignee)
-    const taskFilter = `assignee_uid.eq.${userId},assignee_uid.is.null`;
-
     const [
       overdueTasksRes,
       todayTasksRes,
@@ -56,20 +53,19 @@ export async function GET(req: NextRequest) {
       bigDealsRes,
       openTicketsRes,
       pipelineRes,
-      contactsNoActivityRes,
       yesterdayCompletedRes,
     ] = await Promise.all([
       supabase.from("tasks").select("id, title, due_at")
-        .or(taskFilter).lt("due_at", ds).is("completed_at", null)
+        .eq("assignee_uid", userId).lt("due_at", ds).is("completed_at", null)
         .order("due_at", { ascending: true }).limit(10),
       supabase.from("tasks").select("id, title, due_at")
-        .or(taskFilter).gte("due_at", ds).lt("due_at", de).is("completed_at", null)
+        .eq("assignee_uid", userId).gte("due_at", ds).lt("due_at", de).is("completed_at", null)
         .order("due_at", { ascending: true }).limit(10),
       supabase.from("tasks").select("id, title, completed_at")
-        .or(taskFilter).gte("completed_at", ds).lt("completed_at", de).limit(20),
+        .eq("assignee_uid", userId).gte("completed_at", ds).lt("completed_at", de).limit(20),
       // Tasks with no due date — still pending
       supabase.from("tasks").select("id, title, created_at")
-        .or(taskFilter).is("due_at", null).is("completed_at", null)
+        .eq("assignee_uid", userId).is("due_at", null).is("completed_at", null)
         .order("created_at", { ascending: false }).limit(10),
       supabase.from("deals").select("id, name, updated_at, expected_value, leads(full_name)")
         .is("deleted_at", null).is("closed_at", null).lt("updated_at", sevenDaysAgo)
@@ -87,10 +83,7 @@ export async function GET(req: NextRequest) {
       supabase.from("deals").select("id, name, stage, expected_value, leads(full_name)")
         .is("deleted_at", null).is("closed_at", null)
         .order("created_at", { ascending: false }).limit(20),
-      supabase.from("contacts").select("id, full_name, updated_at")
-        .is("deleted_at", null).lt("updated_at", threeDaysAgo)
-        .order("updated_at", { ascending: true }).limit(5),
-      supabase.from("tasks").select("id").or(taskFilter)
+      supabase.from("tasks").select("id").eq("assignee_uid", userId)
         .gte("completed_at", new Date(todayStart.getTime() - MS_PER_DAY).toISOString())
         .lt("completed_at", ds),
     ]);
@@ -100,7 +93,6 @@ export async function GET(req: NextRequest) {
     type Lead = { id: string; full_name: string | null; company_name: string | null; created_at: string };
     type BigDeal = { id: string; name: string | null; expected_value: number | null; stage: string | null; updated_at: string | null; leads: { full_name: string | null } | null };
     type Ticket = { id: string; title: string | null; status: string; priority: string | null; created_at: string };
-    type Contact = { id: string; full_name: string | null; updated_at: string | null };
 
     const overdueTasks = (overdueTasksRes.data as unknown as Task[]) ?? [];
     const todayTasks = (todayTasksRes.data as unknown as Task[]) ?? [];
@@ -112,7 +104,6 @@ export async function GET(req: NextRequest) {
     const bigDeals = (bigDealsRes.data as unknown as BigDeal[]) ?? [];
     const openTickets = (openTicketsRes.data as unknown as Ticket[]) ?? [];
     const pipeline = (pipelineRes.data as unknown as BigDeal[]) ?? [];
-    const coldContacts = (contactsNoActivityRes.data as unknown as Contact[]) ?? [];
     const yesterdayCompleted = yesterdayCompletedRes.data ?? [];
 
     const outboundCount = todayActivities.filter((a: { direction: string | null }) => a.direction === "outbound").length;
@@ -219,17 +210,7 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    // 7. Cold contacts
-    coldContacts.slice(0, 3).forEach((c) => {
-      const days = Math.ceil((now.getTime() - new Date(c.updated_at!).getTime()) / MS_PER_DAY);
-      directives.push({
-        id: `d${idx++}`, type: "remind", icon: "🧊",
-        message: `جهة اتصال "${c.full_name || "بدون اسم"}" ما تحدثت من ${days} يوم — سلّم عليه`,
-        action: "افتح جهات الاتصال", actionHref: "/dashboard/contacts",
-      });
-    });
-
-    // 8. Activity warnings
+    // 7. Activity warnings
     if (outboundCount === 0 && now.getHours() >= 10) {
       directives.push({
         id: `d${idx++}`, type: "warning", icon: "📵",
@@ -306,7 +287,8 @@ ${directivesList || "لا توجيهات — كل شيء تمام"}
 - محدد (اذكر أرقام وأسماء إذا فيه)
 - عملي (قل بالضبط وش يسوي أول شيء)
 - حنون بس صارم
-- ابدأ بتحية مناسبة للوقت
+- ابدأ بتحية مناسبة: صباح الخير (قبل الظهر)، هلا والله (الظهر للعصر)، مساء الخير (بعد العصر). لا تستخدم "عصر الخير" أو تحيات غريبة.
+- لا تذكر جهات الاتصال — ركز على المهام والصفقات والعملاء المحتملين والتذاكر فقط
 
 أجب بـ JSON فقط: {"message": "..."}`;
 
