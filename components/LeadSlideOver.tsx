@@ -80,19 +80,6 @@ function nowTimeInput() {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-/* ─── Reusable field row ────────────────────────────────────────────── */
-function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | null }) {
-  return (
-    <div className="flex items-start gap-3 py-2.5">
-      <span className="mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-slate-100 text-slate-500">{icon}</span>
-      <div className="min-w-0 flex-1">
-        <p className="text-[12px] font-medium tracking-wider text-slate-400">{label}</p>
-        <p className="mt-0.5 text-[15px] font-medium text-slate-800">{value || "—"}</p>
-      </div>
-    </div>
-  );
-}
-
 /* ─── Section wrapper ───────────────────────────────────────────────── */
 function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -111,7 +98,6 @@ const inputCls = "h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 
 const selectCls = "h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-[14px] text-slate-700 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition appearance-none";
 const textareaCls = "w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition resize-none";
 const btnPrimary = "h-11 w-full rounded-xl bg-emerald-600 text-[14px] font-semibold text-white shadow-sm shadow-emerald-600/20 transition hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50";
-const btnOutline = "h-11 w-full rounded-xl border border-slate-200 bg-white text-[14px] font-semibold text-slate-600 transition hover:bg-slate-50 active:scale-[0.98]";
 
 export default function LeadSlideOver({
   lead,

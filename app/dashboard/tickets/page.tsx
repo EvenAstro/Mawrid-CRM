@@ -58,10 +58,6 @@ function localizeType(t: string | null): string {
   return TYPE_LABELS[t.toLowerCase()] ?? t;
 }
 
-function titleize(s: string | null) {
-  if (!s) return "—";
-  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
 function statusStyle(status: string | null) {
   const s = (status ?? "").toLowerCase();
   if (s === "resolved") return "bg-emerald-50 text-emerald-700";

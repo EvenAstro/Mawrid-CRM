@@ -98,7 +98,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 function DashboardShell({ children, email, fullName }: { children: React.ReactNode; email: string; fullName: string }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { role, permissions, loading: roleLoading, can } = useRole();
+  const { permissions, loading: roleLoading, can } = useRole();
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {

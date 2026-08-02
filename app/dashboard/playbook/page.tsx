@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   buildPlaybook,
-  MIN_SAMPLE,
   TAG_LABELS,
   type PlaybookData,
   type PlaybookGroup,
