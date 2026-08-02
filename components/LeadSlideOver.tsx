@@ -10,6 +10,7 @@ import { fetchLeadScoreModel, scoreWithModel } from "@/lib/leadScore/computeLead
 import { fetchProfiles, type Profile } from "@/lib/profiles";
 import { useRole } from "@/components/RoleProvider";
 import { canActOnTask } from "@/lib/permissions";
+import { logAudit, fieldChangeMessage } from "@/lib/auditLog";
 
 function profileName(p: Profile | undefined): string {
   if (!p) return "";
@@ -39,6 +40,7 @@ interface Activity {
   occurred_at: string | null;
   body?: string | null;
   direction?: string | null;
+  is_system?: boolean | null;
   activity_types: { label: string } | null;
 }
 interface ActivityType { id: string; label: string }
@@ -187,6 +189,13 @@ export default function LeadSlideOver({
   const [showHistory, setShowHistory] = useState(false);
   const [dealOpen, setDealOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"activities" | "tasks">("activities");
+
+  const [editingInfo, setEditingInfo] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [savingInfo, setSavingInfo] = useState(false);
 
   const open = lead != null;
 
@@ -385,8 +394,10 @@ export default function LeadSlideOver({
     setSavingTask(false);
     if (error) { toast("تعذّر إضافة المهمة", "error"); return; }
     toast("تمت إضافة المهمة");
+    logAudit(data.id, userId, `📌 تمت إضافة مهمة جديدة: «${taskTitle.trim()}»`);
     setTaskTitle(""); setTaskDue(""); setTaskTime("09:00"); setTaskTypeId(""); setTaskAssigneeId(""); setTaskDependsOn(""); setAddingTask(false);
     refetchTasks(data.id);
+    refetchActivities(data.id);
   }
 
   async function completeTask(note: string) {
@@ -404,8 +415,51 @@ export default function LeadSlideOver({
     } else {
       toast("تم إنهاء المهمة");
     }
+    logAudit(data.id, userId, `✅ تم إنهاء مهمة: «${completeTarget.title || "مهمة"}»\nملاحظة: ${note}`);
     setCompleteTarget(null);
     refetchTasks(data.id);
+    refetchActivities(data.id);
+  }
+
+  function startEditingInfo() {
+    if (!data) return;
+    setEditName(data.full_name || "");
+    setEditPhone(data.phone || "");
+    setEditEmail(data.email || "");
+    setEditNotes(data.notes || "");
+    setEditingInfo(true);
+  }
+
+  async function saveInfoEdit() {
+    if (!data) return;
+    setSavingInfo(true);
+    const now = new Date().toISOString();
+    const changes: { field: string; oldValue: string | null; newValue: string | null }[] = [];
+    if (editName.trim() !== (data.full_name || "")) changes.push({ field: "full_name", oldValue: data.full_name, newValue: editName.trim() });
+    if (editPhone.trim() !== (data.phone || "")) changes.push({ field: "phone", oldValue: data.phone, newValue: editPhone.trim() });
+    if (editEmail.trim() !== (data.email || "")) changes.push({ field: "email", oldValue: data.email, newValue: editEmail.trim() });
+    if (editNotes.trim() !== (data.notes || "")) changes.push({ field: "notes", oldValue: data.notes ?? null, newValue: editNotes.trim() });
+
+    if (changes.length === 0) { setSavingInfo(false); setEditingInfo(false); return; }
+
+    const { error } = await supabase
+      .from("leads")
+      .update({
+        full_name: editName.trim() || null,
+        phone: editPhone.trim() || null,
+        email: editEmail.trim() || null,
+        notes: editNotes.trim() || null,
+        updated_at: now,
+      })
+      .eq("id", data.id);
+    setSavingInfo(false);
+    if (error) { toast("تعذّر حفظ التعديلات", "error"); return; }
+    toast("تم حفظ بيانات العميل");
+    await logAudit(data.id, userId, fieldChangeMessage(changes));
+    patchShown({ full_name: editName.trim() || null, phone: editPhone.trim() || null, email: editEmail.trim() || null, notes: editNotes.trim() || null });
+    setEditingInfo(false);
+    refetchActivities(data.id);
+    onUpdated?.();
   }
 
   const outcomeBadge = isJunkLead
@@ -598,22 +652,69 @@ export default function LeadSlideOver({
               </Section>
 
               {/* ─── Lead Details ──────────────────────────────── */}
-              <Section title="بيانات العميل">
-                <div className="grid grid-cols-1 gap-x-8 gap-y-1 sm:grid-cols-2">
-                  <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" /></svg>} label="الاسم" value={data.full_name} />
-                  <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M4 16.5v-13h-.25a.75.75 0 010-1.5h12.5a.75.75 0 010 1.5H16v13h.25a.75.75 0 010 1.5h-3.5a.75.75 0 01-.75-.75v-2.5a.75.75 0 00-.75-.75h-2.5a.75.75 0 00-.75.75v2.5a.75.75 0 01-.75.75h-3.5a.75.75 0 010-1.5z" clipRule="evenodd" /></svg>} label="الشركة" value={data.establishment_name ?? null} />
-                  <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5H15c-1.149 0-2.263-.15-3.326-.43A13.022 13.022 0 012.43 8.326 13.019 13.019 0 012 5V3.5z" /></svg>} label="الجوال" value={data.phone} />
-                  <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path d="M3 4a2 2 0 00-2 2v1.161l8.441 4.221a1.25 1.25 0 001.118 0L19 7.161V6a2 2 0 00-2-2H3z" /><path d="M19 8.839l-7.77 3.885a2.75 2.75 0 01-2.46 0L1 8.839V14a2 2 0 002 2h14a2 2 0 002-2V8.839z" /></svg>} label="الإيميل" value={data.email} />
-                  <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M2 3.5A1.5 1.5 0 013.5 2h9A1.5 1.5 0 0114 3.5v11.75A2.75 2.75 0 0016.75 18h-12A2.75 2.75 0 012 15.25V3.5zm3.75 7a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5zm0-3a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5z" clipRule="evenodd" /></svg>} label="المرحلة" value={data.pipeline_stages?.label ?? null} />
-                  <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" /></svg>} label="المصدر" value={data.sources?.label ?? null} />
-                  <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" /></svg>} label="المسؤول" value={data.owner} />
-                  <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M5.75 2a.75.75 0 01.75.75V4h7V2.75a.75.75 0 011.5 0V4h.25A2.75 2.75 0 0118 6.75v8.5A2.75 2.75 0 0115.25 18H4.75A2.75 2.75 0 012 15.25v-8.5A2.75 2.75 0 014.75 4H5V2.75A.75.75 0 015.75 2zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75z" clipRule="evenodd" /></svg>} label="تاريخ الإنشاء" value={formatDate(data.created_at)} />
-                </div>
-                {data.notes && (
-                  <div className="mt-4 rounded-xl bg-slate-50 p-4">
-                    <p className="mb-1 text-[12px] font-medium uppercase tracking-wider text-slate-400">ملاحظات</p>
-                    <p dir="auto" className="whitespace-pre-wrap text-[14px] leading-relaxed text-slate-700">{data.notes}</p>
+              <Section
+                title="بيانات العميل"
+                action={
+                  editingInfo ? (
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setEditingInfo(false)} className="rounded-lg px-3 py-1.5 text-[13px] font-semibold text-slate-500 transition hover:bg-slate-100">
+                        إلغاء
+                      </button>
+                      <button onClick={saveInfoEdit} disabled={savingInfo} className="rounded-lg bg-emerald-600 px-4 py-1.5 text-[13px] font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50">
+                        {savingInfo ? "جارِ الحفظ…" : "حفظ"}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={startEditingInfo}
+                      className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold text-emerald-700 transition hover:bg-emerald-50"
+                    >
+                      <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
+                      تعديل
+                    </button>
+                  )
+                }
+              >
+                {editingInfo ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1.5 block text-[12px] font-medium uppercase tracking-wider text-slate-400">الاسم</label>
+                        <input dir="auto" value={editName} onChange={(e) => setEditName(e.target.value)} className={inputCls} />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-[12px] font-medium uppercase tracking-wider text-slate-400">الجوال</label>
+                        <input dir="auto" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className={inputCls} />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-[12px] font-medium uppercase tracking-wider text-slate-400">الإيميل</label>
+                        <input dir="auto" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className={inputCls} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-[12px] font-medium uppercase tracking-wider text-slate-400">ملاحظات</label>
+                      <textarea dir="auto" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={3} className={textareaCls} />
+                    </div>
                   </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 gap-x-8 gap-y-1 sm:grid-cols-2">
+                      <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" /></svg>} label="الاسم" value={data.full_name} />
+                      <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M4 16.5v-13h-.25a.75.75 0 010-1.5h12.5a.75.75 0 010 1.5H16v13h.25a.75.75 0 010 1.5h-3.5a.75.75 0 01-.75-.75v-2.5a.75.75 0 00-.75-.75h-2.5a.75.75 0 00-.75.75v2.5a.75.75 0 01-.75.75h-3.5a.75.75 0 010-1.5z" clipRule="evenodd" /></svg>} label="الشركة" value={data.establishment_name ?? null} />
+                      <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5H15c-1.149 0-2.263-.15-3.326-.43A13.022 13.022 0 012.43 8.326 13.019 13.019 0 012 5V3.5z" /></svg>} label="الجوال" value={data.phone} />
+                      <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path d="M3 4a2 2 0 00-2 2v1.161l8.441 4.221a1.25 1.25 0 001.118 0L19 7.161V6a2 2 0 00-2-2H3z" /><path d="M19 8.839l-7.77 3.885a2.75 2.75 0 01-2.46 0L1 8.839V14a2 2 0 002 2h14a2 2 0 002-2V8.839z" /></svg>} label="الإيميل" value={data.email} />
+                      <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M2 3.5A1.5 1.5 0 013.5 2h9A1.5 1.5 0 0114 3.5v11.75A2.75 2.75 0 0016.75 18h-12A2.75 2.75 0 012 15.25V3.5zm3.75 7a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5zm0-3a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5z" clipRule="evenodd" /></svg>} label="المرحلة" value={data.pipeline_stages?.label ?? null} />
+                      <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" /></svg>} label="المصدر" value={data.sources?.label ?? null} />
+                      <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" /></svg>} label="المسؤول" value={data.owner} />
+                      <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M5.75 2a.75.75 0 01.75.75V4h7V2.75a.75.75 0 011.5 0V4h.25A2.75 2.75 0 0118 6.75v8.5A2.75 2.75 0 0115.25 18H4.75A2.75 2.75 0 012 15.25v-8.5A2.75 2.75 0 014.75 4H5V2.75A.75.75 0 015.75 2zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75z" clipRule="evenodd" /></svg>} label="تاريخ الإنشاء" value={formatDate(data.created_at)} />
+                    </div>
+                    {data.notes && (
+                      <div className="mt-4 rounded-xl bg-slate-50 p-4">
+                        <p className="mb-1 text-[12px] font-medium uppercase tracking-wider text-slate-400">ملاحظات</p>
+                        <p dir="auto" className="whitespace-pre-wrap text-[14px] leading-relaxed text-slate-700">{data.notes}</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </Section>
 
@@ -747,16 +848,25 @@ export default function LeadSlideOver({
                       ) : (
                         <div className="max-h-[420px] space-y-3 overflow-y-auto">
                           {activities.map((a) => (
-                            <div key={a.id} className="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-slate-200">
-                              <div className="mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-emerald-100 text-[14px] text-emerald-600">
-                                📞
+                            <div
+                              key={a.id}
+                              className={`flex gap-3 rounded-xl border p-4 transition ${
+                                a.is_system
+                                  ? "border-slate-100 bg-slate-50/30 hover:border-slate-200"
+                                  : "border-slate-100 bg-slate-50/50 hover:border-slate-200"
+                              }`}
+                            >
+                              <div className={`mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-xl text-[14px] ${a.is_system ? "bg-slate-100 text-slate-500" : "bg-emerald-100 text-emerald-600"}`}>
+                                {a.is_system ? "⚙️" : "📞"}
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[14px] font-semibold text-slate-800">{a.activity_types?.label ?? "نشاط"}</span>
+                                  <span className={`text-[14px] font-semibold ${a.is_system ? "text-slate-500" : "text-slate-800"}`}>
+                                    {a.is_system ? "سجلّ النظام" : a.activity_types?.label ?? "نشاط"}
+                                  </span>
                                 </div>
                                 <p className="mt-0.5 text-[12px] text-slate-400">{formatDateTime(a.occurred_at)}</p>
-                                {a.body && <p dir="auto" className="mt-1.5 text-[13px] leading-relaxed text-slate-600">{a.body}</p>}
+                                {a.body && <p dir="auto" className="mt-1.5 whitespace-pre-wrap text-[13px] leading-relaxed text-slate-600">{a.body}</p>}
                               </div>
                             </div>
                           ))}
