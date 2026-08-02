@@ -55,6 +55,21 @@ export async function GET(req: NextRequest) {
   try {
     const data = await calcRepScore(userId);
 
+    const weekScores: { date: string; score: number }[] = [];
+    const today = new Date();
+    for (let i = 6; i >= 1; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const ds = d.toISOString().slice(0, 10);
+      try {
+        const past = await calcRepScore(userId, ds);
+        weekScores.push({ date: ds, score: past.score });
+      } catch {
+        weekScores.push({ date: ds, score: 0 });
+      }
+    }
+    weekScores.push({ date: today.toISOString().slice(0, 10), score: data.score });
+
     const apiKey = process.env.OPENROUTER_API_KEY;
     let coaching: CoachResponse | null = null;
 
@@ -87,7 +102,7 @@ export async function GET(req: NextRequest) {
       coaching = fallbackCoaching(data);
     }
 
-    return NextResponse.json({ score: data, coaching });
+    return NextResponse.json({ score: data, coaching, weekScores });
   } catch (e) {
     console.error("[rep-coach] error", e);
     return NextResponse.json({ error: "failed" }, { status: 500 });
