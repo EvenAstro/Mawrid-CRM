@@ -7,10 +7,10 @@ import { supabase } from "@/lib/supabase";
  */
 export async function logAudit(leadId: string | number, userId: string | null, message: string) {
   const now = new Date().toISOString();
-  await supabase.from("activities").insert({
+  const row = {
     id: crypto.randomUUID(),
     entity_type: "lead",
-    entity_id: leadId,
+    entity_id: String(leadId),
     activity_type_id: null,
     body: message,
     direction: null,
@@ -19,7 +19,13 @@ export async function logAudit(leadId: string | number, userId: string | null, m
     user_id: userId,
     created_at: now,
     updated_at: now,
-  });
+  };
+  const { error } = await supabase.from("activities").insert(row);
+  if (error) {
+    console.error("[logAudit] insert failed, retrying without is_system", error);
+    const { is_system: _, ...fallback } = row;
+    await supabase.from("activities").insert(fallback);
+  }
 }
 
 const FIELD_LABELS: Record<string, string> = {
