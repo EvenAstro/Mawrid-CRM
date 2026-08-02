@@ -240,19 +240,19 @@ input[type="checkbox"].ls-toggle:checked + .ls-toggle-label::after {
 /* Custom thin teal scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #1a5c4f transparent;
+  scrollbar-color: #9bb5af transparent;
 }
 *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 *::-webkit-scrollbar-track {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background-color: #1a5c4f;
+  background-color: #9bb5af;
   border-radius: 999px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background-color: #15503f;
+  background-color: #1a5c4f;
 }
