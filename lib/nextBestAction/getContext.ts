@@ -1,8 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
+import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import type { SituationalTag } from "@/lib/classifyActivity";
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export type MatchTier = "exact" | "stage" | "tag" | "none";
 

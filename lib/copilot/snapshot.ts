@@ -1,8 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
+import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import { money } from "@/lib/format";
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const DAY_MS = 86_400_000;
 const STUCK_DAYS = 7;

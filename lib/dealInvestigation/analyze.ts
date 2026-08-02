@@ -1,9 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
+import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import { getContext } from "@/lib/nextBestAction/getContext";
 import type { SituationalTag } from "@/lib/classifyActivity";
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct";
