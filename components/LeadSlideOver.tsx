@@ -50,6 +50,9 @@ interface Task {
   description: string | null;
   due_at: string | null;
   assignee_uid: string | null;
+  depends_on_task_id: string | null;
+  lead_id: string | null;
+  completed_at: string | null;
   task_types: { label: string; color: string | null } | null;
 }
 interface TaskType { id: string; label: string }
@@ -173,9 +176,11 @@ export default function LeadSlideOver({
   const [taskTime, setTaskTime] = useState("09:00");
   const [taskTypeId, setTaskTypeId] = useState("");
   const [taskAssigneeId, setTaskAssigneeId] = useState("");
+  const [taskDependsOn, setTaskDependsOn] = useState("");
   const [savingTask, setSavingTask] = useState(false);
   const [completeTarget, setCompleteTarget] = useState<Task | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
+  const [allLeadTasks, setAllLeadTasks] = useState<Task[]>([]);
 
   const [dealOpen, setDealOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"activities" | "tasks">("activities");
@@ -196,15 +201,23 @@ export default function LeadSlideOver({
   }
 
   async function refetchTasks(leadId: string | number) {
-    const { data } = await supabase
-      .from("tasks")
-      .select("*, task_types(label, color)")
-      .eq("entity_id", leadId)
-      .eq("entity_type", "lead")
-      .is("completed_at", null)
-      .order("due_at", { ascending: true, nullsFirst: false })
-      .limit(30);
-    setTasks((data as unknown as Task[]) || []);
+    const [openRes, allRes] = await Promise.all([
+      supabase
+        .from("tasks")
+        .select("*, task_types(label, color)")
+        .or(`lead_id.eq.${leadId},and(entity_id.eq.${leadId},entity_type.eq.lead)`)
+        .is("completed_at", null)
+        .order("due_at", { ascending: true, nullsFirst: false })
+        .limit(30),
+      supabase
+        .from("tasks")
+        .select("id, title, completed_at, depends_on_task_id, lead_id")
+        .or(`lead_id.eq.${leadId},and(entity_id.eq.${leadId},entity_type.eq.lead)`)
+        .order("due_at", { ascending: true, nullsFirst: false })
+        .limit(50),
+    ]);
+    setTasks((openRes.data as unknown as Task[]) || []);
+    setAllLeadTasks((allRes.data as unknown as Task[]) || []);
   }
 
   useEffect(() => {
@@ -349,13 +362,15 @@ export default function LeadSlideOver({
     const dueAt = taskDue ? new Date(`${taskDue}T${taskTime || "09:00"}:00`).toISOString() : null;
     const { error } = await supabase.from("tasks").insert({
       id: crypto.randomUUID(), title: taskTitle.trim(), description: null, due_at: dueAt,
-      task_type_id: taskTypeId || null, assignee_uid: taskAssigneeId || null, entity_type: "lead", entity_id: data.id,
+      task_type_id: taskTypeId || null, assignee_uid: taskAssigneeId || null,
+      depends_on_task_id: taskDependsOn || null, lead_id: String(data.id),
+      entity_type: "lead", entity_id: data.id,
       created_at: now, updated_at: now,
     });
     setSavingTask(false);
     if (error) { toast("تعذّر إضافة المهمة", "error"); return; }
     toast("تمت إضافة المهمة");
-    setTaskTitle(""); setTaskDue(""); setTaskTime("09:00"); setTaskTypeId(""); setTaskAssigneeId(""); setAddingTask(false);
+    setTaskTitle(""); setTaskDue(""); setTaskTime("09:00"); setTaskTypeId(""); setTaskAssigneeId(""); setTaskDependsOn(""); setAddingTask(false);
     refetchTasks(data.id);
   }
 
@@ -368,7 +383,12 @@ export default function LeadSlideOver({
       .eq("id", completeTarget.id);
     setCompletingId(null);
     if (error) { toast("تعذّر إنهاء المهمة", "error"); return; }
-    toast("تم إنهاء المهمة");
+    const unblocked = allLeadTasks.filter((t) => t.depends_on_task_id === completeTarget.id && !t.completed_at);
+    if (unblocked.length > 0) {
+      toast(`تم إنهاء المهمة — المهمة التالية جاهزة: ${unblocked[0].title || "مهمة"}`);
+    } else {
+      toast("تم إنهاء المهمة");
+    }
     setCompleteTarget(null);
     refetchTasks(data.id);
   }
@@ -758,6 +778,12 @@ export default function LeadSlideOver({
                             <option value="">بدون مسؤول</option>
                             {profiles.map((p) => <option key={p.id} value={p.id}>{profileName(p)}</option>)}
                           </select>
+                          {tasks.length > 0 && (
+                            <select value={taskDependsOn} onChange={(e) => setTaskDependsOn(e.target.value)} className={selectCls}>
+                              <option value="">بدون تسلسل (مستقلة)</option>
+                              {tasks.map((t) => <option key={t.id} value={t.id}>بعد إنجاز: {t.title || "مهمة"}</option>)}
+                            </select>
+                          )}
                           <button onClick={submitTask} disabled={savingTask} className={btnPrimary}>
                             {savingTask ? "جارِ الحفظ…" : "إضافة المهمة"}
                           </button>
@@ -776,9 +802,15 @@ export default function LeadSlideOver({
                         <div className="max-h-[420px] space-y-3 overflow-y-auto">
                           {tasks.map((t) => {
                             const canAct = canActOnTask(role, userId, t.assignee_uid);
+                            const depTask = t.depends_on_task_id ? allLeadTasks.find((x) => x.id === t.depends_on_task_id) : null;
+                            const isBlocked = !!depTask && !depTask.completed_at;
                             return (
-                            <div key={t.id} className={`group flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-slate-200 ${completingId === t.id ? "opacity-40" : ""}`}>
-                              {canAct ? (
+                            <div key={t.id} className={`group flex items-start gap-3 rounded-xl border p-4 transition ${isBlocked ? "border-slate-200 bg-slate-100/60 opacity-60" : "border-slate-100 bg-slate-50/50 hover:border-slate-200"} ${completingId === t.id ? "opacity-40" : ""}`}>
+                              {isBlocked ? (
+                                <span title="معلّقة بانتظار مهمة أخرى" className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full border-2 border-dashed border-slate-300">
+                                  <svg viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3 text-slate-400"><path fillRule="evenodd" d="M8 1a7 7 0 100 14A7 7 0 008 1zM7.25 4.5a.75.75 0 011.5 0v3.25H11a.75.75 0 010 1.5H7.25V4.5z" clipRule="evenodd" /></svg>
+                                </span>
+                              ) : canAct ? (
                                 <button
                                   onClick={() => setCompleteTarget(t)}
                                   aria-label="إنهاء المهمة"
@@ -788,8 +820,13 @@ export default function LeadSlideOver({
                                 <span title="بس المسؤول عن المهمة يقدر ينهيها" className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full border-2 border-slate-200 opacity-50" />
                               )}
                               <div className="min-w-0 flex-1">
-                                <p dir="auto" className="text-[14px] font-semibold text-slate-800">{t.title || "مهمة بدون عنوان"}</p>
+                                <p dir="auto" className={`text-[14px] font-semibold ${isBlocked ? "text-slate-500" : "text-slate-800"}`}>{t.title || "مهمة بدون عنوان"}</p>
                                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                  {isBlocked && (
+                                    <span className="flex items-center gap-1 rounded-lg bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-600">
+                                      ⏳ معلّقة بانتظار: {depTask?.title || "مهمة"}
+                                    </span>
+                                  )}
                                   {t.task_types?.label && (
                                     <span className="rounded-lg bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-700">{t.task_types.label}</span>
                                   )}

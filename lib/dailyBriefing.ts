@@ -4,6 +4,9 @@ export interface BriefingTask {
   id: string;
   title: string | null;
   due_at: string | null;
+  depends_on_task_id: string | null;
+  isBlocked?: boolean;
+  blockedByTitle?: string | null;
 }
 
 export interface StuckDeal {
@@ -42,7 +45,7 @@ export async function fetchBriefingData(): Promise<BriefingData> {
   const [todayRes, overdueRes, dealsRes] = await Promise.all([
     supabase
       .from("tasks")
-      .select("id, title, due_at")
+      .select("id, title, due_at, depends_on_task_id")
       .gte("due_at", todayStr)
       .lt("due_at", tomorrow.toISOString())
       .is("completed_at", null)
@@ -50,7 +53,7 @@ export async function fetchBriefingData(): Promise<BriefingData> {
       .order("due_at", { ascending: true }),
     supabase
       .from("tasks")
-      .select("id, title, due_at")
+      .select("id, title, due_at, depends_on_task_id")
       .lt("due_at", todayStr)
       .is("completed_at", null)
       .eq("assignee_uid", userId ?? "")
@@ -64,8 +67,28 @@ export async function fetchBriefingData(): Promise<BriefingData> {
       .limit(30),
   ]);
 
-  const todayTasks = (todayRes.data as unknown as BriefingTask[]) ?? [];
-  const overdueTasks = (overdueRes.data as unknown as BriefingTask[]) ?? [];
+  let todayTasks = (todayRes.data as unknown as BriefingTask[]) ?? [];
+  let overdueTasks = (overdueRes.data as unknown as BriefingTask[]) ?? [];
+
+  const allBriefingTasks = [...todayTasks, ...overdueTasks];
+  const depIds = allBriefingTasks.map((t) => t.depends_on_task_id).filter((id): id is string => !!id);
+  if (depIds.length > 0) {
+    const { data: depData } = await supabase
+      .from("tasks")
+      .select("id, title, completed_at")
+      .in("id", depIds);
+    const depMap = new Map((depData as { id: string; title: string | null; completed_at: string | null }[] ?? []).map((d) => [d.id, d]));
+    function markBlocked(tasks: BriefingTask[]): BriefingTask[] {
+      return tasks.map((t) => {
+        if (!t.depends_on_task_id) return t;
+        const dep = depMap.get(t.depends_on_task_id);
+        if (dep && !dep.completed_at) return { ...t, isBlocked: true, blockedByTitle: dep.title };
+        return t;
+      });
+    }
+    todayTasks = markBlocked(todayTasks);
+    overdueTasks = markBlocked(overdueTasks);
+  }
 
   type RawDeal = {
     id: string;
