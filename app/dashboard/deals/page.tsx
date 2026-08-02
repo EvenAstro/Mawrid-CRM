@@ -118,11 +118,11 @@ export default function DealsPage() {
     const { error: upErr } = await supabase.from("deals").update({ stage_id: toStageId, updated_at: new Date().toISOString() }).eq("id", dealId);
     if (upErr) {
       console.error("[Deals] stage update failed", upErr);
-      toast("Could not move deal — reverted", "error");
+      toast("تعذّر نقل الصفقة", "error");
       setDeals((prev) => prev.map((d) => (d.id === dealId ? { ...d, stage_id: prevStageId } : d)));
       return;
     }
-    toast(`Moved to ${toStage?.label ?? "stage"}`);
+    toast(`تم النقل إلى ${toStage?.label ?? "مرحلة"}`);
 
     // Deal just entered a Lost stage → offer to open the investigation report.
     if (toStage?.terminal_type === "lost") {
@@ -138,7 +138,7 @@ export default function DealsPage() {
           <h1 dir="auto" className="text-2xl font-extrabold text-ink">الصفقات</h1>
           <p className="mt-1 text-[15px] text-muted">{loading ? "جارِ التحميل…" : `${deals.length} صفقة عبر ${stages.length} مرحلة`}</p>
         </div>
-        <Button onClick={() => setAddStage(null)}>+ Add Deal</Button>
+        <Button onClick={() => setAddStage(null)}>+ صفقة جديدة</Button>
       </div>
 
       {/* Toolbar */}
@@ -147,10 +147,10 @@ export default function DealsPage() {
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
             <SearchIcon className="h-4 w-4" />
           </span>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search deals…" className="h-11 w-full rounded-full border border-border-light bg-white pl-10 pr-4 text-[15px] text-ink-secondary placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث في الصفقات..." className="h-11 w-full rounded-full border border-border-light bg-white pl-10 pr-4 text-[15px] text-ink-secondary placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
         </div>
         <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} className="h-11 rounded-xl border border-border-light bg-white px-3 text-[15px] text-ink-secondary focus:border-primary focus:outline-none">
-          <option value="all">All Stages</option>
+          <option value="all">كل المراحل</option>
           {stages.map((s) => (
             <option key={s.id} value={s.id}>{s.label}</option>
           ))}
@@ -162,7 +162,7 @@ export default function DealsPage() {
           {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-72 w-[300px] flex-none" />)}
         </div>
       ) : error ? (
-        <EmptyState icon="🔌" title="Connection error" subtitle="We couldn't load your deals." action={<Button onClick={() => { setLoading(true); load(); }}>Retry</Button>} />
+        <EmptyState icon="🔌" title="خطأ في الاتصال" subtitle="تعذّر تحميل الصفقات" action={<Button onClick={() => { setLoading(true); load(); }}>إعادة المحاولة</Button>} />
       ) : (
         <div className="flex gap-3 overflow-x-auto pb-2">
           {columns.map(({ stage, deals: colDeals }) => {
@@ -185,12 +185,12 @@ export default function DealsPage() {
                 </div>
 
                 <button onClick={() => setAddStage(stage.id)} className="mb-2 hidden rounded-lg border border-dashed border-primary/30 py-1.5 text-[13px] font-semibold text-primary transition hover:bg-white group-hover/col:block">
-                  + Add Deal
+                  + صفقة جديدة
                 </button>
 
                 <div className="flex flex-col gap-2">
                   {colDeals.length === 0 ? (
-                    <p className="rounded-lg border border-dashed border-border-light py-6 text-center text-[13px] text-muted">Drop deals here</p>
+                    <p className="rounded-lg border border-dashed border-border-light py-6 text-center text-[13px] text-muted">اسحب الصفقات هنا</p>
                   ) : (
                     colDeals.map((d) => (
                       <div
@@ -211,7 +211,7 @@ export default function DealsPage() {
                             <SearchIcon className="h-3.5 w-3.5" />
                           </button>
                         )}
-                        <p dir="auto" className={`truncate text-[15px] font-semibold text-gray-900 ${stage.terminal_type === "lost" ? "pr-8" : ""}`}>{d.name || "Untitled deal"}</p>
+                        <p dir="auto" className={`truncate text-[15px] font-semibold text-gray-900 ${stage.terminal_type === "lost" ? "pr-8" : ""}`}>{d.name || "صفقة بدون اسم"}</p>
                         <div className="mt-1 flex items-center justify-between">
                           <span className="text-[16px] font-bold text-gray-900">{dealValue(d)}</span>
                           {d.probability_pct != null && d.probability_pct > 0 && (
@@ -237,22 +237,22 @@ export default function DealsPage() {
       <NewDealSlideOver open={addStage !== undefined} onClose={() => setAddStage(undefined)} onCreated={load} stages={stages} defaultStageId={addStage} />
 
       {/* Deal detail */}
-      <SlideOver open={!!selected} onClose={() => setSelected(null)} title={selected?.name || "Deal"} subtitle={selected?.pipeline_stages?.label ?? undefined}>
+      <SlideOver open={!!selected} onClose={() => setSelected(null)} title={selected?.name || "صفقة"} subtitle={selected?.pipeline_stages?.label ?? undefined}>
         {selected && (
           <div className="flex flex-col gap-5">
             {selected.id && <NextBestActionCard dealId={selected.id} />}
             <div className="rounded-2xl border border-border-light bg-white p-5">
-              <p className="text-[13px] text-muted">Deal Value</p>
+              <p className="text-[13px] text-muted">قيمة الصفقة</p>
               <p className="mt-1 text-3xl font-extrabold text-primary">{dealValue(selected)}</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Detail label="Stage" value={selected.pipeline_stages?.label ?? null} />
-              <Detail label="Probability" value={selected.probability_pct != null ? `${selected.probability_pct}%` : null} />
-              <Detail label="Expected Close" value={selected.target_close_date ? formatDate(selected.target_close_date) : null} />
-              <Detail label="Currency" value={selected.currency_code} />
+              <Detail label="المرحلة" value={selected.pipeline_stages?.label ?? null} />
+              <Detail label="الاحتمالية" value={selected.probability_pct != null ? `${selected.probability_pct}%` : null} />
+              <Detail label="تاريخ الإغلاق المتوقع" value={selected.target_close_date ? formatDate(selected.target_close_date) : null} />
+              <Detail label="العملة" value={selected.currency_code} />
             </div>
             <div>
-              <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">Notes</p>
+              <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">الملاحظات</p>
               <p dir="auto" className="mt-1 text-[15px] text-ink-secondary">{selected.notes || "—"}</p>
             </div>
           </div>

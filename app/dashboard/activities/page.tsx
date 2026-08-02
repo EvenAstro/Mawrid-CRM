@@ -22,11 +22,11 @@ interface Activity {
 
 const PAGE = 20;
 const CHIPS = [
-  { key: "all", label: "All" },
-  { key: "call", label: "Calls" },
-  { key: "whatsapp", label: "WhatsApp" },
-  { key: "email", label: "Emails" },
-  { key: "deal", label: "Deals" },
+  { key: "all", label: "الكل" },
+  { key: "call", label: "مكالمات" },
+  { key: "whatsapp", label: "واتساب" },
+  { key: "email", label: "إيميل" },
+  { key: "deal", label: "صفقات" },
 ];
 
 function iconFor(label?: string | null) {
@@ -107,14 +107,14 @@ export default function ActivitiesPage() {
           <h1 dir="auto" className="text-2xl font-extrabold text-ink">النشاطات</h1>
           <p className="mt-1 text-[15px] text-muted">{loading ? "جارِ التحميل…" : `${total} نشاط عبر النظام`}</p>
         </div>
-        <Button onClick={() => setLogOpen(true)}>+ Log Activity</Button>
+        <Button onClick={() => setLogOpen(true)}>+ تسجيل نشاط</Button>
       </div>
 
       <div className="relative">
         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
           <SearchIcon className="h-4 w-4" />
         </span>
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search activity…" className="h-11 w-full rounded-full border border-border-light bg-white pl-10 pr-4 text-[15px] text-ink-secondary placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث في النشاطات..." className="h-11 w-full rounded-full border border-border-light bg-white pl-10 pr-4 text-[15px] text-ink-secondary placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -129,9 +129,9 @@ export default function ActivitiesPage() {
         {loading ? (
           <div className="p-6">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="mb-3 h-12" />)}</div>
         ) : error ? (
-          <EmptyState icon="🔌" title="Connection error" subtitle="We couldn't load activities." action={<Button onClick={() => { setLoading(true); load(); }}>Retry</Button>} />
+          <EmptyState icon="🔌" title="خطأ في الاتصال" subtitle="تعذّر تحميل النشاطات." action={<Button onClick={() => { setLoading(true); load(); }}>إعادة المحاولة</Button>} />
         ) : filtered.length === 0 ? (
-          <EmptyState icon="⚡" title="No activities recorded" subtitle="Log your first touchpoint." action={<Button onClick={() => setLogOpen(true)}>+ Log Activity</Button>} />
+          <EmptyState icon="⚡" title="لا توجد نشاطات مسجلة" subtitle="سجّل أول تواصل" action={<Button onClick={() => setLogOpen(true)}>+ تسجيل نشاط</Button>} />
         ) : (
           <div className="flex flex-col p-3">
             {groups.map((g) => (
@@ -161,7 +161,7 @@ export default function ActivitiesPage() {
             ))}
             {activities.length < total && (
               <button onClick={() => setLimit((l) => l + PAGE)} className="mx-auto my-4 rounded-full border border-border-light bg-white px-6 py-2 text-[13px] font-semibold text-ink-secondary transition hover:border-primary hover:text-primary">
-                Load more
+                تحميل المزيد
               </button>
             )}
           </div>

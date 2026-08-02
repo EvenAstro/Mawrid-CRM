@@ -69,14 +69,14 @@ export default function ContactsPage() {
           <h1 dir="auto" className="text-2xl font-extrabold text-ink">جهات الاتصال</h1>
           <p className="mt-1 text-[15px] text-muted">{loading ? "جارِ التحميل…" : `${contacts.length} شخص في النظام`}</p>
         </div>
-        <Button onClick={() => setAddOpen(true)}>+ Add Contact</Button>
+        <Button onClick={() => setAddOpen(true)}>+ جهة اتصال جديدة</Button>
       </div>
 
       <div className="relative">
         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
           <SearchIcon className="h-4 w-4" />
         </span>
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name, company, phone or email…" className="h-11 w-full rounded-full border border-border-light bg-white pl-10 pr-4 text-[15px] text-ink-secondary placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث بالاسم، الشركة، الجوال أو الإيميل..." className="h-11 w-full rounded-full border border-border-light bg-white pl-10 pr-4 text-[15px] text-ink-secondary placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
       </div>
 
       {loading ? (
@@ -84,9 +84,9 @@ export default function ContactsPage() {
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-44" />)}
         </div>
       ) : error ? (
-        <EmptyState icon="🔌" title="Connection error" subtitle="We couldn't load your contacts." action={<Button onClick={() => { setLoading(true); load(); }}>Retry</Button>} />
+        <EmptyState icon="🔌" title="خطأ في الاتصال" subtitle="تعذّر تحميل جهات الاتصال." action={<Button onClick={() => { setLoading(true); load(); }}>إعادة المحاولة</Button>} />
       ) : filtered.length === 0 ? (
-        <EmptyState icon="👤" title="No contacts yet" subtitle="Add your first contact to get started." action={<Button onClick={() => setAddOpen(true)}>+ Add Contact</Button>} />
+        <EmptyState icon="👤" title="لا توجد جهات اتصال" subtitle="أضف أول جهة اتصال للبدء." action={<Button onClick={() => setAddOpen(true)}>+ جهة اتصال جديدة</Button>} />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => (
@@ -94,11 +94,11 @@ export default function ContactsPage() {
               <div className="flex items-center gap-3">
                 <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-primary text-[15px] font-bold text-white">{initials(c.full_name)}</span>
                 <div className="min-w-0 flex-1">
-                  <p dir="auto" className="truncate text-[15px] font-semibold text-ink">{c.full_name || "Unnamed"}</p>
+                  <p dir="auto" className="truncate text-[15px] font-semibold text-ink">{c.full_name || "بدون اسم"}</p>
                   <p dir="auto" className="truncate text-[13px] text-muted">{c.role?.trim() || c.establishments?.name || "—"}</p>
                 </div>
                 {c.phone && (
-                  <a href={`tel:${c.phone}`} onClick={(e) => e.stopPropagation()} className="flex-none rounded-full border border-primary/30 bg-mint px-3 py-1 text-[12px] font-semibold text-primary transition hover:bg-primary hover:text-white">Call</a>
+                  <a href={`tel:${c.phone}`} onClick={(e) => e.stopPropagation()} className="flex-none rounded-full border border-primary/30 bg-mint px-3 py-1 text-[12px] font-semibold text-primary transition hover:bg-primary hover:text-white">اتصال</a>
                 )}
               </div>
               <div className="mt-4 flex flex-col gap-1.5 text-[13px] text-ink-secondary">
@@ -108,7 +108,7 @@ export default function ContactsPage() {
               </div>
               <div className="mt-4 flex items-center justify-between border-t border-gray-50 pt-3">
                 <span className="text-[12px] text-muted">{formatDate(c.created_at)}</span>
-                <button onClick={() => setSelected(c)} className="rounded-full border border-primary/30 px-3 py-1 text-[13px] font-semibold text-primary transition hover:bg-mint">Profile</button>
+                <button onClick={() => setSelected(c)} className="rounded-full border border-primary/30 px-3 py-1 text-[13px] font-semibold text-primary transition hover:bg-mint">الملف الشخصي</button>
               </div>
             </div>
           ))}
@@ -117,26 +117,26 @@ export default function ContactsPage() {
 
       <AddContactSlideOver open={addOpen} onClose={() => setAddOpen(false)} onCreated={load} />
 
-      <SlideOver open={!!selected} onClose={() => setSelected(null)} title={selected?.full_name || "Contact"} subtitle={selected?.role?.trim() || selected?.establishments?.name || undefined}>
+      <SlideOver open={!!selected} onClose={() => setSelected(null)} title={selected?.full_name || "جهة اتصال"} subtitle={selected?.role?.trim() || selected?.establishments?.name || undefined}>
         {selected && (
           <div className="flex flex-col gap-5">
             <div className="flex items-center gap-3">
               <span className="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-primary text-lg font-bold text-white">{initials(selected.full_name)}</span>
               <div className="flex gap-2">
-                {selected.phone && <a href={`tel:${selected.phone}`} className="rounded-full bg-primary px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-primary-dark">Call</a>}
-                {selected.email && <a href={`mailto:${selected.email}`} className="rounded-full border border-border-light px-4 py-2 text-[13px] font-semibold text-ink-secondary transition hover:border-primary hover:text-primary">Email</a>}
+                {selected.phone && <a href={`tel:${selected.phone}`} className="rounded-full bg-primary px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-primary-dark">اتصال</a>}
+                {selected.email && <a href={`mailto:${selected.email}`} className="rounded-full border border-border-light px-4 py-2 text-[13px] font-semibold text-ink-secondary transition hover:border-primary hover:text-primary">الإيميل</a>}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Detail label="Phone" value={selected.phone} />
-              <Detail label="Email" value={selected.email} />
-              <Detail label="Company" value={selected.establishments?.name ?? null} />
-              <Detail label="Role" value={selected.role} />
-              <Detail label="Preferred Channel" value={selected.preferred_channel} />
-              <Detail label="Added" value={formatDate(selected.created_at)} />
+              <Detail label="الجوال" value={selected.phone} />
+              <Detail label="الإيميل" value={selected.email} />
+              <Detail label="الشركة" value={selected.establishments?.name ?? null} />
+              <Detail label="المنصب" value={selected.role} />
+              <Detail label="قناة التواصل المفضلة" value={selected.preferred_channel} />
+              <Detail label="تاريخ الإضافة" value={formatDate(selected.created_at)} />
             </div>
             <div>
-              <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">Notes</p>
+              <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">الملاحظات</p>
               <p dir="auto" className="mt-1 text-[15px] text-ink-secondary">{selected.notes || "—"}</p>
             </div>
           </div>
