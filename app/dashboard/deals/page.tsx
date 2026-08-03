@@ -126,8 +126,6 @@ export default function DealsPage() {
     }
   }
 
-  const totalPipelineValue = deals.reduce((s, d) => s + (d.expected_value_minor ?? d.won_value_minor ?? 0) / 100, 0);
-
   return (
     <div className="flex flex-col gap-6">
       {/* Hero header */}
@@ -141,7 +139,7 @@ export default function DealsPage() {
             </div>
             <div>
               <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">الصفقات</h1>
-              <p className="mt-1 text-sm text-white/50">{loading ? "جارِ التحميل…" : `${deals.length} صفقة عبر ${stages.length} مرحلة · SAR ${money(totalPipelineValue)}`}</p>
+              <p className="mt-1 text-sm text-white/50">{loading ? "جارِ التحميل…" : `${deals.length} صفقة`}</p>
             </div>
           </div>
           <button onClick={() => setAddStage(null)} className="rounded-xl bg-[#38d39f] px-6 py-2.5 text-sm font-bold text-[#0f3a30] shadow-[0_4px_16px_rgba(56,211,159,0.3)] transition-all hover:-translate-y-px hover:bg-[#4fdcae]">+ صفقة جديدة</button>
@@ -173,7 +171,11 @@ export default function DealsPage() {
       ) : (
         <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.max(1, columns.length)}, minmax(0, 1fr))` }}>
           {columns.map(({ stage, deals: colDeals }) => {
-            const accent = stage.color || "#1a5c4f";
+            // Stage dot uses the DB color, but the column chrome itself always
+            // stays on-brand (teal/navy) so six stages don't read as a rainbow.
+            const dot = stage.color || "#1a5c4f";
+            const isWon = stage.terminal_type === "won";
+            const isLost = stage.terminal_type === "lost" || stage.terminal_type === "junk";
             const isOver = overStage === stage.id;
             const colValue = colDeals.reduce((s, d) => s + (d.expected_value_minor ?? d.won_value_minor ?? 0) / 100, 0);
             return (
@@ -182,26 +184,22 @@ export default function DealsPage() {
                 onDragOver={(e) => { e.preventDefault(); setOverStage(stage.id); }}
                 onDragLeave={() => setOverStage((s) => (s === stage.id ? null : s))}
                 onDrop={(e) => { e.preventDefault(); setOverStage(null); if (dragId) moveDeal(dragId, stage.id); setDragId(null); }}
-                className={`group/col relative flex min-w-0 flex-col overflow-hidden rounded-2xl border p-2.5 transition-all ${isOver ? "ring-2" : ""}`}
-                style={{
-                  background: `linear-gradient(180deg, ${accent}0d 0%, #fff 90px)`,
-                  borderColor: isOver ? accent : "#eef2f0",
-                  ...(isOver ? ({ "--tw-ring-color": `${accent}55` } as React.CSSProperties) : {}),
-                }}
+                className={`group/col relative flex min-w-0 flex-col overflow-hidden rounded-2xl border p-2.5 transition-all ${
+                  isOver ? "border-[#f59e0b] ring-2 ring-[#f59e0b]/25" : "border-[#eef2f0] bg-[#f8faf9]"
+                }`}
               >
-                <span className="absolute inset-x-0 top-0 h-[3px]" style={{ backgroundColor: accent }} />
                 <div className="mb-1 flex items-center justify-between gap-1 px-1.5 py-1.5">
                   <span className="flex min-w-0 items-center gap-1.5 truncate text-[13px] font-bold text-[#1e1b4b]">
-                    <span className="h-2 w-2 flex-none rounded-full" style={{ backgroundColor: accent }} />
+                    <span className="h-2 w-2 flex-none rounded-full" style={{ backgroundColor: dot }} />
                     <span className="truncate">{stage.label}</span>
                   </span>
-                  <span className="flex-none rounded-full px-2 py-0.5 text-[11px] font-bold" style={{ backgroundColor: `${accent}1a`, color: accent }}>{colDeals.length}</span>
+                  <span className="flex-none rounded-full bg-white px-2 py-0.5 text-[11px] font-bold text-[#7c8b86] ring-1 ring-[#eef2f0]">{colDeals.length}</span>
                 </div>
                 {colValue > 0 && (
                   <p className="mb-2 px-1.5 text-[11px] font-semibold text-[#94a3b8]">SAR {money(colValue)}</p>
                 )}
 
-                <button onClick={() => setAddStage(stage.id)} className="mb-2 hidden rounded-lg border border-dashed py-1.5 text-[12px] font-semibold transition hover:bg-white group-hover/col:block" style={{ borderColor: `${accent}55`, color: accent }}>
+                <button onClick={() => setAddStage(stage.id)} className="mb-2 hidden rounded-lg border border-dashed border-[#1a5c4f]/30 py-1.5 text-[12px] font-semibold text-[#1a5c4f] transition hover:bg-white group-hover/col:block">
                   + صفقة جديدة
                 </button>
 
@@ -216,37 +214,39 @@ export default function DealsPage() {
                         onDragStart={() => setDragId(d.id)}
                         onDragEnd={() => setDragId(null)}
                         onClick={() => setSelected(d)}
-                        className={`group/card relative cursor-grab overflow-hidden rounded-xl border bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(26,92,79,0.1)] active:cursor-grabbing ${dragId === d.id ? "opacity-50" : ""}`}
-                        style={{ borderColor: "#eef2f0" }}
+                        className={`group/card relative flex cursor-grab flex-col gap-1.5 rounded-xl border border-[#eef2f0] bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#1a5c4f]/25 hover:shadow-[0_6px_18px_rgba(26,92,79,0.1)] active:cursor-grabbing ${dragId === d.id ? "opacity-50" : ""}`}
                       >
-                        <span className="absolute inset-y-0 right-0 w-[3px]" style={{ backgroundColor: accent, opacity: 0.7 }} />
-                        {stage.terminal_type === "lost" && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/deals/${d.id}/investigation`); }}
-                            title="فتح تقرير التحقيق"
-                            aria-label="فتح تقرير التحقيق"
-                            className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-sm transition-all duration-150 hover:border-red-200 hover:bg-red-50 hover:text-red-500"
-                          >
-                            <SearchIcon className="h-3 w-3" />
-                          </button>
-                        )}
-                        <p dir="auto" className={`truncate text-[13px] font-semibold text-gray-900 ${stage.terminal_type === "lost" ? "pl-7" : ""}`}>{d.name || "صفقة بدون اسم"}</p>
-                        <div className="mt-1 flex min-w-0 items-center justify-between gap-1">
-                          <span className="truncate text-[13px] font-bold text-gray-900">{dealValue(d)}</span>
-                          {d.probability_pct != null && d.probability_pct > 0 && (
-                            <span className="flex-none rounded-full bg-green-50 px-1.5 py-0.5 text-[10px] font-semibold text-green-700">AI {d.probability_pct}%</span>
-                          )}
-                        </div>
+                        <p dir="auto" className="truncate text-[13px] font-semibold text-gray-900">{d.name || "صفقة بدون اسم"}</p>
+
+                        <span className="truncate text-[14px] font-bold text-gray-900">{dealValue(d)}</span>
+
                         {d.probability_pct != null && d.probability_pct > 0 && (
-                          <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-[#f1f5f9]">
-                            <div className="h-full rounded-full bg-emerald-400" style={{ width: `${Math.min(100, d.probability_pct)}%` }} />
+                          <div className="flex items-center gap-2">
+                            <div className="h-1 flex-1 overflow-hidden rounded-full bg-[#f1f5f9]">
+                              <div className="h-full rounded-full bg-emerald-400" style={{ width: `${Math.min(100, d.probability_pct)}%` }} />
+                            </div>
+                            <span className="flex-none text-[10px] font-bold text-emerald-600">AI {d.probability_pct}%</span>
                           </div>
                         )}
-                        <div className="mt-2 flex min-w-0 items-center justify-between gap-1 text-[11px] text-gray-400">
+
+                        <div className="flex min-w-0 items-center justify-between gap-1.5 border-t border-[#f1f5f9] pt-1.5 text-[11px] text-gray-400">
                           <span className="truncate">{d.target_close_date ? formatDate(d.target_close_date) : "—"}</span>
-                          {d.pipeline_stages?.terminal_type === "lost" && d.lost_reasons?.label && (
-                            <span className="flex-none truncate rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-700">{d.lost_reasons.label}</span>
-                          )}
+                          <div className="flex flex-none items-center gap-1.5">
+                            {isLost && d.lost_reasons?.label && (
+                              <span className="truncate rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-700">{d.lost_reasons.label}</span>
+                            )}
+                            {isLost && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/deals/${d.id}/investigation`); }}
+                                title="فتح تقرير التحقيق"
+                                aria-label="فتح تقرير التحقيق"
+                                className="flex h-5 w-5 flex-none items-center justify-center rounded-full text-gray-400 transition hover:bg-red-50 hover:text-red-500"
+                              >
+                                <SearchIcon className="h-3 w-3" />
+                              </button>
+                            )}
+                            {isWon && <span className="text-emerald-500">✓</span>}
+                          </div>
                         </div>
                       </div>
                     ))
