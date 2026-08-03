@@ -215,22 +215,21 @@ export default function LeadsPage() {
   return (
     <>
       {/* Hero header */}
-      <div className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-[#141c2e] via-[#1a2440] to-[#241a44] px-7 py-7 shadow-[0_16px_40px_rgba(20,28,46,0.25)]">
-        <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#818cf8] opacity-[0.12] blur-[70px]" />
-        <div className="pointer-events-none absolute -right-10 bottom-0 h-40 w-40 rounded-full bg-[#38d39f] opacity-[0.08] blur-[60px]" />
+      <div className="relative mb-6 overflow-hidden rounded-3xl border border-[#e4e4fb] bg-gradient-to-br from-[#f5f5ff] via-white to-white px-7 py-7 shadow-[0_4px_20px_rgba(99,102,241,0.06)]">
+        <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#818cf8] opacity-[0.1] blur-[70px]" />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15 backdrop-blur-sm">
-              <LeadsIcon className="h-6 w-6 text-[#a5b4fc]" />
+            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-gradient-to-br from-[#6366f1] to-[#4338ca] shadow-[0_4px_14px_rgba(99,102,241,0.3)]">
+              <LeadsIcon className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">العملاء المحتملون</h1>
-              <p className="mt-1 text-sm text-white/50">إدارة ومتابعة مسار العملاء المحتملين</p>
+              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-[#1e1b4b]">العملاء المحتملون</h1>
+              <p className="mt-1 text-sm text-[#7c8b86]">إدارة ومتابعة مسار العملاء المحتملين</p>
             </div>
           </div>
           <button
             onClick={() => setNewLeadOpen(true)}
-            className="flex h-11 items-center gap-2 rounded-xl bg-[#38d39f] px-5 text-[14px] font-bold text-[#0f3a30] shadow-[0_4px_16px_rgba(56,211,159,0.3)] transition-all hover:-translate-y-px hover:bg-[#4fdcae] active:scale-[0.98]"
+            className="flex h-11 items-center gap-2 rounded-xl bg-[#6366f1] px-5 text-[14px] font-bold text-white shadow-[0_4px_16px_rgba(99,102,241,0.3)] transition-all hover:-translate-y-px hover:bg-[#4f52e0] active:scale-[0.98]"
           >
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
             إضافة عميل

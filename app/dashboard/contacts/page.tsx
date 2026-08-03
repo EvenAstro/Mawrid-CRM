@@ -74,20 +74,19 @@ export default function ContactsPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Hero header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#141c2e] via-[#173226] to-[#0f3a30] px-7 py-7 shadow-[0_16px_40px_rgba(15,58,48,0.25)]">
-        <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#38d39f] opacity-[0.12] blur-[70px]" />
-        <div className="pointer-events-none absolute -right-10 bottom-0 h-40 w-40 rounded-full bg-[#60a5fa] opacity-[0.08] blur-[60px]" />
+      <div className="relative overflow-hidden rounded-3xl border border-[#d6ece5] bg-gradient-to-br from-[#f0faf8] via-white to-white px-7 py-7 shadow-[0_4px_20px_rgba(26,92,79,0.06)]">
+        <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#38d39f] opacity-[0.08] blur-[70px]" />
         <div className="relative flex flex-wrap items-center justify-between gap-5">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15 backdrop-blur-sm">
-              <svg viewBox="0 0 20 20" fill="none" stroke="#38d39f" strokeWidth={1.8} className="h-7 w-7"><circle cx="7" cy="7" r="3" /><circle cx="14" cy="9" r="2.4" /><path d="M2.5 17c.6-3 2.4-4.8 4.5-4.8s3.9 1.8 4.5 4.8M12.8 12.4c1.7.2 3 1.6 3.5 4" strokeLinecap="round" /></svg>
+            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-gradient-to-br from-[#1a5c4f] to-[#0f3a30] shadow-[0_4px_14px_rgba(26,92,79,0.25)]">
+              <svg viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth={1.8} className="h-7 w-7"><circle cx="7" cy="7" r="3" /><circle cx="14" cy="9" r="2.4" /><path d="M2.5 17c.6-3 2.4-4.8 4.5-4.8s3.9 1.8 4.5 4.8M12.8 12.4c1.7.2 3 1.6 3.5 4" strokeLinecap="round" /></svg>
             </div>
             <div>
-              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">جهات الاتصال</h1>
-              <p className="mt-1 text-sm text-white/50">{loading ? "جارِ التحميل…" : `${contacts.length} شخص في النظام`}</p>
+              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-[#1e1b4b]">جهات الاتصال</h1>
+              <p className="mt-1 text-sm text-[#7c8b86]">{loading ? "جارِ التحميل…" : `${contacts.length} شخص في النظام`}</p>
             </div>
           </div>
-          <button onClick={() => setAddOpen(true)} className="rounded-xl bg-[#38d39f] px-6 py-2.5 text-sm font-bold text-[#0f3a30] shadow-[0_4px_16px_rgba(56,211,159,0.3)] transition-all hover:-translate-y-px hover:bg-[#4fdcae]">+ جهة اتصال جديدة</button>
+          <button onClick={() => setAddOpen(true)} className="rounded-xl bg-[#1a5c4f] px-6 py-2.5 text-sm font-bold text-white shadow-[0_4px_16px_rgba(26,92,79,0.25)] transition-all hover:-translate-y-px hover:bg-[#15503f]">+ جهة اتصال جديدة</button>
         </div>
       </div>
 

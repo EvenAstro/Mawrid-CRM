@@ -40,15 +40,15 @@ export default function SlideOver({
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-start justify-between bg-gradient-to-br from-[#141c2e] via-[#173226] to-[#0f3a30] px-6 py-6">
+        <div className="flex items-start justify-between border-b border-[#e8f0ec] bg-gradient-to-br from-[#f0faf8] to-white px-6 py-6">
           <div className="min-w-0">
-            <h2 className="truncate text-xl font-bold text-white">{title}</h2>
-            {subtitle && <p className="mt-0.5 text-[13px] text-white/50">{subtitle}</p>}
+            <h2 className="truncate text-xl font-bold text-[#1e1b4b]">{title}</h2>
+            {subtitle && <p className="mt-0.5 text-[13px] text-muted">{subtitle}</p>}
           </div>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="flex-none rounded-xl p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white"
+            className="flex-none rounded-xl p-1.5 text-muted transition hover:bg-[#e8f0ec] hover:text-[#1e1b4b]"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-5 w-5">
               <path d="M6 6l12 12M18 6 6 18" />

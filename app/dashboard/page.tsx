@@ -388,26 +388,25 @@ export default function DashboardPage() {
   return (
     <div>
       {/* Hero header */}
-      <div className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-[#141c2e] via-[#173226] to-[#0f3a30] px-7 py-7 shadow-[0_16px_40px_rgba(15,58,48,0.25)]">
-        <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#38d39f] opacity-[0.12] blur-[70px]" />
-        <div className="pointer-events-none absolute -right-10 bottom-0 h-40 w-40 rounded-full bg-[#60a5fa] opacity-[0.08] blur-[60px]" />
+      <div className="relative mb-6 overflow-hidden rounded-3xl border border-[#d6ece5] bg-gradient-to-br from-[#f0faf8] via-white to-white px-7 py-7 shadow-[0_4px_20px_rgba(26,92,79,0.06)]">
+        <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#38d39f] opacity-[0.08] blur-[70px]" />
         <div className="relative flex flex-wrap items-center justify-between gap-5">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white/10 text-lg font-bold text-white ring-1 ring-white/15 backdrop-blur-sm">
+            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-gradient-to-br from-[#1a5c4f] to-[#0f3a30] text-lg font-bold text-white shadow-[0_4px_14px_rgba(26,92,79,0.25)]">
               {initials(firstName || "أنت")}
             </div>
             <div>
-              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">{greeting()}، {firstName || "بك"}</h1>
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-white/50">
+              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-[#1e1b4b]">{greeting()}، {firstName || "بك"}</h1>
+              <p className="mt-1 flex items-center gap-1.5 text-sm text-[#7c8b86]">
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.6} className="h-3.5 w-3.5"><rect x="3" y="4" width="14" height="13" rx="2" /><path d="M3 8h14M7 2v4M13 2v4" strokeLinecap="round" /></svg>
                 {longDate(now)}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setNewLeadOpen(true)} className="rounded-xl bg-[#38d39f] px-6 py-2.5 text-sm font-bold text-[#0f3a30] shadow-[0_4px_16px_rgba(56,211,159,0.3)] transition-all hover:-translate-y-px hover:bg-[#4fdcae]">+ عميل جديد</button>
-            <button onClick={() => setLogActivityOpen(true)} className="rounded-xl border border-white/15 bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-sm transition-all hover:bg-white/[0.12]">تسجيل نشاط</button>
-            <button onClick={() => setAddContactOpen(true)} className="rounded-xl border border-white/15 bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-sm transition-all hover:bg-white/[0.12]">إضافة جهة اتصال</button>
+            <button onClick={() => setNewLeadOpen(true)} className="rounded-xl bg-[#1a5c4f] px-6 py-2.5 text-sm font-bold text-white shadow-[0_4px_16px_rgba(26,92,79,0.25)] transition-all hover:-translate-y-px hover:bg-[#15503f]">+ عميل جديد</button>
+            <button onClick={() => setLogActivityOpen(true)} className="rounded-xl border border-[#d6ece5] bg-white px-5 py-2.5 text-sm font-semibold text-[#1a5c4f] transition-all hover:bg-[#f0faf8]">تسجيل نشاط</button>
+            <button onClick={() => setAddContactOpen(true)} className="rounded-xl border border-[#e8efed] bg-white px-5 py-2.5 text-sm font-semibold text-[#334155] transition-all hover:bg-[#f0faf8] hover:text-[#1a5c4f]">إضافة جهة اتصال</button>
           </div>
         </div>
       </div>

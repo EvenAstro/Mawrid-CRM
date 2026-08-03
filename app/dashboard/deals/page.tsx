@@ -129,20 +129,19 @@ export default function DealsPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Hero header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#141c2e] via-[#173226] to-[#0f3a30] px-7 py-7 shadow-[0_16px_40px_rgba(15,58,48,0.25)]">
-        <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#38d39f] opacity-[0.12] blur-[70px]" />
-        <div className="pointer-events-none absolute -right-10 bottom-0 h-40 w-40 rounded-full bg-[#60a5fa] opacity-[0.08] blur-[60px]" />
+      <div className="relative overflow-hidden rounded-3xl border border-[#d6ece5] bg-gradient-to-br from-[#f0faf8] via-white to-white px-7 py-7 shadow-[0_4px_20px_rgba(26,92,79,0.06)]">
+        <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#38d39f] opacity-[0.08] blur-[70px]" />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15 backdrop-blur-sm">
-              <svg viewBox="0 0 20 20" fill="none" stroke="#38d39f" strokeWidth={1.8} className="h-6 w-6"><path d="M3 17V9M9 17V4M15 17v-6M3 3v14h14" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-gradient-to-br from-[#1a5c4f] to-[#0f3a30] shadow-[0_4px_14px_rgba(26,92,79,0.25)]">
+              <svg viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth={1.8} className="h-6 w-6"><path d="M3 17V9M9 17V4M15 17v-6M3 3v14h14" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </div>
             <div>
-              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">الصفقات</h1>
-              <p className="mt-1 text-sm text-white/50">{loading ? "جارِ التحميل…" : `${deals.length} صفقة`}</p>
+              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-[#1e1b4b]">الصفقات</h1>
+              <p className="mt-1 text-sm text-[#7c8b86]">{loading ? "جارِ التحميل…" : `${deals.length} صفقة`}</p>
             </div>
           </div>
-          <button onClick={() => setAddStage(null)} className="rounded-xl bg-[#38d39f] px-6 py-2.5 text-sm font-bold text-[#0f3a30] shadow-[0_4px_16px_rgba(56,211,159,0.3)] transition-all hover:-translate-y-px hover:bg-[#4fdcae]">+ صفقة جديدة</button>
+          <button onClick={() => setAddStage(null)} className="rounded-xl bg-[#1a5c4f] px-6 py-2.5 text-sm font-bold text-white shadow-[0_4px_16px_rgba(26,92,79,0.25)] transition-all hover:-translate-y-px hover:bg-[#15503f]">+ صفقة جديدة</button>
         </div>
       </div>
 
@@ -265,19 +264,21 @@ export default function DealsPage() {
         {selected && (
           <div className="flex flex-col gap-5">
             {selected.id && <NextBestActionCard dealId={selected.id} />}
-            <div className="rounded-2xl border border-border-light bg-white p-5">
+            <div className="rounded-2xl border border-[#d6ece5] bg-white p-5 shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
               <p className="text-[13px] text-muted">قيمة الصفقة</p>
-              <p className="mt-1 text-3xl font-extrabold text-primary">{dealValue(selected)}</p>
+              <p className="mt-1 text-3xl font-extrabold text-[#1a5c4f]">{dealValue(selected)}</p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Detail label="المرحلة" value={selected.pipeline_stages?.label ?? null} />
-              <Detail label="الاحتمالية" value={selected.probability_pct != null ? `${selected.probability_pct}%` : null} />
-              <Detail label="تاريخ الإغلاق المتوقع" value={selected.target_close_date ? formatDate(selected.target_close_date) : null} />
-              <Detail label="العملة" value={selected.currency_code} />
+
+            <div className="overflow-hidden rounded-2xl border border-[#d6ece5] bg-white shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
+              <Detail icon="📶" label="المرحلة" value={selected.pipeline_stages?.label ?? null} />
+              <Detail icon="🎯" label="الاحتمالية" value={selected.probability_pct != null ? `${selected.probability_pct}%` : null} />
+              <Detail icon="📅" label="تاريخ الإغلاق المتوقع" value={selected.target_close_date ? formatDate(selected.target_close_date) : null} />
+              <Detail icon="💱" label="العملة" value={selected.currency_code} last />
             </div>
-            <div>
-              <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">الملاحظات</p>
-              <p dir="auto" className="mt-1 text-[15px] text-ink-secondary">{selected.notes || "—"}</p>
+
+            <div className="rounded-2xl border border-[#d6ece5] bg-white p-4 shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
+              <p className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wide text-muted">📝 الملاحظات</p>
+              <p dir="auto" className="mt-2 text-[14px] leading-relaxed text-ink-secondary">{selected.notes || "لا توجد ملاحظات"}</p>
             </div>
           </div>
         )}
@@ -326,11 +327,14 @@ export default function DealsPage() {
   );
 }
 
-function Detail({ label, value }: { label: string; value: string | null }) {
+function Detail({ icon, label, value, last }: { icon: string; label: string; value: string | null; last?: boolean }) {
   return (
-    <div>
-      <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">{label}</p>
-      <p dir="auto" className="mt-0.5 text-[15px] font-medium text-ink">{value || "—"}</p>
+    <div className={`flex items-center gap-3 px-4 py-3 ${last ? "" : "border-b border-[#eef4f1]"}`}>
+      <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-[#f0faf8] text-sm">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-semibold text-muted">{label}</p>
+        <p dir="auto" className="mt-0.5 truncate text-[14px] font-semibold text-ink">{value || "—"}</p>
+      </div>
     </div>
   );
 }
