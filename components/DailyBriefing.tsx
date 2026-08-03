@@ -271,9 +271,13 @@ export default function DailyBriefing() {
     setSuggestions((prev) => ({ ...prev, [deal.id]: { status: "loading" } }));
     (async () => {
       try {
+        const { data: { session } } = await supabase.auth.getSession();
         const res = await fetch("/api/next-best-action", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
           body: JSON.stringify({ dealId: deal.id }),
         });
         const json = await res.json();

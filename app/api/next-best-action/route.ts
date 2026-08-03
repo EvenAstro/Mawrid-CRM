@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { getContext, getDealMeta, type MatchTier } from "@/lib/nextBestAction/getContext";
 import { buildPrompt } from "@/lib/nextBestAction/buildPrompt";
+import { requireUser } from "@/lib/auth/requireUser";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -44,6 +45,8 @@ function isValidModelOutput(v: unknown): v is Omit<Recommendation, "matchTier"> 
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await requireUser(req))) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
   let body: { dealId?: unknown };
   try {
     body = await req.json();

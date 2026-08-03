@@ -123,11 +123,16 @@ export default function LogActivitySlideOver({
     // Fire-and-forget: classify inbound replies in the background. The form
     // closes immediately regardless of how long — or whether — this succeeds.
     if (direction === "inbound" && trimmedNotes) {
-      fetch("/api/classify-activity", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ activityId, body: trimmedNotes }),
-      }).catch((err) => console.error("[LogActivity] classify trigger failed", err));
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        fetch("/api/classify-activity", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
+          body: JSON.stringify({ activityId, body: trimmedNotes }),
+        }).catch((err) => console.error("[LogActivity] classify trigger failed", err));
+      });
     }
 
     reset();

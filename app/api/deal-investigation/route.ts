@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeDeal } from "@/lib/dealInvestigation/analyze";
+import { requireUser } from "@/lib/auth/requireUser";
 
 export async function POST(req: NextRequest) {
+  if (!(await requireUser(req))) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
   let body: { dealId?: unknown };
   try {
     body = await req.json();

@@ -114,9 +114,13 @@ export default function NextBestActionCard({
       else setLoading(true);
       setError(null);
       try {
+        const { data: { session } } = await supabase.auth.getSession();
         const res = await fetch(`/api/next-best-action${force ? "?force=true" : ""}`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
           body: JSON.stringify({ dealId }),
         });
         if (!res.ok) {

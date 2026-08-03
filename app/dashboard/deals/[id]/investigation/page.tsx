@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { money } from "@/lib/format";
+import { supabase } from "@/lib/supabase";
 import type {
   InvestigationPayload,
   InvestigationActivity,
@@ -112,9 +113,13 @@ export default function InvestigationPage() {
     setLoading(true);
     setNotFound(false);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch("/api/deal-investigation", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({ dealId }),
       });
       if (res.status === 404) {

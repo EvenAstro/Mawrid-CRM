@@ -7,6 +7,7 @@ import {
   type RIDeal,
   type DealCategory,
 } from "@/lib/revenueIntelligence/buildRevenueIntelligence";
+import { supabase } from "@/lib/supabase";
 
 /* ═══ Global CSS ══════════════════════════════════════════════════════════ */
 const GLOBAL_CSS = `
@@ -97,7 +98,12 @@ function buildContext(d: RevenueIntelligenceData) {
 }
 
 async function callAI(messages:{role:"user"|"assistant";content:string}[], context:string): Promise<string> {
-  const r = await fetch("/api/revenue-intelligence-ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages,context})});
+  const { data: { session } } = await supabase.auth.getSession();
+  const r = await fetch("/api/revenue-intelligence-ai",{
+    method:"POST",
+    headers:{"Content-Type":"application/json", ...(session ? { Authorization: `Bearer ${session.access_token}` } : {})},
+    body:JSON.stringify({messages,context}),
+  });
   const j = await r.json();
   return j.reply ?? "تعذّر الاتصال.";
 }

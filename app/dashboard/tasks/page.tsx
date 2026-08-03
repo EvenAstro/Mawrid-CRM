@@ -60,10 +60,14 @@ function hashColorIndex(s: string) {
   return h % AVATAR_GRADIENTS.length;
 }
 
+const PAGE = 200;
+
 export default function TasksPage() {
   const toast = useToast();
   const { role, userId, loading: roleLoading } = useRole();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [total, setTotal] = useState(0);
+  const [limit, setLimit] = useState(PAGE);
   const [types, setTypes] = useState<TaskType[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,7 +88,7 @@ export default function TasksPage() {
   const profileMap = useMemo(() => new Map(profiles.map((p) => [p.id, p])), [profiles]);
 
   const load = useCallback(async () => {
-    let tasksQuery = supabase.from("tasks").select("*, task_types(label, color)").is("completed_at", null).order("due_at", { ascending: true }).limit(200);
+    let tasksQuery = supabase.from("tasks").select("*, task_types(label, color)", { count: "exact" }).is("completed_at", null).order("due_at", { ascending: true }).range(0, limit - 1);
     // Everyone only sees tasks assigned to them, regardless of role.
     if (userId) {
       tasksQuery = tasksQuery.eq("assignee_uid", userId);
@@ -95,10 +99,11 @@ export default function TasksPage() {
       fetchProfiles(),
     ]);
     if (tk.data) setTasks(tk.data as unknown as Task[]);
+    setTotal(tk.count ?? tk.data?.length ?? 0);
     if (tt.data) setTypes(tt.data as TaskType[]);
     setProfiles(pf);
     setLoading(false);
-  }, [role, userId]);
+  }, [role, userId, limit]);
   useEffect(() => {
     if (roleLoading) return;
     load();
@@ -271,7 +276,7 @@ export default function TasksPage() {
             </div>
             <div>
               <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">المهام</h1>
-              <p className="mt-1 text-sm text-white/50">{loading ? "جارِ التحميل…" : `${tasks.length} مهمة مفتوحة`}</p>
+              <p className="mt-1 text-sm text-white/50">{loading ? "جارِ التحميل…" : `${total} مهمة مفتوحة`}</p>
             </div>
           </div>
           <button onClick={() => setNewOpen(true)} className="rounded-xl bg-[#3a9080] px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#328173]">+ مهمة جديدة</button>
@@ -313,6 +318,11 @@ export default function TasksPage() {
                   <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-gray-50 text-gray-500">قادمة · {groups.upcoming.length}</h2>
                   <div className="flex flex-col gap-2">{groups.upcoming.map((t) => <TaskRow key={t.id} t={t} tone="border-[#d6ece5]" />)}</div>
                 </section>
+              )}
+              {tasks.length < total && (
+                <button onClick={() => setLimit((l) => l + PAGE)} className="self-start rounded-full border border-[#d6ece5] bg-white px-5 py-2 text-[13px] font-semibold text-ink-secondary transition hover:border-[#1a5c4f] hover:text-[#1a5c4f]">
+                  تحميل المزيد ({total - tasks.length} متبقي)
+                </button>
               )}
             </>
           )}

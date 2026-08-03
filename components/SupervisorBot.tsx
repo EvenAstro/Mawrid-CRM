@@ -288,9 +288,11 @@ export default function SupervisorBot() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const res = await fetch(`/api/rep-coach?userId=${user.id}`);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch("/api/rep-coach", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       if (!res.ok) throw new Error("fail");
       setData(await res.json());
       setDismissed(new Set());

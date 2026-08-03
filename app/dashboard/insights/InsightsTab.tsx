@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { buildInsights, type InsightsData, type DateRangeKey, type CustomRange } from "@/lib/insights/buildInsights";
 import { money } from "@/lib/format";
+import { supabase } from "@/lib/supabase";
 import RichText from "@/components/copilot/RichText";
 import Skeleton from "@/components/ui/Skeleton";
 
@@ -436,9 +437,13 @@ function InsightsChat({ data }: { data: InsightsData }) {
     setValue("");
     setStreaming(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch("/api/copilot", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({
           messages: history.map((m) => ({ role: m.role, content: m.content })),
           context: serializeContext(data),

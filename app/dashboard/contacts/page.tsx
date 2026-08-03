@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { SearchIcon } from "@/components/navIcons";
 import { initials, formatDate } from "@/lib/format";
@@ -24,34 +24,38 @@ interface Contact {
 
 const AVATAR_GRADIENT = "from-[#1a5c4f] to-[#0f3a30]";
 const ACCENT = "#1a5c4f";
+const PAGE = 60;
 
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [total, setTotal] = useState(0);
+  const [limit, setLimit] = useState(PAGE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [selected, setSelected] = useState<Contact | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     setError(false);
-    const { data, error: err } = await supabase
+    const { data, error: err, count } = await supabase
       .from("contacts")
-      .select("*, establishments(name)")
+      .select("*, establishments(name)", { count: "exact" })
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
-      .limit(300);
+      .range(0, limit - 1);
     if (err) {
       console.error("[Contacts] fetch failed", err);
       setError(true);
     } else {
       setContacts((data as unknown as Contact[]) ?? []);
+      setTotal(count ?? (data as unknown as Contact[])?.length ?? 0);
     }
     setLoading(false);
-  }
+  }, [limit]);
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -76,7 +80,7 @@ export default function ContactsPage() {
             </div>
             <div>
               <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">جهات الاتصال</h1>
-              <p className="mt-1 text-sm text-white/50">{loading ? "جارِ التحميل…" : `${contacts.length} شخص في النظام`}</p>
+              <p className="mt-1 text-sm text-white/50">{loading ? "جارِ التحميل…" : `${total} شخص في النظام`}</p>
             </div>
           </div>
           <button onClick={() => setAddOpen(true)} className="rounded-xl bg-[#3a9080] px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#328173]">+ جهة اتصال جديدة</button>
@@ -124,6 +128,12 @@ export default function ContactsPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {!loading && !error && !search && contacts.length < total && (
+        <button onClick={() => setLimit((l) => l + PAGE)} className="mx-auto rounded-full border border-[#d6ece5] bg-white px-6 py-2 text-[13px] font-semibold text-ink-secondary transition hover:border-[#1a5c4f] hover:text-[#1a5c4f]">
+          تحميل المزيد ({total - contacts.length} متبقي)
+        </button>
       )}
 
       <AddContactSlideOver open={addOpen} onClose={() => setAddOpen(false)} onCreated={load} />

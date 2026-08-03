@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export interface ChatMessage {
   id: string;
@@ -51,6 +52,11 @@ function contextForPath(pathname: string): string {
   return "";
 }
 
+async function authHeader(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session ? { Authorization: `Bearer ${session.access_token}` } : {};
+}
+
 function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
@@ -80,7 +86,7 @@ export default function CopilotProvider({ children }: { children: React.ReactNod
     let active = true;
     (async () => {
       try {
-        const res = await fetch("/api/copilot");
+        const res = await fetch("/api/copilot", { headers: await authHeader() });
         if (!res.ok) return;
         const s = (await res.json()) as {
           stuckCount: number;
@@ -115,7 +121,7 @@ export default function CopilotProvider({ children }: { children: React.ReactNod
       try {
         const res = await fetch("/api/copilot", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...(await authHeader()) },
           body: JSON.stringify({
             messages: history.map((m) => ({ role: m.role, content: m.content })),
             context: pageContextRef.current,

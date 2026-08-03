@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
+import { requireUser } from "@/lib/auth/requireUser";
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct";
@@ -19,8 +20,12 @@ function stripFences(text: string): string {
 }
 
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId");
-  if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 });
+  // The userId always comes from the verified token, never from the query
+  // string — otherwise any caller could read another rep's tasks/deals by
+  // passing a different id (this route uses supabaseAdmin, which bypasses RLS).
+  const caller = await requireUser(req);
+  if (!caller) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  const userId = caller.id;
 
   try {
     const now = new Date();
