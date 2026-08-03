@@ -130,12 +130,12 @@ export default function DealsPage() {
     <div className="flex flex-col gap-6">
       {/* Hero header */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#141c2e] via-[#173226] to-[#0f3a30] px-7 py-7 shadow-[0_16px_40px_rgba(15,58,48,0.25)]">
-        <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#f59e0b] opacity-[0.12] blur-[70px]" />
-        <div className="pointer-events-none absolute -right-10 bottom-0 h-40 w-40 rounded-full bg-[#38d39f] opacity-[0.1] blur-[60px]" />
+        <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#38d39f] opacity-[0.12] blur-[70px]" />
+        <div className="pointer-events-none absolute -right-10 bottom-0 h-40 w-40 rounded-full bg-[#60a5fa] opacity-[0.08] blur-[60px]" />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15 backdrop-blur-sm">
-              <svg viewBox="0 0 20 20" fill="none" stroke="#fbbf24" strokeWidth={1.8} className="h-6 w-6"><path d="M3 17V9M9 17V4M15 17v-6M3 3v14h14" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <svg viewBox="0 0 20 20" fill="none" stroke="#38d39f" strokeWidth={1.8} className="h-6 w-6"><path d="M3 17V9M9 17V4M15 17v-6M3 3v14h14" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </div>
             <div>
               <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">الصفقات</h1>
