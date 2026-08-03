@@ -127,6 +127,13 @@ function aiPill(score: number) {
   if (score >= 40) return "bg-amber-50 text-amber-700 border border-amber-100";
   return "bg-red-50 text-red-700 border border-red-100";
 }
+const AVATAR_GRADIENTS = [
+  "from-[#1a5c4f] to-[#0f3a30]",
+  "from-[#6366f1] to-[#4338ca]",
+  "from-[#f59e0b] to-[#c2660a]",
+  "from-[#0ea5e9] to-[#0369a1]",
+  "from-[#ec4899] to-[#be185d]",
+];
 
 /* ---------- Chart ---------- */
 function PipelineChart({ points }: { points: { label: string; value: number }[] }) {
@@ -357,8 +364,6 @@ export default function DashboardPage() {
 
   const overview = [
     { dot: "#1a5c4f", label: "قيمة الصفقات", value: `SAR ${money(m.pipeline_value)}`, badge: "bg-[#f0faf8] text-[#1a5c4f]" },
-    { dot: "#10b981", label: "صفقات مكسوبة", value: m.won, badge: "bg-green-50 text-green-700" },
-    { dot: "#ef4444", label: "صفقات خاسرة", value: m.lost, badge: "bg-red-50 text-red-700" },
     { dot: "#10b981", label: "عملاء نظيفون", value: m.clean_leads, badge: "bg-green-50 text-green-700" },
     { dot: "#ef4444", label: "عملاء غير مؤهلين", value: m.junk_leads, badge: "bg-red-50 text-red-700" },
   ];
@@ -476,34 +481,53 @@ export default function DashboardPage() {
 
       {/* Bottom row */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        {/* Recent Leads */}
+        {/* Sales Overview */}
         <div className={CARD}>
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">أحدث العملاء</h3>
-            <Link href="/dashboard/leads" className="text-xs font-semibold text-[#1a5c4f] hover:underline">عرض الكل ←</Link>
-          </div>
-          {m.recentLeads.length === 0 ? (
-            <div className="py-6 text-center">
-              <p className="text-sm text-[#94a3b8]">لا يوجد عملاء بعد — أضف أول عميل</p>
-              <button onClick={() => setNewLeadOpen(true)} className="mt-3 rounded-full bg-[#1a5c4f] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#15503f]">+ عميل جديد</button>
+          <h3 className="mb-4 text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">ملخص المبيعات</h3>
+
+          {/* Win-rate ring with won/lost split */}
+          <div className="mb-5 flex items-center gap-5 border-b border-[#e8f0ec] pb-5">
+            <div className="relative h-28 w-28 flex-none">
+              <svg viewBox="0 0 120 120" className="h-28 w-28 -rotate-90">
+                <circle cx="60" cy="60" r="50" fill="none" stroke="#eef4f1" strokeWidth="12" />
+                <circle
+                  cx="60" cy="60" r="50" fill="none" stroke="#ef4444" strokeWidth="12" strokeLinecap="round" opacity="0.85"
+                  strokeDasharray={`${m.total_deals ? (m.lost / m.total_deals) * 314.16 : 0} 314.16`}
+                />
+                <circle
+                  cx="60" cy="60" r="50" fill="none" stroke="#1a5c4f" strokeWidth="12" strokeLinecap="round"
+                  strokeDasharray={`${(Math.min(100, m.win_rate) / 100) * 314.16} 314.16`}
+                  style={{ transition: "stroke-dasharray 0.6s ease" }}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-[22px] font-black leading-none text-[#1e1b4b]">{m.win_rate.toFixed(0)}%</span>
+                <span className="mt-1 text-[9px] font-semibold text-[#94a3b8]">نسبة الفوز</span>
+              </div>
             </div>
-          ) : (
-            m.recentLeads.map((l) => {
-              const score = getAIScore(l, scoreModel);
-              return (
-                <Link key={l.id} href={`/dashboard/leads?open=${l.id}`} className="flex items-center gap-3 border-b border-[#e8f0ec] py-2.5 transition-colors last:border-0 hover:bg-[#f0faf8]">
-                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#1a5c4f]">
-                    <span className="text-xs font-bold text-white">{initials(l.full_name)}</span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p dir="auto" className="truncate text-sm font-semibold text-[#1e1b4b]">{l.full_name || "عميل بدون اسم"}</p>
-                    <p className="text-xs text-[#94a3b8]">{l.sources?.label || "—"}</p>
-                  </div>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${aiPill(score)}`}>{score}%</span>
-                </Link>
-              );
-            })
-          )}
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center justify-between rounded-xl bg-[#f0faf8] px-3 py-2">
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-[#1a5c4f]"><span className="h-2 w-2 rounded-full bg-[#1a5c4f]" />مكسوبة</span>
+                <span className="text-sm font-black text-[#1a5c4f]">{m.won}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-xl bg-red-50 px-3 py-2">
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-red-700"><span className="h-2 w-2 rounded-full bg-red-500" />خاسرة</span>
+                <span className="text-sm font-black text-red-700">{m.lost}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            {overview.map((o) => (
+              <div key={o.label} className="flex items-center justify-between rounded-xl px-2 py-2 transition-colors hover:bg-[#f8faf9]">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-2 w-2 flex-none rounded-full" style={{ backgroundColor: o.dot }} />
+                  <span className="text-sm text-[#334155]">{o.label}</span>
+                </div>
+                <span className={`rounded-md px-2 py-0.5 text-sm font-bold ${o.badge}`}>{o.value}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Activity Feed */}
@@ -525,56 +549,56 @@ export default function DashboardPage() {
               }
               return groups.map((g) => (
                 <div key={g.key}>
-                  <p className="sticky top-0 bg-white py-1 text-[11px] font-semibold uppercase tracking-wider text-[#94a3b8]">{g.header}</p>
-                  {g.items.map((a) => {
-                    const c = activityColor(a.activity_types?.label);
-                    return (
-                      <div key={a.id} className="flex gap-3 py-2.5">
-                        <span className="mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full text-xs" style={{ backgroundColor: `${c}1a`, color: c }}>{activityGlyph(a.activity_types?.label)}</span>
-                        <div className="min-w-0 flex-1">
-                          <p dir="auto" className="line-clamp-2 text-sm leading-relaxed text-[#475569]">{a.body || a.activity_types?.label || "Activity"}</p>
-                          <span className="text-xs text-[#94a3b8]">{formatDateTime(a.occurred_at)}</span>
+                  <p className="mb-1 inline-block rounded-full bg-[#f1f5f9] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#7c8b86]">{g.header}</p>
+                  <div className="relative">
+                    {g.items.length > 1 && <span className="absolute right-[13px] top-1 bottom-1 w-px bg-[#e8f0ec]" />}
+                    {g.items.map((a) => {
+                      const c = activityColor(a.activity_types?.label);
+                      return (
+                        <div key={a.id} className="relative flex gap-3 rounded-xl px-1 py-2.5 transition-colors hover:bg-[#f8faf9]">
+                          <span className="relative z-10 mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full text-xs ring-4 ring-white" style={{ backgroundColor: `${c}1a`, color: c }}>{activityGlyph(a.activity_types?.label)}</span>
+                          <div className="min-w-0 flex-1">
+                            <p dir="auto" className="line-clamp-2 text-sm leading-relaxed text-[#475569]">{a.body || a.activity_types?.label || "Activity"}</p>
+                            <span className="text-xs text-[#94a3b8]">{formatDateTime(a.occurred_at)}</span>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               ));
             })()
           )}
         </div>
 
-        {/* Sales Overview */}
+        {/* Recent Leads */}
         <div className={CARD}>
-          <h3 className="mb-4 text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">ملخص المبيعات</h3>
-
-          {/* Win-rate ring */}
-          <div className="mb-4 flex items-center justify-center border-b border-[#e8f0ec] pb-5">
-            <div className="relative h-32 w-32">
-              <svg viewBox="0 0 120 120" className="h-32 w-32 -rotate-90">
-                <circle cx="60" cy="60" r="50" fill="none" stroke="#eef4f1" strokeWidth="12" />
-                <circle
-                  cx="60" cy="60" r="50" fill="none" stroke="#1a5c4f" strokeWidth="12" strokeLinecap="round"
-                  strokeDasharray={`${(Math.min(100, m.win_rate) / 100) * 314.16} 314.16`}
-                  style={{ transition: "stroke-dasharray 0.6s ease" }}
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-[24px] font-black leading-none text-[#1e1b4b]">{m.win_rate.toFixed(0)}%</span>
-                <span className="mt-1 text-[10px] font-semibold text-[#94a3b8]">نسبة الفوز</span>
-              </div>
-            </div>
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">أحدث العملاء</h3>
+            <Link href="/dashboard/leads" className="text-xs font-semibold text-[#1a5c4f] hover:underline">عرض الكل ←</Link>
           </div>
-
-          {overview.map((o) => (
-            <div key={o.label} className="flex items-center justify-between border-b border-[#e8f0ec] py-2.5 last:border-0">
-              <div className="flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: o.dot }} />
-                <span className="text-sm text-[#334155]">{o.label}</span>
-              </div>
-              <span className={`rounded-md px-2 py-0.5 text-sm font-bold ${o.badge}`}>{o.value}</span>
+          {m.recentLeads.length === 0 ? (
+            <div className="py-6 text-center">
+              <p className="text-sm text-[#94a3b8]">لا يوجد عملاء بعد — أضف أول عميل</p>
+              <button onClick={() => setNewLeadOpen(true)} className="mt-3 rounded-full bg-[#1a5c4f] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#15503f]">+ عميل جديد</button>
             </div>
-          ))}
+          ) : (
+            m.recentLeads.map((l, i) => {
+              const score = getAIScore(l, scoreModel);
+              return (
+                <Link key={l.id} href={`/dashboard/leads?open=${l.id}`} className="flex items-center gap-3 rounded-xl px-1 py-2.5 transition-colors hover:bg-[#f8faf9]">
+                  <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br shadow-sm ${AVATAR_GRADIENTS[i % AVATAR_GRADIENTS.length]}`}>
+                    <span className="text-xs font-bold text-white">{initials(l.full_name)}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p dir="auto" className="truncate text-sm font-semibold text-[#1e1b4b]">{l.full_name || "عميل بدون اسم"}</p>
+                    <p className="text-xs text-[#94a3b8]">{l.sources?.label || "—"}</p>
+                  </div>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${aiPill(score)}`}>{score}%</span>
+                </Link>
+              );
+            })
+          )}
         </div>
       </div>
 
