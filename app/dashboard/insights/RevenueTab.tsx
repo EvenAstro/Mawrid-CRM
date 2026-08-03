@@ -245,7 +245,7 @@ function HealthCard({data,ctx}:{data:RevenueIntelligenceData;ctx:string}) {
 
       {/* AI panel */}
       {open&&(
-        <div className="ri-in mt-2.5 rounded-2xl border overflow-hidden" style={{background:"linear-gradient(145deg,#011d16,#022c22)",borderColor:`${h.color}20`,boxShadow:"0 12px 28px rgba(0,0,0,.18)"}}>
+        <div className="ri-in mt-2.5 rounded-2xl border overflow-hidden" style={{background:"linear-gradient(145deg,#0f1729,#141c2e)",borderColor:`${h.color}20`,boxShadow:"0 12px 28px rgba(0,0,0,.18)"}}>
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]">
             <div className="flex items-center gap-2">
               <div className="h-5 w-5 rounded-md flex items-center justify-center" style={{background:h.grad}}>
@@ -330,7 +330,7 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-2xl"/>
       <div className="ri-in relative w-full max-w-lg overflow-hidden rounded-2xl" onClick={e=>e.stopPropagation()}
-        style={{background:"linear-gradient(160deg,#011d16 0%,#022c22 40%,#064e3b 100%)",border:"1px solid rgba(255,255,255,.08)",boxShadow:"0 32px 80px rgba(0,0,0,.4)"}}>
+        style={{background:"#141c2e",border:"1px solid rgba(255,255,255,.08)",boxShadow:"0 32px 80px rgba(0,0,0,.4)"}}>
         <div className="absolute top-[-40px] right-[-20px] h-48 w-48 pointer-events-none" style={{background:"radial-gradient(circle,rgba(16,185,129,.18),transparent 70%)"}}/>
         <div className="absolute bottom-[-30px] left-[-20px] h-40 w-40 pointer-events-none" style={{background:"radial-gradient(circle,rgba(52,211,153,.1),transparent 70%)"}}/>
 
@@ -648,7 +648,7 @@ function AiPanel({ctx}:{ctx:string}) {
   useEffect(()=>{end.current?.scrollIntoView({behavior:"smooth"});},[msgs,busy]);
 
   return (
-    <div className="flex flex-col h-full relative" style={{background:"linear-gradient(160deg,#011d16 0%,#022c22 50%,#064e3b 100%)"}}>
+    <div className="flex flex-col h-full relative" style={{background:"#141c2e"}}>
       {/* noise */}
       <div className="absolute inset-0 opacity-[0.035] pointer-events-none"
         style={{backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",backgroundSize:"120px"}}/>
