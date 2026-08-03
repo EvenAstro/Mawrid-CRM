@@ -484,7 +484,8 @@ export default function SupervisorBot() {
             {!showIntro && data && (
               <>
                 {/* AI Message — hero card */}
-                <div className="rounded-2xl bg-gradient-to-br from-[#141c2e] to-[#1a3a4a] p-5 shadow-[0_8px_32px_rgba(20,28,46,0.2)]" style={{ animation: "sv-entry 0.5s ease-out both" }}>
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#141c2e] to-[#1a3a4a] p-5 shadow-[0_8px_32px_rgba(20,28,46,0.2)]" style={{ animation: "sv-entry 0.5s ease-out both" }}>
+                  <div className="pointer-events-none absolute -left-6 -top-6 h-28 w-28 rounded-full bg-[#38d39f] opacity-[0.08] blur-[40px]" />
                   <div className="flex items-center gap-2 mb-3">
                     <div className="h-6 w-6 rounded-lg bg-[#38d39f]/20 flex items-center justify-center">
                       <span className="text-xs">💬</span>
@@ -494,27 +495,27 @@ export default function SupervisorBot() {
                   <p className="text-[14px] font-medium leading-[1.9] text-white/90 whitespace-pre-line">{data.aiSummary}</p>
                 </div>
 
-                {/* Stats — horizontal scroll pills */}
+                {/* Stats — clean grid */}
                 <div style={{ animation: "sv-entry 0.4s ease-out 120ms both" }}>
-                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
+                  <div className="grid grid-cols-3 gap-2">
                     {[
                       { icon: "✅", v: data.stats.completedToday, l: "أنجزت", alert: false },
                       { icon: "📋", v: data.stats.pendingToday, l: "باقي", alert: data.stats.pendingToday > 5 },
                       { icon: "🔴", v: data.stats.overdueCount, l: "متأخرة", alert: data.stats.overdueCount > 0 },
                       { icon: "📞", v: data.stats.outboundToday, l: "تواصل", alert: false },
                       { icon: "🗓️", v: data.stats.meetingsCount, l: "اجتماعات", alert: data.stats.meetingsCount > 0 },
-                      { icon: "📄", v: data.stats.quoteDealsCount, l: "عروض أسعار", alert: data.stats.quoteDealsCount > 0 },
+                      { icon: "📄", v: data.stats.quoteDealsCount, l: "عروض", alert: data.stats.quoteDealsCount > 0 },
                     ].map((s, i) => (
-                      <div key={i} className={`flex-shrink-0 flex items-center gap-2 rounded-2xl border px-3.5 py-2.5 ${s.alert ? "border-red-200 bg-red-50/80" : "border-[#e4ebe7] bg-white"}`}>
-                        <span className="text-sm">{s.icon}</span>
-                        <span className={`text-[16px] font-black tabular-nums ${s.alert ? "text-red-600" : "text-[#1e1b4b]"}`}>{s.v}</span>
-                        <span className="text-[10px] text-[#94a3b8] font-medium">{s.l}</span>
+                      <div key={i} className={`flex flex-col items-center gap-1 rounded-2xl border px-2 py-3 text-center transition-shadow ${s.alert ? "border-red-200 bg-red-50/80" : "border-[#e4ebe7] bg-white hover:shadow-[0_2px_10px_rgba(0,0,0,0.04)]"}`}>
+                        <span className="text-base leading-none">{s.icon}</span>
+                        <span className={`text-[18px] font-black tabular-nums leading-none ${s.alert ? "text-red-600" : "text-[#1e1b4b]"}`}>{s.v}</span>
+                        <span className="text-[10px] text-[#94a3b8] font-semibold">{s.l}</span>
                       </div>
                     ))}
                   </div>
                   {data.stats.pipelineValue > 0 && (
-                    <div className="mt-2 flex items-center gap-2 rounded-2xl bg-gradient-to-l from-[#f0faf8] to-white border border-[#d6ece5] px-4 py-2.5">
-                      <span className="text-sm">💰</span>
+                    <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-gradient-to-l from-[#f0faf8] to-white border border-[#d6ece5] px-4 py-3">
+                      <span className="flex h-8 w-8 flex-none items-center justify-center rounded-xl bg-[#1a5c4f]/10 text-sm">💰</span>
                       <span className="text-[13px] font-bold text-[#1a5c4f]">
                         قيمة المسار: {(data.stats.pipelineValue / 100).toLocaleString("ar-SA")} ر.س
                       </span>
