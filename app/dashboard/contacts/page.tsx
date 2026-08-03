@@ -144,24 +144,43 @@ export default function ContactsPage() {
       <SlideOver open={!!selected} onClose={() => setSelected(null)} title={selected?.full_name || "جهة اتصال"} subtitle={selected?.role?.trim() || selected?.establishments?.name || undefined}>
         {selected && (
           <div className="flex flex-col gap-5">
-            <div className="flex items-center gap-3">
-              <span className="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-gradient-to-br from-[#1a5c4f] to-[#0f3a30] text-lg font-bold text-white shadow-sm">{initials(selected.full_name)}</span>
-              <div className="flex gap-2">
-                {selected.phone && <a href={`tel:${selected.phone}`} className="rounded-full bg-[#1a5c4f] px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#15503f]">اتصال</a>}
-                {selected.email && <a href={`mailto:${selected.email}`} className="rounded-full border border-[#d6ece5] px-4 py-2 text-[13px] font-semibold text-ink-secondary transition hover:border-[#1a5c4f] hover:text-[#1a5c4f]">الإيميل</a>}
+            {/* Hero */}
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#d6ece5] bg-white p-6 text-center shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
+              <span className="flex h-16 w-16 flex-none items-center justify-center rounded-full bg-gradient-to-br from-[#1a5c4f] to-[#0f3a30] text-xl font-bold text-white shadow-md">{initials(selected.full_name)}</span>
+              <div>
+                <p dir="auto" className="text-[17px] font-bold text-ink">{selected.full_name || "بدون اسم"}</p>
+                <p dir="auto" className="mt-0.5 text-[13px] text-muted">{selected.role?.trim() || selected.establishments?.name || "—"}</p>
+              </div>
+              <div className="mt-1 flex gap-2">
+                {selected.phone && (
+                  <a href={`tel:${selected.phone}`} className="flex items-center gap-1.5 rounded-full bg-[#1a5c4f] px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#15503f]">
+                    <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5"><path d="M3 2c1 0 2.5.3 2.5 1.3 0 .8-.6 1-.6 1.7 0 1.5 2.6 4.1 4.1 4.1.7 0 .9-.6 1.7-.6 1 0 1.3 1.5 1.3 2.5 0 1-1.5 1.5-2.3 1.5C7 12.5 3.5 9 3.5 6.3 3.5 5.5 2 5 2 3c0-1 .5-1 1-1z" /></svg>
+                    اتصال
+                  </a>
+                )}
+                {selected.email && (
+                  <a href={`mailto:${selected.email}`} className="flex items-center gap-1.5 rounded-full border border-[#d6ece5] px-4 py-2 text-[13px] font-semibold text-ink-secondary transition hover:border-[#1a5c4f] hover:text-[#1a5c4f]">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} className="h-3.5 w-3.5"><rect x="1.5" y="3" width="13" height="10" rx="2" /><path d="M2 4l6 5 6-5" strokeLinecap="round" /></svg>
+                    إيميل
+                  </a>
+                )}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Detail label="الجوال" value={selected.phone} />
-              <Detail label="الإيميل" value={selected.email} />
-              <Detail label="الشركة" value={selected.establishments?.name ?? null} />
-              <Detail label="المنصب" value={selected.role} />
-              <Detail label="قناة التواصل المفضلة" value={selected.preferred_channel} />
-              <Detail label="تاريخ الإضافة" value={formatDate(selected.created_at)} />
+
+            {/* Info rows */}
+            <div className="overflow-hidden rounded-2xl border border-[#d6ece5] bg-white shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
+              <Detail icon="📱" label="الجوال" value={selected.phone} />
+              <Detail icon="✉️" label="الإيميل" value={selected.email} />
+              <Detail icon="🏢" label="الشركة" value={selected.establishments?.name ?? null} />
+              <Detail icon="💼" label="المنصب" value={selected.role} />
+              <Detail icon="💬" label="قناة التواصل المفضلة" value={selected.preferred_channel} />
+              <Detail icon="📅" label="تاريخ الإضافة" value={formatDate(selected.created_at)} last />
             </div>
-            <div>
-              <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">الملاحظات</p>
-              <p dir="auto" className="mt-1 text-[15px] text-ink-secondary">{selected.notes || "—"}</p>
+
+            {/* Notes */}
+            <div className="rounded-2xl border border-[#d6ece5] bg-white p-4 shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
+              <p className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wide text-muted">📝 الملاحظات</p>
+              <p dir="auto" className="mt-2 text-[14px] leading-relaxed text-ink-secondary">{selected.notes || "لا توجد ملاحظات"}</p>
             </div>
           </div>
         )}
@@ -170,11 +189,14 @@ export default function ContactsPage() {
   );
 }
 
-function Detail({ label, value }: { label: string; value: string | null }) {
+function Detail({ icon, label, value, last }: { icon: string; label: string; value: string | null; last?: boolean }) {
   return (
-    <div>
-      <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">{label}</p>
-      <p dir="auto" className="mt-0.5 text-[15px] font-medium text-ink">{value || "—"}</p>
+    <div className={`flex items-center gap-3 px-4 py-3 ${last ? "" : "border-b border-[#eef4f1]"}`}>
+      <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-[#f0faf8] text-sm">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-semibold text-muted">{label}</p>
+        <p dir="auto" className="mt-0.5 truncate text-[14px] font-semibold text-ink">{value || "—"}</p>
+      </div>
     </div>
   );
 }
