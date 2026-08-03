@@ -306,18 +306,28 @@ export default function LeadsPage() {
 
       {/* Table */}
       <div className="overflow-hidden rounded-2xl border border-[#e4e4fb] bg-white shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[880px] border-collapse text-left">
+        <div className="w-full overflow-hidden">
+          <table className="w-full table-fixed border-collapse text-left">
+            <colgroup>
+              <col className="w-[24%]" />
+              <col className="w-[11%]" />
+              <col className="w-[12%]" />
+              <col className="w-[10%]" />
+              <col className="w-[11%]" />
+              <col className="w-[12%]" />
+              <col className="w-[10%]" />
+              <col className="w-[10%]" />
+            </colgroup>
             <thead>
-              <tr className="border-b border-[#eeeefd] bg-[#f8f8ff] text-[12px] font-semibold uppercase tracking-wider text-slate-500">
-                <th className="px-6 py-3.5">العميل</th>
-                <th className="px-6 py-3.5">المصدر</th>
-                <th className="px-6 py-3.5">المرحلة</th>
-                <th className="px-6 py-3.5">الحالة</th>
-                <th className="px-6 py-3.5">تقييم AI</th>
-                <th className="px-6 py-3.5">المسؤول</th>
-                <th className="px-6 py-3.5">التاريخ</th>
-                <th className="px-6 py-3.5 text-right"></th>
+              <tr className="border-b border-[#eeeefd] bg-[#f8f8ff] text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                <th className="px-3 py-3.5">العميل</th>
+                <th className="px-3 py-3.5">المصدر</th>
+                <th className="px-3 py-3.5">المرحلة</th>
+                <th className="px-3 py-3.5">الحالة</th>
+                <th className="px-3 py-3.5">تقييم AI</th>
+                <th className="px-3 py-3.5">المسؤول</th>
+                <th className="px-3 py-3.5">التاريخ</th>
+                <th className="px-3 py-3.5 text-right"></th>
               </tr>
             </thead>
             <tbody>
@@ -377,7 +387,7 @@ export default function LeadsPage() {
                       className={`group cursor-pointer border-b border-[#f1f1fc] transition-all duration-100 last:border-0 hover:bg-[#f8f8ff] ${isJunk ? "opacity-60" : ""}`}
                     >
                       {/* Name */}
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-4">
                         <div className="flex items-center gap-3">
                           <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-gradient-to-br from-[#6366f1] to-[#4338ca] text-[13px] font-bold text-white shadow-sm">
                             {initials(lead.full_name)}
@@ -394,7 +404,7 @@ export default function LeadsPage() {
                       </td>
 
                       {/* Source */}
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-4">
                         {lead.sources?.label ? (
                           <span className="inline-flex rounded-lg bg-slate-100 px-2.5 py-1 text-[12px] font-semibold text-slate-600">
                             {lead.sources.label}
@@ -405,7 +415,7 @@ export default function LeadsPage() {
                       </td>
 
                       {/* Stage */}
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-4">
                         {lead.pipeline_stages?.label ? (
                           <span
                             className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-semibold"
@@ -423,7 +433,7 @@ export default function LeadsPage() {
                       </td>
 
                       {/* Status */}
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-4">
                         {isJunk ? (
                           <span className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-[12px] font-semibold text-red-600 ring-1 ring-red-100">
                             🚫 جنك
@@ -444,22 +454,22 @@ export default function LeadsPage() {
                       </td>
 
                       {/* AI Score */}
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-4">
                         <AiScoreRing score={scoreCache.get(lead.id) ?? getAIScore(lead, scoreModel)} />
                       </td>
 
                       {/* Owner */}
-                      <td className="px-6 py-4 text-[13px] font-medium text-slate-600">
+                      <td className="px-3 py-4 text-[13px] font-medium text-slate-600">
                         {lead.owner || <span className="text-slate-300">—</span>}
                       </td>
 
                       {/* Created */}
-                      <td className="px-6 py-4 text-[12px] text-slate-400">
+                      <td className="px-3 py-4 text-[12px] text-slate-400">
                         {formatDate(lead.created_at)}
                       </td>
 
                       {/* Actions */}
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-3 py-4 text-right">
                         <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-[12px] font-semibold text-slate-500 opacity-0 transition group-hover:bg-[#6366f1] group-hover:text-white group-hover:opacity-100">
                           فتح ←
                         </span>
