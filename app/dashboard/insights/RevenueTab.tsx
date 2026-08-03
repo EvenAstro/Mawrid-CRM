@@ -50,8 +50,8 @@ const C = {
   r1:"#7f1d1d", r2:"#991b1b", r3:"#b91c1c", r4:"#dc2626", r5:"#ef4444", r6:"#f87171",
   // Neutral
   tx:"#0f172a", tx2:"#475569", tx3:"#94a3b8", tx4:"#cbd5e1",
-  bg:"#ffffff", bg2:"#f8fafc", bg3:"#f1f5f9",
-  border:"#e2e8f0", borderL:"#f1f5f9", borderD:"#cbd5e1",
+  bg:"#ffffff", bg2:"#f8faf9", bg3:"#f0faf8",
+  border:"#d6ece5", borderL:"#d6ece5", borderD:"#c2ddd3",
 };
 
 const CAT: Record<string,{label:string;sub:string;hex:string;bg:string;ring:string;grad:string}> = {
@@ -861,11 +861,11 @@ function Row({deal,onClick}:{deal:RIDeal;onClick:()=>void}) {
 }
 
 /* ═══ Section Heading ═════════════════════════════════════════════════════ */
-function SectionHead({icon,title,sub,grad,accent}:{icon:React.ReactNode;title:string;sub:string;grad:string;accent:string}) {
+function SectionHead({icon,title,sub,accent}:{icon:React.ReactNode;title:string;sub:string;grad?:string;accent:string}) {
   return (
     <div className="flex items-center gap-3 mb-5">
-      <div className="h-9 w-9 rounded-xl flex items-center justify-center flex-none ri-shine-wrap" style={{background:grad,boxShadow:`0 3px 10px ${accent}25`}}>
-        <span className="text-white">{icon}</span>
+      <div className="h-9 w-9 rounded-xl flex items-center justify-center flex-none" style={{backgroundColor:`${accent}17`,color:accent}}>
+        {icon}
       </div>
       <div>
         <h3 className="text-[13px] font-bold" style={{color:C.tx}}>{title}</h3>
@@ -1103,7 +1103,7 @@ export default function RevenueTab() {
                     </button>
                     <button onClick={()=>setCoachDeal(deal)}
                       className="w-full flex items-center justify-center gap-2 py-2.5 text-[10.5px] font-bold border-t transition hover:opacity-90 ri-shine-wrap text-white"
-                      style={{background:"linear-gradient(135deg,#059669,#34d399)",borderColor:"#fecaca"}}>
+                      style={{backgroundColor:"#1a5c4f",borderColor:"#fecaca"}}>
                       <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round"><path d="M6 1.5l4.5 8H1.5z"/><path d="M6 5v2M6 9h.01"/></svg>
                       خطة إغلاق AI
                     </button>
@@ -1119,8 +1119,8 @@ export default function RevenueTab() {
           <div className="px-6 py-5 border-b" style={{borderColor:C.borderL}}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl flex items-center justify-center flex-none ri-shine-wrap" style={{background:"linear-gradient(135deg,#0f172a,#334155)",boxShadow:"0 3px 10px rgba(15,23,42,.2)"}}>
-                  <svg viewBox="0 0 20 20" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M3 6h14M3 10h14M3 14h14"/></svg>
+                <div className="h-9 w-9 rounded-xl flex items-center justify-center flex-none" style={{backgroundColor:"#1a5c4f17",color:"#1a5c4f"}}>
+                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M3 6h14M3 10h14M3 14h14"/></svg>
                 </div>
                 <div>
                   <h2 className="text-[14px] font-bold" style={{color:C.tx}}>جميع الصفقات النشطة</h2>
@@ -1134,7 +1134,7 @@ export default function RevenueTab() {
                 </svg>
                 <input value={search} onChange={e=>setSearch(e.target.value)}
                   placeholder="بحث عن صفقة أو عميل…"
-                  className="rounded-xl pr-9 pl-4 py-2 text-[11px] w-52 border bg-slate-50/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/30 transition"
+                  className="rounded-xl pr-9 pl-4 py-2 text-[11px] w-52 border bg-[#f8faf9] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 focus:border-[#1a5c4f]/40 transition"
                   style={{borderColor:C.border}}/>
               </div>
             </div>
@@ -1144,8 +1144,7 @@ export default function RevenueTab() {
                 return (
                   <button key={key} onClick={()=>setFilter(key)}
                     className="px-3.5 py-1.5 rounded-lg text-[10.5px] font-bold border transition-all"
-                    style={{background:active?(isRisk?"linear-gradient(135deg,#dc2626,#f87171)":"linear-gradient(135deg,#059669,#34d399)"):"white",color:active?"white":C.tx2,borderColor:active?"transparent":C.border,
-                      boxShadow:active?`0 4px 12px ${isRisk?"rgba(239,68,68,.25)":"rgba(16,185,129,.25)"}`:"none"}}>
+                    style={{backgroundColor:active?(isRisk?"#dc2626":"#1a5c4f"):"white",color:active?"white":C.tx2,borderColor:active?"transparent":C.border}}>
                     {label}{count!==undefined&&<span className="mr-1 opacity-65">({count})</span>}
                   </button>
                 );
