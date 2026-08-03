@@ -129,31 +129,30 @@ export default function DealsPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Hero header */}
-      <div className="relative overflow-hidden rounded-3xl border border-[#bfe6f7] bg-gradient-to-br from-[#f0f9ff] via-white to-white px-7 py-7 shadow-[0_4px_20px_rgba(14,165,233,0.08)]">
-        <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#0ea5e9] opacity-[0.08] blur-[70px]" />
-        <div className="relative flex flex-wrap items-end justify-between gap-4">
+      <div className="rounded-3xl bg-[#141c2e] px-7 py-7">
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-gradient-to-br from-[#0ea5e9] to-[#0369a1] shadow-[0_4px_14px_rgba(14,165,233,0.3)]">
+            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white/10">
               <svg viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth={1.8} className="h-6 w-6"><path d="M3 17V9M9 17V4M15 17v-6M3 3v14h14" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </div>
             <div>
-              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-[#1e1b4b]">الصفقات</h1>
-              <p className="mt-1 text-sm text-[#7c8b86]">{loading ? "جارِ التحميل…" : `${deals.length} صفقة`}</p>
+              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">الصفقات</h1>
+              <p className="mt-1 text-sm text-white/50">{loading ? "جارِ التحميل…" : `${deals.length} صفقة`}</p>
             </div>
           </div>
-          <button onClick={() => setAddStage(null)} className="rounded-xl bg-[#0ea5e9] px-6 py-2.5 text-sm font-bold text-white shadow-[0_4px_16px_rgba(14,165,233,0.3)] transition-all hover:-translate-y-px hover:bg-[#0c8fcc]">+ صفقة جديدة</button>
+          <button onClick={() => setAddStage(null)} className="rounded-xl bg-[#3a9080] px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#328173]">+ صفقة جديدة</button>
         </div>
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-[#bfe6f7] bg-white p-4 shadow-[0_2px_8px_rgba(14,165,233,0.05)] sm:flex-row">
+      <div className="flex flex-col gap-3 rounded-2xl border border-[#d6ece5] bg-white p-4 shadow-[0_2px_8px_rgba(26,92,79,0.05)] sm:flex-row">
         <div className="relative flex-1">
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">
             <SearchIcon className="h-4 w-4" />
           </span>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث في الصفقات..." className="h-11 w-full rounded-xl border border-[#bfe6f7] bg-[#f0f9ff] pl-11 pr-4 text-[14px] text-ink-secondary placeholder:text-muted focus:border-[#0ea5e9] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/15 transition" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث في الصفقات..." className="h-11 w-full rounded-xl border border-[#d6ece5] bg-[#f8faf9] pl-11 pr-4 text-[14px] text-ink-secondary placeholder:text-muted focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition" />
         </div>
-        <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} className="h-11 rounded-xl border border-[#bfe6f7] bg-[#f0f9ff] px-4 text-[14px] font-medium text-ink-secondary focus:border-[#0ea5e9] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/15 transition">
+        <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} className="h-11 rounded-xl border border-[#d6ece5] bg-[#f8faf9] px-4 text-[14px] font-medium text-ink-secondary focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition">
           <option value="all">كل المراحل</option>
           {stages.map((s) => (
             <option key={s.id} value={s.id}>{s.label}</option>
@@ -184,7 +183,7 @@ export default function DealsPage() {
                 onDragLeave={() => setOverStage((s) => (s === stage.id ? null : s))}
                 onDrop={(e) => { e.preventDefault(); setOverStage(null); if (dragId) moveDeal(dragId, stage.id); setDragId(null); }}
                 className={`group/col relative flex min-w-0 flex-col overflow-hidden rounded-2xl border p-2.5 transition-all ${
-                  isOver ? "border-[#0ea5e9] ring-2 ring-[#0ea5e9]/25" : "border-[#eef2f0] bg-[#f8faf9]"
+                  isOver ? "border-[#1a5c4f] ring-2 ring-[#1a5c4f]/25" : "border-[#eef2f0] bg-[#f8faf9]"
                 }`}
               >
                 <div className="mb-1 flex items-center justify-between gap-1 px-1.5 py-1.5">
@@ -198,7 +197,7 @@ export default function DealsPage() {
                   <p className="mb-2 px-1.5 text-[11px] font-semibold text-[#94a3b8]">SAR {money(colValue)}</p>
                 )}
 
-                <button onClick={() => setAddStage(stage.id)} className="mb-2 hidden rounded-lg border border-dashed border-[#0ea5e9]/40 py-1.5 text-[12px] font-semibold text-[#0ea5e9] transition hover:bg-white group-hover/col:block">
+                <button onClick={() => setAddStage(stage.id)} className="mb-2 hidden rounded-lg border border-dashed border-[#1a5c4f]/40 py-1.5 text-[12px] font-semibold text-[#1a5c4f] transition hover:bg-white group-hover/col:block">
                   + صفقة جديدة
                 </button>
 

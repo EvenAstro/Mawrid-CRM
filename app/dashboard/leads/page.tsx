@@ -215,21 +215,20 @@ export default function LeadsPage() {
   return (
     <>
       {/* Hero header */}
-      <div className="relative mb-6 overflow-hidden rounded-3xl border border-[#e4e4fb] bg-gradient-to-br from-[#f5f5ff] via-white to-white px-7 py-7 shadow-[0_4px_20px_rgba(99,102,241,0.06)]">
-        <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#818cf8] opacity-[0.1] blur-[70px]" />
-        <div className="relative flex flex-wrap items-end justify-between gap-4">
+      <div className="mb-6 rounded-3xl bg-[#141c2e] px-7 py-7">
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-gradient-to-br from-[#6366f1] to-[#4338ca] shadow-[0_4px_14px_rgba(99,102,241,0.3)]">
+            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white/10">
               <LeadsIcon className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-[#1e1b4b]">العملاء المحتملون</h1>
-              <p className="mt-1 text-sm text-[#7c8b86]">إدارة ومتابعة مسار العملاء المحتملين</p>
+              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">العملاء المحتملون</h1>
+              <p className="mt-1 text-sm text-white/50">إدارة ومتابعة مسار العملاء المحتملين</p>
             </div>
           </div>
           <button
             onClick={() => setNewLeadOpen(true)}
-            className="flex h-11 items-center gap-2 rounded-xl bg-[#6366f1] px-5 text-[14px] font-bold text-white shadow-[0_4px_16px_rgba(99,102,241,0.3)] transition-all hover:-translate-y-px hover:bg-[#4f52e0] active:scale-[0.98]"
+            className="flex h-11 items-center gap-2 rounded-xl bg-[#3a9080] px-5 text-[14px] font-bold text-white transition-all hover:bg-[#328173] active:scale-[0.98]"
           >
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
             إضافة عميل
@@ -242,7 +241,7 @@ export default function LeadsPage() {
         <StatCard
           value={leads.length}
           label="إجمالي العملاء"
-          color="#6366f1"
+          color="#1a5c4f"
           icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zM6 8a2 2 0 11-4 0 2 2 0 014 0zM1.49 15.326a.78.78 0 01-.358-.442 3 3 0 014.308-3.516 6.484 6.484 0 00-1.905 3.959c-.023.222-.014.442.025.654a4.97 4.97 0 01-2.07-.655zM16.44 15.98a4.97 4.97 0 002.07-.654.78.78 0 00.357-.442 3 3 0 00-4.308-3.517 6.484 6.484 0 011.907 3.96 2.32 2.32 0 01-.026.654zM18 8a2 2 0 11-4 0 2 2 0 014 0zM5.304 16.19a.844.844 0 01-.277-.71 5 5 0 019.947 0 .843.843 0 01-.277.71A6.975 6.975 0 0110 18a6.974 6.974 0 01-4.696-1.81z" /></svg>}
           active={statusFilter === "all"}
           onClick={() => setStatusFilter("all")}
@@ -266,7 +265,7 @@ export default function LeadsPage() {
       </div>
 
       {/* Search & filter bar */}
-      <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-[#e4e4fb] bg-white p-4 shadow-[0_2px_8px_rgba(26,92,79,0.05)] sm:flex-row">
+      <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-[#d6ece5] bg-white p-4 shadow-[0_2px_8px_rgba(26,92,79,0.05)] sm:flex-row">
         <div className="relative flex-1">
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
             <SearchIcon />
@@ -276,14 +275,14 @@ export default function LeadsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="ابحث بالاسم، الجوال، أو الإيميل…"
-            className="h-11 w-full rounded-xl border border-[#e4e4fb] bg-[#f8f8ff] pl-11 pr-4 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-[#6366f1] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6366f1]/15 transition"
+            className="h-11 w-full rounded-xl border border-[#d6ece5] bg-[#f8faf9] pl-11 pr-4 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition"
           />
         </div>
 
         <select
           value={stageFilter}
           onChange={(e) => setStageFilter(e.target.value)}
-          className="h-11 rounded-xl border border-[#e4e4fb] bg-[#f8f8ff] px-4 text-[14px] font-medium text-slate-700 focus:border-[#6366f1] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6366f1]/15 transition"
+          className="h-11 rounded-xl border border-[#d6ece5] bg-[#f8faf9] px-4 text-[14px] font-medium text-slate-700 focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition"
         >
           <option value="all">جميع المراحل</option>
           {stageOptions.map((s) => (
@@ -294,7 +293,7 @@ export default function LeadsPage() {
         <select
           value={sourceFilter}
           onChange={(e) => setSourceFilter(e.target.value)}
-          className="h-11 rounded-xl border border-[#e4e4fb] bg-[#f8f8ff] px-4 text-[14px] font-medium text-slate-700 focus:border-[#6366f1] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6366f1]/15 transition"
+          className="h-11 rounded-xl border border-[#d6ece5] bg-[#f8faf9] px-4 text-[14px] font-medium text-slate-700 focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition"
         >
           <option value="all">جميع المصادر</option>
           {sourceOptions.map((s) => (
@@ -304,7 +303,7 @@ export default function LeadsPage() {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-[#e4e4fb] bg-white shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
+      <div className="overflow-hidden rounded-2xl border border-[#d6ece5] bg-white shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
         <div className="w-full overflow-hidden">
           <table className="w-full table-fixed border-collapse text-left">
             <colgroup>
@@ -318,7 +317,7 @@ export default function LeadsPage() {
               <col className="w-[10%]" />
             </colgroup>
             <thead>
-              <tr className="border-b border-[#eeeefd] bg-[#f8f8ff] text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-[#e8f0ec] bg-[#f8faf9] text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                 <th className="px-3 py-3.5">العميل</th>
                 <th className="px-3 py-3.5">المصدر</th>
                 <th className="px-3 py-3.5">المرحلة</th>
@@ -383,12 +382,12 @@ export default function LeadsPage() {
                     <tr
                       key={lead.id}
                       onClick={() => setSelectedLead(lead)}
-                      className={`group cursor-pointer border-b border-[#f1f1fc] transition-all duration-100 last:border-0 hover:bg-[#f8f8ff] ${isJunk ? "opacity-60" : ""}`}
+                      className={`group cursor-pointer border-b border-[#e8f0ec] transition-all duration-100 last:border-0 hover:bg-[#f8faf9] ${isJunk ? "opacity-60" : ""}`}
                     >
                       {/* Name */}
                       <td className="px-3 py-4">
                         <div className="flex items-center gap-3">
-                          <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-gradient-to-br from-[#6366f1] to-[#4338ca] text-[13px] font-bold text-white shadow-sm">
+                          <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-gradient-to-br from-[#1a5c4f] to-[#0f3a30] text-[13px] font-bold text-white shadow-sm">
                             {initials(lead.full_name)}
                           </span>
                           <div className="min-w-0">
@@ -469,7 +468,7 @@ export default function LeadsPage() {
 
                       {/* Actions */}
                       <td className="px-3 py-4 text-right">
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-[12px] font-semibold text-slate-500 opacity-0 transition group-hover:bg-[#6366f1] group-hover:text-white group-hover:opacity-100">
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-[12px] font-semibold text-slate-500 opacity-0 transition group-hover:bg-[#1a5c4f] group-hover:text-white group-hover:opacity-100">
                           فتح ←
                         </span>
                       </td>
@@ -483,7 +482,7 @@ export default function LeadsPage() {
 
         {/* Pagination */}
         {!loading && filtered.length > 0 && (
-          <div className="flex items-center justify-between border-t border-[#f1f1fc] bg-[#f8f8ff] px-6 py-3.5">
+          <div className="flex items-center justify-between border-t border-[#e8f0ec] bg-[#f8faf9] px-6 py-3.5">
             <p className="text-[13px] text-slate-500">
               عرض{" "}
               <span className="font-bold text-slate-700 tabular-nums">
@@ -499,7 +498,7 @@ export default function LeadsPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#e4e4fb] bg-white text-slate-500 transition hover:border-[#6366f1] hover:text-[#6366f1] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#e4e4fb] disabled:hover:text-slate-500"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#d6ece5] bg-white text-slate-500 transition hover:border-[#1a5c4f] hover:text-[#1a5c4f] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#d6ece5] disabled:hover:text-slate-500"
               >
                 <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06L11.19 8 7.72 4.53a.75.75 0 011.06-1.06l4 4a.75.75 0 010 1.06l-4 4a.75.75 0 01-1.06 0z" clipRule="evenodd" /></svg>
               </button>
@@ -509,7 +508,7 @@ export default function LeadsPage() {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#e4e4fb] bg-white text-slate-500 transition hover:border-[#6366f1] hover:text-[#6366f1] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#e4e4fb] disabled:hover:text-slate-500"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#d6ece5] bg-white text-slate-500 transition hover:border-[#1a5c4f] hover:text-[#1a5c4f] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#d6ece5] disabled:hover:text-slate-500"
               >
                 <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M12.28 7.47a.75.75 0 010 1.06L8.81 12l3.47 3.47a.75.75 0 11-1.06 1.06l-4-4a.75.75 0 010-1.06l4-4a.75.75 0 011.06 0z" clipRule="evenodd" /></svg>
               </button>

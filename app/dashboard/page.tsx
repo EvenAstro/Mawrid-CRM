@@ -388,25 +388,24 @@ export default function DashboardPage() {
   return (
     <div>
       {/* Hero header */}
-      <div className="relative mb-6 overflow-hidden rounded-3xl border border-[#d6ece5] bg-gradient-to-br from-[#f0faf8] via-white to-white px-7 py-7 shadow-[0_4px_20px_rgba(26,92,79,0.06)]">
-        <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#38d39f] opacity-[0.08] blur-[70px]" />
-        <div className="relative flex flex-wrap items-center justify-between gap-5">
+      <div className="mb-6 rounded-3xl bg-[#141c2e] px-7 py-7">
+        <div className="flex flex-wrap items-center justify-between gap-5">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-gradient-to-br from-[#1a5c4f] to-[#0f3a30] text-lg font-bold text-white shadow-[0_4px_14px_rgba(26,92,79,0.25)]">
+            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white/10 text-lg font-bold text-white">
               {initials(firstName || "أنت")}
             </div>
             <div>
-              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-[#1e1b4b]">{greeting()}، {firstName || "بك"}</h1>
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-[#7c8b86]">
+              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">{greeting()}، {firstName || "بك"}</h1>
+              <p className="mt-1 flex items-center gap-1.5 text-sm text-white/50">
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.6} className="h-3.5 w-3.5"><rect x="3" y="4" width="14" height="13" rx="2" /><path d="M3 8h14M7 2v4M13 2v4" strokeLinecap="round" /></svg>
                 {longDate(now)}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setNewLeadOpen(true)} className="rounded-xl bg-[#1a5c4f] px-6 py-2.5 text-sm font-bold text-white shadow-[0_4px_16px_rgba(26,92,79,0.25)] transition-all hover:-translate-y-px hover:bg-[#15503f]">+ عميل جديد</button>
-            <button onClick={() => setLogActivityOpen(true)} className="rounded-xl border border-[#d6ece5] bg-white px-5 py-2.5 text-sm font-semibold text-[#1a5c4f] transition-all hover:bg-[#f0faf8]">تسجيل نشاط</button>
-            <button onClick={() => setAddContactOpen(true)} className="rounded-xl border border-[#e8efed] bg-white px-5 py-2.5 text-sm font-semibold text-[#334155] transition-all hover:bg-[#f0faf8] hover:text-[#1a5c4f]">إضافة جهة اتصال</button>
+            <button onClick={() => setNewLeadOpen(true)} className="rounded-xl bg-[#3a9080] px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#328173]">+ عميل جديد</button>
+            <button onClick={() => setLogActivityOpen(true)} className="rounded-xl border border-white/15 bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-white/90 transition-all hover:bg-white/[0.12]">تسجيل نشاط</button>
+            <button onClick={() => setAddContactOpen(true)} className="rounded-xl border border-white/15 bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-white/90 transition-all hover:bg-white/[0.12]">إضافة جهة اتصال</button>
           </div>
         </div>
       </div>
@@ -414,10 +413,9 @@ export default function DashboardPage() {
       {/* KPIs */}
       <div className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map(({ label, value, Icon, color, trend, href }) => (
-          <Link key={label} href={href} className="group relative overflow-hidden rounded-2xl border border-[#d6ece5] p-6 shadow-[0_2px_8px_rgba(26,92,79,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-transparent hover:shadow-[0_10px_28px_rgba(26,92,79,0.14)]" style={{ background: `linear-gradient(155deg, ${color}0f 0%, #fff 55%)` }}>
-            <span className="pointer-events-none absolute -left-8 -top-8 h-28 w-28 rounded-full opacity-[0.1] transition-transform duration-300 group-hover:scale-125" style={{ background: color }} />
-            <div className="relative flex items-center justify-between">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl shadow-sm transition-transform group-hover:scale-105" style={{ backgroundColor: color, color: "#fff" }}>
+          <Link key={label} href={href} className="group rounded-2xl border border-[#d6ece5] bg-white p-6 shadow-[0_2px_8px_rgba(26,92,79,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(26,92,79,0.1)]">
+            <div className="flex items-center justify-between">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ backgroundColor: `${color}17`, color }}>
                 <Icon className="h-5 w-5" />
               </span>
               <span className={`flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold ${trend.dir === "up" ? "bg-emerald-50" : trend.dir === "down" ? "bg-red-50" : "bg-[#f1f5f9]"} ${trend.cls}`}>
