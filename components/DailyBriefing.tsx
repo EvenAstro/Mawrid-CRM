@@ -414,7 +414,7 @@ export default function DailyBriefing() {
           --briefing-rail-width custom property set above, so it still pushes <main>
           instead of overlaying it. */}
       <div
-        className="fixed left-0 top-20 z-30 flex overflow-hidden rounded-r-2xl border border-s-0 border-border-light bg-white shadow-[0_8px_28px_rgba(15,23,20,0.12)] transition-[width] duration-300 ease-in-out"
+        className="fixed left-0 top-20 z-30 hidden overflow-hidden rounded-r-2xl border border-s-0 border-border-light bg-white shadow-[0_8px_28px_rgba(15,23,20,0.12)] transition-[width] duration-300 ease-in-out md:flex"
         style={{ width: collapsed ? RAIL_COLLAPSED : RAIL_EXPANDED, maxHeight: collapsed ? undefined : "min(72vh, 560px)" }}
       >
         {/* Always-visible tab — the permanent, unmistakable "you have things to do" affordance. */}
