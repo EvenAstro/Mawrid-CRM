@@ -26,11 +26,10 @@ const GLOBAL_CSS = `
 .ri-card:nth-child(3){animation-delay:.14s}
 .ri-card:nth-child(4){animation-delay:.19s}
 .ri-shine-wrap{overflow:hidden;position:relative}
-.ri-shine-wrap::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.12) 50%,transparent 70%);animation:ri-shine 2.6s ease-in-out .6s 1}
-.ri-lift{transition:box-shadow .25s cubic-bezier(.22,1,.36,1),transform .25s cubic-bezier(.22,1,.36,1),border-color .25s}
-.ri-lift:hover{transform:translateY(-3px);box-shadow:0 14px 32px rgba(4,45,32,.09)!important}
-.ri-grid-bg{background-image:linear-gradient(rgba(6,78,59,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(6,78,59,.04) 1px,transparent 1px);background-size:32px 32px}
-.ri-dot-bg{background-image:radial-gradient(rgba(6,78,59,.08) 1px,transparent 1px);background-size:14px 14px}
+.ri-lift{transition:box-shadow .2s ease,transform .2s ease,border-color .2s ease}
+.ri-lift:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(26,92,79,.1)!important}
+.ri-grid-bg{background-image:linear-gradient(rgba(26,92,79,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(26,92,79,.03) 1px,transparent 1px);background-size:32px 32px}
+.ri-dot-bg{background:none}
 `;
 
 /* ═══ Formatters ══════════════════════════════════════════════════════════ */
