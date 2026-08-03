@@ -210,6 +210,23 @@ function Skeleton() {
 
 const CARD = "rounded-2xl border border-[#d6ece5] bg-white p-6 shadow-[0_2px_8px_rgba(26,92,79,0.04)] transition-all duration-200 hover:shadow-[0_4px_16px_rgba(26,92,79,0.08)]";
 
+function CardHead({ icon, color, title, subtitle, action }: { icon: React.ReactNode; color: string; title: string; subtitle?: string; action?: React.ReactNode }) {
+  return (
+    <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl" style={{ backgroundColor: `${color}17`, color }}>
+          {icon}
+        </span>
+        <div>
+          <h3 className="text-[16px] font-bold tracking-[-0.01em] text-[#1e1b4b]">{title}</h3>
+          {subtitle && <p className="mt-0.5 text-xs text-[#94a3b8]">{subtitle}</p>}
+        </div>
+      </div>
+      {action}
+    </div>
+  );
+}
+
 /* ---------- Page ---------- */
 export default function DashboardPage() {
   const toast = useToast();
@@ -418,14 +435,15 @@ export default function DashboardPage() {
 
       {/* Middle row */}
       <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <div className={`${CARD} lg:col-span-2`}>
-          <div className="mb-5 flex items-center justify-between">
-            <div>
-              <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">نشاط الصفقات</h3>
-              <p className="mt-0.5 text-sm text-[#94a3b8]">قيمة الصفقات · {m.seriesRange}</p>
-            </div>
-            <span className="rounded-full border border-[#d6ece5] bg-gray-25 px-3 py-1 text-xs text-[#94a3b8]">آخر ٧ أيام</span>
-          </div>
+        <div className={`${CARD} relative overflow-hidden lg:col-span-2`}>
+          <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-[#6366f1] to-[#a5b4fc]" />
+          <CardHead
+            icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><path d="M3 17V9M9 17V4M15 17v-6M3 3v14h14" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+            color="#6366f1"
+            title="نشاط الصفقات"
+            subtitle={`قيمة الصفقات · ${m.seriesRange}`}
+            action={<span className="rounded-full border border-[#e4e4fb] bg-[#f5f5ff] px-3 py-1 text-xs font-semibold text-[#6366f1]">آخر ٧ أيام</span>}
+          />
           <PipelineChart points={m.series} />
           <div className="mt-4 flex gap-8 border-t border-[#e8f0ec] pt-4">
             <div><p className="text-lg font-bold text-[#1e1b4b]">{m.total_deals}</p><p className="text-xs text-[#94a3b8]">إجمالي الصفقات</p></div>
@@ -434,16 +452,19 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className={`${CARD} flex flex-col`}>
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">اليوم</h3>
-              <p className="mt-0.5 text-sm text-[#94a3b8]">{longDate(now)}</p>
-            </div>
-            <p className="rounded-xl bg-[#f0faf8] px-3 py-1.5 text-lg font-black tabular-nums text-[#1a5c4f]">
-              {now.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}
-            </p>
-          </div>
+        <div className={`${CARD} relative flex flex-col overflow-hidden`}>
+          <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-[#1a5c4f] to-[#38d39f]" />
+          <CardHead
+            icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><circle cx="10" cy="10" r="7" /><path d="M10 6v4l3 2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+            color="#1a5c4f"
+            title="اليوم"
+            subtitle={longDate(now)}
+            action={
+              <p className="rounded-xl bg-[#f0faf8] px-3 py-1.5 text-lg font-black tabular-nums text-[#1a5c4f]">
+                {now.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}
+              </p>
+            }
+          />
           <div className="flex-1 border-t border-[#e8f0ec] pt-4">
             <p className="mb-3 text-xs font-semibold tracking-wider text-[#94a3b8]">المهام القادمة</p>
             {tasks.length === 0 ? (
@@ -482,8 +503,13 @@ export default function DashboardPage() {
       {/* Bottom row */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Sales Overview */}
-        <div className={CARD}>
-          <h3 className="mb-4 text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">ملخص المبيعات</h3>
+        <div className={`${CARD} relative overflow-hidden`}>
+          <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-[#f59e0b] to-[#fcd34d]" />
+          <CardHead
+            icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><path d="M10 2v8l6.5 3.8A8 8 0 1 1 10 2Z" strokeLinejoin="round" /></svg>}
+            color="#f59e0b"
+            title="ملخص المبيعات"
+          />
 
           {/* Win-rate ring with won/lost split */}
           <div className="mb-5 flex items-center gap-5 border-b border-[#e8f0ec] pb-5">
@@ -531,11 +557,14 @@ export default function DashboardPage() {
         </div>
 
         {/* Activity Feed */}
-        <div className={CARD}>
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">آخر النشاطات</h3>
-            <Link href="/dashboard/activities" className="text-xs font-semibold text-[#1a5c4f] hover:underline">عرض الكل ←</Link>
-          </div>
+        <div className={`${CARD} relative overflow-hidden`}>
+          <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-[#0ea5e9] to-[#7dd3fc]" />
+          <CardHead
+            icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><path d="M2 10h4l2-6 4 12 2-6h4" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+            color="#0ea5e9"
+            title="آخر النشاطات"
+            action={<Link href="/dashboard/activities" className="text-xs font-semibold text-[#0ea5e9] hover:underline">عرض الكل ←</Link>}
+          />
           {activities.length === 0 ? (
             <p className="py-6 text-center text-sm text-[#94a3b8]">لا توجد نشاطات مسجلة</p>
           ) : (
@@ -572,11 +601,14 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent Leads */}
-        <div className={CARD}>
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-[#1e1b4b]">أحدث العملاء</h3>
-            <Link href="/dashboard/leads" className="text-xs font-semibold text-[#1a5c4f] hover:underline">عرض الكل ←</Link>
-          </div>
+        <div className={`${CARD} relative overflow-hidden`}>
+          <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-[#ec4899] to-[#f9a8d4]" />
+          <CardHead
+            icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><circle cx="7" cy="7" r="3" /><circle cx="14" cy="9" r="2.4" /><path d="M2.5 17c.6-3 2.4-4.8 4.5-4.8s3.9 1.8 4.5 4.8M12.8 12.4c1.7.2 3 1.6 3.5 4" strokeLinecap="round" /></svg>}
+            color="#ec4899"
+            title="أحدث العملاء"
+            action={<Link href="/dashboard/leads" className="text-xs font-semibold text-[#ec4899] hover:underline">عرض الكل ←</Link>}
+          />
           {m.recentLeads.length === 0 ? (
             <div className="py-6 text-center">
               <p className="text-sm text-[#94a3b8]">لا يوجد عملاء بعد — أضف أول عميل</p>
