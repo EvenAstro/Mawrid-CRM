@@ -382,14 +382,15 @@ export default function SupervisorBot() {
 
         <button
           onClick={() => { setOpen(true); setShowBubble(false); }}
-          className="flex w-[52px] flex-col items-center gap-1 rounded-r-2xl border border-s-0 border-[#d6ece5] bg-white py-3 shadow-[0_4px_16px_rgba(15,23,20,0.08)] transition-all hover:bg-[#f0faf8] hover:shadow-[0_6px_20px_rgba(15,23,20,0.12)]"
+          className="relative flex w-[56px] flex-col items-center gap-1.5 overflow-hidden rounded-r-2xl border border-s-0 border-white/10 bg-gradient-to-b from-[#141c2e] to-[#0f3a30] py-3.5 shadow-[0_6px_20px_rgba(15,23,20,0.25)] transition-all hover:-translate-x-[-2px] hover:shadow-[0_8px_28px_rgba(15,23,20,0.35)]"
           style={{
             animation: urgentCount > 0 ? "sv-fab-ring 2.5s ease-in-out infinite" : undefined,
           }}
           aria-label="المشرف الذكي"
           title="المشرف الذكي"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#141c2e] shadow-sm">
+          <span className="pointer-events-none absolute -left-3 -top-3 h-14 w-14 rounded-full bg-[#38d39f] opacity-20 blur-xl" />
+          <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/10">
             <svg viewBox="0 0 200 200" className="h-5 w-5">
               <rect x="48" y="30" width="104" height="85" rx="36" fill="#e8f2ed" />
               <rect x="56" y="46" width="88" height="50" rx="22" fill="#1a2e3a" />
@@ -399,9 +400,9 @@ export default function SupervisorBot() {
               <rect x="58" y="120" width="84" height="50" rx="22" fill="#e0eee6" />
             </svg>
           </span>
-          <span className="text-[9px] font-bold text-[#1a5c4f]">المشرف</span>
+          <span className="relative text-[9px] font-bold text-white/80">المشرف</span>
           {urgentCount > 0 && (
-            <span className="absolute right-0.5 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">
+            <span className="absolute right-0.5 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-[#141c2e]">
               {urgentCount}
             </span>
           )}
