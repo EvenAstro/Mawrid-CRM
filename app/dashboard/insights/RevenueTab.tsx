@@ -979,71 +979,32 @@ export default function RevenueTab() {
           </div>
         </div>
 
-        {/* ─── KPI ROW ──────────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <HealthCard data={data} ctx={ctx}/>
-          <KpiCard label="نسبة الفوز" note={`${data.wonThisMonthCount} ربح · ${data.lostThisMonthCount} خسارة`}
-            value={data.winRateThisMonth} fmt={n=>`${n}%`} accent={C.e4} grad="linear-gradient(135deg,#059669,#34d399)"
-            ring={{pct:data.winRateThisMonth}}
-            icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><circle cx="10" cy="7" r="5"/><path d="m8 10 2 2 2-2M10 18v-5"/></svg>}/>
-          <KpiCard label="متوسط الصفقة" note="للصفقات النشطة" value={data.avgDealSAR} unit="ر.س"
-            accent={C.i4} grad="linear-gradient(135deg,#4338ca,#818cf8)" spark={wonSpark}
-            icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><line x1="10" y1="1" x2="10" y2="19"/><path d="M14 4H8a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6H5"/></svg>}/>
-          <KpiCard label="في خطر عالٍ" note="تحتاج تدخل فوري" value={data.atRiskCount} fmt={n=>`${n}`} unit="صفقة"
-            accent={C.r4} grad="linear-gradient(135deg,#dc2626,#f87171)" spark={data.weeklyHistory.slice(-8).map((_,i)=>Math.max(0,data.atRiskCount-i%2))}
-            icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M8.6 3.2 1.5 15a2 2 0 0 0 1.4 2.5h14.2a2 2 0 0 0 1.4-2.5L11.4 3.2a2 2 0 0 0-2.8 0z"/><line x1="10" y1="7" x2="10" y2="11"/><line x1="10" y1="14" x2="10.01" y2="14"/></svg>}/>
-        </div>
-
-        {/* ─── MAIN GRID ────────────────────────────────────── */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-          <div className="xl:col-span-2 flex flex-col gap-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Forecast */}
-              <div className="ri-up bg-white rounded-2xl border p-5" style={{animationDelay:".08s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
-                <SectionHead grad="linear-gradient(135deg,#065f46,#10b981)" accent={C.e4}
-                  icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M2 2v16h16"/><path d="m6 13 3-3 3 3 4-4"/></svg>}
-                  title="توقعات الإيرادات" sub="3 سيناريوهات لنهاية الشهر"/>
-                <ForecastBars scenarios={data.forecast}/>
-                <div className="mt-4 rounded-lg px-3 py-2 border flex items-center gap-2.5" style={{background:"linear-gradient(135deg,#ecfdf5,#d1fae5)",borderColor:"#a7f3d0"}}>
-                  <div className="h-5 w-5 rounded-md flex items-center justify-center flex-none" style={{background:C.e4,boxShadow:"0 2px 6px rgba(5,150,105,.3)"}}>
-                    <svg viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" className="h-2.5 w-2.5"><path d="M2 6l3 3 5-5"/></svg>
-                  </div>
-                  <p className="text-[10px] font-semibold text-emerald-800">يشمل <strong>{sarFull(data.wonThisMonthSAR)} ر.س</strong> مُغلق بالفعل</p>
-                </div>
-              </div>
-              {/* Distribution */}
-              <div className="ri-up bg-white rounded-2xl border p-5" style={{animationDelay:".14s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
-                <SectionHead grad="linear-gradient(135deg,#4338ca,#818cf8)" accent={C.i4}
-                  icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M17.7 13.4A8 8 0 1 1 6.6 2.3"/><path d="M18 10A8 8 0 0 0 10 2v8z"/></svg>}
-                  title="توزيع خط المبيعات" sub="حسب احتمالية الإغلاق"/>
-                <DistPills categories={data.categories}/>
-              </div>
-            </div>
-            {/* Weekly */}
-            <div className="ri-up bg-white rounded-2xl border p-5" style={{animationDelay:".2s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
-              <div className="flex items-center justify-between mb-5">
-                <SectionHead grad="linear-gradient(135deg,#92400e,#f59e0b)" accent={C.a4}
-                  icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M15 17V8M10 17V3M5 17v-5"/></svg>}
-                  title="الأداء الأسبوعي" sub="آخر 12 أسبوع"/>
-                <div className="text-left mr-3">
-                  <p className="text-[8px] uppercase tracking-widest font-bold" style={{color:C.tx3}}>مُغلق الشهر</p>
-                  <p className="text-[15px] font-black tabular-nums mt-1" style={{color:C.e4}}>{sarK(data.wonThisMonthSAR)} <span className="text-[10px] font-medium" style={{color:C.tx3}}>ر.س</span></p>
-                </div>
-              </div>
-              <WeeklyChart data={data.weeklyHistory}/>
-            </div>
+        {/* ─── KPI BENTO ────────────────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+          <div className="xl:col-span-2">
+            <KpiCard label="في خطر عالٍ" note="تحتاج تدخل فوري" value={data.atRiskCount} fmt={n=>`${n}`} unit="صفقة"
+              accent={C.r4} grad="linear-gradient(135deg,#dc2626,#f87171)" spark={data.weeklyHistory.slice(-8).map((_,i)=>Math.max(0,data.atRiskCount-i%2))}
+              icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M8.6 3.2 1.5 15a2 2 0 0 0 1.4 2.5h14.2a2 2 0 0 0 1.4-2.5L11.4 3.2a2 2 0 0 0-2.8 0z"/><line x1="10" y1="7" x2="10" y2="11"/><line x1="10" y1="14" x2="10.01" y2="14"/></svg>}/>
           </div>
-          {/* AI Panel */}
-          <div className="xl:col-span-1">
-            <div className="relative rounded-2xl overflow-hidden sticky top-20" style={{height:560,boxShadow:"0 16px 40px rgba(4,45,32,.18),0 0 0 1px rgba(0,0,0,.05)"}}>
-              <AiPanel ctx={ctx}/>
-            </div>
+          <div className="sm:col-span-2 xl:col-span-1 row-span-2">
+            <HealthCard data={data} ctx={ctx}/>
+          </div>
+          <div>
+            <KpiCard label="نسبة الفوز" note={`${data.wonThisMonthCount} ربح · ${data.lostThisMonthCount} خسارة`}
+              value={data.winRateThisMonth} fmt={n=>`${n}%`} accent={C.e4} grad="linear-gradient(135deg,#059669,#34d399)"
+              ring={{pct:data.winRateThisMonth}}
+              icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><circle cx="10" cy="7" r="5"/><path d="m8 10 2 2 2-2M10 18v-5"/></svg>}/>
+          </div>
+          <div>
+            <KpiCard label="متوسط الصفقة" note="للصفقات النشطة" value={data.avgDealSAR} unit="ر.س"
+              accent={C.i4} grad="linear-gradient(135deg,#4338ca,#818cf8)" spark={wonSpark}
+              icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><line x1="10" y1="1" x2="10" y2="19"/><path d="M14 4H8a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6H5"/></svg>}/>
           </div>
         </div>
 
         {/* ─── AT RISK ──────────────────────────────────────── */}
         {atRisk.length>0&&(
-          <div className="ri-up" style={{animationDelay:".26s"}}>
+          <div className="ri-up" style={{animationDelay:".2s"}}>
             <div className="flex items-center gap-4 mb-5">
               <div className="h-px flex-1 rounded-full" style={{background:"linear-gradient(90deg,transparent,#fecaca)"}}/>
               <div className="flex items-center gap-2.5 rounded-full px-5 py-2 border" style={{background:"linear-gradient(135deg,#fff5f5,#fef2f2)",borderColor:"#fecaca",boxShadow:"0 4px 12px rgba(239,68,68,.08)"}}>
@@ -1102,7 +1063,7 @@ export default function RevenueTab() {
                       </div>
                     </button>
                     <button onClick={()=>setCoachDeal(deal)}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 text-[10.5px] font-bold border-t transition hover:opacity-90 ri-shine-wrap text-white"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 text-[10.5px] font-bold border-t transition hover:opacity-90 text-white"
                       style={{backgroundColor:"#1a5c4f",borderColor:"#fecaca"}}>
                       <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round"><path d="M6 1.5l4.5 8H1.5z"/><path d="M6 5v2M6 9h.01"/></svg>
                       خطة إغلاق AI
@@ -1113,6 +1074,53 @@ export default function RevenueTab() {
             </div>
           </div>
         )}
+
+        {/* ─── MAIN GRID ────────────────────────────────────── */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+          <div className="xl:col-span-2 flex flex-col gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Forecast */}
+              <div className="ri-up bg-white rounded-2xl border p-5" style={{animationDelay:".08s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
+                <SectionHead grad="linear-gradient(135deg,#065f46,#10b981)" accent={C.e4}
+                  icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M2 2v16h16"/><path d="m6 13 3-3 3 3 4-4"/></svg>}
+                  title="توقعات الإيرادات" sub="3 سيناريوهات لنهاية الشهر"/>
+                <ForecastBars scenarios={data.forecast}/>
+                <div className="mt-4 rounded-lg px-3 py-2 border flex items-center gap-2.5" style={{background:"linear-gradient(135deg,#ecfdf5,#d1fae5)",borderColor:"#a7f3d0"}}>
+                  <div className="h-5 w-5 rounded-md flex items-center justify-center flex-none" style={{background:C.e4,boxShadow:"0 2px 6px rgba(5,150,105,.3)"}}>
+                    <svg viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" className="h-2.5 w-2.5"><path d="M2 6l3 3 5-5"/></svg>
+                  </div>
+                  <p className="text-[10px] font-semibold text-emerald-800">يشمل <strong>{sarFull(data.wonThisMonthSAR)} ر.س</strong> مُغلق بالفعل</p>
+                </div>
+              </div>
+              {/* Distribution */}
+              <div className="ri-up bg-white rounded-2xl border p-5" style={{animationDelay:".14s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
+                <SectionHead grad="linear-gradient(135deg,#4338ca,#818cf8)" accent={C.i4}
+                  icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M17.7 13.4A8 8 0 1 1 6.6 2.3"/><path d="M18 10A8 8 0 0 0 10 2v8z"/></svg>}
+                  title="توزيع خط المبيعات" sub="حسب احتمالية الإغلاق"/>
+                <DistPills categories={data.categories}/>
+              </div>
+            </div>
+            {/* Weekly */}
+            <div className="ri-up bg-white rounded-2xl border p-5" style={{animationDelay:".2s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
+              <div className="flex items-center justify-between mb-5">
+                <SectionHead grad="linear-gradient(135deg,#92400e,#f59e0b)" accent={C.a4}
+                  icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M15 17V8M10 17V3M5 17v-5"/></svg>}
+                  title="الأداء الأسبوعي" sub="آخر 12 أسبوع"/>
+                <div className="text-left mr-3">
+                  <p className="text-[8px] uppercase tracking-widest font-bold" style={{color:C.tx3}}>مُغلق الشهر</p>
+                  <p className="text-[15px] font-black tabular-nums mt-1" style={{color:C.e4}}>{sarK(data.wonThisMonthSAR)} <span className="text-[10px] font-medium" style={{color:C.tx3}}>ر.س</span></p>
+                </div>
+              </div>
+              <WeeklyChart data={data.weeklyHistory}/>
+            </div>
+          </div>
+          {/* AI Panel */}
+          <div className="xl:col-span-1">
+            <div className="relative rounded-2xl overflow-hidden sticky top-20" style={{height:560,boxShadow:"0 16px 40px rgba(4,45,32,.18),0 0 0 1px rgba(0,0,0,.05)"}}>
+              <AiPanel ctx={ctx}/>
+            </div>
+          </div>
+        </div>
 
         {/* ─── DEALS TABLE ──────────────────────────────────── */}
         <div className="ri-up bg-white rounded-2xl border overflow-hidden" style={{animationDelay:".3s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
