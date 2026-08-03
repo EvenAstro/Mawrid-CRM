@@ -167,25 +167,14 @@ function HealthCard({data,ctx}:{data:RevenueIntelligenceData;ctx:string}) {
 
   return (
     <div className="ri-card h-full flex flex-col" style={{animationDelay:".04s"}}>
-      <div className="relative overflow-hidden rounded-2xl bg-white ri-lift cursor-pointer group flex-1 flex flex-col border"
-        onClick={explain}
-        style={{borderColor:`${h.color}20`,boxShadow:`0 1px 2px rgba(0,0,0,.03), 0 8px 24px ${h.color}12`}}>
-        {/* Gradient top */}
-        <div className="h-1" style={{background:h.grad}}/>
-        {/* Scan line */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute left-0 right-0 h-14 opacity-[0.05]"
-            style={{background:`linear-gradient(180deg,transparent,${h.color},transparent)`,animation:"ri-scan 3.5s linear infinite"}}/>
-        </div>
-        {/* Dot pattern bg */}
-        <div className="absolute inset-0 opacity-[0.35] pointer-events-none ri-dot-bg"/>
-
+      <div className="relative rounded-2xl border border-[#d6ece5] bg-white ri-lift cursor-pointer group flex-1 flex flex-col shadow-[0_2px_8px_rgba(26,92,79,0.05)]"
+        onClick={explain}>
         <div className="relative p-5 flex flex-col flex-1">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded-lg flex items-center justify-center" style={{background:h.grad,boxShadow:`0 2px 8px ${h.color}40`}}>
-                <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 8h3l2-5 2 10 2-5h3"/></svg>
+              <div className="h-6 w-6 rounded-lg flex items-center justify-center" style={{backgroundColor:`${h.color}17`,color:h.color}}>
+                <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 8h3l2-5 2 10 2-5h3"/></svg>
               </div>
               <div>
                 <p className="text-[9px] font-black uppercase tracking-[.16em]" style={{color:C.tx3}}>نبضة الخط</p>
@@ -411,19 +400,13 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
 function KpiCard({label,note,value,fmt,unit,accent,grad,icon,spark,ring,trend}:
   {label:string;note:string;value:number;fmt?:(n:number)=>string;unit?:string;accent:string;grad:string;icon:React.ReactNode;spark?:number[];ring?:{pct:number};trend?:{val:number;up:boolean}}) {
   return (
-    <div className="ri-card ri-lift relative bg-white rounded-2xl overflow-hidden border h-full flex flex-col"
-      style={{borderColor:`${accent}14`,boxShadow:`0 1px 2px rgba(0,0,0,.03), 0 6px 20px ${accent}08`}}>
-      {/* top gradient bar */}
-      <div className="h-1" style={{background:grad}}/>
-      {/* subtle bg accent */}
-      <div className="absolute top-0 left-0 h-28 w-28 rounded-full opacity-[.06] pointer-events-none" style={{background:accent,filter:"blur(28px)"}}/>
-
+    <div className="ri-card ri-lift relative rounded-2xl border border-[#d6ece5] bg-white shadow-[0_2px_8px_rgba(26,92,79,0.05)] h-full flex flex-col">
       <div className="relative p-5 flex flex-col flex-1">
         {/* Header row */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl flex items-center justify-center ri-shine-wrap" style={{background:grad,boxShadow:`0 4px 12px ${accent}30`}}>
-              <span className="text-white">{icon}</span>
+            <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{backgroundColor:`${accent}17`,color:accent}}>
+              {icon}
             </div>
             <div>
               <p className="text-[9px] font-black uppercase tracking-[.16em]" style={{color:C.tx3}}>{label}</p>
