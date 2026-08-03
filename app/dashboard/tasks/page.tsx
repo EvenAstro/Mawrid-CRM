@@ -197,9 +197,9 @@ export default function TasksPage() {
     const assignee = t.assignee_uid ? profileMap.get(t.assignee_uid) : undefined;
     const canAct = canActOnTask(role, userId, t.assignee_uid);
     return (
-      <div className={`flex items-start gap-3 rounded-xl border border-border-light bg-white p-3 shadow-sm transition-all ${done ? "opacity-40" : "hover:shadow-md"}`}>
+      <div className={`flex items-start gap-3 rounded-2xl border border-[#fbe8cc] bg-white p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all ${done ? "opacity-40" : "hover:-translate-y-0.5 hover:border-[#f59e0b]/30 hover:shadow-[0_6px_18px_rgba(245,158,11,0.1)]"}`}>
         {canAct ? (
-          <button onClick={() => setCompleteTarget(t)} aria-label="Complete task" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 transition-colors ${done ? "border-primary bg-primary text-white" : `${tone} hover:border-primary`}`}>
+          <button onClick={() => setCompleteTarget(t)} aria-label="Complete task" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 transition-colors ${done ? "border-[#f59e0b] bg-[#f59e0b] text-white" : `${tone} hover:border-[#f59e0b]`}`}>
             {done && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3"><path d="M20 6 9 17l-5-5" /></svg>}
           </button>
         ) : (
@@ -209,7 +209,7 @@ export default function TasksPage() {
           <p dir="auto" className={`text-[15px] font-medium text-ink ${done ? "line-through" : ""}`}>{t.title || "مهمة بدون عنوان"}</p>
           {t.description && <p dir="auto" className="mt-0.5 line-clamp-1 text-[13px] text-muted">{t.description}</p>}
           <div className="mt-1.5 flex items-center gap-2">
-            {t.task_types?.label && <span className="rounded-full bg-mint px-2 py-0.5 text-[11px] font-semibold text-primary">{t.task_types.label}</span>}
+            {t.task_types?.label && <span className="rounded-full bg-[#fff7ea] px-2 py-0.5 text-[11px] font-semibold text-[#b45309]">{t.task_types.label}</span>}
             {t.due_at && <span className="text-[12px] text-muted">{formatTime(t.due_at)}</span>}
             {assignee && <span className="rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-ink-secondary">{profileName(assignee)}</span>}
           </div>
@@ -219,20 +219,29 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 dir="auto" className="text-2xl font-extrabold text-ink">المهام</h1>
-          <p className="mt-1 text-[15px] text-muted">{loading ? "جارِ التحميل…" : `${tasks.length} مهمة مفتوحة`}</p>
+    <div className="flex flex-col gap-6">
+      {/* Hero header */}
+      <div className="relative overflow-hidden rounded-3xl border border-[#fbe8cc] bg-gradient-to-br from-[#fffaf0] via-white to-white px-7 py-7 shadow-[0_4px_20px_rgba(245,158,11,0.08)]">
+        <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#f59e0b] opacity-[0.08] blur-[70px]" />
+        <div className="relative flex flex-wrap items-center justify-between gap-5">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-gradient-to-br from-[#f59e0b] to-[#b45309] shadow-[0_4px_14px_rgba(245,158,11,0.3)]">
+              <svg viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth={1.8} className="h-6 w-6"><rect x="3.5" y="3.5" width="13" height="13" rx="3" /><path d="M6.5 10l2.2 2.2L13.5 7.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </div>
+            <div>
+              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-[#1e1b4b]">المهام</h1>
+              <p className="mt-1 text-sm text-[#7c8b86]">{loading ? "جارِ التحميل…" : `${tasks.length} مهمة مفتوحة`}</p>
+            </div>
+          </div>
+          <button onClick={() => setNewOpen(true)} className="rounded-xl bg-[#f59e0b] px-6 py-2.5 text-sm font-bold text-white shadow-[0_4px_16px_rgba(245,158,11,0.3)] transition-all hover:-translate-y-px hover:bg-[#d9880a]">+ مهمة جديدة</button>
         </div>
-        <Button onClick={() => setNewOpen(true)}>+ مهمة جديدة</Button>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
         {/* List */}
         <div className="flex flex-col gap-5 lg:col-span-3">
           {dayFilter && (
-            <button onClick={() => setDayFilter(null)} className="self-start rounded-full bg-mint px-3 py-1 text-[13px] font-semibold text-primary">عرض {dayFilter} · مسح ✕</button>
+            <button onClick={() => setDayFilter(null)} className="self-start rounded-full bg-[#fff7ea] px-3 py-1 text-[13px] font-semibold text-[#b45309]">عرض {dayFilter} · مسح ✕</button>
           )}
           {loading ? (
             Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16" />)
@@ -245,23 +254,23 @@ export default function TasksPage() {
                 </section>
               )}
               <section>
-                <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-teal-50 text-teal-700">اليوم · {groups.todayT.length}</h2>
+                <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-[#fff7ea] text-[#b45309]">اليوم · {groups.todayT.length}</h2>
                 {groups.todayT.length === 0 ? (
-                  <p className="rounded-xl border border-dashed border-border-light py-5 text-center text-[15px] text-muted">🎉 لا توجد مهام لليوم!</p>
+                  <p className="rounded-xl border border-dashed border-[#fbe8cc] py-5 text-center text-[15px] text-muted">🎉 لا توجد مهام لليوم!</p>
                 ) : (
-                  <div className="flex flex-col gap-2">{groups.todayT.map((t) => <TaskRow key={t.id} t={t} tone="border-primary/40" />)}</div>
+                  <div className="flex flex-col gap-2">{groups.todayT.map((t) => <TaskRow key={t.id} t={t} tone="border-[#f59e0b]/40" />)}</div>
                 )}
               </section>
               {groups.week.length > 0 && (
                 <section>
                   <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-gray-50 text-gray-600">هذا الأسبوع · {groups.week.length}</h2>
-                  <div className="flex flex-col gap-2">{groups.week.map((t) => <TaskRow key={t.id} t={t} tone="border-border-light" />)}</div>
+                  <div className="flex flex-col gap-2">{groups.week.map((t) => <TaskRow key={t.id} t={t} tone="border-[#fbe8cc]" />)}</div>
                 </section>
               )}
               {groups.upcoming.length > 0 && (
                 <section>
                   <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-gray-50 text-gray-500">قادمة · {groups.upcoming.length}</h2>
-                  <div className="flex flex-col gap-2">{groups.upcoming.map((t) => <TaskRow key={t.id} t={t} tone="border-border-light" />)}</div>
+                  <div className="flex flex-col gap-2">{groups.upcoming.map((t) => <TaskRow key={t.id} t={t} tone="border-[#fbe8cc]" />)}</div>
                 </section>
               )}
             </>
@@ -269,13 +278,13 @@ export default function TasksPage() {
         </div>
 
         {/* Calendar */}
-        <div className="h-fit rounded-2xl border border-border-light bg-white p-5 shadow-sm lg:col-span-2">
+        <div className="h-fit rounded-2xl border border-[#fbe8cc] bg-white p-5 shadow-[0_2px_8px_rgba(245,158,11,0.05)] lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-[15px] font-semibold text-ink">{month.toLocaleDateString("ar-SA", { month: "long", year: "numeric" })}</span>
             <div className="flex gap-1">
-              <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="rounded px-2 py-0.5 text-[15px] text-ink-secondary transition hover:bg-mint">‹</button>
-              <button onClick={() => { setMonth(new Date(today.getFullYear(), today.getMonth(), 1)); setDayFilter(null); }} className="rounded-lg bg-primary px-2.5 py-0.5 text-[13px] font-semibold text-white transition hover:bg-primary-dark">اليوم</button>
-              <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="rounded px-2 py-0.5 text-[15px] text-ink-secondary transition hover:bg-mint">›</button>
+              <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="rounded px-2 py-0.5 text-[15px] text-ink-secondary transition hover:bg-[#fff7ea]">‹</button>
+              <button onClick={() => { setMonth(new Date(today.getFullYear(), today.getMonth(), 1)); setDayFilter(null); }} className="rounded-lg bg-[#f59e0b] px-2.5 py-0.5 text-[13px] font-semibold text-white transition hover:bg-[#d9880a]">اليوم</button>
+              <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="rounded px-2 py-0.5 text-[15px] text-ink-secondary transition hover:bg-[#fff7ea]">›</button>
             </div>
           </div>
           <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase text-muted">
@@ -290,9 +299,9 @@ export default function TasksPage() {
               const hasTasks = taskDays.has(dateStr);
               const isSel = dayFilter === dateStr;
               return (
-                <button key={day} onClick={() => setDayFilter(isSel ? null : dateStr)} className={`flex h-9 flex-col items-center justify-center rounded-lg text-[13px] transition ${isSel ? "bg-primary text-white" : isToday ? "bg-primary/10 font-bold text-primary" : hasTasks ? "font-semibold text-primary hover:bg-mint" : "text-ink-secondary hover:bg-gray-25"}`}>
+                <button key={day} onClick={() => setDayFilter(isSel ? null : dateStr)} className={`flex h-9 flex-col items-center justify-center rounded-lg text-[13px] transition ${isSel ? "bg-[#f59e0b] text-white" : isToday ? "bg-[#f59e0b]/10 font-bold text-[#b45309]" : hasTasks ? "font-semibold text-[#b45309] hover:bg-[#fff7ea]" : "text-ink-secondary hover:bg-gray-25"}`}>
                   {day}
-                  {hasTasks && !isSel && !isToday && <span className="h-1 w-1 rounded-full bg-primary" />}
+                  {hasTasks && !isSel && !isToday && <span className="h-1 w-1 rounded-full bg-[#f59e0b]" />}
                 </button>
               );
             })}
