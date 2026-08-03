@@ -35,6 +35,31 @@ function startOfDay(d: Date) {
   return x;
 }
 
+const TASK_TYPE_STYLE: Record<string, { c: string; g: string }> = {
+  call: { c: "#1a5c4f", g: "📞" },
+  whatsapp: { c: "#10b981", g: "💬" },
+  email: { c: "#8b5cf6", g: "✉️" },
+  meeting: { c: "#f59e0b", g: "🗓️" },
+  demo: { c: "#0ea5e9", g: "🖥️" },
+};
+function taskTypeStyle(label?: string | null) {
+  const l = (label || "").toLowerCase();
+  for (const key in TASK_TYPE_STYLE) if (l.includes(key)) return TASK_TYPE_STYLE[key];
+  return { c: "#1a5c4f", g: "📋" };
+}
+const AVATAR_GRADIENTS = [
+  "from-[#1a5c4f] to-[#0f3a30]",
+  "from-[#6366f1] to-[#4338ca]",
+  "from-[#f59e0b] to-[#c2660a]",
+  "from-[#0ea5e9] to-[#0369a1]",
+  "from-[#ec4899] to-[#be185d]",
+];
+function hashColorIndex(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h % AVATAR_GRADIENTS.length;
+}
+
 export default function TasksPage() {
   const toast = useToast();
   const { role, userId, loading: roleLoading } = useRole();
@@ -196,8 +221,12 @@ export default function TasksPage() {
     const done = completing.has(t.id);
     const assignee = t.assignee_uid ? profileMap.get(t.assignee_uid) : undefined;
     const canAct = canActOnTask(role, userId, t.assignee_uid);
+    const ty = taskTypeStyle(t.task_types?.label);
+    const avatarGrad = AVATAR_GRADIENTS[hashColorIndex(assignee ? profileName(assignee) : t.id)];
     return (
-      <div className={`flex items-start gap-3 rounded-2xl border border-[#d6ece5] bg-white p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all ${done ? "opacity-40" : "hover:-translate-y-0.5 hover:border-[#1a5c4f]/30 hover:shadow-[0_6px_18px_rgba(26,92,79,0.1)]"}`}>
+      <div className={`group relative flex items-start gap-3 overflow-hidden rounded-2xl border border-[#e4ebe7] bg-white p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all ${done ? "opacity-40" : "hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(26,92,79,0.1)]"}`}>
+        <span className="absolute inset-y-0 right-0 w-1" style={{ backgroundColor: ty.c, opacity: done ? 0.3 : 0.8 }} />
+
         {canAct ? (
           <button onClick={() => setCompleteTarget(t)} aria-label="Complete task" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 transition-colors ${done ? "border-[#1a5c4f] bg-[#1a5c4f] text-white" : `${tone} hover:border-[#1a5c4f]`}`}>
             {done && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3"><path d="M20 6 9 17l-5-5" /></svg>}
@@ -205,13 +234,26 @@ export default function TasksPage() {
         ) : (
           <span title="بس المسؤول عن المهمة يقدر ينهيها" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 border-gray-200 opacity-50 ${tone}`} />
         )}
+
+        <span className="mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-xl text-sm" style={{ backgroundColor: `${ty.c}17`, color: ty.c }}>{ty.g}</span>
+
         <button onClick={() => openDetail(t)} className="min-w-0 flex-1 text-left">
-          <p dir="auto" className={`text-[15px] font-medium text-ink ${done ? "line-through" : ""}`}>{t.title || "مهمة بدون عنوان"}</p>
+          <p dir="auto" className={`text-[15px] font-semibold text-ink ${done ? "line-through" : ""}`}>{t.title || "مهمة بدون عنوان"}</p>
           {t.description && <p dir="auto" className="mt-0.5 line-clamp-1 text-[13px] text-muted">{t.description}</p>}
-          <div className="mt-1.5 flex items-center gap-2">
-            {t.task_types?.label && <span className="rounded-full bg-[#f0faf8] px-2 py-0.5 text-[11px] font-semibold text-[#1a5c4f]">{t.task_types.label}</span>}
-            {t.due_at && <span className="text-[12px] text-muted">{formatTime(t.due_at)}</span>}
-            {assignee && <span className="rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-ink-secondary">{profileName(assignee)}</span>}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {t.task_types?.label && <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ backgroundColor: `${ty.c}17`, color: ty.c }}>{t.task_types.label}</span>}
+            {t.due_at && (
+              <span className="flex items-center gap-1 text-[12px] text-muted">
+                <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth={1.4} className="h-3 w-3"><circle cx="7" cy="7" r="5.5" /><path d="M7 4v3l2 1.5" strokeLinecap="round" /></svg>
+                {formatTime(t.due_at)}
+              </span>
+            )}
+            {assignee && (
+              <span className="flex items-center gap-1.5 rounded-full bg-gray-50 py-0.5 pl-2 pr-0.5 text-[11px] font-medium text-ink-secondary">
+                <span className={`flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br text-[8px] font-bold text-white ${avatarGrad}`}>{profileName(assignee).slice(0, 1)}</span>
+                {profileName(assignee)}
+              </span>
+            )}
           </div>
         </button>
       </div>

@@ -155,7 +155,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
               <path d="M18 5C11.37 5 6 10.37 6 17c0 6.63 5.37 12 12 12h7v-7h-7a5 5 0 1 1 0-10c2.76 0 5 2.24 5 5v12h7V17C30 10.37 24.63 5 18 5z" fill="white" />
             </svg>
             {!collapsed && (
-              <span className="block truncate text-[28px] font-black tracking-wide text-white" style={{ fontFamily: "var(--font-cairo), system-ui, sans-serif" }}>مَــوْرد</span>
+              <span className="block truncate text-[28px] font-bold tracking-wide text-white" style={{ fontFamily: "var(--font-cairo), system-ui, sans-serif" }}>مَــوْرد</span>
             )}
           </div>
           <button
