@@ -646,64 +646,70 @@ export default function InsightsTab() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* ── Sticky filter bar ─────────────────────────────────────── */}
-      <div className="sticky top-16 z-10 -mx-8 -mt-8 border-b border-gray-100 bg-white/85 px-8 py-4 backdrop-blur-md">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 dir="auto" className="text-[22px] font-extrabold tracking-tight text-[#1e1b4b]">لوحة الرؤى</h1>
-              <span className="rounded-full bg-mint px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">Live</span>
-              {refreshing && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />}
+      {/* ── Hero header ───────────────────────────────────────────── */}
+      <div className="rounded-3xl bg-[#141c2e] px-7 py-7">
+        <div className="flex flex-wrap items-center justify-between gap-5">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white/10">
+              <svg viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth={1.8} className="h-6 w-6"><path d="M3 17V9M9 17V4M15 17v-6M3 3v14h14" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </div>
-            <p dir="auto" className="mt-0.5 text-[13px] text-[#94a3b8]">كل الأرقام مفلترة على: <span className="font-semibold text-[#475569]">{data.rangeLabel}</span></p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex gap-1 rounded-full border border-gray-100 bg-white p-1 shadow-sm">
-              {RANGES.map((r) => (
-                <button
-                  key={r.key}
-                  onClick={() => setRange(r.key)}
-                  className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition ${
-                    range === r.key ? "bg-primary text-white shadow-sm" : "text-[#475569] hover:bg-mint"
-                  }`}
-                >
-                  {r.label}
-                </button>
-              ))}
-              <button
-                onClick={() => {
-                  setRange("custom");
-                  if (!customFrom) setCustomFrom(toISODate(new Date(Date.now() - 30 * 86_400_000)));
-                }}
-                className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition ${
-                  range === "custom" ? "bg-primary text-white shadow-sm" : "text-[#475569] hover:bg-mint"
-                }`}
-              >
-                مخصص
-              </button>
-            </div>
-            {range === "custom" && (
-              <div className="flex items-center gap-2 rounded-full border border-gray-100 bg-white px-3 py-1.5 text-[12.5px] shadow-sm">
-                <label className="text-[#94a3b8]">من</label>
-                <input
-                  type="date"
-                  value={customFrom}
-                  onChange={(e) => setCustomFrom(e.target.value)}
-                  className="border-0 bg-transparent text-[12.5px] text-[#334155] focus:outline-none"
-                />
-                <span className="text-[#cbd5e1]">—</span>
-                <label className="text-[#94a3b8]">إلى</label>
-                <input
-                  type="date"
-                  value={customTo}
-                  onChange={(e) => setCustomTo(e.target.value)}
-                  className="border-0 bg-transparent text-[12.5px] text-[#334155] focus:outline-none"
-                />
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">لوحة الرؤى</h1>
+                <span className="rounded-full bg-[#3a9080]/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#5ec4b0]">Live</span>
+                {refreshing && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3a9080]" />}
               </div>
-            )}
+              <p dir="auto" className="mt-1 text-sm text-white/50">كل الأرقام مفلترة على: <span className="font-semibold text-white/80">{data.rangeLabel}</span></p>
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* ── Filter bar ────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[#d6ece5] bg-white p-3 shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
+        <div className="flex gap-1 rounded-xl bg-[#f8faf9] p-1">
+          {RANGES.map((r) => (
+            <button
+              key={r.key}
+              onClick={() => setRange(r.key)}
+              className={`rounded-lg px-3.5 py-1.5 text-[12.5px] font-semibold transition ${
+                range === r.key ? "bg-[#1a5c4f] text-white shadow-sm" : "text-[#475569] hover:bg-[#f0faf8]"
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+          <button
+            onClick={() => {
+              setRange("custom");
+              if (!customFrom) setCustomFrom(toISODate(new Date(Date.now() - 30 * 86_400_000)));
+            }}
+            className={`rounded-lg px-3.5 py-1.5 text-[12.5px] font-semibold transition ${
+              range === "custom" ? "bg-[#1a5c4f] text-white shadow-sm" : "text-[#475569] hover:bg-[#f0faf8]"
+            }`}
+          >
+            مخصص
+          </button>
+        </div>
+        {range === "custom" && (
+          <div className="flex items-center gap-2 rounded-xl border border-[#d6ece5] bg-[#f8faf9] px-3 py-1.5 text-[12.5px]">
+            <label className="text-[#94a3b8]">من</label>
+            <input
+              type="date"
+              value={customFrom}
+              onChange={(e) => setCustomFrom(e.target.value)}
+              className="border-0 bg-transparent text-[12.5px] text-[#334155] focus:outline-none"
+            />
+            <span className="text-[#cbd5e1]">—</span>
+            <label className="text-[#94a3b8]">إلى</label>
+            <input
+              type="date"
+              value={customTo}
+              onChange={(e) => setCustomTo(e.target.value)}
+              className="border-0 bg-transparent text-[12.5px] text-[#334155] focus:outline-none"
+            />
+          </div>
+        )}
       </div>
 
       {/* ── KPI grid ──────────────────────────────────────────────── */}

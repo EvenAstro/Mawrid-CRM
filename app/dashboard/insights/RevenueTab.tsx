@@ -953,7 +953,7 @@ export default function RevenueTab() {
 
         {/* ─── HERO ─────────────────────────────────────────── */}
         <div className="ri-up relative overflow-hidden rounded-3xl text-white"
-          style={{background:`linear-gradient(135deg,${C.e1} 0%,${C.e2} 30%,${C.e3} 65%,${C.e4} 100%)`}}>
+          style={{background:"#141c2e"}}>
           <div className="absolute top-[-50px] right-[-30px] h-72 w-72 pointer-events-none"
             style={{background:"radial-gradient(circle,rgba(52,211,153,.2),transparent 65%)",animation:"ri-orb 8s ease-in-out infinite"}}/>
           <div className="absolute bottom-[-50px] left-[15%] h-56 w-56 pointer-events-none"
