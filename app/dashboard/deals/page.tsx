@@ -129,9 +129,9 @@ export default function DealsPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Hero header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#141c2e] via-[#2a1f14] to-[#3a2a0f] px-7 py-7 shadow-[0_16px_40px_rgba(58,42,15,0.25)]">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#141c2e] via-[#173226] to-[#0f3a30] px-7 py-7 shadow-[0_16px_40px_rgba(15,58,48,0.25)]">
         <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#f59e0b] opacity-[0.12] blur-[70px]" />
-        <div className="pointer-events-none absolute -right-10 bottom-0 h-40 w-40 rounded-full bg-[#38d39f] opacity-[0.08] blur-[60px]" />
+        <div className="pointer-events-none absolute -right-10 bottom-0 h-40 w-40 rounded-full bg-[#38d39f] opacity-[0.1] blur-[60px]" />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15 backdrop-blur-sm">
@@ -147,14 +147,14 @@ export default function DealsPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-[#f2e4cc] bg-white p-4 shadow-[0_2px_8px_rgba(26,92,79,0.05)] sm:flex-row">
+      <div className="flex flex-col gap-3 rounded-2xl border border-[#d6ece5] bg-white p-4 shadow-[0_2px_8px_rgba(26,92,79,0.05)] sm:flex-row">
         <div className="relative flex-1">
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">
             <SearchIcon className="h-4 w-4" />
           </span>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث في الصفقات..." className="h-11 w-full rounded-xl border border-[#f2e4cc] bg-[#fffaf0] pl-11 pr-4 text-[14px] text-ink-secondary placeholder:text-muted focus:border-[#f59e0b] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/15 transition" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث في الصفقات..." className="h-11 w-full rounded-xl border border-[#d6ece5] bg-[#f8faf9] pl-11 pr-4 text-[14px] text-ink-secondary placeholder:text-muted focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition" />
         </div>
-        <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} className="h-11 rounded-xl border border-[#f2e4cc] bg-[#fffaf0] px-4 text-[14px] font-medium text-ink-secondary focus:border-[#f59e0b] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/15 transition">
+        <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} className="h-11 rounded-xl border border-[#d6ece5] bg-[#f8faf9] px-4 text-[14px] font-medium text-ink-secondary focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition">
           <option value="all">كل المراحل</option>
           {stages.map((s) => (
             <option key={s.id} value={s.id}>{s.label}</option>
@@ -163,13 +163,13 @@ export default function DealsPage() {
       </div>
 
       {loading ? (
-        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
           {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-72" />)}
         </div>
       ) : error ? (
         <EmptyState icon="🔌" title="خطأ في الاتصال" subtitle="تعذّر تحميل الصفقات" action={<Button onClick={() => { setLoading(true); load(); }}>إعادة المحاولة</Button>} />
       ) : (
-        <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.max(1, columns.length)}, minmax(0, 1fr))` }}>
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
           {columns.map(({ stage, deals: colDeals }) => {
             // Stage dot uses the DB color, but the column chrome itself always
             // stays on-brand (teal/navy) so six stages don't read as a rainbow.

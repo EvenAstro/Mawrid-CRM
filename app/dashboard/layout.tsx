@@ -246,7 +246,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
         style={{ marginRight: w, paddingLeft: "var(--briefing-rail-width, 52px)" }}
         className="min-h-screen bg-[#f0f5f3] pt-[56px] transition-all duration-300"
       >
-        <div key={pathname} className="page-content mx-auto max-w-[1280px] p-8">
+        <div key={pathname} className="page-content mx-auto max-w-[1600px] p-8">
           {roleLoading ? null : currentFeature && !can(currentFeature.key) ? null : children}
         </div>
       </main>
