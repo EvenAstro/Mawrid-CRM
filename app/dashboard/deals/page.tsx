@@ -42,11 +42,6 @@ function dealValue(d: Deal): string {
   const c = d.currency_code || "SAR";
   return `${c} ${money(minor / 100)}`;
 }
-function columnTint(t: string | null): string {
-  if (t === "won") return "bg-emerald-50/60";
-  if (t === "lost" || t === "junk") return "bg-red-50/50";
-  return "bg-[#f0faf8]/60";
-}
 
 export default function DealsPage() {
   const toast = useToast();
@@ -131,25 +126,37 @@ export default function DealsPage() {
     }
   }
 
+  const totalPipelineValue = deals.reduce((s, d) => s + (d.expected_value_minor ?? d.won_value_minor ?? 0) / 100, 0);
+
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 dir="auto" className="text-2xl font-extrabold text-ink">الصفقات</h1>
-          <p className="mt-1 text-[15px] text-muted">{loading ? "جارِ التحميل…" : `${deals.length} صفقة عبر ${stages.length} مرحلة`}</p>
+    <div className="flex flex-col gap-6">
+      {/* Hero header */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#141c2e] via-[#2a1f14] to-[#3a2a0f] px-7 py-7 shadow-[0_16px_40px_rgba(58,42,15,0.25)]">
+        <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#f59e0b] opacity-[0.12] blur-[70px]" />
+        <div className="pointer-events-none absolute -right-10 bottom-0 h-40 w-40 rounded-full bg-[#38d39f] opacity-[0.08] blur-[60px]" />
+        <div className="relative flex flex-wrap items-end justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15 backdrop-blur-sm">
+              <svg viewBox="0 0 20 20" fill="none" stroke="#fbbf24" strokeWidth={1.8} className="h-6 w-6"><path d="M3 17V9M9 17V4M15 17v-6M3 3v14h14" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </div>
+            <div>
+              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">الصفقات</h1>
+              <p className="mt-1 text-sm text-white/50">{loading ? "جارِ التحميل…" : `${deals.length} صفقة عبر ${stages.length} مرحلة · SAR ${money(totalPipelineValue)}`}</p>
+            </div>
+          </div>
+          <button onClick={() => setAddStage(null)} className="rounded-xl bg-[#38d39f] px-6 py-2.5 text-sm font-bold text-[#0f3a30] shadow-[0_4px_16px_rgba(56,211,159,0.3)] transition-all hover:-translate-y-px hover:bg-[#4fdcae]">+ صفقة جديدة</button>
         </div>
-        <Button onClick={() => setAddStage(null)}>+ صفقة جديدة</Button>
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex flex-col gap-3 rounded-2xl border border-[#f2e4cc] bg-white p-4 shadow-[0_2px_8px_rgba(26,92,79,0.05)] sm:flex-row">
         <div className="relative flex-1">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
+          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">
             <SearchIcon className="h-4 w-4" />
           </span>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث في الصفقات..." className="h-11 w-full rounded-full border border-border-light bg-white pl-10 pr-4 text-[15px] text-ink-secondary placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث في الصفقات..." className="h-11 w-full rounded-xl border border-[#f2e4cc] bg-[#fffaf0] pl-11 pr-4 text-[14px] text-ink-secondary placeholder:text-muted focus:border-[#f59e0b] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/15 transition" />
         </div>
-        <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} className="h-11 rounded-xl border border-border-light bg-white px-3 text-[15px] text-ink-secondary focus:border-primary focus:outline-none">
+        <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} className="h-11 rounded-xl border border-[#f2e4cc] bg-[#fffaf0] px-4 text-[14px] font-medium text-ink-secondary focus:border-[#f59e0b] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/15 transition">
           <option value="all">كل المراحل</option>
           {stages.map((s) => (
             <option key={s.id} value={s.id}>{s.label}</option>
@@ -158,39 +165,49 @@ export default function DealsPage() {
       </div>
 
       {loading ? (
-        <div className="flex gap-3 overflow-x-auto">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-72 w-[300px] flex-none" />)}
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-72" />)}
         </div>
       ) : error ? (
         <EmptyState icon="🔌" title="خطأ في الاتصال" subtitle="تعذّر تحميل الصفقات" action={<Button onClick={() => { setLoading(true); load(); }}>إعادة المحاولة</Button>} />
       ) : (
-        <div className="flex gap-3 overflow-x-auto pb-2">
+        <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.max(1, columns.length)}, minmax(0, 1fr))` }}>
           {columns.map(({ stage, deals: colDeals }) => {
             const accent = stage.color || "#1a5c4f";
             const isOver = overStage === stage.id;
+            const colValue = colDeals.reduce((s, d) => s + (d.expected_value_minor ?? d.won_value_minor ?? 0) / 100, 0);
             return (
               <div
                 key={stage.id}
                 onDragOver={(e) => { e.preventDefault(); setOverStage(stage.id); }}
                 onDragLeave={() => setOverStage((s) => (s === stage.id ? null : s))}
                 onDrop={(e) => { e.preventDefault(); setOverStage(null); if (dragId) moveDeal(dragId, stage.id); setDragId(null); }}
-                className={`group/col flex w-[300px] flex-none flex-col rounded-2xl p-2 transition-colors ${columnTint(stage.terminal_type)} ${isOver ? "ring-2 ring-primary/40" : ""}`}
+                className={`group/col relative flex min-w-0 flex-col overflow-hidden rounded-2xl border p-2.5 transition-all ${isOver ? "ring-2" : ""}`}
+                style={{
+                  background: `linear-gradient(180deg, ${accent}0d 0%, #fff 90px)`,
+                  borderColor: isOver ? accent : "#eef2f0",
+                  ...(isOver ? ({ "--tw-ring-color": `${accent}55` } as React.CSSProperties) : {}),
+                }}
               >
-                <div className="mb-2 flex items-center justify-between px-2 py-1">
-                  <span className="flex items-center gap-2 text-[15px] font-semibold text-ink">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: accent }} />
-                    {stage.label}
+                <span className="absolute inset-x-0 top-0 h-[3px]" style={{ backgroundColor: accent }} />
+                <div className="mb-1 flex items-center justify-between gap-1 px-1.5 py-1.5">
+                  <span className="flex min-w-0 items-center gap-1.5 truncate text-[13px] font-bold text-[#1e1b4b]">
+                    <span className="h-2 w-2 flex-none rounded-full" style={{ backgroundColor: accent }} />
+                    <span className="truncate">{stage.label}</span>
                   </span>
-                  <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ backgroundColor: `${accent}1a`, color: accent }}>{colDeals.length}</span>
+                  <span className="flex-none rounded-full px-2 py-0.5 text-[11px] font-bold" style={{ backgroundColor: `${accent}1a`, color: accent }}>{colDeals.length}</span>
                 </div>
+                {colValue > 0 && (
+                  <p className="mb-2 px-1.5 text-[11px] font-semibold text-[#94a3b8]">SAR {money(colValue)}</p>
+                )}
 
-                <button onClick={() => setAddStage(stage.id)} className="mb-2 hidden rounded-lg border border-dashed border-primary/30 py-1.5 text-[13px] font-semibold text-primary transition hover:bg-white group-hover/col:block">
+                <button onClick={() => setAddStage(stage.id)} className="mb-2 hidden rounded-lg border border-dashed py-1.5 text-[12px] font-semibold transition hover:bg-white group-hover/col:block" style={{ borderColor: `${accent}55`, color: accent }}>
                   + صفقة جديدة
                 </button>
 
-                <div className="flex flex-col gap-2">
+                <div className="flex max-h-[65vh] flex-col gap-2 overflow-y-auto pr-0.5">
                   {colDeals.length === 0 ? (
-                    <p className="rounded-lg border border-dashed border-border-light py-6 text-center text-[13px] text-muted">اسحب الصفقات هنا</p>
+                    <p className="rounded-lg border border-dashed border-[#e4ebe7] py-6 text-center text-[12px] text-muted">اسحب الصفقات هنا</p>
                   ) : (
                     colDeals.map((d) => (
                       <div
@@ -199,29 +216,36 @@ export default function DealsPage() {
                         onDragStart={() => setDragId(d.id)}
                         onDragEnd={() => setDragId(null)}
                         onClick={() => setSelected(d)}
-                        className={`group/card relative cursor-grab rounded-xl border border-l-[3px] border-gray-100 border-l-transparent bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-l-teal-700 hover:shadow-[0_4px_16px_rgba(26,92,79,0.1)] active:cursor-grabbing ${dragId === d.id ? "opacity-50" : ""}`}
+                        className={`group/card relative cursor-grab overflow-hidden rounded-xl border bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(26,92,79,0.1)] active:cursor-grabbing ${dragId === d.id ? "opacity-50" : ""}`}
+                        style={{ borderColor: "#eef2f0" }}
                       >
+                        <span className="absolute inset-y-0 right-0 w-[3px]" style={{ backgroundColor: accent, opacity: 0.7 }} />
                         {stage.terminal_type === "lost" && (
                           <button
                             onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/deals/${d.id}/investigation`); }}
                             title="فتح تقرير التحقيق"
                             aria-label="فتح تقرير التحقيق"
-                            className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-sm transition-all duration-150 hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                            className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-sm transition-all duration-150 hover:border-red-200 hover:bg-red-50 hover:text-red-500"
                           >
-                            <SearchIcon className="h-3.5 w-3.5" />
+                            <SearchIcon className="h-3 w-3" />
                           </button>
                         )}
-                        <p dir="auto" className={`truncate text-[15px] font-semibold text-gray-900 ${stage.terminal_type === "lost" ? "pr-8" : ""}`}>{d.name || "صفقة بدون اسم"}</p>
-                        <div className="mt-1 flex items-center justify-between">
-                          <span className="text-[16px] font-bold text-gray-900">{dealValue(d)}</span>
+                        <p dir="auto" className={`truncate text-[13px] font-semibold text-gray-900 ${stage.terminal_type === "lost" ? "pl-7" : ""}`}>{d.name || "صفقة بدون اسم"}</p>
+                        <div className="mt-1 flex min-w-0 items-center justify-between gap-1">
+                          <span className="truncate text-[13px] font-bold text-gray-900">{dealValue(d)}</span>
                           {d.probability_pct != null && d.probability_pct > 0 && (
-                            <span className="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700">AI {d.probability_pct}%</span>
+                            <span className="flex-none rounded-full bg-green-50 px-1.5 py-0.5 text-[10px] font-semibold text-green-700">AI {d.probability_pct}%</span>
                           )}
                         </div>
-                        <div className="mt-3 flex items-center justify-between text-[12px] text-gray-400">
-                          <span>{d.target_close_date ? formatDate(d.target_close_date) : "—"}</span>
+                        {d.probability_pct != null && d.probability_pct > 0 && (
+                          <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-[#f1f5f9]">
+                            <div className="h-full rounded-full bg-emerald-400" style={{ width: `${Math.min(100, d.probability_pct)}%` }} />
+                          </div>
+                        )}
+                        <div className="mt-2 flex min-w-0 items-center justify-between gap-1 text-[11px] text-gray-400">
+                          <span className="truncate">{d.target_close_date ? formatDate(d.target_close_date) : "—"}</span>
                           {d.pipeline_stages?.terminal_type === "lost" && d.lost_reasons?.label && (
-                            <span className="rounded bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-700">{d.lost_reasons.label}</span>
+                            <span className="flex-none truncate rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-700">{d.lost_reasons.label}</span>
                           )}
                         </div>
                       </div>
