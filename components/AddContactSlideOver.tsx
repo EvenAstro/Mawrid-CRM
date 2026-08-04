@@ -12,16 +12,30 @@ interface Establishment {
   name: string;
 }
 
+export interface EditableContact {
+  id: string;
+  full_name: string | null;
+  phone: string | null;
+  email: string | null;
+  establishment_id?: string | null;
+  role: string | null;
+  notes: string | null;
+}
+
 export default function AddContactSlideOver({
   open,
   onClose,
   onCreated,
+  contact,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated?: () => void;
+  /** When provided, the slide-over edits this contact instead of creating a new one. */
+  contact?: EditableContact | null;
 }) {
   const toast = useToast();
+  const isEdit = !!contact;
   const [companies, setCompanies] = useState<Establishment[]>([]);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("+966");
@@ -43,6 +57,21 @@ export default function AddContactSlideOver({
       .then(({ data }) => data && setCompanies(data as Establishment[]));
   }, [open, companies.length]);
 
+  useEffect(() => {
+    if (!open) return;
+    if (contact) {
+      setFullName(contact.full_name ?? "");
+      setPhone(contact.phone ?? "+966");
+      setEmail(contact.email ?? "");
+      setCompanyId(contact.establishment_id ?? "");
+      setRole(contact.role ?? "");
+      setNotes(contact.notes ?? "");
+    } else {
+      reset();
+    }
+    setErrors({});
+  }, [open, contact]);
+
   function reset() {
     setFullName("");
     setPhone("+966");
@@ -62,25 +91,26 @@ export default function AddContactSlideOver({
 
     setSaving(true);
     const now = new Date().toISOString();
-    const { error } = await supabase.from("contacts").insert({
-      id: crypto.randomUUID(),
+    const payload = {
       full_name: fullName.trim(),
       phone: phone.trim() === "+966" ? null : phone.trim() || null,
       email: email.trim() || null,
       establishment_id: companyId || null,
       role: role.trim() || null,
       notes: notes.trim() || null,
-      created_at: now,
       updated_at: now,
-    });
+    };
+    const { error } = isEdit
+      ? await supabase.from("contacts").update(payload).eq("id", contact!.id)
+      : await supabase.from("contacts").insert({ id: crypto.randomUUID(), ...payload, created_at: now });
     setSaving(false);
     if (error) {
-      console.error("[AddContact] insert failed", error);
-      toast("تعذّر حفظ جهة الاتصال", "error");
+      console.error("[AddContact] save failed", error);
+      toast(isEdit ? "تعذّر حفظ التعديلات" : "تعذّر حفظ جهة الاتصال", "error");
       return;
     }
-    toast("تم إضافة جهة الاتصال");
-    reset();
+    toast(isEdit ? "تم حفظ التعديلات" : "تم إضافة جهة الاتصال");
+    if (!isEdit) reset();
     onCreated?.();
     onClose();
   }
@@ -89,12 +119,12 @@ export default function AddContactSlideOver({
     <SlideOver
       open={open}
       onClose={onClose}
-      title="جهة اتصال جديدة"
-      subtitle="أضف جهة اتصال جديدة"
+      title={isEdit ? "تعديل جهة الاتصال" : "جهة اتصال جديدة"}
+      subtitle={isEdit ? "حدّث بيانات جهة الاتصال" : "أضف جهة اتصال جديدة"}
       footer={
         <div className="flex gap-3">
           <Button variant="secondary" fullWidth onClick={onClose}>إلغاء</Button>
-          <Button fullWidth loading={saving} onClick={handleSubmit}>{saving ? "جاري الحفظ..." : "حفظ جهة الاتصال"}</Button>
+          <Button fullWidth loading={saving} onClick={handleSubmit}>{saving ? "جاري الحفظ..." : isEdit ? "حفظ التعديلات" : "حفظ جهة الاتصال"}</Button>
         </div>
       }
     >

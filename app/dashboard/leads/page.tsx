@@ -8,7 +8,8 @@ import NewLeadSlideOver from "@/components/NewLeadSlideOver";
 import { fetchLeadScoreModel, getAIScore, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
 import { useRole } from "@/components/RoleProvider";
 import { canViewAllData } from "@/lib/permissions";
-import { initials, formatDate } from "@/lib/format";
+import { initials, formatDate, downloadCSV } from "@/lib/format";
+import { useToast } from "@/components/Toast";
 
 const PAGE_SIZE = 15;
 
@@ -86,9 +87,16 @@ function StatCard({
   );
 }
 
+type SortKey = "name" | "source" | "stage" | "score" | "owner" | "created_at";
+
 export default function LeadsPage() {
   const { role, userId, loading: roleLoading } = useRole();
+  const toast = useToast();
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [checked, setChecked] = useState<Set<string | number>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>("created_at");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState("all");
@@ -200,12 +208,89 @@ export default function LeadsPage() {
   const cleanCount = leads.filter((l) => l.junk_reason_id == null).length;
   const junkCount = leads.length - cleanCount;
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const sorted = useMemo(() => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    const arr = [...filtered];
+    arr.sort((a, b) => {
+      switch (sortKey) {
+        case "name":
+          return dir * (a.full_name ?? "").localeCompare(b.full_name ?? "", "ar");
+        case "source":
+          return dir * (a.sources?.label ?? "").localeCompare(b.sources?.label ?? "", "ar");
+        case "stage":
+          return dir * (a.pipeline_stages?.label ?? "").localeCompare(b.pipeline_stages?.label ?? "", "ar");
+        case "score":
+          return dir * ((scoreCache.get(a.id) ?? 0) - (scoreCache.get(b.id) ?? 0));
+        case "owner":
+          return dir * (a.owner ?? "").localeCompare(b.owner ?? "", "ar");
+        case "created_at":
+        default:
+          return dir * (new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime());
+      }
+    });
+    return arr;
+  }, [filtered, sortKey, sortDir, scoreCache]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const pageRows = filtered.slice(
+  const pageRows = sorted.slice(
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE,
   );
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "created_at" ? "desc" : "asc");
+    }
+  }
+
+  function sortIndicator(key: SortKey) {
+    if (sortKey !== key) return null;
+    return <span className="mr-1 inline-block">{sortDir === "asc" ? "↑" : "↓"}</span>;
+  }
+
+  function toggleChecked(id: string | number) {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function exportRows(rows: Lead[]) {
+    downloadCSV(`leads-${new Date().toISOString().slice(0, 10)}.csv`, rows.map((l) => ({
+      "الاسم": l.full_name ?? "",
+      "الجوال": l.phone ?? "",
+      "الإيميل": l.email ?? "",
+      "المصدر": l.sources?.label ?? "",
+      "المرحلة": l.pipeline_stages?.label ?? "",
+      "تقييم AI": scoreCache.get(l.id) ?? getAIScore(l, scoreModel),
+      "المسؤول": l.owner ?? "",
+      "تاريخ الإضافة": l.created_at ?? "",
+    })));
+  }
+
+  async function deleteLeads(ids: (string | number)[]) {
+    setDeleting(true);
+    const { error } = await supabase.from("leads").update({ deleted_at: new Date().toISOString() }).in("id", ids);
+    setDeleting(false);
+    if (error) {
+      console.error("[Leads] delete failed", error);
+      toast("تعذّر حذف العميل المحتمل", "error");
+      return;
+    }
+    toast(ids.length > 1 ? "تم حذف العملاء المحددين" : "تم حذف العميل");
+    setChecked((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.delete(id));
+      return next;
+    });
+    load();
+  }
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -226,13 +311,16 @@ export default function LeadsPage() {
               <p className="mt-1 text-sm text-white/50">إدارة ومتابعة مسار العملاء المحتملين</p>
             </div>
           </div>
-          <button
-            onClick={() => setNewLeadOpen(true)}
-            className="flex h-11 items-center gap-2 rounded-xl bg-[#3a9080] px-5 text-[14px] font-bold text-white transition-all hover:bg-[#328173] active:scale-[0.98]"
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
-            إضافة عميل
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button onClick={() => exportRows(filtered)} disabled={!filtered.length} className="rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-white/10 disabled:opacity-40">تصدير CSV</button>
+            <button
+              onClick={() => setNewLeadOpen(true)}
+              className="flex h-11 items-center gap-2 rounded-xl bg-[#3a9080] px-5 text-[14px] font-bold text-white transition-all hover:bg-[#328173] active:scale-[0.98]"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
+              إضافة عميل
+            </button>
+          </div>
         </div>
       </div>
 
@@ -302,36 +390,65 @@ export default function LeadsPage() {
         </select>
       </div>
 
+      {/* Bulk actions bar */}
+      {checked.size > 0 && (
+        <div className="mb-3 flex items-center justify-between rounded-2xl border border-[#1a5c4f]/25 bg-[#f0faf8] px-5 py-3">
+          <span className="text-[13px] font-semibold text-[#1a5c4f]">{checked.size} محدد</span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => exportRows(leads.filter((l) => checked.has(l.id)))} className="rounded-lg border border-[#1a5c4f]/30 bg-white px-4 py-1.5 text-[13px] font-semibold text-[#1a5c4f] transition hover:bg-[#e4f5f0]">تصدير المحدد</button>
+            <button onClick={() => deleteLeads(Array.from(checked))} disabled={deleting} className="rounded-lg border border-red-200 bg-white px-4 py-1.5 text-[13px] font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50">{deleting ? "جارِ الحذف…" : "حذف المحدد"}</button>
+            <button onClick={() => setChecked(new Set())} className="rounded-lg px-3 py-1.5 text-[13px] font-semibold text-slate-500 hover:text-slate-700">إلغاء</button>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="overflow-hidden rounded-2xl border border-[#d6ece5] bg-white shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
         <div className="w-full overflow-hidden">
           <table className="w-full table-fixed border-collapse text-left">
             <colgroup>
-              <col className="w-[24%]" />
+              <col className="w-[4%]" />
+              <col className="w-[21%]" />
               <col className="w-[11%]" />
-              <col className="w-[12%]" />
-              <col className="w-[10%]" />
               <col className="w-[11%]" />
-              <col className="w-[12%]" />
-              <col className="w-[10%]" />
-              <col className="w-[10%]" />
+              <col className="w-[9%]" />
+              <col className="w-[11%]" />
+              <col className="w-[11%]" />
+              <col className="w-[11%]" />
+              <col className="w-[11%]" />
             </colgroup>
             <thead>
               <tr className="border-b border-[#e8f0ec] bg-[#f8faf9] text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                <th className="px-3 py-3.5">العميل</th>
-                <th className="px-3 py-3.5">المصدر</th>
-                <th className="px-3 py-3.5">المرحلة</th>
+                <th className="px-3 py-3.5">
+                  <input
+                    type="checkbox"
+                    checked={pageRows.length > 0 && pageRows.every((l) => checked.has(l.id))}
+                    onChange={() => {
+                      setChecked((prev) => {
+                        const allChecked = pageRows.every((l) => prev.has(l.id));
+                        const next = new Set(prev);
+                        pageRows.forEach((l) => (allChecked ? next.delete(l.id) : next.add(l.id)));
+                        return next;
+                      });
+                    }}
+                    className="h-4 w-4 accent-[#1a5c4f]"
+                    aria-label="تحديد الكل"
+                  />
+                </th>
+                <th className="cursor-pointer select-none px-3 py-3.5 hover:text-slate-700" onClick={() => toggleSort("name")}>العميل{sortIndicator("name")}</th>
+                <th className="cursor-pointer select-none px-3 py-3.5 hover:text-slate-700" onClick={() => toggleSort("source")}>المصدر{sortIndicator("source")}</th>
+                <th className="cursor-pointer select-none px-3 py-3.5 hover:text-slate-700" onClick={() => toggleSort("stage")}>المرحلة{sortIndicator("stage")}</th>
                 <th className="px-3 py-3.5">الحالة</th>
-                <th className="px-3 py-3.5">تقييم AI</th>
-                <th className="px-3 py-3.5">المسؤول</th>
-                <th className="px-3 py-3.5">التاريخ</th>
+                <th className="cursor-pointer select-none px-3 py-3.5 hover:text-slate-700" onClick={() => toggleSort("score")}>تقييم AI{sortIndicator("score")}</th>
+                <th className="cursor-pointer select-none px-3 py-3.5 hover:text-slate-700" onClick={() => toggleSort("owner")}>المسؤول{sortIndicator("owner")}</th>
+                <th className="cursor-pointer select-none px-3 py-3.5 hover:text-slate-700" onClick={() => toggleSort("created_at")}>التاريخ{sortIndicator("created_at")}</th>
                 <th className="px-3 py-3.5 text-right"></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-20 text-center">
+                  <td colSpan={9} className="px-6 py-20 text-center">
                     <div className="inline-flex items-center gap-3 text-[14px] text-slate-500">
                       <svg className="h-4 w-4 animate-spin text-emerald-600" viewBox="0 0 24 24" fill="none">
                         <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -343,7 +460,7 @@ export default function LeadsPage() {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-16">
+                  <td colSpan={9} className="px-6 py-16">
                     <div className="flex flex-col items-center justify-center gap-3 text-center">
                       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-2xl">🔌</div>
                       <p className="text-[15px] font-semibold text-slate-700">تعذّر الاتصال</p>
@@ -359,7 +476,7 @@ export default function LeadsPage() {
                 </tr>
               ) : pageRows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-20">
+                  <td colSpan={9} className="px-6 py-20">
                     <div className="flex flex-col items-center justify-center text-center">
                       <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
                         <LeadsIcon />
@@ -384,6 +501,15 @@ export default function LeadsPage() {
                       onClick={() => setSelectedLead(lead)}
                       className={`group cursor-pointer border-b border-[#e8f0ec] transition-all duration-100 last:border-0 hover:bg-[#f8faf9] ${isJunk ? "opacity-60" : ""}`}
                     >
+                      <td className="px-3 py-4" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={checked.has(lead.id)}
+                          onChange={() => toggleChecked(lead.id)}
+                          className="h-4 w-4 accent-[#1a5c4f]"
+                          aria-label="تحديد"
+                        />
+                      </td>
                       {/* Name */}
                       <td className="px-3 py-4">
                         <div className="flex items-center gap-3">

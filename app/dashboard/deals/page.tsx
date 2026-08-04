@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 import { SearchIcon } from "@/components/navIcons";
-import { money, formatDate } from "@/lib/format";
+import { money, formatDate, downloadCSV } from "@/lib/format";
 import Button from "@/components/ui/Button";
 import SlideOver from "@/components/ui/SlideOver";
 import Skeleton from "@/components/ui/Skeleton";
@@ -140,7 +140,22 @@ export default function DealsPage() {
               <p className="mt-1 text-sm text-white/50">{loading ? "جارِ التحميل…" : `${deals.length} صفقة`}</p>
             </div>
           </div>
-          <button onClick={() => setAddStage(null)} className="rounded-xl bg-[#3a9080] px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#328173]">+ صفقة جديدة</button>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => downloadCSV(`deals-${new Date().toISOString().slice(0, 10)}.csv`, filtered.map((d) => ({
+                "الصفقة": d.name ?? "",
+                "المرحلة": d.pipeline_stages?.label ?? "",
+                "القيمة": dealValue(d),
+                "الاحتمالية": d.probability_pct != null ? `${d.probability_pct}%` : "",
+                "تاريخ الإغلاق المتوقع": d.target_close_date ?? "",
+              })))}
+              disabled={!filtered.length}
+              className="rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-white/10 disabled:opacity-40"
+            >
+              تصدير CSV
+            </button>
+            <button onClick={() => setAddStage(null)} className="rounded-xl bg-[#3a9080] px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#328173]">+ صفقة جديدة</button>
+          </div>
         </div>
       </div>
 

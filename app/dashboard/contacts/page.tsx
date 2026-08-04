@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { SearchIcon } from "@/components/navIcons";
-import { initials, formatDate } from "@/lib/format";
+import { initials, formatDate, downloadCSV } from "@/lib/format";
 import Button from "@/components/ui/Button";
 import SlideOver from "@/components/ui/SlideOver";
 import Skeleton from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import AddContactSlideOver from "@/components/AddContactSlideOver";
+import { useToast } from "@/components/Toast";
 
 interface Contact {
   id: string;
@@ -19,6 +20,7 @@ interface Contact {
   preferred_channel: string | null;
   notes: string | null;
   created_at: string | null;
+  establishment_id: string | null;
   establishments: { name: string } | null;
 }
 
@@ -27,6 +29,7 @@ const ACCENT = "#1a5c4f";
 const PAGE = 60;
 
 export default function ContactsPage() {
+  const toast = useToast();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [total, setTotal] = useState(0);
   const [limit, setLimit] = useState(PAGE);
@@ -34,7 +37,11 @@ export default function ContactsPage() {
   const [error, setError] = useState(false);
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [selected, setSelected] = useState<Contact | null>(null);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const load = useCallback(async () => {
     setError(false);
@@ -69,6 +76,46 @@ export default function ContactsPage() {
     );
   }, [contacts, search]);
 
+  function toggleChecked(id: string) {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function exportRows(rows: Contact[]) {
+    downloadCSV(`contacts-${new Date().toISOString().slice(0, 10)}.csv`, rows.map((c) => ({
+      "الاسم": c.full_name ?? "",
+      "الشركة": c.establishments?.name ?? "",
+      "المنصب": c.role ?? "",
+      "الجوال": c.phone ?? "",
+      "الإيميل": c.email ?? "",
+      "تاريخ الإضافة": c.created_at ?? "",
+    })));
+  }
+
+  async function deleteContacts(ids: string[]) {
+    setDeleting(true);
+    const { error } = await supabase.from("contacts").update({ deleted_at: new Date().toISOString() }).in("id", ids);
+    setDeleting(false);
+    if (error) {
+      console.error("[Contacts] delete failed", error);
+      toast("تعذّر حذف جهة الاتصال", "error");
+      return;
+    }
+    toast(ids.length > 1 ? "تم حذف جهات الاتصال" : "تم حذف جهة الاتصال");
+    setChecked((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.delete(id));
+      return next;
+    });
+    setSelected(null);
+    setConfirmDelete(false);
+    load();
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {/* Hero header */}
@@ -83,7 +130,10 @@ export default function ContactsPage() {
               <p className="mt-1 text-sm text-white/50">{loading ? "جارِ التحميل…" : `${total} شخص في النظام`}</p>
             </div>
           </div>
-          <button onClick={() => setAddOpen(true)} className="rounded-xl bg-[#3a9080] px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#328173]">+ جهة اتصال جديدة</button>
+          <div className="flex items-center gap-2.5">
+            <button onClick={() => exportRows(filtered)} disabled={!filtered.length} className="rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-white/10 disabled:opacity-40">تصدير CSV</button>
+            <button onClick={() => setAddOpen(true)} className="rounded-xl bg-[#3a9080] px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#328173]">+ جهة اتصال جديدة</button>
+          </div>
         </div>
       </div>
 
@@ -93,6 +143,17 @@ export default function ContactsPage() {
         </span>
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث بالاسم، الشركة، الجوال أو الإيميل..." className="h-12 w-full rounded-2xl border border-[#d6ece5] bg-white pl-11 pr-4 text-[15px] text-ink-secondary shadow-[0_2px_8px_rgba(26,92,79,0.04)] placeholder:text-muted focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15" />
       </div>
+
+      {checked.size > 0 && (
+        <div className="flex items-center justify-between rounded-2xl border border-[#1a5c4f]/25 bg-[#f0faf8] px-5 py-3">
+          <span className="text-[13px] font-semibold text-[#1a5c4f]">{checked.size} محدد</span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => exportRows(contacts.filter((c) => checked.has(c.id)))} className="rounded-lg border border-[#1a5c4f]/30 bg-white px-4 py-1.5 text-[13px] font-semibold text-[#1a5c4f] transition hover:bg-[#e4f5f0]">تصدير المحدد</button>
+            <button onClick={() => deleteContacts(Array.from(checked))} disabled={deleting} className="rounded-lg border border-red-200 bg-white px-4 py-1.5 text-[13px] font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50">{deleting ? "جارِ الحذف…" : "حذف المحدد"}</button>
+            <button onClick={() => setChecked(new Set())} className="rounded-lg px-3 py-1.5 text-[13px] font-semibold text-muted hover:text-ink-secondary">إلغاء</button>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -105,7 +166,15 @@ export default function ContactsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => (
-            <div key={c.id} className="group flex flex-col rounded-2xl border border-[#d6ece5] bg-white p-5 shadow-[0_2px_8px_rgba(26,92,79,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(26,92,79,0.12)]">
+            <div key={c.id} className={`group relative flex flex-col rounded-2xl border bg-white p-5 shadow-[0_2px_8px_rgba(26,92,79,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(26,92,79,0.12)] ${checked.has(c.id) ? "border-[#1a5c4f]" : "border-[#d6ece5]"}`}>
+              <input
+                type="checkbox"
+                checked={checked.has(c.id)}
+                onChange={() => toggleChecked(c.id)}
+                onClick={(e) => e.stopPropagation()}
+                className="absolute left-4 top-4 h-4 w-4 accent-[#1a5c4f]"
+                aria-label="تحديد"
+              />
               <div className="flex items-center gap-3">
                 <span className={`flex h-11 w-11 flex-none items-center justify-center rounded-full bg-gradient-to-br shadow-sm text-[15px] font-bold text-white ${AVATAR_GRADIENT}`}>{initials(c.full_name)}</span>
                 <div className="min-w-0 flex-1">
@@ -137,8 +206,40 @@ export default function ContactsPage() {
       )}
 
       <AddContactSlideOver open={addOpen} onClose={() => setAddOpen(false)} onCreated={load} />
+      <AddContactSlideOver
+        open={editing && !!selected}
+        onClose={() => setEditing(false)}
+        onCreated={() => {
+          load();
+          setSelected(null);
+        }}
+        contact={selected}
+      />
 
-      <SlideOver open={!!selected} onClose={() => setSelected(null)} title={selected?.full_name || "جهة اتصال"} subtitle={selected?.role?.trim() || selected?.establishments?.name || undefined}>
+      <SlideOver
+        open={!!selected && !editing}
+        onClose={() => { setSelected(null); setConfirmDelete(false); }}
+        title={selected?.full_name || "جهة اتصال"}
+        subtitle={selected?.role?.trim() || selected?.establishments?.name || undefined}
+        footer={
+          selected && (
+            confirmDelete ? (
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[13px] font-semibold text-red-600">تأكيد حذف جهة الاتصال؟</span>
+                <div className="flex gap-2">
+                  <Button variant="secondary" onClick={() => setConfirmDelete(false)}>تراجع</Button>
+                  <Button onClick={() => deleteContacts([selected.id])} loading={deleting}>{deleting ? "جارِ الحذف…" : "تأكيد الحذف"}</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-3">
+                <Button variant="secondary" fullWidth onClick={() => setConfirmDelete(true)}>حذف</Button>
+                <Button fullWidth onClick={() => setEditing(true)}>تعديل</Button>
+              </div>
+            )
+          )
+        }
+      >
         {selected && (
           <div className="flex flex-col gap-5">
             {/* Hero */}
