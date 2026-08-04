@@ -240,19 +240,28 @@ input[type="checkbox"].ls-toggle:checked + .ls-toggle-label::after {
 /* Custom thin teal scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #1a5c4f transparent;
+  scrollbar-color: #9bb5af transparent;
 }
 *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 *::-webkit-scrollbar-track {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background-color: #1a5c4f;
+  background-color: #9bb5af;
   border-radius: 999px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background-color: #15503f;
+  background-color: #1a5c4f;
+}
+
+/* The daily-briefing rail is desktop-only (see components/DailyBriefing.tsx),
+   so the space <main> reserves for it must collapse on small screens too —
+   overrides the inline custom property DailyBriefing sets via JS. */
+@media (max-width: 767px) {
+  :root {
+    --briefing-rail-width: 0px !important;
+  }
 }

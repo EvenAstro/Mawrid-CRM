@@ -115,7 +115,7 @@ function SuggestionPopover({ suggestion, onClose }: { suggestion: Suggestion; on
   return (
     <div
       className="absolute top-0 z-50 w-64 rounded-xl border border-border-light bg-white p-3 shadow-[0_12px_32px_rgba(15,23,20,0.18)]"
-      style={{ left: -272 }}
+      style={{ right: -272 }}
     >
       <div className="mb-1.5 flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-[11px] font-bold text-primary">
@@ -178,7 +178,12 @@ export default function DailyBriefing() {
   useEffect(() => {
     let cancelled = false;
     async function init() {
-      const { data: userRes } = await supabase.auth.getUser();
+      let userRes: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"] = { user: null };
+      try {
+        ({ data: userRes } = await supabase.auth.getUser());
+      } catch (err) {
+        console.error("[DailyBriefing] getUser failed", err);
+      }
       const name = (userRes.user?.user_metadata?.full_name as string) || (userRes.user?.email ?? "").split("@")[0] || "";
       let briefing: BriefingData;
       try {
@@ -238,15 +243,20 @@ export default function DailyBriefing() {
       return;
     }
     setCompleteTarget(null);
-    setTimeout(() => {
-      setData((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          todayTasks: prev.todayTasks.filter((t) => t.id !== task.id),
-          overdueTasks: prev.overdueTasks.filter((t) => t.id !== task.id),
-        };
-      });
+    setTimeout(async () => {
+      try {
+        const refreshed = await fetchBriefingData();
+        setData((prev) => prev ? { ...prev, todayTasks: refreshed.todayTasks, overdueTasks: refreshed.overdueTasks } : prev);
+      } catch {
+        setData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            todayTasks: prev.todayTasks.filter((t) => t.id !== task.id),
+            overdueTasks: prev.overdueTasks.filter((t) => t.id !== task.id),
+          };
+        });
+      }
       setCompleting((prev) => {
         const n = new Set(prev);
         n.delete(task.id);
@@ -266,9 +276,13 @@ export default function DailyBriefing() {
     setSuggestions((prev) => ({ ...prev, [deal.id]: { status: "loading" } }));
     (async () => {
       try {
+        const { data: { session } } = await supabase.auth.getSession();
         const res = await fetch("/api/next-best-action", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
           body: JSON.stringify({ dealId: deal.id }),
         });
         const json = await res.json();
@@ -405,7 +419,7 @@ export default function DailyBriefing() {
           --briefing-rail-width custom property set above, so it still pushes <main>
           instead of overlaying it. */}
       <div
-        className="fixed right-0 top-20 z-30 flex overflow-hidden rounded-l-2xl border border-e-0 border-border-light bg-white shadow-[0_8px_28px_rgba(15,23,20,0.12)] transition-[width] duration-300 ease-in-out"
+        className="fixed left-0 top-20 z-30 hidden overflow-hidden rounded-r-2xl border border-s-0 border-border-light bg-white shadow-[0_8px_28px_rgba(15,23,20,0.12)] transition-[width] duration-300 ease-in-out md:flex"
         style={{ width: collapsed ? RAIL_COLLAPSED : RAIL_EXPANDED, maxHeight: collapsed ? undefined : "min(72vh, 560px)" }}
       >
         {/* Always-visible tab — the permanent, unmistakable "you have things to do" affordance. */}
@@ -465,30 +479,38 @@ export default function DailyBriefing() {
                         {[...data.overdueTasks, ...data.todayTasks].slice(0, 6).map((t) => {
                           const done = completing.has(t.id);
                           const overdue = data.overdueTasks.some((x) => x.id === t.id);
+                          const blocked = t.isBlocked;
                           return (
                             <div
                               key={t.id}
-                              className={`relative flex items-center gap-2.5 overflow-hidden rounded-lg border border-border-light bg-white px-2.5 py-2 transition-opacity ${done ? "opacity-40" : ""}`}
+                              className={`relative flex items-center gap-2.5 overflow-hidden rounded-lg border border-border-light px-2.5 py-2 transition-opacity ${blocked ? "bg-gray-50 opacity-60" : "bg-white"} ${done ? "opacity-40" : ""}`}
                             >
-                              {overdue && <span className="absolute bottom-1 left-0 top-1 w-1 rounded-full bg-danger" />}
-                              <button
-                                onClick={() => setCompleteTarget(t)}
-                                aria-label="إتمام المهمة"
-                                className={`flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full border-2 transition-colors ${
-                                  done ? "border-primary bg-primary" : overdue ? "ml-1 border-red-200 hover:border-primary" : "border-gray-200 hover:border-primary"
-                                }`}
-                              >
-                                {done && (
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="h-2.5 w-2.5">
-                                    <path d="M20 6 9 17l-5-5" />
-                                  </svg>
-                                )}
-                              </button>
-                              <span dir="auto" className={`min-w-0 flex-1 truncate text-[13px] text-ink-secondary ${done ? "line-through" : ""}`}>
+                              {overdue && !blocked && <span className="absolute bottom-1 left-0 top-1 w-1 rounded-full bg-danger" />}
+                              {blocked && <span className="absolute bottom-1 left-0 top-1 w-1 rounded-full bg-amber-400" />}
+                              {blocked ? (
+                                <span title={`بانتظار: ${t.blockedByTitle || "مهمة"}`} className="flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full border-2 border-dashed border-amber-300 ml-1">
+                                  <svg viewBox="0 0 16 16" fill="currentColor" className="h-2.5 w-2.5 text-amber-400"><path fillRule="evenodd" d="M8 1a7 7 0 100 14A7 7 0 008 1zM7.25 4.5a.75.75 0 011.5 0v3.25H11a.75.75 0 010 1.5H7.25V4.5z" clipRule="evenodd" /></svg>
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => setCompleteTarget(t)}
+                                  aria-label="إتمام المهمة"
+                                  className={`flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full border-2 transition-colors ${
+                                    done ? "border-primary bg-primary" : overdue ? "ml-1 border-red-200 hover:border-primary" : "border-gray-200 hover:border-primary"
+                                  }`}
+                                >
+                                  {done && (
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="h-2.5 w-2.5">
+                                      <path d="M20 6 9 17l-5-5" />
+                                    </svg>
+                                  )}
+                                </button>
+                              )}
+                              <span dir="auto" className={`min-w-0 flex-1 truncate text-[13px] ${blocked ? "text-muted" : "text-ink-secondary"} ${done ? "line-through" : ""}`}>
                                 {t.title || "مهمة"}
                               </span>
-                              <span className={`flex-none font-mono text-[11px] ${overdue ? "font-semibold text-danger" : "text-muted"}`}>
-                                {overdue ? "متأخرة" : timeAr(t.due_at)}
+                              <span className={`flex-none font-mono text-[11px] ${blocked ? "text-amber-500" : overdue ? "font-semibold text-danger" : "text-muted"}`}>
+                                {blocked ? "معلّقة" : overdue ? "متأخرة" : timeAr(t.due_at)}
                               </span>
                             </div>
                           );

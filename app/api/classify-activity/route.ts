@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { classifyActivity } from "@/lib/classifyActivity";
+import { requireUser } from "@/lib/auth/requireUser";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -11,6 +12,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
  * classifyActivity() must never run in client code.
  */
 export async function POST(req: NextRequest) {
+  if (!(await requireUser(req))) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
   let body: { activityId?: unknown; body?: unknown };
   try {
     body = await req.json();

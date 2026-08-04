@@ -66,7 +66,7 @@ export default function NewLeadSlideOver({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!fullName.trim()) {
-      toast("Please enter a full name", "error");
+      toast("يرجى إدخال الاسم الكامل", "error");
       return;
     }
     setSaving(true);
@@ -86,10 +86,10 @@ export default function NewLeadSlideOver({
     setSaving(false);
     if (error) {
       console.error("[NewLead] insert failed", error);
-      toast("Could not save lead — please try again", "error");
+      toast("تعذّر حفظ العميل — حاول مرة أخرى", "error");
       return;
     }
-    toast("Lead added successfully");
+    toast("تم إضافة العميل بنجاح");
     reset();
     onCreated?.();
     onClose();
@@ -115,8 +115,8 @@ export default function NewLeadSlideOver({
       >
         <div className="flex items-center justify-between border-b border-[#e8ece9] p-6">
           <div>
-            <h2 className="text-xl font-bold text-[#1e1b4b]">New Lead</h2>
-            <p className="mt-0.5 text-[13px] text-[#94a3b8]">Add a lead to your pipeline</p>
+            <h2 className="text-xl font-bold text-[#1e1b4b]">عميل جديد</h2>
+            <p className="mt-0.5 text-[13px] text-[#94a3b8]">أضف عميل لمسار المبيعات</p>
           </div>
           <button
             onClick={onClose}
@@ -131,19 +131,19 @@ export default function NewLeadSlideOver({
 
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5 overflow-y-auto p-6">
           <div>
-            <label className={labelCls} htmlFor="nl-name">Full Name *</label>
+            <label className={labelCls} htmlFor="nl-name">الاسم الكامل *</label>
             <input
               id="nl-name"
               dir="auto"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="e.g. Sara Al-Otaibi"
+              placeholder="مثلاً: سارة العتيبي"
               className={inputCls}
               autoFocus
             />
           </div>
           <div>
-            <label className={labelCls} htmlFor="nl-phone">Phone</label>
+            <label className={labelCls} htmlFor="nl-phone">الجوال</label>
             <input
               id="nl-phone"
               dir="auto"
@@ -154,28 +154,28 @@ export default function NewLeadSlideOver({
             />
           </div>
           <div>
-            <label className={labelCls} htmlFor="nl-source">Source</label>
+            <label className={labelCls} htmlFor="nl-source">المصدر</label>
             <select
               id="nl-source"
               value={sourceId}
               onChange={(e) => setSourceId(e.target.value)}
               className={inputCls}
             >
-              <option value="">Select a source…</option>
+              <option value="">اختر مصدر...</option>
               {sources.map((s) => (
                 <option key={s.id} value={s.id}>{s.label}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className={labelCls} htmlFor="nl-notes">Notes</label>
+            <label className={labelCls} htmlFor="nl-notes">الملاحظات</label>
             <textarea
               id="nl-notes"
               dir="auto"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
-              placeholder="Anything worth remembering about this lead…"
+              placeholder="أي ملاحظات عن هذا العميل..."
               className="w-full rounded-xl border border-[#e8ece9] bg-white px-3.5 py-2.5 text-[15px] text-[#334155] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15"
             />
           </div>
@@ -187,14 +187,14 @@ export default function NewLeadSlideOver({
             type="button"
             className="h-11 flex-1 rounded-xl border border-[#e8ece9] text-[15px] font-semibold text-[#334155] transition hover:bg-[#f8fafc]"
           >
-            Cancel
+            إلغاء
           </button>
           <button
             onClick={handleSubmit}
             disabled={saving}
             className="h-11 flex-1 rounded-xl bg-[#1a5c4f] text-[15px] font-semibold text-white shadow-sm shadow-[#1a5c4f]/25 transition hover:bg-[#15503f] disabled:opacity-60"
           >
-            {saving ? "Saving…" : "Save Lead"}
+            {saving ? "جاري الحفظ..." : "حفظ العميل"}
           </button>
         </div>
       </aside>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildSnapshot } from "@/lib/copilot/snapshot";
+import { requireUser } from "@/lib/auth/requireUser";
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct";
@@ -104,7 +105,8 @@ function isChatMessage(v: unknown): v is ChatMessage {
 }
 
 /** GET — lightweight summary for the proactive greeting (stuck/upcoming counts). */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  if (!(await requireUser(req))) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   try {
     const snap = await buildSnapshot();
     return NextResponse.json({ stuckCount: snap.stuckCount, upcomingCount: snap.upcomingCount, stats: snap.stats });
@@ -115,6 +117,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await requireUser(req))) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
   let body: { messages?: unknown; context?: unknown };
   try {
     body = await req.json();

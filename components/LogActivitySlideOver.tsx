@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
+import { todayInput } from "@/lib/format";
 
 interface ActivityType {
   id: string;
@@ -11,12 +12,6 @@ interface ActivityType {
 interface LeadHit {
   id: string;
   full_name: string | null;
-}
-
-function todayInput() {
-  const d = new Date();
-  const off = d.getTimezoneOffset();
-  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10);
 }
 
 export default function LogActivitySlideOver({
@@ -128,11 +123,16 @@ export default function LogActivitySlideOver({
     // Fire-and-forget: classify inbound replies in the background. The form
     // closes immediately regardless of how long — or whether — this succeeds.
     if (direction === "inbound" && trimmedNotes) {
-      fetch("/api/classify-activity", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ activityId, body: trimmedNotes }),
-      }).catch((err) => console.error("[LogActivity] classify trigger failed", err));
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        fetch("/api/classify-activity", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
+          body: JSON.stringify({ activityId, body: trimmedNotes }),
+        }).catch((err) => console.error("[LogActivity] classify trigger failed", err));
+      });
     }
 
     reset();
@@ -160,7 +160,7 @@ export default function LogActivitySlideOver({
       >
         <div className="flex items-center justify-between border-b border-[#e8ece9] p-6">
           <div>
-            <h2 className="text-xl font-bold text-[#1e1b4b]">Log Activity</h2>
+            <h2 className="text-xl font-bold text-[#1e1b4b]">تسجيل نشاط</h2>
             <p className="mt-0.5 text-[13px] text-[#94a3b8]">Record a touchpoint with a contact</p>
           </div>
           <button onClick={onClose} aria-label="Close" className="text-[#94a3b8] transition hover:text-[#334155]">
@@ -173,11 +173,11 @@ export default function LogActivitySlideOver({
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5 overflow-y-auto p-6">
           {/* Contact search */}
           <div className="relative">
-            <label className={labelCls} htmlFor="la-contact">Contact *</label>
+            <label className={labelCls} htmlFor="la-contact">العميل *</label>
             {selected ? (
               <div className="flex items-center justify-between rounded-xl border border-[#1a5c4f]/30 bg-[#f0faf8] px-3.5 py-2.5">
                 <span dir="auto" className="text-[15px] font-medium text-[#1e1b4b]">
-                  {selected.full_name || "Unnamed lead"}
+                  {selected.full_name || "عميل بدون اسم"}
                 </span>
                 <button
                   type="button"
@@ -196,7 +196,7 @@ export default function LogActivitySlideOver({
                 dir="auto"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search a lead by name…"
+                placeholder="ابحث عن عميل بالاسم..."
                 className={inputCls}
                 autoComplete="off"
               />
@@ -214,7 +214,7 @@ export default function LogActivitySlideOver({
                     dir="auto"
                     className="block w-full px-3.5 py-2.5 text-left text-[15px] text-[#334155] transition hover:bg-[#f8fafc]"
                   >
-                    {h.full_name || "Unnamed lead"}
+                    {h.full_name || "عميل بدون اسم"}
                   </button>
                 ))}
               </div>
@@ -222,7 +222,7 @@ export default function LogActivitySlideOver({
           </div>
 
           <div>
-            <label className={labelCls}>Direction *</label>
+            <label className={labelCls}>الاتجاه *</label>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -252,9 +252,9 @@ export default function LogActivitySlideOver({
           </div>
 
           <div>
-            <label className={labelCls} htmlFor="la-type">Activity Type *</label>
+            <label className={labelCls} htmlFor="la-type">نوع النشاط *</label>
             <select id="la-type" value={typeId} onChange={(e) => setTypeId(e.target.value)} className={inputCls}>
-              <option value="">Select type…</option>
+              <option value="">اختر نوع...</option>
               {types.map((t) => (
                 <option key={t.id} value={t.id}>{t.label}</option>
               ))}
@@ -262,19 +262,19 @@ export default function LogActivitySlideOver({
           </div>
 
           <div>
-            <label className={labelCls} htmlFor="la-date">Date *</label>
+            <label className={labelCls} htmlFor="la-date">التاريخ *</label>
             <input id="la-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls} />
           </div>
 
           <div>
-            <label className={labelCls} htmlFor="la-notes">Notes</label>
+            <label className={labelCls} htmlFor="la-notes">الملاحظات</label>
             <textarea
               id="la-notes"
               dir="auto"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
-              placeholder="What happened on this touchpoint…"
+              placeholder="ماذا حصل في هذا التواصل..."
               className="w-full rounded-xl border border-[#e8ece9] bg-white px-3.5 py-2.5 text-[15px] text-[#334155] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15"
             />
           </div>
@@ -282,14 +282,14 @@ export default function LogActivitySlideOver({
 
         <div className="flex gap-3 border-t border-[#e8ece9] p-6">
           <button onClick={onClose} type="button" className="h-11 flex-1 rounded-xl border border-[#e8ece9] text-[15px] font-semibold text-[#334155] transition hover:bg-[#f8fafc]">
-            Cancel
+            إلغاء
           </button>
           <button
             onClick={handleSubmit}
             disabled={saving}
             className="h-11 flex-1 rounded-xl bg-[#1a5c4f] text-[15px] font-semibold text-white shadow-sm shadow-[#1a5c4f]/25 transition hover:bg-[#15503f] disabled:opacity-60"
           >
-            {saving ? "Saving…" : "Log Activity"}
+            {saving ? "جاري الحفظ..." : "تسجيل نشاط"}
           </button>
         </div>
       </aside>

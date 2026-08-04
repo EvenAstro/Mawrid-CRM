@@ -83,7 +83,7 @@ export default function LeadScoringPage() {
   return (
     <>
       {/* Header banner */}
-      <div className="mb-6 flex flex-col gap-4 rounded-2xl bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-[#1a5c4f] p-8 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 flex flex-col gap-4 rounded-3xl bg-[#141c2e] p-8 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-2xl text-[#7ee7cd]">
             ✦
@@ -111,7 +111,7 @@ export default function LeadScoringPage() {
 
       {/* Form card */}
       <div className="mx-auto max-w-[580px] rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
-        <h2 dir="auto" className="text-lg font-bold text-[#1e1b4b]">بيانات الليد</h2>
+        <h2 dir="auto" className="text-lg font-bold text-ink">بيانات الليد</h2>
         <p dir="auto" className="mb-6 text-[15px] text-[#94a3b8]">
           عبّي وش تعرفه عن هالليد — النسب مبنية على {model?.totalLeads ?? 0} ليد فعلي عندكم
         </p>
@@ -172,11 +172,7 @@ export default function LeadScoringPage() {
       {result && (
         <div
           className="ls-result mx-auto mt-6 max-w-[580px] rounded-2xl p-8 text-white shadow-lg"
-          style={{
-            background: result.pJunk >= 0.5
-              ? "linear-gradient(135deg, #dc2626, #991b1b)"
-              : "linear-gradient(135deg, #059669, #065f46)",
-          }}
+          style={{ background: result.pJunk >= 0.5 ? "#b91c1c" : "#1a5c4f" }}
         >
           <div className="flex flex-col items-center text-center">
             <span className="text-[5rem] leading-none">{result.pJunk >= 0.5 ? "🚫" : "✅"}</span>

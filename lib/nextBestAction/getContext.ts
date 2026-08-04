@@ -268,8 +268,6 @@ export async function getContext(dealId: string): Promise<DealContext | null> {
     resolvedAt: c.updated_at,
   }));
 
-  console.log(`[getContext] deal=${dealId} matchTier=${tier} matches=${similarDeals.length}/${allResolved.length} candidates`);
-
   return { ...baseContext, similarDeals, matchTier: tier };
 }
 

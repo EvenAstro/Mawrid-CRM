@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 import { SearchIcon } from "@/components/navIcons";
-import { money, formatDate } from "@/lib/format";
+import { money, formatDate, downloadCSV } from "@/lib/format";
 import Button from "@/components/ui/Button";
 import SlideOver from "@/components/ui/SlideOver";
 import Skeleton from "@/components/ui/Skeleton";
@@ -41,11 +41,6 @@ function dealValue(d: Deal): string {
   if (minor == null) return "—";
   const c = d.currency_code || "SAR";
   return `${c} ${money(minor / 100)}`;
-}
-function columnTint(t: string | null): string {
-  if (t === "won") return "bg-emerald-50/60";
-  if (t === "lost" || t === "junk") return "bg-red-50/50";
-  return "bg-[#f0faf8]/60";
 }
 
 export default function DealsPage() {
@@ -118,11 +113,11 @@ export default function DealsPage() {
     const { error: upErr } = await supabase.from("deals").update({ stage_id: toStageId, updated_at: new Date().toISOString() }).eq("id", dealId);
     if (upErr) {
       console.error("[Deals] stage update failed", upErr);
-      toast("Could not move deal — reverted", "error");
+      toast("تعذّر نقل الصفقة", "error");
       setDeals((prev) => prev.map((d) => (d.id === dealId ? { ...d, stage_id: prevStageId } : d)));
       return;
     }
-    toast(`Moved to ${toStage?.label ?? "stage"}`);
+    toast(`تم النقل إلى ${toStage?.label ?? "مرحلة"}`);
 
     // Deal just entered a Lost stage → offer to open the investigation report.
     if (toStage?.terminal_type === "lost") {
@@ -132,25 +127,48 @@ export default function DealsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 dir="auto" className="text-2xl font-extrabold text-ink">الصفقات</h1>
-          <p className="mt-1 text-[15px] text-muted">{loading ? "جارِ التحميل…" : `${deals.length} صفقة عبر ${stages.length} مرحلة`}</p>
+    <div className="flex flex-col gap-6">
+      {/* Hero header */}
+      <div className="rounded-3xl bg-[#141c2e] px-7 py-7">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white/10">
+              <svg viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth={1.8} className="h-6 w-6"><path d="M3 17V9M9 17V4M15 17v-6M3 3v14h14" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </div>
+            <div>
+              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">الصفقات</h1>
+              <p className="mt-1 text-sm text-white/50">{loading ? "جارِ التحميل…" : `${deals.length} صفقة`}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => downloadCSV(`deals-${new Date().toISOString().slice(0, 10)}.csv`, filtered.map((d) => ({
+                "الصفقة": d.name ?? "",
+                "المرحلة": d.pipeline_stages?.label ?? "",
+                "القيمة": dealValue(d),
+                "الاحتمالية": d.probability_pct != null ? `${d.probability_pct}%` : "",
+                "تاريخ الإغلاق المتوقع": formatDate(d.target_close_date),
+              })))}
+              disabled={!filtered.length}
+              className="rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-white/10 disabled:opacity-40"
+            >
+              تصدير CSV
+            </button>
+            <button onClick={() => setAddStage(null)} className="rounded-xl bg-[#3a9080] px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#328173]">+ صفقة جديدة</button>
+          </div>
         </div>
-        <Button onClick={() => setAddStage(null)}>+ Add Deal</Button>
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex flex-col gap-3 rounded-2xl border border-[#d6ece5] bg-white p-4 shadow-[0_2px_8px_rgba(26,92,79,0.05)] sm:flex-row">
         <div className="relative flex-1">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
+          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">
             <SearchIcon className="h-4 w-4" />
           </span>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search deals…" className="h-11 w-full rounded-full border border-border-light bg-white pl-10 pr-4 text-[15px] text-ink-secondary placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث في الصفقات..." className="h-11 w-full rounded-xl border border-[#d6ece5] bg-[#f8faf9] pl-11 pr-4 text-[14px] text-ink-secondary placeholder:text-muted focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition" />
         </div>
-        <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} className="h-11 rounded-xl border border-border-light bg-white px-3 text-[15px] text-ink-secondary focus:border-primary focus:outline-none">
-          <option value="all">All Stages</option>
+        <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} className="h-11 rounded-xl border border-[#d6ece5] bg-[#f8faf9] px-4 text-[14px] font-medium text-ink-secondary focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition">
+          <option value="all">كل المراحل</option>
           {stages.map((s) => (
             <option key={s.id} value={s.id}>{s.label}</option>
           ))}
@@ -158,39 +176,49 @@ export default function DealsPage() {
       </div>
 
       {loading ? (
-        <div className="flex gap-3 overflow-x-auto">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-72 w-[300px] flex-none" />)}
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-72" />)}
         </div>
       ) : error ? (
-        <EmptyState icon="🔌" title="Connection error" subtitle="We couldn't load your deals." action={<Button onClick={() => { setLoading(true); load(); }}>Retry</Button>} />
+        <EmptyState icon="🔌" title="خطأ في الاتصال" subtitle="تعذّر تحميل الصفقات" action={<Button onClick={() => { setLoading(true); load(); }}>إعادة المحاولة</Button>} />
       ) : (
-        <div className="flex gap-3 overflow-x-auto pb-2">
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
           {columns.map(({ stage, deals: colDeals }) => {
-            const accent = stage.color || "#1a5c4f";
+            // Stage dot uses the DB color, but the column chrome itself always
+            // stays on-brand (teal/navy) so six stages don't read as a rainbow.
+            const dot = stage.color || "#1a5c4f";
+            const isWon = stage.terminal_type === "won";
+            const isLost = stage.terminal_type === "lost" || stage.terminal_type === "junk";
             const isOver = overStage === stage.id;
+            const colValue = colDeals.reduce((s, d) => s + (d.expected_value_minor ?? d.won_value_minor ?? 0) / 100, 0);
             return (
               <div
                 key={stage.id}
                 onDragOver={(e) => { e.preventDefault(); setOverStage(stage.id); }}
                 onDragLeave={() => setOverStage((s) => (s === stage.id ? null : s))}
                 onDrop={(e) => { e.preventDefault(); setOverStage(null); if (dragId) moveDeal(dragId, stage.id); setDragId(null); }}
-                className={`group/col flex w-[300px] flex-none flex-col rounded-2xl p-2 transition-colors ${columnTint(stage.terminal_type)} ${isOver ? "ring-2 ring-primary/40" : ""}`}
+                className={`group/col relative flex min-w-0 flex-col overflow-hidden rounded-2xl border p-2.5 transition-all ${
+                  isOver ? "border-[#1a5c4f] ring-2 ring-[#1a5c4f]/25" : "border-[#eef2f0] bg-[#f8faf9]"
+                }`}
               >
-                <div className="mb-2 flex items-center justify-between px-2 py-1">
-                  <span className="flex items-center gap-2 text-[15px] font-semibold text-ink">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: accent }} />
-                    {stage.label}
+                <div className="mb-1 flex items-center justify-between gap-1 px-1.5 py-1.5">
+                  <span className="flex min-w-0 items-center gap-1.5 truncate text-[13px] font-bold text-[#1e1b4b]">
+                    <span className="h-2 w-2 flex-none rounded-full" style={{ backgroundColor: dot }} />
+                    <span className="truncate">{stage.label}</span>
                   </span>
-                  <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ backgroundColor: `${accent}1a`, color: accent }}>{colDeals.length}</span>
+                  <span className="flex-none rounded-full bg-white px-2 py-0.5 text-[11px] font-bold text-[#7c8b86] ring-1 ring-[#eef2f0]">{colDeals.length}</span>
                 </div>
+                {colValue > 0 && (
+                  <p className="mb-2 px-1.5 text-[11px] font-semibold text-[#94a3b8]">SAR {money(colValue)}</p>
+                )}
 
-                <button onClick={() => setAddStage(stage.id)} className="mb-2 hidden rounded-lg border border-dashed border-primary/30 py-1.5 text-[13px] font-semibold text-primary transition hover:bg-white group-hover/col:block">
-                  + Add Deal
+                <button onClick={() => setAddStage(stage.id)} className="mb-2 hidden rounded-lg border border-dashed border-[#1a5c4f]/40 py-1.5 text-[12px] font-semibold text-[#1a5c4f] transition hover:bg-white group-hover/col:block">
+                  + صفقة جديدة
                 </button>
 
-                <div className="flex flex-col gap-2">
+                <div className="flex max-h-[65vh] flex-col gap-2 overflow-y-auto pr-0.5">
                   {colDeals.length === 0 ? (
-                    <p className="rounded-lg border border-dashed border-border-light py-6 text-center text-[13px] text-muted">Drop deals here</p>
+                    <p className="rounded-lg border border-dashed border-[#e4ebe7] py-6 text-center text-[12px] text-muted">اسحب الصفقات هنا</p>
                   ) : (
                     colDeals.map((d) => (
                       <div
@@ -199,30 +227,39 @@ export default function DealsPage() {
                         onDragStart={() => setDragId(d.id)}
                         onDragEnd={() => setDragId(null)}
                         onClick={() => setSelected(d)}
-                        className={`group/card relative cursor-grab rounded-xl border border-l-[3px] border-gray-100 border-l-transparent bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-l-teal-700 hover:shadow-[0_4px_16px_rgba(26,92,79,0.1)] active:cursor-grabbing ${dragId === d.id ? "opacity-50" : ""}`}
+                        className={`group/card relative flex cursor-grab flex-col gap-1.5 rounded-xl border border-[#eef2f0] bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#1a5c4f]/25 hover:shadow-[0_6px_18px_rgba(26,92,79,0.1)] active:cursor-grabbing ${dragId === d.id ? "opacity-50" : ""}`}
                       >
-                        {stage.terminal_type === "lost" && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/deals/${d.id}/investigation`); }}
-                            title="فتح تقرير التحقيق"
-                            aria-label="فتح تقرير التحقيق"
-                            className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-sm transition-all duration-150 hover:border-red-200 hover:bg-red-50 hover:text-red-500"
-                          >
-                            <SearchIcon className="h-3.5 w-3.5" />
-                          </button>
+                        <p dir="auto" className="truncate text-[13px] font-semibold text-gray-900">{d.name || "صفقة بدون اسم"}</p>
+
+                        <span className="truncate text-[14px] font-bold text-gray-900">{dealValue(d)}</span>
+
+                        {d.probability_pct != null && d.probability_pct > 0 && (
+                          <div className="flex items-center gap-2">
+                            <div className="h-1 flex-1 overflow-hidden rounded-full bg-[#f1f5f9]">
+                              <div className="h-full rounded-full bg-emerald-400" style={{ width: `${Math.min(100, d.probability_pct)}%` }} />
+                            </div>
+                            <span className="flex-none text-[10px] font-bold text-emerald-600">AI {d.probability_pct}%</span>
+                          </div>
                         )}
-                        <p dir="auto" className={`truncate text-[15px] font-semibold text-gray-900 ${stage.terminal_type === "lost" ? "pr-8" : ""}`}>{d.name || "Untitled deal"}</p>
-                        <div className="mt-1 flex items-center justify-between">
-                          <span className="text-[16px] font-bold text-gray-900">{dealValue(d)}</span>
-                          {d.probability_pct != null && d.probability_pct > 0 && (
-                            <span className="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700">AI {d.probability_pct}%</span>
-                          )}
-                        </div>
-                        <div className="mt-3 flex items-center justify-between text-[12px] text-gray-400">
-                          <span>{d.target_close_date ? formatDate(d.target_close_date) : "—"}</span>
-                          {d.pipeline_stages?.terminal_type === "lost" && d.lost_reasons?.label && (
-                            <span className="rounded bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-700">{d.lost_reasons.label}</span>
-                          )}
+
+                        <div className="flex min-w-0 items-center justify-between gap-1.5 border-t border-[#f1f5f9] pt-1.5 text-[11px] text-gray-400">
+                          <span className="truncate">{d.target_close_date ? formatDate(d.target_close_date) : "—"}</span>
+                          <div className="flex flex-none items-center gap-1.5">
+                            {isLost && d.lost_reasons?.label && (
+                              <span className="truncate rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-700">{d.lost_reasons.label}</span>
+                            )}
+                            {isLost && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/deals/${d.id}/investigation`); }}
+                                title="فتح تقرير التحقيق"
+                                aria-label="فتح تقرير التحقيق"
+                                className="flex h-5 w-5 flex-none items-center justify-center rounded-full text-gray-400 transition hover:bg-red-50 hover:text-red-500"
+                              >
+                                <SearchIcon className="h-3 w-3" />
+                              </button>
+                            )}
+                            {isWon && <span className="text-emerald-500">✓</span>}
+                          </div>
                         </div>
                       </div>
                     ))
@@ -237,23 +274,25 @@ export default function DealsPage() {
       <NewDealSlideOver open={addStage !== undefined} onClose={() => setAddStage(undefined)} onCreated={load} stages={stages} defaultStageId={addStage} />
 
       {/* Deal detail */}
-      <SlideOver open={!!selected} onClose={() => setSelected(null)} title={selected?.name || "Deal"} subtitle={selected?.pipeline_stages?.label ?? undefined}>
+      <SlideOver open={!!selected} onClose={() => setSelected(null)} title={selected?.name || "صفقة"} subtitle={selected?.pipeline_stages?.label ?? undefined}>
         {selected && (
           <div className="flex flex-col gap-5">
             {selected.id && <NextBestActionCard dealId={selected.id} />}
-            <div className="rounded-2xl border border-border-light bg-white p-5">
-              <p className="text-[13px] text-muted">Deal Value</p>
-              <p className="mt-1 text-3xl font-extrabold text-primary">{dealValue(selected)}</p>
+            <div className="rounded-2xl border border-[#d6ece5] bg-white p-5 shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
+              <p className="text-[13px] text-muted">قيمة الصفقة</p>
+              <p className="mt-1 text-3xl font-extrabold text-[#1a5c4f]">{dealValue(selected)}</p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Detail label="Stage" value={selected.pipeline_stages?.label ?? null} />
-              <Detail label="Probability" value={selected.probability_pct != null ? `${selected.probability_pct}%` : null} />
-              <Detail label="Expected Close" value={selected.target_close_date ? formatDate(selected.target_close_date) : null} />
-              <Detail label="Currency" value={selected.currency_code} />
+
+            <div className="overflow-hidden rounded-2xl border border-[#d6ece5] bg-white shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
+              <Detail icon="📶" label="المرحلة" value={selected.pipeline_stages?.label ?? null} />
+              <Detail icon="🎯" label="الاحتمالية" value={selected.probability_pct != null ? `${selected.probability_pct}%` : null} />
+              <Detail icon="📅" label="تاريخ الإغلاق المتوقع" value={selected.target_close_date ? formatDate(selected.target_close_date) : null} />
+              <Detail icon="💱" label="العملة" value={selected.currency_code} last />
             </div>
-            <div>
-              <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">Notes</p>
-              <p dir="auto" className="mt-1 text-[15px] text-ink-secondary">{selected.notes || "—"}</p>
+
+            <div className="rounded-2xl border border-[#d6ece5] bg-white p-4 shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
+              <p className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wide text-muted">📝 الملاحظات</p>
+              <p dir="auto" className="mt-2 text-[14px] leading-relaxed text-ink-secondary">{selected.notes || "لا توجد ملاحظات"}</p>
             </div>
           </div>
         )}
@@ -302,11 +341,14 @@ export default function DealsPage() {
   );
 }
 
-function Detail({ label, value }: { label: string; value: string | null }) {
+function Detail({ icon, label, value, last }: { icon: string; label: string; value: string | null; last?: boolean }) {
   return (
-    <div>
-      <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">{label}</p>
-      <p dir="auto" className="mt-0.5 text-[15px] font-medium text-ink">{value || "—"}</p>
+    <div className={`flex items-center gap-3 px-4 py-3 ${last ? "" : "border-b border-[#eef4f1]"}`}>
+      <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-[#f0faf8] text-sm">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-semibold text-muted">{label}</p>
+        <p dir="auto" className="mt-0.5 truncate text-[14px] font-semibold text-ink">{value || "—"}</p>
+      </div>
     </div>
   );
 }

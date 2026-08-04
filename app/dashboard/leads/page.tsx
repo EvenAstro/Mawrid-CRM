@@ -5,26 +5,13 @@ import { supabase } from "@/lib/supabase";
 import { SearchIcon, LeadsIcon } from "@/components/navIcons";
 import LeadSlideOver, { type Lead } from "@/components/LeadSlideOver";
 import NewLeadSlideOver from "@/components/NewLeadSlideOver";
-import { fetchLeadScoreModel, scoreWithModel, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
+import { fetchLeadScoreModel, getAIScore, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
 import { useRole } from "@/components/RoleProvider";
 import { canViewAllData } from "@/lib/permissions";
+import { initials, formatDate, formatPhone, downloadCSV } from "@/lib/format";
+import { useToast } from "@/components/Toast";
 
 const PAGE_SIZE = 15;
-
-function initials(name: string | null): string {
-  if (!name) return "—";
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "—";
-}
-
-function getAIScore(lead: Lead, model: LeadScoreModel | null): number {
-  if (!model) return 50;
-  return scoreWithModel(model, {
-    source: lead.sources?.label || "غير محدد",
-    matched: !!lead.establishment_id,
-    hasCampaign: false,
-  }).score;
-}
 
 function scoreHex(score: number): string {
   if (score >= 70) return "#10b981"; // green
@@ -61,28 +48,18 @@ function AiScoreRing({ score }: { score: number }) {
   );
 }
 
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 function StatCard({
   value,
   label,
-  accent,
+  color,
   icon,
   active,
   onClick,
 }: {
   value: number;
   label: string;
-  accent: string;
+  color: string;
   icon: React.ReactNode;
   active?: boolean;
   onClick?: () => void;
@@ -90,23 +67,36 @@ function StatCard({
   return (
     <button
       onClick={onClick}
-      className={`group relative flex items-center gap-4 overflow-hidden rounded-2xl border bg-white p-5 text-left shadow-sm transition-all hover:shadow-md ${active ? "border-emerald-500 ring-2 ring-emerald-500/15" : "border-slate-200 hover:border-slate-300"}`}
+      className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border p-5 text-left shadow-[0_2px_8px_rgba(26,92,79,0.05)] transition-all duration-200 hover:-translate-y-0.5"
+      style={{
+        borderColor: active ? color : "#e4ebe7",
+        background: active ? `linear-gradient(155deg, ${color}14 0%, #fff 55%)` : "#fff",
+        boxShadow: active ? `0 10px 28px ${color}22` : undefined,
+      }}
     >
-      <span className={`flex h-12 w-12 flex-none items-center justify-center rounded-xl ${accent}`}>
+      <span className="pointer-events-none absolute -left-8 -top-8 h-24 w-24 rounded-full opacity-[0.08] transition-transform duration-300 group-hover:scale-125" style={{ background: color }} />
+      <span className="relative flex h-12 w-12 flex-none items-center justify-center rounded-xl shadow-sm" style={{ backgroundColor: color, color: "#fff" }}>
         {icon}
       </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-[26px] font-bold leading-none text-slate-900 tabular-nums">{value}</p>
-        <p className="mt-1 text-[13px] font-medium text-slate-500">{label}</p>
+      <div className="relative min-w-0 flex-1">
+        <p className="text-[26px] font-bold leading-none text-[#1e1b4b] tabular-nums">{value}</p>
+        <p className="mt-1 text-[13px] font-medium text-[#7c8b86]">{label}</p>
       </div>
-      {active && <span className="absolute top-3 left-3 h-2 w-2 rounded-full bg-emerald-500" />}
+      {active && <span className="absolute top-3 left-3 h-2 w-2 rounded-full" style={{ backgroundColor: color }} />}
     </button>
   );
 }
 
+type SortKey = "name" | "source" | "stage" | "score" | "owner" | "created_at";
+
 export default function LeadsPage() {
   const { role, userId, loading: roleLoading } = useRole();
+  const toast = useToast();
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [checked, setChecked] = useState<Set<string | number>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>("created_at");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState("all");
@@ -218,12 +208,89 @@ export default function LeadsPage() {
   const cleanCount = leads.filter((l) => l.junk_reason_id == null).length;
   const junkCount = leads.length - cleanCount;
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const sorted = useMemo(() => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    const arr = [...filtered];
+    arr.sort((a, b) => {
+      switch (sortKey) {
+        case "name":
+          return dir * (a.full_name ?? "").localeCompare(b.full_name ?? "", "ar");
+        case "source":
+          return dir * (a.sources?.label ?? "").localeCompare(b.sources?.label ?? "", "ar");
+        case "stage":
+          return dir * (a.pipeline_stages?.label ?? "").localeCompare(b.pipeline_stages?.label ?? "", "ar");
+        case "score":
+          return dir * ((scoreCache.get(a.id) ?? 0) - (scoreCache.get(b.id) ?? 0));
+        case "owner":
+          return dir * (a.owner ?? "").localeCompare(b.owner ?? "", "ar");
+        case "created_at":
+        default:
+          return dir * (new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime());
+      }
+    });
+    return arr;
+  }, [filtered, sortKey, sortDir, scoreCache]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const pageRows = filtered.slice(
+  const pageRows = sorted.slice(
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE,
   );
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "created_at" ? "desc" : "asc");
+    }
+  }
+
+  function sortIndicator(key: SortKey) {
+    if (sortKey !== key) return null;
+    return <span className="mr-1 inline-block">{sortDir === "asc" ? "↑" : "↓"}</span>;
+  }
+
+  function toggleChecked(id: string | number) {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function exportRows(rows: Lead[]) {
+    downloadCSV(`leads-${new Date().toISOString().slice(0, 10)}.csv`, rows.map((l) => ({
+      "الاسم": l.full_name ?? "",
+      "الجوال": formatPhone(l.phone),
+      "الإيميل": l.email ?? "",
+      "المصدر": l.sources?.label ?? "",
+      "المرحلة": l.pipeline_stages?.label ?? "",
+      "تقييم AI": scoreCache.get(l.id) ?? getAIScore(l, scoreModel),
+      "المسؤول": l.owner ?? "",
+      "تاريخ الإضافة": formatDate(l.created_at),
+    })));
+  }
+
+  async function deleteLeads(ids: (string | number)[]) {
+    setDeleting(true);
+    const { error } = await supabase.from("leads").update({ deleted_at: new Date().toISOString() }).in("id", ids);
+    setDeleting(false);
+    if (error) {
+      console.error("[Leads] delete failed", error);
+      toast("تعذّر حذف العميل المحتمل", "error");
+      return;
+    }
+    toast(ids.length > 1 ? "تم حذف العملاء المحددين" : "تم حذف العميل");
+    setChecked((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.delete(id));
+      return next;
+    });
+    load();
+  }
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -232,21 +299,29 @@ export default function LeadsPage() {
 
   return (
     <>
-      {/* Header */}
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 dir="auto" className="text-[28px] font-bold text-slate-900">العملاء المحتملون</h1>
-          <p className="mt-1 text-[14px] text-slate-500">
-            إدارة ومتابعة مسار العملاء المحتملين
-          </p>
+      {/* Hero header */}
+      <div className="mb-6 rounded-3xl bg-[#141c2e] px-7 py-7">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white/10">
+              <LeadsIcon className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">العملاء المحتملون</h1>
+              <p className="mt-1 text-sm text-white/50">إدارة ومتابعة مسار العملاء المحتملين</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <button onClick={() => exportRows(filtered)} disabled={!filtered.length} className="rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-white/10 disabled:opacity-40">تصدير CSV</button>
+            <button
+              onClick={() => setNewLeadOpen(true)}
+              className="flex h-11 items-center gap-2 rounded-xl bg-[#3a9080] px-5 text-[14px] font-bold text-white transition-all hover:bg-[#328173] active:scale-[0.98]"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
+              إضافة عميل
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => setNewLeadOpen(true)}
-          className="flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-5 text-[14px] font-bold text-white shadow-md shadow-emerald-600/25 transition hover:shadow-lg hover:shadow-emerald-600/30 active:scale-[0.98]"
-        >
-          <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
-          إضافة عميل
-        </button>
       </div>
 
       {/* Stats bar */}
@@ -254,7 +329,7 @@ export default function LeadsPage() {
         <StatCard
           value={leads.length}
           label="إجمالي العملاء"
-          accent="bg-gradient-to-br from-slate-100 to-slate-50 text-slate-600"
+          color="#1a5c4f"
           icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zM6 8a2 2 0 11-4 0 2 2 0 014 0zM1.49 15.326a.78.78 0 01-.358-.442 3 3 0 014.308-3.516 6.484 6.484 0 00-1.905 3.959c-.023.222-.014.442.025.654a4.97 4.97 0 01-2.07-.655zM16.44 15.98a4.97 4.97 0 002.07-.654.78.78 0 00.357-.442 3 3 0 00-4.308-3.517 6.484 6.484 0 011.907 3.96 2.32 2.32 0 01-.026.654zM18 8a2 2 0 11-4 0 2 2 0 014 0zM5.304 16.19a.844.844 0 01-.277-.71 5 5 0 019.947 0 .843.843 0 01-.277.71A6.975 6.975 0 0110 18a6.974 6.974 0 01-4.696-1.81z" /></svg>}
           active={statusFilter === "all"}
           onClick={() => setStatusFilter("all")}
@@ -262,7 +337,7 @@ export default function LeadsPage() {
         <StatCard
           value={cleanCount}
           label="عملاء مؤهلون"
-          accent="bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600"
+          color="#10b981"
           icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></svg>}
           active={statusFilter === "clean"}
           onClick={() => setStatusFilter("clean")}
@@ -270,7 +345,7 @@ export default function LeadsPage() {
         <StatCard
           value={junkCount}
           label="غير مؤهلين"
-          accent="bg-gradient-to-br from-red-100 to-red-50 text-red-600"
+          color="#f43f5e"
           icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4z" clipRule="evenodd" /></svg>}
           active={statusFilter === "junk"}
           onClick={() => setStatusFilter("junk")}
@@ -278,7 +353,7 @@ export default function LeadsPage() {
       </div>
 
       {/* Search & filter bar */}
-      <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row">
+      <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-[#d6ece5] bg-white p-4 shadow-[0_2px_8px_rgba(26,92,79,0.05)] sm:flex-row">
         <div className="relative flex-1">
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
             <SearchIcon />
@@ -288,14 +363,14 @@ export default function LeadsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="ابحث بالاسم، الجوال، أو الإيميل…"
-            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-11 pr-4 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition"
+            className="h-11 w-full rounded-xl border border-[#d6ece5] bg-[#f8faf9] pl-11 pr-4 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition"
           />
         </div>
 
         <select
           value={stageFilter}
           onChange={(e) => setStageFilter(e.target.value)}
-          className="h-11 rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-[14px] font-medium text-slate-700 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition"
+          className="h-11 rounded-xl border border-[#d6ece5] bg-[#f8faf9] px-4 text-[14px] font-medium text-slate-700 focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition"
         >
           <option value="all">جميع المراحل</option>
           {stageOptions.map((s) => (
@@ -306,7 +381,7 @@ export default function LeadsPage() {
         <select
           value={sourceFilter}
           onChange={(e) => setSourceFilter(e.target.value)}
-          className="h-11 rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-[14px] font-medium text-slate-700 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition"
+          className="h-11 rounded-xl border border-[#d6ece5] bg-[#f8faf9] px-4 text-[14px] font-medium text-slate-700 focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition"
         >
           <option value="all">جميع المصادر</option>
           {sourceOptions.map((s) => (
@@ -315,26 +390,65 @@ export default function LeadsPage() {
         </select>
       </div>
 
+      {/* Bulk actions bar */}
+      {checked.size > 0 && (
+        <div className="mb-3 flex items-center justify-between rounded-2xl border border-[#1a5c4f]/25 bg-[#f0faf8] px-5 py-3">
+          <span className="text-[13px] font-semibold text-[#1a5c4f]">{checked.size} محدد</span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => exportRows(leads.filter((l) => checked.has(l.id)))} className="rounded-lg border border-[#1a5c4f]/30 bg-white px-4 py-1.5 text-[13px] font-semibold text-[#1a5c4f] transition hover:bg-[#e4f5f0]">تصدير المحدد</button>
+            <button onClick={() => deleteLeads(Array.from(checked))} disabled={deleting} className="rounded-lg border border-red-200 bg-white px-4 py-1.5 text-[13px] font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50">{deleting ? "جارِ الحذف…" : "حذف المحدد"}</button>
+            <button onClick={() => setChecked(new Set())} className="rounded-lg px-3 py-1.5 text-[13px] font-semibold text-slate-500 hover:text-slate-700">إلغاء</button>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[880px] border-collapse text-left">
+      <div className="overflow-hidden rounded-2xl border border-[#d6ece5] bg-white shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
+        <div className="w-full overflow-hidden">
+          <table className="w-full table-fixed border-collapse text-left">
+            <colgroup>
+              <col className="w-[4%]" />
+              <col className="w-[21%]" />
+              <col className="w-[11%]" />
+              <col className="w-[11%]" />
+              <col className="w-[9%]" />
+              <col className="w-[11%]" />
+              <col className="w-[11%]" />
+              <col className="w-[11%]" />
+              <col className="w-[11%]" />
+            </colgroup>
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/60 text-[12px] font-semibold uppercase tracking-wider text-slate-500">
-                <th className="px-6 py-3.5">العميل</th>
-                <th className="px-6 py-3.5">المصدر</th>
-                <th className="px-6 py-3.5">المرحلة</th>
-                <th className="px-6 py-3.5">الحالة</th>
-                <th className="px-6 py-3.5">تقييم AI</th>
-                <th className="px-6 py-3.5">المسؤول</th>
-                <th className="px-6 py-3.5">التاريخ</th>
-                <th className="px-6 py-3.5 text-right"></th>
+              <tr className="border-b border-[#e8f0ec] bg-[#f8faf9] text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                <th className="px-3 py-3.5">
+                  <input
+                    type="checkbox"
+                    checked={pageRows.length > 0 && pageRows.every((l) => checked.has(l.id))}
+                    onChange={() => {
+                      setChecked((prev) => {
+                        const allChecked = pageRows.every((l) => prev.has(l.id));
+                        const next = new Set(prev);
+                        pageRows.forEach((l) => (allChecked ? next.delete(l.id) : next.add(l.id)));
+                        return next;
+                      });
+                    }}
+                    className="h-4 w-4 accent-[#1a5c4f]"
+                    aria-label="تحديد الكل"
+                  />
+                </th>
+                <th className="cursor-pointer select-none px-3 py-3.5 hover:text-slate-700" onClick={() => toggleSort("name")}>العميل{sortIndicator("name")}</th>
+                <th className="cursor-pointer select-none px-3 py-3.5 hover:text-slate-700" onClick={() => toggleSort("source")}>المصدر{sortIndicator("source")}</th>
+                <th className="cursor-pointer select-none px-3 py-3.5 hover:text-slate-700" onClick={() => toggleSort("stage")}>المرحلة{sortIndicator("stage")}</th>
+                <th className="px-3 py-3.5">الحالة</th>
+                <th className="cursor-pointer select-none px-3 py-3.5 hover:text-slate-700" onClick={() => toggleSort("score")}>تقييم AI{sortIndicator("score")}</th>
+                <th className="cursor-pointer select-none px-3 py-3.5 hover:text-slate-700" onClick={() => toggleSort("owner")}>المسؤول{sortIndicator("owner")}</th>
+                <th className="cursor-pointer select-none px-3 py-3.5 hover:text-slate-700" onClick={() => toggleSort("created_at")}>التاريخ{sortIndicator("created_at")}</th>
+                <th className="px-3 py-3.5 text-right"></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-20 text-center">
+                  <td colSpan={9} className="px-6 py-20 text-center">
                     <div className="inline-flex items-center gap-3 text-[14px] text-slate-500">
                       <svg className="h-4 w-4 animate-spin text-emerald-600" viewBox="0 0 24 24" fill="none">
                         <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -346,7 +460,7 @@ export default function LeadsPage() {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-16">
+                  <td colSpan={9} className="px-6 py-16">
                     <div className="flex flex-col items-center justify-center gap-3 text-center">
                       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-2xl">🔌</div>
                       <p className="text-[15px] font-semibold text-slate-700">تعذّر الاتصال</p>
@@ -362,7 +476,7 @@ export default function LeadsPage() {
                 </tr>
               ) : pageRows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-20">
+                  <td colSpan={9} className="px-6 py-20">
                     <div className="flex flex-col items-center justify-center text-center">
                       <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
                         <LeadsIcon />
@@ -385,27 +499,36 @@ export default function LeadsPage() {
                     <tr
                       key={lead.id}
                       onClick={() => setSelectedLead(lead)}
-                      className={`group cursor-pointer border-b border-slate-100 transition-all duration-100 last:border-0 hover:bg-emerald-50/40 ${isJunk ? "opacity-60" : ""}`}
+                      className={`group cursor-pointer border-b border-[#e8f0ec] transition-all duration-100 last:border-0 hover:bg-[#f8faf9] ${isJunk ? "opacity-60" : ""}`}
                     >
+                      <td className="px-3 py-4" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={checked.has(lead.id)}
+                          onChange={() => toggleChecked(lead.id)}
+                          className="h-4 w-4 accent-[#1a5c4f]"
+                          aria-label="تحديد"
+                        />
+                      </td>
                       {/* Name */}
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-4">
                         <div className="flex items-center gap-3">
-                          <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-700 text-[13px] font-bold text-white shadow-sm">
+                          <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-gradient-to-br from-[#1a5c4f] to-[#0f3a30] text-[13px] font-bold text-white shadow-sm">
                             {initials(lead.full_name)}
                           </span>
                           <div className="min-w-0">
                             <p dir="auto" className="truncate text-[14px] font-semibold text-slate-900">
                               {lead.full_name || "Unnamed lead"}
                             </p>
-                            <p className="truncate text-[12px] text-slate-400">
-                              {lead.phone || lead.email || "—"}
+                            <p dir={lead.phone ? "ltr" : "auto"} className="truncate text-end text-[12px] text-slate-400">
+                              {lead.phone ? formatPhone(lead.phone) : (lead.email || "—")}
                             </p>
                           </div>
                         </div>
                       </td>
 
                       {/* Source */}
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-4">
                         {lead.sources?.label ? (
                           <span className="inline-flex rounded-lg bg-slate-100 px-2.5 py-1 text-[12px] font-semibold text-slate-600">
                             {lead.sources.label}
@@ -416,7 +539,7 @@ export default function LeadsPage() {
                       </td>
 
                       {/* Stage */}
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-4">
                         {lead.pipeline_stages?.label ? (
                           <span
                             className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-semibold"
@@ -434,7 +557,7 @@ export default function LeadsPage() {
                       </td>
 
                       {/* Status */}
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-4">
                         {isJunk ? (
                           <span className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-[12px] font-semibold text-red-600 ring-1 ring-red-100">
                             🚫 جنك
@@ -455,23 +578,23 @@ export default function LeadsPage() {
                       </td>
 
                       {/* AI Score */}
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-4">
                         <AiScoreRing score={scoreCache.get(lead.id) ?? getAIScore(lead, scoreModel)} />
                       </td>
 
                       {/* Owner */}
-                      <td className="px-6 py-4 text-[13px] font-medium text-slate-600">
+                      <td className="px-3 py-4 text-[13px] font-medium text-slate-600">
                         {lead.owner || <span className="text-slate-300">—</span>}
                       </td>
 
                       {/* Created */}
-                      <td className="px-6 py-4 text-[12px] text-slate-400">
+                      <td className="px-3 py-4 text-[12px] text-slate-400">
                         {formatDate(lead.created_at)}
                       </td>
 
                       {/* Actions */}
-                      <td className="px-6 py-4 text-right">
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-[12px] font-semibold text-slate-500 opacity-0 transition group-hover:bg-emerald-600 group-hover:text-white group-hover:opacity-100">
+                      <td className="px-3 py-4 text-right">
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-[12px] font-semibold text-slate-500 opacity-0 transition group-hover:bg-[#1a5c4f] group-hover:text-white group-hover:opacity-100">
                           فتح ←
                         </span>
                       </td>
@@ -485,7 +608,7 @@ export default function LeadsPage() {
 
         {/* Pagination */}
         {!loading && filtered.length > 0 && (
-          <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/40 px-6 py-3.5">
+          <div className="flex items-center justify-between border-t border-[#e8f0ec] bg-[#f8faf9] px-6 py-3.5">
             <p className="text-[13px] text-slate-500">
               عرض{" "}
               <span className="font-bold text-slate-700 tabular-nums">
@@ -501,7 +624,7 @@ export default function LeadsPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-emerald-400 hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:text-slate-500"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#d6ece5] bg-white text-slate-500 transition hover:border-[#1a5c4f] hover:text-[#1a5c4f] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#d6ece5] disabled:hover:text-slate-500"
               >
                 <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06L11.19 8 7.72 4.53a.75.75 0 011.06-1.06l4 4a.75.75 0 010 1.06l-4 4a.75.75 0 01-1.06 0z" clipRule="evenodd" /></svg>
               </button>
@@ -511,7 +634,7 @@ export default function LeadsPage() {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-emerald-400 hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:text-slate-500"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#d6ece5] bg-white text-slate-500 transition hover:border-[#1a5c4f] hover:text-[#1a5c4f] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#d6ece5] disabled:hover:text-slate-500"
               >
                 <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M12.28 7.47a.75.75 0 010 1.06L8.81 12l3.47 3.47a.75.75 0 11-1.06 1.06l-4-4a.75.75 0 010-1.06l4-4a.75.75 0 011.06 0z" clipRule="evenodd" /></svg>
               </button>

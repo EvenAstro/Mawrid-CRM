@@ -12,6 +12,8 @@ import { initials as initialsOf } from "@/lib/format";
 import RoleProvider, { useRole } from "@/components/RoleProvider";
 import { FEATURES } from "@/lib/features";
 import { UsersIcon } from "@/components/navIcons";
+import NotificationsDropdown from "@/components/NotificationsDropdown";
+import SupervisorBot from "@/components/SupervisorBot";
 import {
   DashboardIcon,
   ContactsIcon,
@@ -20,12 +22,9 @@ import {
   ActivitiesIcon,
   TasksIcon,
   TicketsIcon,
-  AnalyticsIcon,
   ScoringIcon,
   PlaybookIcon,
   InsightsIcon,
-  RevenueIntelIcon,
-  BellIcon,
   LogoutIcon,
 } from "@/components/navIcons";
 
@@ -38,10 +37,8 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   tasks: TasksIcon,
   tickets: TicketsIcon,
   insights: InsightsIcon,
-  analytics: AnalyticsIcon,
   lead_scoring: ScoringIcon,
   playbook: PlaybookIcon,
-  revenue_intelligence: RevenueIntelIcon,
   users: UsersIcon,
 };
 
@@ -98,8 +95,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 function DashboardShell({ children, email, fullName }: { children: React.ReactNode; email: string; fullName: string }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { role, permissions, loading: roleLoading, can } = useRole();
+  const { permissions, loading: roleLoading, can } = useRole();
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     setCollapsed(localStorage.getItem("mawrid_sidebar_collapsed") === "1");
@@ -112,10 +111,27 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
     });
   }
 
+  // Below md (768px) the sidebar becomes an off-canvas drawer instead of a
+  // permanent column — the fixed-width layout below simply has no room on a
+  // phone screen.
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    setIsMobile(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  // Close the drawer whenever the route changes, so navigating doesn't leave
+  // it open over the new page.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
   const currentFeature = FEATURES.find((f) => isActive(pathname, f.href));
   const pageName = currentFeature?.label ?? "الرئيسية";
   useEffect(() => {
-    document.title = `${pageName} · Mawrid CRM`;
+    document.title = `${pageName} · مَوْرد CRM`;
   }, [pageName]);
 
   // Guard: redirect away from a page this user isn't allowed to see —
@@ -142,63 +158,90 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
   const displayName = fullName || email.split("@")[0];
   const userInitials = initialsOf(fullName || email);
   const w = collapsed ? 72 : 240;
+  const sidebarWidth = isMobile ? 272 : w;
+  const contentOffset = isMobile ? 0 : w;
+  // The collapse-to-icons feature only makes sense for the permanent desktop
+  // column — the mobile drawer always shows full labels.
+  const effectiveCollapsed = collapsed && !isMobile;
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Sidebar */}
+    <div className="min-h-screen bg-[#f0f5f3]">
+      {/* Mobile drawer backdrop */}
+      {isMobile && mobileOpen && (
+        <div
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 z-30 bg-black/30 backdrop-blur-sm transition-opacity md:hidden"
+        />
+      )}
+
+      {/* Sidebar — navy bg, teal accents. Permanent column on md+, off-canvas
+          drawer below that (translate-x-full hides it past the right edge,
+          which is where it's docked, since the app is RTL). */}
       <div
-        style={{ width: w }}
-        className="fixed inset-y-0 left-0 z-30 flex flex-col border-r border-border-light bg-white transition-all duration-300"
+        style={{ width: sidebarWidth }}
+        className={`fixed inset-y-0 right-0 z-40 flex flex-col bg-[#141c2e] transition-all duration-300 ${
+          isMobile ? (mobileOpen ? "translate-x-0" : "translate-x-full") : "translate-x-0"
+        }`}
       >
-        {/* Logo + collapse */}
-        <div className="flex h-16 items-center justify-between px-4">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-10 w-10 flex-none items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)]">
-              <span className="text-lg font-black text-white">م</span>
-            </div>
-            {!collapsed && (
-              <div className="min-w-0">
-                <span className="block truncate text-[20px] font-extrabold leading-tight text-ink">Mawrid</span>
-                <span className="text-[11px] font-medium text-muted">CRM Platform</span>
-              </div>
+        {/* Logo */}
+        <div className="flex h-[72px] items-center justify-between px-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <svg viewBox="0 0 36 36" className="h-9 w-9 flex-none" fill="none">
+              <rect width="36" height="36" rx="9" fill="#3a9080" />
+              <path d="M18 5C11.37 5 6 10.37 6 17c0 6.63 5.37 12 12 12h7v-7h-7a5 5 0 1 1 0-10c2.76 0 5 2.24 5 5v12h7V17C30 10.37 24.63 5 18 5z" fill="white" />
+            </svg>
+            {(!collapsed || isMobile) && (
+              <span className="block truncate text-[28px] font-bold tracking-wide text-white" style={{ fontFamily: "var(--font-cairo), system-ui, sans-serif" }}>مَــوْرد</span>
             )}
           </div>
-          <button
-            onClick={toggleCollapse}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className={`flex-none rounded-lg p-1.5 text-muted transition hover:bg-mint hover:text-primary ${collapsed ? "absolute -right-3 top-4 z-10 border border-border-light bg-white shadow-md" : ""}`}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={`h-4 w-4 transition-transform ${collapsed ? "rotate-180" : ""}`}>
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
+          {isMobile ? (
+            <button
+              onClick={() => setMobileOpen(false)}
+              aria-label="إغلاق القائمة"
+              className="flex-none rounded-lg p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          ) : (
+            <button
+              onClick={toggleCollapse}
+              aria-label={collapsed ? "توسيع القائمة" : "طي القائمة"}
+              className={`flex-none rounded-lg p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white ${collapsed ? "absolute -left-3 top-5 z-10 rounded-full border border-[#e8ece9] bg-white text-[#141c2e] shadow-lg" : ""}`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={`h-4 w-4 transition-transform ${collapsed ? "rotate-180" : ""}`}>
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-2">
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
           {navGroups.map((group) => (
-            <div key={group.heading} className="mt-4 first:mt-0">
-              {!collapsed && (
-                <p className="mb-2 px-3 text-[10px] font-medium uppercase tracking-[0.15em] text-muted">
+            <div key={group.heading} className="mt-6 first:mt-0">
+              {!effectiveCollapsed && (
+                <p className="mb-2 px-3 text-[11px] font-bold tracking-wider text-[#3a9080]">
                   {group.heading}
                 </p>
               )}
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {group.items.map(({ label, href, Icon }) => {
                   const active = isActive(pathname, href);
                   return (
                     <Link
                       key={label}
                       href={href}
-                      title={collapsed ? label : undefined}
-                      className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition-all ${
+                      title={effectiveCollapsed ? label : undefined}
+                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] transition-all ${
                         active
-                          ? "bg-primary font-semibold text-white"
-                          : "font-medium text-ink-secondary hover:bg-mint hover:text-primary"
-                      } ${collapsed ? "justify-center px-0" : ""}`}
+                          ? "bg-[#3a9080]/20 font-bold text-[#5ec4b0]"
+                          : "font-medium text-white/50 hover:bg-white/6 hover:text-white/85"
+                      } ${effectiveCollapsed ? "justify-center px-0" : ""}`}
                     >
-                      <Icon className="h-5 w-5 flex-shrink-0" />
-                      {!collapsed && label}
+                      <Icon className={`h-[20px] w-[20px] flex-shrink-0 ${active ? "text-[#5ec4b0]" : ""}`} />
+                      {!effectiveCollapsed && label}
                     </Link>
                   );
                 })}
@@ -208,43 +251,52 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
         </nav>
 
         {/* User */}
-        <div className="border-t border-border-light px-3 pb-3 pt-4">
-          <div className={`flex items-center gap-3 rounded-xl px-2 py-2 ${collapsed ? "justify-center" : ""}`}>
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)]">
+        <div className="border-t border-white/8 px-3 pb-4 pt-4">
+          <div className={`flex items-center gap-3 rounded-xl px-2 py-2 ${effectiveCollapsed ? "justify-center" : ""}`}>
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#3a9080]">
               <span className="text-sm font-bold text-white">{userInitials}</span>
             </div>
-            {!collapsed && (
+            {!effectiveCollapsed && (
               <>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-ink">{displayName}</p>
-                  <p className="truncate text-xs text-muted">{email}</p>
+                  <p className="truncate text-[14px] font-semibold text-white/90">{displayName}</p>
+                  <p className="truncate text-[11px] text-white/35">{email}</p>
                 </div>
-                <button onClick={handleLogout} aria-label="Log out" className="flex-none rounded-lg p-1.5 text-muted transition-colors hover:bg-red-50 hover:text-red-500">
+                <button onClick={handleLogout} aria-label="تسجيل الخروج" className="flex-none rounded-lg p-1.5 text-white/25 transition-colors hover:bg-white/10 hover:text-red-400">
                   <LogoutIcon className="h-4 w-4" />
                 </button>
               </>
             )}
           </div>
-          {!collapsed && <p className="mt-2 px-2 text-[11px] font-medium text-muted">v1.0</p>}
         </div>
       </div>
 
       {/* Top bar */}
       <div
-        style={{ left: w }}
-        className="fixed right-0 top-0 z-20 flex h-16 items-center justify-between border-b border-border-light bg-white/90 px-8 backdrop-blur-sm transition-all duration-300"
+        style={{ right: contentOffset }}
+        className="fixed left-0 top-0 z-20 flex h-[56px] items-center justify-between gap-3 border-b border-[#e8ece9] bg-white px-4 transition-all duration-300 md:px-8"
       >
-        <div className="flex items-center gap-1.5 text-sm">
-          <span className="text-muted">مساحة العمل</span>
-          <span className="text-[#d1d5db]">/</span>
-          <span className="font-semibold text-ink">{pageName}</span>
+        <div className="flex min-w-0 items-center gap-3">
+          {isMobile && (
+            <button
+              onClick={() => setMobileOpen(true)}
+              aria-label="فتح القائمة"
+              className="flex-none rounded-lg p-1.5 text-[#475569] transition hover:bg-[#f0faf8]"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          )}
+          <div className="flex min-w-0 items-center gap-2 text-[14px]">
+            <span className="hidden text-[#94a3b8] sm:inline">مساحة العمل</span>
+            <span className="hidden text-[#d1d5db] sm:inline">/</span>
+            <span className="truncate font-semibold text-[#1e1b4b]">{pageName}</span>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button aria-label="Notifications" className="relative text-muted transition-colors hover:text-primary">
-            <BellIcon className="h-[18px] w-[18px]" />
-            <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-red-500" />
-          </button>
-          <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)]">
+        <div className="flex flex-none items-center gap-3">
+          <NotificationsDropdown />
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#141c2e]">
             <span className="text-xs font-bold text-white">{userInitials}</span>
           </div>
         </div>
@@ -252,14 +304,15 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
 
       {/* Main */}
       <main
-        style={{ marginLeft: w, paddingRight: "var(--briefing-rail-width, 52px)" }}
-        className="min-h-screen bg-gray-25 pt-16 transition-all duration-300"
+        style={{ marginRight: contentOffset, paddingLeft: "var(--briefing-rail-width, 52px)" }}
+        className="min-h-screen bg-[#f0f5f3] pt-[56px] transition-all duration-300"
       >
-        <div key={pathname} className="page-content mx-auto max-w-[1280px] p-8">
+        <div key={pathname} className="page-content mx-auto max-w-[1600px] p-4 sm:p-6 md:p-8">
           {roleLoading ? null : currentFeature && !can(currentFeature.key) ? null : children}
         </div>
       </main>
       <CopilotWidget />
+      <SupervisorBot />
       <DailyBriefing />
     </div>
   );

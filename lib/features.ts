@@ -18,12 +18,9 @@ export const FEATURES: FeatureDef[] = [
   { key: "deals", label: "الصفقات", description: "مسار الصفقات ولوحة المبيعات", group: "مساحة العمل", href: "/dashboard/deals" },
   { key: "activities", label: "النشاطات", description: "سجل كل النشاطات المسجّلة", group: "التفاعل", href: "/dashboard/activities" },
   { key: "tasks", label: "المهام", description: "قائمة المهام والتقويم", group: "التفاعل", href: "/dashboard/tasks" },
-  { key: "tickets", label: "التذاكر", description: "تذاكر الدعم والمتابعة", group: "التفاعل", href: "/dashboard/tickets" },
-  { key: "insights", label: "لوحة الرؤى", description: "رؤى تحليلية عامة عن الأداء", group: "الذكاء", href: "/dashboard/insights" },
-  { key: "analytics", label: "التحليلات", description: "تحليلات مفصّلة للمبيعات والفريق", group: "الذكاء", href: "/dashboard/analytics" },
+  { key: "insights", label: "الرؤى والإيرادات", description: "رؤى تحليلية وذكاء الإيرادات", group: "الذكاء", href: "/dashboard/insights" },
   { key: "lead_scoring", label: "تقييم العملاء", description: "نموذج الذكاء الاصطناعي لتقييم العملاء", group: "الذكاء", href: "/dashboard/lead-scoring" },
   { key: "playbook", label: "الدليل التكتيكي", description: "الدليل التكتيكي للمبيعات", group: "الذكاء", href: "/dashboard/playbook" },
-  { key: "revenue_intelligence", label: "ذكاء الإيرادات", description: "تحليل الإيرادات وصحة الصفقات", group: "الذكاء", href: "/dashboard/revenue-intelligence" },
   { key: "users", label: "إدارة المستخدمين", description: "إدارة حسابات الفريق وصلاحياتهم", group: "الإدارة", href: "/dashboard/users" },
 ];
 
@@ -44,7 +41,7 @@ export function getFeature(key: string): FeatureDef | undefined {
 }
 
 /** Baseline access before any per-user override is applied. */
-const SALES_DEFAULT_DENY = new Set(["insights", "analytics", "revenue_intelligence", "users"]);
+const SALES_DEFAULT_DENY = new Set(["insights", "users"]);
 
 export function defaultFeatureAccess(role: Role | null, key: string): boolean {
   if (role === "admin" || role === "manager") return true;

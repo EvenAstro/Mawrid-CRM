@@ -45,14 +45,28 @@ export default function RoleProvider({ children }: { children: React.ReactNode }
         }
         return;
       }
-      const [profile, perms] = await Promise.all([fetchCurrentProfile(), fetchUserPermissions(uid)]);
-      if (cancelled) return;
-      setRole(profile?.role ?? null);
-      setPermissions(perms);
-      setLoading(false);
+      try {
+        const [profile, perms] = await Promise.all([fetchCurrentProfile(), fetchUserPermissions(uid)]);
+        if (cancelled) return;
+        setRole(profile?.role ?? null);
+        setPermissions(perms);
+      } catch (err) {
+        console.error("[RoleProvider] load failed", err);
+        if (cancelled) return;
+        setRole(null);
+        setPermissions(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
 
-    supabase.auth.getUser().then(({ data }) => load(data.user?.id ?? null));
+    supabase.auth
+      .getUser()
+      .then(({ data }) => load(data.user?.id ?? null))
+      .catch((err) => {
+        console.error("[RoleProvider] getUser failed", err);
+        load(null);
+      });
 
     // Same session lives in localStorage across every tab — pick up the
     // switch immediately instead of showing a stale role/user for this tab.

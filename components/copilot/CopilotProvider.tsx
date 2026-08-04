@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export interface ChatMessage {
   id: string;
@@ -40,18 +41,20 @@ export function useCopilot(): CopilotContextValue {
 /** Maps the current route to a short Arabic context string fed silently to the model. */
 function contextForPath(pathname: string): string {
   if (pathname === "/dashboard") return "أنا على الصفحة الرئيسية للوحة التحكم";
-  if (pathname === "/dashboard/copilot") return "";
   if (/^\/dashboard\/deals\/[^/]+\/investigation/.test(pathname)) return "أنا أشاهد تقرير تحقيق صفقة مخسورة";
   if (/^\/dashboard\/deals\/[^/]+/.test(pathname)) return "أنا أشاهد تفاصيل صفقة محددة";
   if (pathname.startsWith("/dashboard/deals")) return "أنا على صفحة الصفقات";
   if (pathname.startsWith("/dashboard/leads")) return "أنا على صفحة العملاء المحتملين";
   if (pathname.startsWith("/dashboard/activities")) return "أنا على صفحة النشاطات";
   if (pathname.startsWith("/dashboard/tasks")) return "أنا على صفحة المهام";
-  if (pathname.startsWith("/dashboard/tickets")) return "أنا على صفحة التذاكر";
-  if (pathname.startsWith("/dashboard/analytics")) return "أنا على صفحة التحليلات";
   if (pathname.startsWith("/dashboard/lead-scoring")) return "أنا على صفحة تقييم العملاء";
   if (pathname.startsWith("/dashboard/contacts")) return "أنا على صفحة جهات الاتصال";
   return "";
+}
+
+async function authHeader(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session ? { Authorization: `Bearer ${session.access_token}` } : {};
 }
 
 function uid() {
@@ -83,7 +86,7 @@ export default function CopilotProvider({ children }: { children: React.ReactNod
     let active = true;
     (async () => {
       try {
-        const res = await fetch("/api/copilot");
+        const res = await fetch("/api/copilot", { headers: await authHeader() });
         if (!res.ok) return;
         const s = (await res.json()) as {
           stuckCount: number;
@@ -118,7 +121,7 @@ export default function CopilotProvider({ children }: { children: React.ReactNod
       try {
         const res = await fetch("/api/copilot", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...(await authHeader()) },
           body: JSON.stringify({
             messages: history.map((m) => ({ role: m.role, content: m.content })),
             context: pageContextRef.current,

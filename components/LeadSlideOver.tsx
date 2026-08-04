@@ -8,13 +8,11 @@ import NewDealSlideOver from "@/components/NewDealSlideOver";
 import CompleteTaskModal from "@/components/CompleteTaskModal";
 import { fetchLeadScoreModel, scoreWithModel } from "@/lib/leadScore/computeLeadScore";
 import { fetchProfiles, type Profile } from "@/lib/profiles";
+import { initials, formatDate, formatDateTime, formatPhone, todayInput, profileName } from "@/lib/format";
 import { useRole } from "@/components/RoleProvider";
 import { canActOnTask } from "@/lib/permissions";
+import { logAudit, fieldChangeMessage } from "@/lib/auditLog";
 
-function profileName(p: Profile | undefined): string {
-  if (!p) return "";
-  return p.full_name?.trim() || [p.first_name, p.last_name].filter(Boolean).join(" ") || "";
-}
 
 export interface Lead {
   id: string | number;
@@ -39,6 +37,7 @@ interface Activity {
   occurred_at: string | null;
   body?: string | null;
   direction?: string | null;
+  is_system?: boolean | null;
   activity_types: { label: string } | null;
 }
 interface ActivityType { id: string; label: string }
@@ -50,6 +49,10 @@ interface Task {
   description: string | null;
   due_at: string | null;
   assignee_uid: string | null;
+  depends_on_task_id: string | null;
+  lead_id: string | null;
+  completed_at: string | null;
+  completion_note: string | null;
   task_types: { label: string; color: string | null } | null;
 }
 interface TaskType { id: string; label: string }
@@ -64,25 +67,7 @@ interface LeadScore {
   source: string;
 }
 
-function initials(name: string | null): string {
-  if (!name) return "—";
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "—";
-}
 
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-}
-
-function formatDateTime(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-}
 
 function scoreColor(pct: number): string {
   if (pct >= 70) return "#059669";
@@ -90,27 +75,9 @@ function scoreColor(pct: number): string {
   return "#dc2626";
 }
 
-function todayInput() {
-  const d = new Date();
-  const off = d.getTimezoneOffset();
-  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10);
-}
 function nowTimeInput() {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
-/* ─── Reusable field row ────────────────────────────────────────────── */
-function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | null }) {
-  return (
-    <div className="flex items-start gap-3 py-2.5">
-      <span className="mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-slate-100 text-slate-500">{icon}</span>
-      <div className="min-w-0 flex-1">
-        <p className="text-[12px] font-medium uppercase tracking-wider text-slate-400">{label}</p>
-        <p dir="auto" className="mt-0.5 text-[15px] font-medium text-slate-800">{value || "—"}</p>
-      </div>
-    </div>
-  );
 }
 
 /* ─── Section wrapper ───────────────────────────────────────────────── */
@@ -127,11 +94,10 @@ function Section({ title, action, children }: { title: string; action?: React.Re
 }
 
 /* ─── Styled form input ─────────────────────────────────────────────── */
-const inputCls = "h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition";
-const selectCls = "h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-[14px] text-slate-700 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition appearance-none";
-const textareaCls = "w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition resize-none";
-const btnPrimary = "h-11 w-full rounded-xl bg-emerald-600 text-[14px] font-semibold text-white shadow-sm shadow-emerald-600/20 transition hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50";
-const btnOutline = "h-11 w-full rounded-xl border border-slate-200 bg-white text-[14px] font-semibold text-slate-600 transition hover:bg-slate-50 active:scale-[0.98]";
+const inputCls = "h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-[#3a9080] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3a9080]/20 transition";
+const selectCls = "h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-[14px] text-slate-700 focus:border-[#3a9080] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3a9080]/20 transition appearance-none";
+const textareaCls = "w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-[#3a9080] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3a9080]/20 transition resize-none";
+const btnPrimary = "h-11 w-full rounded-xl bg-[#1a5c4f] text-[14px] font-semibold text-white shadow-sm shadow-[#1a5c4f]/20 transition hover:bg-[#15503f] active:scale-[0.98] disabled:opacity-50";
 
 export default function LeadSlideOver({
   lead,
@@ -149,6 +115,8 @@ export default function LeadSlideOver({
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [junkReasons, setJunkReasons] = useState<JunkReason[]>([]);
   const [dealStages, setDealStages] = useState<DealStage[]>([]);
+  const [leadStages, setLeadStages] = useState<DealStage[]>([]);
+  const [sourcesList, setSourcesList] = useState<{ id: string; label: string }[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -173,12 +141,26 @@ export default function LeadSlideOver({
   const [taskTime, setTaskTime] = useState("09:00");
   const [taskTypeId, setTaskTypeId] = useState("");
   const [taskAssigneeId, setTaskAssigneeId] = useState("");
+  const [taskDependsOn, setTaskDependsOn] = useState("");
   const [savingTask, setSavingTask] = useState(false);
   const [completeTarget, setCompleteTarget] = useState<Task | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
+  const [allLeadTasks, setAllLeadTasks] = useState<Task[]>([]);
 
+  const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const [dealOpen, setDealOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"activities" | "tasks">("activities");
+
+  const [editingInfo, setEditingInfo] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editStageId, setEditStageId] = useState("");
+  const [editSourceId, setEditSourceId] = useState("");
+  const [editOwnerId, setEditOwnerId] = useState("");
+  const [savingInfo, setSavingInfo] = useState(false);
 
   const open = lead != null;
 
@@ -196,21 +178,41 @@ export default function LeadSlideOver({
   }
 
   async function refetchTasks(leadId: string | number) {
-    const { data } = await supabase
-      .from("tasks")
-      .select("*, task_types(label, color)")
-      .eq("entity_id", leadId)
-      .eq("entity_type", "lead")
-      .is("completed_at", null)
-      .order("due_at", { ascending: true, nullsFirst: false })
-      .limit(30);
-    setTasks((data as unknown as Task[]) || []);
+    const filter = `lead_id.eq.${leadId},and(entity_id.eq.${leadId},entity_type.eq.lead)`;
+    const [openRes, doneRes, allRes] = await Promise.all([
+      supabase
+        .from("tasks")
+        .select("*, task_types(label, color)")
+        .or(filter)
+        .is("completed_at", null)
+        .order("due_at", { ascending: true, nullsFirst: false })
+        .limit(30),
+      supabase
+        .from("tasks")
+        .select("*, task_types(label, color)")
+        .or(filter)
+        .not("completed_at", "is", null)
+        .order("completed_at", { ascending: false })
+        .limit(20),
+      supabase
+        .from("tasks")
+        .select("id, title, completed_at, depends_on_task_id, lead_id")
+        .or(filter)
+        .order("due_at", { ascending: true, nullsFirst: false })
+        .limit(50),
+    ]);
+    setTasks((openRes.data as unknown as Task[]) || []);
+    setCompletedTasks((doneRes.data as unknown as Task[]) || []);
+    setAllLeadTasks((allRes.data as unknown as Task[]) || []);
   }
 
   useEffect(() => {
     if (!lead) return;
     setActivities([]);
     setTasks([]);
+    setCompletedTasks([]);
+    setAllLeadTasks([]);
+    setShowHistory(false);
     setLeadScore(null);
     setOutcomeMode(null);
     setAddingActivity(false);
@@ -227,6 +229,8 @@ export default function LeadSlideOver({
         supabase.from("activity_types").select("id, label").eq("is_archived", false).order("sort_order", { ascending: true }).then(({ data }) => data && setActivityTypes(data as ActivityType[])),
         supabase.from("junk_reasons").select("id, label").then(({ data }) => data && setJunkReasons(data as JunkReason[])),
         supabase.from("pipeline_stages").select("id, label").eq("pipeline", "deal").order("sort_order", { ascending: true }).then(({ data }) => data && setDealStages(data as DealStage[])),
+        supabase.from("pipeline_stages").select("id, label").eq("pipeline", "lead").order("sort_order", { ascending: true }).then(({ data }) => data && setLeadStages(data as DealStage[])),
+        supabase.from("sources").select("id, label").then(({ data }) => data && setSourcesList(data as { id: string; label: string }[])),
         supabase.from("task_types").select("id, label").then(({ data }) => data && setTaskTypes(data as TaskType[])),
         fetchProfiles().then(setProfiles),
       ]);
@@ -349,14 +353,18 @@ export default function LeadSlideOver({
     const dueAt = taskDue ? new Date(`${taskDue}T${taskTime || "09:00"}:00`).toISOString() : null;
     const { error } = await supabase.from("tasks").insert({
       id: crypto.randomUUID(), title: taskTitle.trim(), description: null, due_at: dueAt,
-      task_type_id: taskTypeId || null, assignee_uid: taskAssigneeId || null, entity_type: "lead", entity_id: data.id,
+      task_type_id: taskTypeId || null, assignee_uid: taskAssigneeId || null,
+      depends_on_task_id: taskDependsOn || null, lead_id: String(data.id),
+      entity_type: "lead", entity_id: data.id,
       created_at: now, updated_at: now,
     });
     setSavingTask(false);
     if (error) { toast("تعذّر إضافة المهمة", "error"); return; }
     toast("تمت إضافة المهمة");
-    setTaskTitle(""); setTaskDue(""); setTaskTime("09:00"); setTaskTypeId(""); setTaskAssigneeId(""); setAddingTask(false);
+    logAudit(data.id, userId, `📌 تمت إضافة مهمة جديدة: «${taskTitle.trim()}»`);
+    setTaskTitle(""); setTaskDue(""); setTaskTime("09:00"); setTaskTypeId(""); setTaskAssigneeId(""); setTaskDependsOn(""); setAddingTask(false);
     refetchTasks(data.id);
+    refetchActivities(data.id);
   }
 
   async function completeTask(note: string) {
@@ -368,15 +376,90 @@ export default function LeadSlideOver({
       .eq("id", completeTarget.id);
     setCompletingId(null);
     if (error) { toast("تعذّر إنهاء المهمة", "error"); return; }
-    toast("تم إنهاء المهمة");
+    const unblocked = allLeadTasks.filter((t) => t.depends_on_task_id === completeTarget.id && !t.completed_at);
+    if (unblocked.length > 0) {
+      toast(`تم إنهاء المهمة — المهمة التالية جاهزة: ${unblocked[0].title || "مهمة"}`);
+    } else {
+      toast("تم إنهاء المهمة");
+    }
+    logAudit(data.id, userId, `✅ تم إنهاء مهمة: «${completeTarget.title || "مهمة"}»\nملاحظة: ${note}`);
     setCompleteTarget(null);
     refetchTasks(data.id);
+    refetchActivities(data.id);
+  }
+
+  function startEditingInfo() {
+    if (!data) return;
+    setEditName(data.full_name || "");
+    setEditPhone(data.phone || "");
+    setEditEmail(data.email || "");
+    setEditNotes(data.notes || "");
+    setEditOwnerId(data.owner || "");
+    setEditStageId("");
+    setEditSourceId("");
+    setEditingInfo(true);
+  }
+
+  async function saveInfoEdit() {
+    if (!data) return;
+    setSavingInfo(true);
+    const now = new Date().toISOString();
+    const changes: { field: string; oldValue: string | null; newValue: string | null }[] = [];
+    if (editName.trim() !== (data.full_name || "")) changes.push({ field: "full_name", oldValue: data.full_name, newValue: editName.trim() });
+    if (editPhone.trim() !== (data.phone || "")) changes.push({ field: "phone", oldValue: data.phone, newValue: editPhone.trim() });
+    if (editEmail.trim() !== (data.email || "")) changes.push({ field: "email", oldValue: data.email, newValue: editEmail.trim() });
+    if (editNotes.trim() !== (data.notes || "")) changes.push({ field: "notes", oldValue: data.notes ?? null, newValue: editNotes.trim() });
+    if (editOwnerId !== (data.owner || "")) {
+      const oldOwnerName = data.owner ? profileName(profiles.find((p) => p.id === data.owner)) || data.owner : null;
+      const newOwnerName = editOwnerId ? profileName(profiles.find((p) => p.id === editOwnerId)) || editOwnerId : null;
+      changes.push({ field: "owner", oldValue: oldOwnerName, newValue: newOwnerName });
+    }
+    if (editStageId) {
+      const newStage = leadStages.find((s) => s.id === editStageId);
+      changes.push({ field: "stage", oldValue: data.pipeline_stages?.label ?? null, newValue: newStage?.label ?? null });
+    }
+    if (editSourceId) {
+      const newSource = sourcesList.find((s) => s.id === editSourceId);
+      changes.push({ field: "source", oldValue: data.sources?.label ?? null, newValue: newSource?.label ?? null });
+    }
+
+    if (changes.length === 0) { setSavingInfo(false); setEditingInfo(false); return; }
+
+    const patch: Record<string, unknown> = {
+      full_name: editName.trim() || null,
+      normalized_phone: editPhone.trim() || null,
+      normalized_email: editEmail.trim() || null,
+      notes: editNotes.trim() || null,
+      owner_id: editOwnerId || null,
+      updated_at: now,
+    };
+    if (editStageId) patch.stage_id = editStageId;
+    if (editSourceId) patch.primary_source_id = editSourceId;
+
+    const { error } = await supabase.from("leads").update(patch).eq("id", data.id);
+    setSavingInfo(false);
+    if (error) { toast("تعذّر حفظ التعديلات", "error"); console.error("[saveInfoEdit]", error); return; }
+    toast("تم حفظ بيانات العميل");
+    await logAudit(data.id, userId, fieldChangeMessage(changes));
+    const newPatch: Partial<Lead> = { full_name: editName.trim() || null, phone: editPhone.trim() || null, email: editEmail.trim() || null, notes: editNotes.trim() || null, owner: editOwnerId || null };
+    if (editStageId) {
+      const s = leadStages.find((x) => x.id === editStageId);
+      newPatch.pipeline_stages = s ? { label: s.label, color: null } : data.pipeline_stages;
+    }
+    if (editSourceId) {
+      const s = sourcesList.find((x) => x.id === editSourceId);
+      newPatch.sources = s ? { label: s.label } : data.sources;
+    }
+    patchShown(newPatch);
+    setEditingInfo(false);
+    refetchActivities(data.id);
+    onUpdated?.();
   }
 
   const outcomeBadge = isJunkLead
     ? { label: "جنك", cls: "bg-red-50 text-red-600 ring-1 ring-red-200" }
     : isResponded
-    ? { label: "رد العميل", cls: "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200" }
+    ? { label: "رد العميل", cls: "bg-[#f0faf8] text-[#1a5c4f] ring-1 ring-[#b8ddd2]" }
     : isNoResponse
     ? { label: "لم يرد", cls: "bg-amber-50 text-amber-600 ring-1 ring-amber-200" }
     : { label: "جديد", cls: "bg-slate-50 text-slate-500 ring-1 ring-slate-200" };
@@ -399,21 +482,21 @@ export default function LeadSlideOver({
           <>
             {/* ─── Header ──────────────────────────────────────── */}
             <div className="relative flex-none border-b border-slate-200/70 bg-white">
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/[0.03] to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#1a5c4f]/[0.03] to-transparent" />
               <div className="relative flex items-center justify-between px-8 py-6">
                 <div className="flex items-center gap-5">
                   <div className="relative">
-                    <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-700 text-xl font-bold text-white shadow-lg shadow-emerald-600/20">
+                    <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#1a5c4f] text-xl font-bold text-white shadow-sm shadow-[#1a5c4f]/20">
                       {initials(data.full_name)}
                     </span>
-                    <span className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-white ${isResponded ? "bg-emerald-500" : isNoResponse ? "bg-amber-400" : isJunkLead ? "bg-red-400" : "bg-slate-300"}`}>
+                    <span className={`absolute -bottom-1 -left-1 flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-white ${isResponded ? "bg-[#238066]" : isNoResponse ? "bg-amber-400" : isJunkLead ? "bg-red-400" : "bg-slate-300"}`}>
                       <span className="block h-2 w-2 rounded-full bg-white" />
                     </span>
                   </div>
                   <div className="min-w-0">
-                    <h2 dir="auto" className="truncate text-[22px] font-bold text-slate-900">{data.full_name || "Unnamed lead"}</h2>
+                    <h2 dir="auto" className="truncate text-[22px] font-bold text-slate-900">{data.full_name || "عميل بدون اسم"}</h2>
                     <div className="mt-1 flex items-center gap-3">
-                      {data.phone && <span className="text-[14px] text-slate-500">{data.phone}</span>}
+                      {data.phone && <span dir="ltr" className="text-[14px] text-slate-500">{formatPhone(data.phone)}</span>}
                       {data.email && <span className="text-[14px] text-slate-500">{data.email}</span>}
                     </div>
                   </div>
@@ -446,11 +529,11 @@ export default function LeadSlideOver({
                     }}
                     className={`flex items-center gap-2 rounded-xl border-2 px-5 py-3 text-[14px] font-semibold transition-all ${
                       outcomeMode === "responded" || isResponded
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-500/10"
-                        : "border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/50"
+                        ? "border-[#238066] bg-[#f0faf8] text-[#15503f] shadow-sm shadow-[#238066]/10"
+                        : "border-slate-200 text-slate-600 hover:border-[#7ec8b5] hover:bg-[#f0faf8]/50"
                     }`}
                   >
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-[13px]">✅</span>
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#d6f0ea] text-[13px]">✅</span>
                     رد العميل
                   </button>
                   <button
@@ -480,7 +563,7 @@ export default function LeadSlideOver({
                   {canConvert && (
                     <button
                       onClick={() => setDealOpen(true)}
-                      className="mr-auto flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-3 text-[14px] font-bold text-white shadow-md shadow-emerald-600/25 transition hover:shadow-lg hover:shadow-emerald-600/30 active:scale-[0.98]"
+                      className="ml-auto flex items-center gap-2 rounded-xl bg-[#1a5c4f] px-6 py-3 text-[14px] font-bold text-white shadow-sm shadow-[#1a5c4f]/25 transition hover:bg-[#15503f] active:scale-[0.98]"
                     >
                       <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>
                       تحويل إلى صفقة
@@ -489,9 +572,9 @@ export default function LeadSlideOver({
                 </div>
 
                 {outcomeMode === "responded" && (
-                  <div className="mt-5 space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-5">
+                  <div className="mt-5 space-y-4 rounded-xl border border-[#b8ddd2] bg-[#f0faf8]/50 p-5">
                     <div>
-                      <p className="mb-3 text-[13px] font-semibold text-emerald-700">1. اختر طريقة الرد:</p>
+                      <p className="mb-3 text-[13px] font-semibold text-[#15503f]">1. اختر طريقة الرد:</p>
                       <div className="flex flex-wrap gap-2.5">
                         {activityTypes.map((t) => (
                           <button
@@ -499,8 +582,8 @@ export default function LeadSlideOver({
                             onClick={() => setRespondedMethodId(t.id)}
                             className={`rounded-xl border-2 px-5 py-2.5 text-[14px] font-semibold shadow-sm transition ${
                               respondedMethodId === t.id
-                                ? "border-emerald-600 bg-emerald-600 text-white shadow-emerald-600/20"
-                                : "border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-100"
+                                ? "border-[#1a5c4f] bg-[#1a5c4f] text-white shadow-[#1a5c4f]/20"
+                                : "border-[#7ec8b5] bg-white text-[#15503f] hover:bg-[#d6f0ea]"
                             }`}
                           >
                             {t.label}
@@ -510,8 +593,8 @@ export default function LeadSlideOver({
                     </div>
 
                     {respondedMethodId && (
-                      <div className="border-t border-emerald-200 pt-4">
-                        <p className="mb-2 text-[13px] font-semibold text-emerald-700">
+                      <div className="border-t border-[#b8ddd2] pt-4">
+                        <p className="mb-2 text-[13px] font-semibold text-[#15503f]">
                           2. وش صار في التواصل؟ <span className="text-red-500">*</span>
                         </p>
                         <textarea
@@ -521,13 +604,13 @@ export default function LeadSlideOver({
                           rows={4}
                           autoFocus
                           placeholder="اكتب ملخص التواصل… مثلاً: العميل مهتم بنظام كاشير لمطعمه، طلب عرض سعر بكرة"
-                          className="w-full rounded-xl border-2 border-emerald-200 bg-white px-4 py-3 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition resize-none"
+                          className="w-full rounded-xl border-2 border-[#b8ddd2] bg-white px-4 py-3 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-[#238066] focus:outline-none focus:ring-2 focus:ring-[#238066]/20 transition resize-none"
                         />
                         <div className="mt-3 flex gap-2.5">
                           <button
                             onClick={markResponded}
                             disabled={savingOutcome || !respondedNote.trim()}
-                            className="flex-1 h-11 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-[14px] font-bold text-white shadow-md shadow-emerald-600/20 transition hover:shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 h-11 rounded-xl bg-[#1a5c4f] text-[14px] font-bold text-white shadow-sm shadow-[#1a5c4f]/20 transition hover:bg-[#15503f] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {savingOutcome ? "جارِ الحفظ…" : "✓ حفظ الرد"}
                           </button>
@@ -563,21 +646,123 @@ export default function LeadSlideOver({
               </Section>
 
               {/* ─── Lead Details ──────────────────────────────── */}
-              <Section title="بيانات العميل">
-                <div className="grid grid-cols-1 gap-x-8 gap-y-1 sm:grid-cols-2">
-                  <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" /></svg>} label="الاسم" value={data.full_name} />
-                  <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M4 16.5v-13h-.25a.75.75 0 010-1.5h12.5a.75.75 0 010 1.5H16v13h.25a.75.75 0 010 1.5h-3.5a.75.75 0 01-.75-.75v-2.5a.75.75 0 00-.75-.75h-2.5a.75.75 0 00-.75.75v2.5a.75.75 0 01-.75.75h-3.5a.75.75 0 010-1.5z" clipRule="evenodd" /></svg>} label="الشركة" value={data.establishment_name ?? null} />
-                  <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5H15c-1.149 0-2.263-.15-3.326-.43A13.022 13.022 0 012.43 8.326 13.019 13.019 0 012 5V3.5z" /></svg>} label="الجوال" value={data.phone} />
-                  <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path d="M3 4a2 2 0 00-2 2v1.161l8.441 4.221a1.25 1.25 0 001.118 0L19 7.161V6a2 2 0 00-2-2H3z" /><path d="M19 8.839l-7.77 3.885a2.75 2.75 0 01-2.46 0L1 8.839V14a2 2 0 002 2h14a2 2 0 002-2V8.839z" /></svg>} label="الإيميل" value={data.email} />
-                  <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M2 3.5A1.5 1.5 0 013.5 2h9A1.5 1.5 0 0114 3.5v11.75A2.75 2.75 0 0016.75 18h-12A2.75 2.75 0 012 15.25V3.5zm3.75 7a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5zm0-3a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5z" clipRule="evenodd" /></svg>} label="المرحلة" value={data.pipeline_stages?.label ?? null} />
-                  <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" /></svg>} label="المصدر" value={data.sources?.label ?? null} />
-                  <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" /></svg>} label="المسؤول" value={data.owner} />
-                  <InfoRow icon={<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M5.75 2a.75.75 0 01.75.75V4h7V2.75a.75.75 0 011.5 0V4h.25A2.75 2.75 0 0118 6.75v8.5A2.75 2.75 0 0115.25 18H4.75A2.75 2.75 0 012 15.25v-8.5A2.75 2.75 0 014.75 4H5V2.75A.75.75 0 015.75 2zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75z" clipRule="evenodd" /></svg>} label="تاريخ الإنشاء" value={formatDate(data.created_at)} />
-                </div>
-                {data.notes && (
-                  <div className="mt-4 rounded-xl bg-slate-50 p-4">
-                    <p className="mb-1 text-[12px] font-medium uppercase tracking-wider text-slate-400">ملاحظات</p>
-                    <p dir="auto" className="whitespace-pre-wrap text-[14px] leading-relaxed text-slate-700">{data.notes}</p>
+              <Section
+                title="بيانات العميل"
+                action={
+                  editingInfo ? (
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setEditingInfo(false)} className="rounded-lg px-3 py-1.5 text-[13px] font-semibold text-slate-500 transition hover:bg-slate-100">
+                        إلغاء
+                      </button>
+                      <button onClick={saveInfoEdit} disabled={savingInfo} className="rounded-lg bg-[#1a5c4f] px-4 py-1.5 text-[13px] font-semibold text-white transition hover:bg-[#15503f] disabled:opacity-50">
+                        {savingInfo ? "جارِ الحفظ…" : "حفظ"}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={startEditingInfo}
+                      className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold text-[#15503f] transition hover:bg-[#f0faf8]"
+                    >
+                      <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
+                      تعديل
+                    </button>
+                  )
+                }
+              >
+                {editingInfo ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-[13px] font-semibold text-slate-500">الاسم</label>
+                        <input dir="auto" value={editName} onChange={(e) => setEditName(e.target.value)} className={inputCls} />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[13px] font-semibold text-slate-500">الجوال</label>
+                        <input dir="ltr" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className={`${inputCls} text-left`} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-[13px] font-semibold text-slate-500">الإيميل</label>
+                        <input dir="ltr" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className={`${inputCls} text-left`} />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[13px] font-semibold text-slate-500">المسؤول</label>
+                        <select value={editOwnerId} onChange={(e) => setEditOwnerId(e.target.value)} className={selectCls}>
+                          <option value="">بدون مسؤول</option>
+                          {profiles.map((p) => <option key={p.id} value={p.id}>{profileName(p)}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-[13px] font-semibold text-slate-500">المرحلة</label>
+                        <select value={editStageId} onChange={(e) => setEditStageId(e.target.value)} className={selectCls}>
+                          <option value="">{data.pipeline_stages?.label || "بدون مرحلة"}</option>
+                          {leadStages.filter((s) => s.id !== editStageId).map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[13px] font-semibold text-slate-500">المصدر</label>
+                        <select value={editSourceId} onChange={(e) => setEditSourceId(e.target.value)} className={selectCls}>
+                          <option value="">{data.sources?.label || "بدون مصدر"}</option>
+                          {sourcesList.filter((s) => s.id !== editSourceId).map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[13px] font-semibold text-slate-500">ملاحظات</label>
+                      <textarea dir="auto" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={3} className={textareaCls} />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    <div className="grid grid-cols-2 gap-x-6">
+                      <div className="flex items-center justify-between border-b border-slate-100 py-3">
+                        <span className="text-[13px] font-semibold text-slate-400">الاسم</span>
+                        <span className="text-[14px] font-medium text-slate-800">{data.full_name || "—"}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-b border-slate-100 py-3">
+                        <span className="text-[13px] font-semibold text-slate-400">الجوال</span>
+                        <span dir="ltr" className="text-[14px] font-medium text-slate-800">{formatPhone(data.phone)}</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-6">
+                      <div className="flex items-center justify-between border-b border-slate-100 py-3">
+                        <span className="text-[13px] font-semibold text-slate-400">الإيميل</span>
+                        <span dir="ltr" className="text-[14px] font-medium text-slate-800">{data.email || "—"}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-b border-slate-100 py-3">
+                        <span className="text-[13px] font-semibold text-slate-400">الشركة</span>
+                        <span className="text-[14px] font-medium text-slate-800">{data.establishment_name || "—"}</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-6">
+                      <div className="flex items-center justify-between border-b border-slate-100 py-3">
+                        <span className="text-[13px] font-semibold text-slate-400">المرحلة</span>
+                        <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[13px] font-semibold text-slate-700">{data.pipeline_stages?.label || "—"}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-b border-slate-100 py-3">
+                        <span className="text-[13px] font-semibold text-slate-400">المصدر</span>
+                        <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[13px] font-semibold text-slate-700">{data.sources?.label || "—"}</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-6">
+                      <div className="flex items-center justify-between py-3">
+                        <span className="text-[13px] font-semibold text-slate-400">المسؤول</span>
+                        <span className="text-[14px] font-medium text-slate-800">{data.owner ? profileName(profiles.find((p) => p.id === data.owner)) || data.owner : "—"}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-3">
+                        <span className="text-[13px] font-semibold text-slate-400">تاريخ الإنشاء</span>
+                        <span className="text-[14px] font-medium text-slate-800">{formatDate(data.created_at)}</span>
+                      </div>
+                    </div>
+                    {data.notes && (
+                      <div className="pt-3">
+                        <p className="mb-1.5 text-[13px] font-semibold text-slate-400">ملاحظات</p>
+                        <p dir="auto" className="whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-[14px] leading-relaxed text-slate-700">{data.notes}</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </Section>
@@ -585,7 +770,7 @@ export default function LeadSlideOver({
               {/* ─── AI Lead Score ──────────────────────────────── */}
               {!leadScore && (
                 <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-                  <svg className="h-5 w-5 animate-spin text-emerald-600" viewBox="0 0 24 24" fill="none">
+                  <svg className="h-5 w-5 animate-spin text-[#1a5c4f]" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.4 0 0 5.4 0 12h4z" />
                   </svg>
@@ -594,7 +779,7 @@ export default function LeadSlideOver({
               )}
               {leadScore && (
                 <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-                  <div className="border-b border-slate-100 bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4">
+                  <div className="border-b border-slate-100 bg-[#141c2e] px-6 py-4">
                     <h3 className="text-[15px] font-bold text-white">تقييم AI للعميل</h3>
                   </div>
                   <div className="p-6">
@@ -626,15 +811,15 @@ export default function LeadSlideOver({
                         </div>
                       </div>
                     </div>
-                    <div className={`mt-5 rounded-xl p-3.5 text-center text-[14px] font-semibold ${leadScore.isJunk ? "bg-red-50 text-red-700 ring-1 ring-red-200" : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"}`}>
+                    <div className={`mt-5 rounded-xl p-3.5 text-center text-[14px] font-semibold ${leadScore.isJunk ? "bg-red-50 text-red-700 ring-1 ring-red-200" : "bg-[#f0faf8] text-[#15503f] ring-1 ring-[#b8ddd2]"}`}>
                       {leadScore.isJunk ? "🚫 عميل محتمل جنك — أولوية منخفضة" : "✅ عميل واعد — يستحق المتابعة الفورية"}
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-[13px] font-medium text-slate-600">📍 {leadScore.source}</span>
-                      <span className={`rounded-lg px-3 py-1.5 text-[13px] font-medium ${leadScore.hasCampaign ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>
+                      <span className={`rounded-lg px-3 py-1.5 text-[13px] font-medium ${leadScore.hasCampaign ? "bg-[#f0faf8] text-[#1a5c4f]" : "bg-slate-100 text-slate-500"}`}>
                         {leadScore.hasCampaign ? "💰 حملة مدفوعة" : "💰 عضوي"}
                       </span>
-                      <span className={`rounded-lg px-3 py-1.5 text-[13px] font-medium ${leadScore.matched ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>
+                      <span className={`rounded-lg px-3 py-1.5 text-[13px] font-medium ${leadScore.matched ? "bg-[#f0faf8] text-[#1a5c4f]" : "bg-slate-100 text-slate-500"}`}>
                         {leadScore.matched ? "🏢 تم المطابقة" : "🏢 لم يطابق"}
                       </span>
                     </div>
@@ -650,7 +835,7 @@ export default function LeadSlideOver({
                     onClick={() => setActiveTab("activities")}
                     className={`flex-1 py-4 text-center text-[14px] font-semibold transition ${
                       activeTab === "activities"
-                        ? "border-b-2 border-emerald-600 text-emerald-700"
+                        ? "border-b-2 border-[#1a5c4f] text-[#15503f]"
                         : "text-slate-400 hover:text-slate-600"
                     }`}
                   >
@@ -661,7 +846,7 @@ export default function LeadSlideOver({
                     onClick={() => setActiveTab("tasks")}
                     className={`flex-1 py-4 text-center text-[14px] font-semibold transition ${
                       activeTab === "tasks"
-                        ? "border-b-2 border-emerald-600 text-emerald-700"
+                        ? "border-b-2 border-[#1a5c4f] text-[#15503f]"
                         : "text-slate-400 hover:text-slate-600"
                     }`}
                   >
@@ -678,7 +863,7 @@ export default function LeadSlideOver({
                         <p className="text-[13px] text-slate-400">سجّل تواصلك مع العميل</p>
                         <button
                           onClick={() => setAddingActivity((v) => !v)}
-                          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold transition ${addingActivity ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
+                          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold transition ${addingActivity ? "bg-red-50 text-red-600" : "bg-[#f0faf8] text-[#15503f] hover:bg-[#d6f0ea]"}`}
                         >
                           {addingActivity ? "✕ إلغاء" : "+ إضافة نشاط"}
                         </button>
@@ -712,16 +897,25 @@ export default function LeadSlideOver({
                       ) : (
                         <div className="max-h-[420px] space-y-3 overflow-y-auto">
                           {activities.map((a) => (
-                            <div key={a.id} className="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-slate-200">
-                              <div className="mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-emerald-100 text-[14px] text-emerald-600">
-                                📞
+                            <div
+                              key={a.id}
+                              className={`flex gap-3 rounded-xl border p-4 transition ${
+                                a.is_system
+                                  ? "border-slate-100 bg-slate-50/30 hover:border-slate-200"
+                                  : "border-slate-100 bg-slate-50/50 hover:border-slate-200"
+                              }`}
+                            >
+                              <div className={`mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-xl text-[14px] ${a.is_system ? "bg-slate-100 text-slate-500" : "bg-[#d6f0ea] text-[#1a5c4f]"}`}>
+                                {a.is_system ? "⚙️" : "📞"}
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[14px] font-semibold text-slate-800">{a.activity_types?.label ?? "نشاط"}</span>
+                                  <span className={`text-[14px] font-semibold ${a.is_system ? "text-slate-500" : "text-slate-800"}`}>
+                                    {a.is_system ? "سجلّ النظام" : a.activity_types?.label ?? "نشاط"}
+                                  </span>
                                 </div>
                                 <p className="mt-0.5 text-[12px] text-slate-400">{formatDateTime(a.occurred_at)}</p>
-                                {a.body && <p dir="auto" className="mt-1.5 text-[13px] leading-relaxed text-slate-600">{a.body}</p>}
+                                {a.body && <p dir="auto" className="mt-1.5 whitespace-pre-wrap text-[13px] leading-relaxed text-slate-600">{a.body}</p>}
                               </div>
                             </div>
                           ))}
@@ -737,7 +931,7 @@ export default function LeadSlideOver({
                         <p className="text-[13px] text-slate-400">المهام المرتبطة بهذا العميل</p>
                         <button
                           onClick={() => setAddingTask((v) => !v)}
-                          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold transition ${addingTask ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
+                          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold transition ${addingTask ? "bg-red-50 text-red-600" : "bg-[#f0faf8] text-[#15503f] hover:bg-[#d6f0ea]"}`}
                         >
                           {addingTask ? "✕ إلغاء" : "+ إضافة مهمة"}
                         </button>
@@ -758,56 +952,141 @@ export default function LeadSlideOver({
                             <option value="">بدون مسؤول</option>
                             {profiles.map((p) => <option key={p.id} value={p.id}>{profileName(p)}</option>)}
                           </select>
+                          {tasks.length > 0 && (
+                            <select value={taskDependsOn} onChange={(e) => setTaskDependsOn(e.target.value)} className={selectCls}>
+                              <option value="">بدون تسلسل (مستقلة)</option>
+                              {tasks.map((t) => <option key={t.id} value={t.id}>بعد إنجاز: {t.title || "مهمة"}</option>)}
+                            </select>
+                          )}
                           <button onClick={submitTask} disabled={savingTask} className={btnPrimary}>
                             {savingTask ? "جارِ الحفظ…" : "إضافة المهمة"}
                           </button>
                         </div>
                       )}
 
-                      {tasks.length === 0 ? (
+                      {tasks.length === 0 && completedTasks.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-10 text-center">
                           <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
                             <svg viewBox="0 0 20 20" fill="currentColor" className="h-6 w-6 text-slate-400"><path fillRule="evenodd" d="M6 4.75A.75.75 0 016.75 4h10.5a.75.75 0 010 1.5H6.75A.75.75 0 016 4.75zM6 10a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H6.75A.75.75 0 016 10zm0 5.25a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H6.75a.75.75 0 01-.75-.75zM1.99 4.75a1 1 0 011-1h.01a1 1 0 010 2h-.01a1 1 0 01-1-1zM1.99 10a1 1 0 011-1h.01a1 1 0 110 2h-.01a1 1 0 01-1-1zM1.99 15.25a1 1 0 011-1h.01a1 1 0 110 2h-.01a1 1 0 01-1-1z" clipRule="evenodd" /></svg>
                           </div>
-                          <p className="text-[14px] font-medium text-slate-500">لا توجد مهام مفتوحة</p>
+                          <p className="text-[14px] font-medium text-slate-500">لا توجد مهام</p>
                           <p className="mt-1 text-[13px] text-slate-400">أضف مهمة لمتابعة هذا العميل</p>
                         </div>
                       ) : (
-                        <div className="max-h-[420px] space-y-3 overflow-y-auto">
-                          {tasks.map((t) => {
-                            const canAct = canActOnTask(role, userId, t.assignee_uid);
-                            return (
-                            <div key={t.id} className={`group flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-slate-200 ${completingId === t.id ? "opacity-40" : ""}`}>
-                              {canAct ? (
-                                <button
-                                  onClick={() => setCompleteTarget(t)}
-                                  aria-label="إنهاء المهمة"
-                                  className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full border-2 border-slate-300 transition hover:border-emerald-500 hover:bg-emerald-50 group-hover:border-emerald-400"
-                                />
-                              ) : (
-                                <span title="بس المسؤول عن المهمة يقدر ينهيها" className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full border-2 border-slate-200 opacity-50" />
-                              )}
-                              <div className="min-w-0 flex-1">
-                                <p dir="auto" className="text-[14px] font-semibold text-slate-800">{t.title || "مهمة بدون عنوان"}</p>
-                                <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                                  {t.task_types?.label && (
-                                    <span className="rounded-lg bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-700">{t.task_types.label}</span>
-                                  )}
-                                  {t.due_at && (
-                                    <span className="flex items-center gap-1 text-[12px] text-slate-400">
-                                      <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5"><path fillRule="evenodd" d="M4 1.75a.75.75 0 01.75.75V3h6.5V2.5a.75.75 0 011.5 0V3h.25A2.75 2.75 0 0115.75 5.75v6.5A2.75 2.75 0 0113 15H3A2.75 2.75 0 01.25 12.25v-6.5A2.75 2.75 0 013 3h.25V2.5A.75.75 0 014 1.75z" clipRule="evenodd" /></svg>
-                                      {formatDateTime(t.due_at)}
-                                    </span>
-                                  )}
-                                  {t.assignee_uid && (
-                                    <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[12px] font-medium text-slate-500">
-                                      👤 {profileName(profiles.find((p) => p.id === t.assignee_uid))}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
+                        <div className="max-h-[420px] overflow-y-auto">
+                          {/* Open tasks with sequence visualization */}
+                          {tasks.length > 0 && (
+                            <div className="relative">
+                              {tasks.map((t, idx) => {
+                                const canAct = canActOnTask(role, userId, t.assignee_uid);
+                                const depTask = t.depends_on_task_id ? allLeadTasks.find((x) => x.id === t.depends_on_task_id) : null;
+                                const isBlocked = !!depTask && !depTask.completed_at;
+                                const hasDependent = allLeadTasks.some((x) => x.depends_on_task_id === t.id && !x.completed_at);
+                                const isPartOfChain = !!t.depends_on_task_id || hasDependent;
+                                return (
+                                  <div key={t.id} className="relative">
+                                    {/* Vertical connector line between chained tasks */}
+                                    {isPartOfChain && idx < tasks.length - 1 && allLeadTasks.some((x) => x.depends_on_task_id === t.id) && (
+                                      <div className="absolute left-[19px] top-[52px] bottom-0 w-0.5 bg-gradient-to-b from-[#7ec8b5] to-amber-300 z-0" />
+                                    )}
+                                    <div className={`relative z-10 group flex items-start gap-3 rounded-xl border p-4 transition mb-2 ${isBlocked ? "border-amber-200 bg-amber-50/30" : "border-slate-100 bg-slate-50/50 hover:border-slate-200"} ${completingId === t.id ? "opacity-40" : ""}`}>
+                                      {/* Step indicator */}
+                                      <div className="flex flex-col items-center gap-1 flex-none">
+                                        {isBlocked ? (
+                                          <span title="معلّقة بانتظار مهمة أخرى" className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-dashed border-amber-400 bg-amber-50">
+                                            <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5 text-amber-500"><path fillRule="evenodd" d="M8 1a7 7 0 100 14A7 7 0 008 1zM7.25 4.5a.75.75 0 011.5 0v3.25H11a.75.75 0 010 1.5H7.25V4.5z" clipRule="evenodd" /></svg>
+                                          </span>
+                                        ) : canAct ? (
+                                          <button
+                                            onClick={() => setCompleteTarget(t)}
+                                            aria-label="إنهاء المهمة"
+                                            className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#3a9080] bg-white transition hover:bg-[#f0faf8] group-hover:border-[#238066]"
+                                          />
+                                        ) : (
+                                          <span title="بس المسؤول عن المهمة يقدر ينهيها" className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-slate-200 opacity-50" />
+                                        )}
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <p dir="auto" className={`text-[14px] font-semibold ${isBlocked ? "text-slate-500" : "text-slate-800"}`}>{t.title || "مهمة بدون عنوان"}</p>
+                                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                          {isBlocked && (
+                                            <span className="flex items-center gap-1 rounded-lg bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                                              ⏳ بانتظار: {depTask?.title || "مهمة"}
+                                            </span>
+                                          )}
+                                          {!isBlocked && isPartOfChain && !t.depends_on_task_id && (
+                                            <span className="rounded-lg bg-[#f0faf8] px-2.5 py-1 text-[11px] font-semibold text-[#1a5c4f]">الخطوة الأولى</span>
+                                          )}
+                                          {t.task_types?.label && (
+                                            <span className="rounded-lg bg-[#f0faf8] px-2.5 py-1 text-[12px] font-semibold text-[#15503f]">{t.task_types.label}</span>
+                                          )}
+                                          {t.due_at && (
+                                            <span className="flex items-center gap-1 text-[12px] text-slate-400">
+                                              <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5"><path fillRule="evenodd" d="M4 1.75a.75.75 0 01.75.75V3h6.5V2.5a.75.75 0 011.5 0V3h.25A2.75 2.75 0 0115.75 5.75v6.5A2.75 2.75 0 0113 15H3A2.75 2.75 0 01.25 12.25v-6.5A2.75 2.75 0 013 3h.25V2.5A.75.75 0 014 1.75z" clipRule="evenodd" /></svg>
+                                              {formatDateTime(t.due_at)}
+                                            </span>
+                                          )}
+                                          {t.assignee_uid && (
+                                            <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[12px] font-medium text-slate-500">
+                                              {profileName(profiles.find((p) => p.id === t.assignee_uid))}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
-                          );})}
+                          )}
+
+                          {/* Completed tasks history */}
+                          {completedTasks.length > 0 && (
+                            <div className="mt-4">
+                              <button
+                                onClick={() => setShowHistory(!showHistory)}
+                                className="flex w-full items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-[13px] font-semibold text-slate-500 transition hover:bg-slate-100"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-slate-400"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" /></svg>
+                                  مهام منجزة ({completedTasks.length})
+                                </span>
+                                <svg viewBox="0 0 20 20" fill="currentColor" className={`h-4 w-4 text-slate-400 transition-transform ${showHistory ? "rotate-180" : ""}`}><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
+                              </button>
+                              {showHistory && (
+                                <div className="mt-2 space-y-2">
+                                  {completedTasks.map((t) => (
+                                    <div key={t.id} className="rounded-xl border border-slate-100 bg-white p-4">
+                                      <div className="flex items-start gap-3">
+                                        <span className="mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[#d6f0ea]">
+                                          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-[#1a5c4f]"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></svg>
+                                        </span>
+                                        <div className="min-w-0 flex-1">
+                                          <p dir="auto" className="text-[14px] font-semibold text-slate-600 line-through">{t.title || "مهمة"}</p>
+                                          {t.completion_note && (
+                                            <div className="mt-2 rounded-lg bg-[#f0faf8] px-3 py-2">
+                                              <p className="text-[11px] font-semibold text-[#15503f] mb-0.5">ملاحظة الإنجاز:</p>
+                                              <p dir="auto" className="text-[13px] leading-relaxed text-[#0d3b30]">{t.completion_note}</p>
+                                            </div>
+                                          )}
+                                          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                            {t.completed_at && (
+                                              <span className="text-[12px] text-slate-400">تم بتاريخ {formatDateTime(t.completed_at)}</span>
+                                            )}
+                                            {t.assignee_uid && (
+                                              <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[12px] font-medium text-slate-500">
+                                                {profileName(profiles.find((p) => p.id === t.assignee_uid))}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
                     </>

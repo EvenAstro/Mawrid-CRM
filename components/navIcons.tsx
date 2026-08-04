@@ -177,6 +177,15 @@ export const LogoutIcon = ({ className }: P) => (
   </Svg>
 );
 
+/* coach / performance */
+export const CoachIcon = ({ className }: P) => (
+  <Svg className={className}>
+    <path d="M12 2a4 4 0 0 0-4 4v2a4 4 0 0 0 8 0V6a4 4 0 0 0-4-4Z" />
+    <path d="M18 20c0-3.3-2.7-6-6-6s-6 2.7-6 6" />
+    <path d="M15 11l2 2 3.5-3.5" />
+  </Svg>
+);
+
 /* team / users management */
 export const UsersIcon = ({ className }: P) => (
   <Svg className={className}>

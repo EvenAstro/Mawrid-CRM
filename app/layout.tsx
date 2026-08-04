@@ -9,9 +9,9 @@ const cairo = Cairo({
 });
 
 export const metadata: Metadata = {
-  title: "Mawrid CRM — Internal Sales Platform",
+  title: "مَوْرد CRM — منصة إدارة العملاء",
   description:
-    "Mawrid CRM — the internal workspace for our sales, marketing, and support teams to track leads, close deals, and grow revenue.",
+    "مَوْرد CRM — منصة داخلية لفرق المبيعات والتسويق والدعم لمتابعة العملاء وإغلاق الصفقات وتنمية الإيرادات.",
 };
 
 export default function RootLayout({
@@ -20,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${cairo.variable} h-full antialiased`}>
+    <html lang="ar" dir="rtl" className={`${cairo.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-white font-sans">{children}</body>
     </html>
   );
