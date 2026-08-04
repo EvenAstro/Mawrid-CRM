@@ -49,8 +49,13 @@ export default function NotificationsDropdown() {
 
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
-    const { data: userRes } = await supabase.auth.getUser();
-    const userId = userRes.user?.id;
+    let userId: string | undefined;
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      userId = userRes.user?.id;
+    } catch (err) {
+      console.error("[NotificationsDropdown] getUser failed", err);
+    }
     if (!userId) {
       setLoading(false);
       return;

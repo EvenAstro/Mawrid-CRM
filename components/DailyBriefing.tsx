@@ -178,7 +178,12 @@ export default function DailyBriefing() {
   useEffect(() => {
     let cancelled = false;
     async function init() {
-      const { data: userRes } = await supabase.auth.getUser();
+      let userRes: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"] = { user: null };
+      try {
+        ({ data: userRes } = await supabase.auth.getUser());
+      } catch (err) {
+        console.error("[DailyBriefing] getUser failed", err);
+      }
       const name = (userRes.user?.user_metadata?.full_name as string) || (userRes.user?.email ?? "").split("@")[0] || "";
       let briefing: BriefingData;
       try {

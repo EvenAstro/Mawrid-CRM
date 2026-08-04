@@ -24,7 +24,13 @@ export async function fetchProfiles(): Promise<Profile[]> {
 }
 
 export async function fetchCurrentProfile(): Promise<Profile | null> {
-  const { data: userRes } = await supabase.auth.getUser();
+  let userRes;
+  try {
+    ({ data: userRes } = await supabase.auth.getUser());
+  } catch (err) {
+    console.error("[profiles] getUser failed", err);
+    return null;
+  }
   if (!userRes.user) return null;
   const { data, error } = await supabase
     .from("profiles")
