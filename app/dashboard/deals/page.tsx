@@ -147,7 +147,7 @@ export default function DealsPage() {
                 "المرحلة": d.pipeline_stages?.label ?? "",
                 "القيمة": dealValue(d),
                 "الاحتمالية": d.probability_pct != null ? `${d.probability_pct}%` : "",
-                "تاريخ الإغلاق المتوقع": d.target_close_date ?? "",
+                "تاريخ الإغلاق المتوقع": formatDate(d.target_close_date),
               })))}
               disabled={!filtered.length}
               className="rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-white/10 disabled:opacity-40"

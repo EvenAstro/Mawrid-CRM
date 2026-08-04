@@ -90,9 +90,9 @@ export default function ContactsPage() {
       "الاسم": c.full_name ?? "",
       "الشركة": c.establishments?.name ?? "",
       "المنصب": c.role ?? "",
-      "الجوال": c.phone ?? "",
+      "الجوال": formatPhone(c.phone),
       "الإيميل": c.email ?? "",
-      "تاريخ الإضافة": c.created_at ?? "",
+      "تاريخ الإضافة": formatDate(c.created_at),
     })));
   }
 

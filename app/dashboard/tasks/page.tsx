@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
-import { formatTime, profileName, downloadCSV } from "@/lib/format";
+import { formatTime, formatDateTime, profileName, downloadCSV } from "@/lib/format";
 import Button from "@/components/ui/Button";
 import SlideOver from "@/components/ui/SlideOver";
 import Skeleton from "@/components/ui/Skeleton";
@@ -284,7 +284,7 @@ export default function TasksPage() {
               onClick={() => downloadCSV(`tasks-${new Date().toISOString().slice(0, 10)}.csv`, visible.map((t) => ({
                 "العنوان": t.title ?? "",
                 "النوع": t.task_types?.label ?? "",
-                "تاريخ الاستحقاق": t.due_at ?? "",
+                "تاريخ الاستحقاق": formatDateTime(t.due_at),
                 "المسؤول": t.assignee_uid ? profileName(profileMap.get(t.assignee_uid)) : "",
               })))}
               disabled={!visible.length}

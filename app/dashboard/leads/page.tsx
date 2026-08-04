@@ -264,13 +264,13 @@ export default function LeadsPage() {
   function exportRows(rows: Lead[]) {
     downloadCSV(`leads-${new Date().toISOString().slice(0, 10)}.csv`, rows.map((l) => ({
       "الاسم": l.full_name ?? "",
-      "الجوال": l.phone ?? "",
+      "الجوال": formatPhone(l.phone),
       "الإيميل": l.email ?? "",
       "المصدر": l.sources?.label ?? "",
       "المرحلة": l.pipeline_stages?.label ?? "",
       "تقييم AI": scoreCache.get(l.id) ?? getAIScore(l, scoreModel),
       "المسؤول": l.owner ?? "",
-      "تاريخ الإضافة": l.created_at ?? "",
+      "تاريخ الإضافة": formatDate(l.created_at),
     })));
   }
 
