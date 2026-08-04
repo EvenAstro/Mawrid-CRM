@@ -69,7 +69,9 @@ export function downloadCSV(filename: string, rows: Record<string, string | numb
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const csv = [headers.join(","), ...rows.map((r) => headers.map((h) => escape(r[h])).join(","))].join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  // Prefix a UTF-8 BOM so Excel (which otherwise guesses Windows-1252) renders
+  // Arabic text correctly instead of mojibake.
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
