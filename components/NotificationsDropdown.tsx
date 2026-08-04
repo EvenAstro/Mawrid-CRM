@@ -54,7 +54,7 @@ export default function NotificationsDropdown() {
       const { data: userRes } = await supabase.auth.getUser();
       userId = userRes.user?.id;
     } catch (err) {
-      console.error("[NotificationsDropdown] getUser failed", err);
+      console.warn("[NotificationsDropdown] getUser failed", err);
     }
     if (!userId) {
       setLoading(false);
