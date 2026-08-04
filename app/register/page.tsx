@@ -131,12 +131,12 @@ export default function RegisterPage() {
                 <label className="mb-1.5 block text-sm font-medium text-[#475569]">الاسم الأول</label>
                 <div className="relative">
                   <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8]"><UserIcon className="h-4 w-4" /></span>
-                  <input dir="auto" type="text" autoComplete="off" readOnly onFocus={(e) => e.target.removeAttribute("readonly")} value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="خالد" className={inputCls} />
+                  <input dir="auto" type="text" autoComplete="off" name="reg-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="خالد" className={inputCls} />
                 </div>
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-[#475569]">الاسم الأخير</label>
-                <input dir="auto" type="text" autoComplete="off" readOnly onFocus={(e) => e.target.removeAttribute("readonly")} value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="محمد" className="h-12 w-full rounded-xl border border-[#e8ece9] bg-white px-4 text-[15px] text-[#1e1b4b] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/10 transition-all" />
+                <input dir="auto" type="text" autoComplete="off" name="reg-last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="محمد" className="h-12 w-full rounded-xl border border-[#e8ece9] bg-white px-4 text-[15px] text-[#1e1b4b] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/10 transition-all" />
               </div>
             </div>
 
@@ -144,7 +144,7 @@ export default function RegisterPage() {
               <label className="mb-1.5 block text-sm font-medium text-[#475569]">البريد الإلكتروني</label>
               <div className="relative">
                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8]"><MailIcon className="h-4 w-4" /></span>
-                <input dir="ltr" type="email" autoComplete="off" readOnly onFocus={(e) => e.target.removeAttribute("readonly")} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" className={`${inputCls} text-left`} />
+                <input dir="ltr" type="email" autoComplete="off" name="reg-email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" className={`${inputCls} text-left`} />
               </div>
             </div>
 
@@ -152,7 +152,7 @@ export default function RegisterPage() {
               <label className="mb-1.5 block text-sm font-medium text-[#475569]">كلمة المرور</label>
               <div className="relative">
                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8]"><LockIcon className="h-4 w-4" /></span>
-                <input dir="ltr" type={showPass ? "text" : "password"} autoComplete="new-password" readOnly onFocus={(e) => e.target.removeAttribute("readonly")} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className={`${inputCls} pl-11 text-left`} />
+                <input dir="ltr" type={showPass ? "text" : "password"} autoComplete="new-password" name="reg-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className={`${inputCls} pl-11 text-left`} />
                 <button type="button" onClick={() => setShowPass((v) => !v)} aria-label={showPass ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#475569]">
                   {showPass ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                 </button>
@@ -173,7 +173,7 @@ export default function RegisterPage() {
               <label className="mb-1.5 block text-sm font-medium text-[#475569]">تأكيد كلمة المرور</label>
               <div className="relative">
                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8]"><LockIcon className="h-4 w-4" /></span>
-                <input dir="ltr" type={showPass ? "text" : "password"} autoComplete="new-password" readOnly onFocus={(e) => e.target.removeAttribute("readonly")} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" className={`${inputCls} text-left`} />
+                <input dir="ltr" type={showPass ? "text" : "password"} autoComplete="new-password" name="reg-confirm-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" className={`${inputCls} text-left`} />
               </div>
             </div>
 
