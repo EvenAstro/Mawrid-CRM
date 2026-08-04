@@ -91,7 +91,7 @@ export default function LoginPage() {
               <label className="mb-1.5 block text-sm font-medium text-[#475569]">البريد الإلكتروني</label>
               <div className="relative">
                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8]"><MailIcon className="h-4 w-4" /></span>
-                <input dir="ltr" type="email" autoComplete="off" readOnly onFocus={(e) => e.target.removeAttribute("readonly")} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" className={`${inputCls} text-left`} />
+                <input dir="ltr" type="email" autoComplete="off" name="login-email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" className={`${inputCls} text-left`} />
               </div>
             </div>
 
@@ -99,7 +99,7 @@ export default function LoginPage() {
               <label className="mb-1.5 block text-sm font-medium text-[#475569]">كلمة المرور</label>
               <div className="relative">
                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8]"><LockIcon className="h-4 w-4" /></span>
-                <input dir="ltr" type={showPass ? "text" : "password"} autoComplete="new-password" readOnly onFocus={(e) => e.target.removeAttribute("readonly")} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className={`${inputCls} pl-11 text-left`} />
+                <input dir="ltr" type={showPass ? "text" : "password"} autoComplete="new-password" name="login-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className={`${inputCls} pl-11 text-left`} />
                 <button type="button" onClick={() => setShowPass((v) => !v)} aria-label={showPass ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#475569]">
                   {showPass ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                 </button>
