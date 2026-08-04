@@ -250,28 +250,6 @@ function TypingDots() {
   );
 }
 
-function ChatBubble({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
-  return (
-    <div
-      className="flex gap-2.5 items-start"
-      style={{ animation: `sv-entry 0.4s ease-out ${delay}ms both` }}
-    >
-      <div className="flex-shrink-0 mt-1 h-7 w-7 rounded-full bg-[#141c2e] flex items-center justify-center">
-        <svg viewBox="0 0 200 200" className="h-4 w-4">
-          <rect x="48" y="30" width="104" height="85" rx="36" fill="#e8f2ed" />
-          <rect x="56" y="46" width="88" height="50" rx="22" fill="#1a2e3a" />
-          <ellipse cx="78" cy="70" rx="8" ry="7" fill="#38d39f" />
-          <ellipse cx="122" cy="70" rx="8" ry="7" fill="#38d39f" />
-          <path d="M 88 88 Q 100 96 112 88" fill="none" stroke="#38d39f" strokeWidth="2.5" strokeLinecap="round" />
-        </svg>
-      </div>
-      <div className="max-w-[85%] rounded-2xl rounded-tr-md bg-white border border-[#e8ece9] px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-        {children}
-      </div>
-    </div>
-  );
-}
-
 export default function SupervisorBot() {
   const router = useRouter();
   const [open, setOpen] = useState(false);

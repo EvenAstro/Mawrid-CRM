@@ -109,7 +109,7 @@ function GroupCard({ g, baselineWinRatePct }: { g: PlaybookGroup; baselineWinRat
         <div className="mt-3 flex items-center justify-between border-t border-gray-50 pt-3 text-[11.5px]">
           <span className="text-muted">قيمة المربوح</span>
           <div className="flex items-center gap-2 tabular-nums">
-            {g.wonValueSAR > 0 && <span className="font-bold text-[#1e1b4b]">SAR {money(g.wonValueSAR)}</span>}
+            {g.wonValueSAR > 0 && <span className="font-bold text-ink">SAR {money(g.wonValueSAR)}</span>}
             {g.wonValueMissingCount > 0 && (
               <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700" title="عدد الصفقات المربوحة اللي ما فيها قيمة مسجّلة">
                 +{g.wonValueMissingCount} بلا قيمة
@@ -392,13 +392,7 @@ export default function PlaybookPage() {
   return (
     <div className="flex flex-col gap-7">
       {/* ═══ 1. HERO ═══════════════════════════════════════════════ */}
-      <section
-        className="relative overflow-hidden rounded-3xl p-8 text-white shadow-[0_10px_30px_rgba(15,23,20,0.12)]"
-        style={{ background: "linear-gradient(135deg, #0d3b30 0%, #1a5c4f 60%, #2d8570 100%)" }}
-      >
-        <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-white/[0.05]" />
-        <div className="absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-white/[0.03]" />
-
+      <section className="relative overflow-hidden rounded-3xl bg-[#141c2e] p-8 text-white">
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 backdrop-blur-sm">

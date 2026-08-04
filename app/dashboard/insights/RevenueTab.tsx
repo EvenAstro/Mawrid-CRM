@@ -403,8 +403,8 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
 }
 
 /* ═══ KPI Card ════════════════════════════════════════════════════════════ */
-function KpiCard({label,note,value,fmt,unit,accent,grad,icon,spark,ring,trend}:
-  {label:string;note:string;value:number;fmt?:(n:number)=>string;unit?:string;accent:string;grad:string;icon:React.ReactNode;spark?:number[];ring?:{pct:number};trend?:{val:number;up:boolean}}) {
+function KpiCard({label,note,value,fmt,unit,accent,icon,spark,ring,trend}:
+  {label:string;note:string;value:number;fmt?:(n:number)=>string;unit?:string;accent:string;icon:React.ReactNode;spark?:number[];ring?:{pct:number};trend?:{val:number;up:boolean}}) {
   return (
     <div className="ri-card ri-lift relative rounded-2xl border border-[#d6ece5] bg-white shadow-[0_2px_8px_rgba(26,92,79,0.05)] h-full flex flex-col">
       <div className="relative p-5 flex flex-col flex-1">
@@ -989,7 +989,7 @@ export default function RevenueTab() {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
           <div className="xl:col-span-2">
             <KpiCard label="في خطر عالٍ" note="تحتاج تدخل فوري" value={data.atRiskCount} fmt={n=>`${n}`} unit="صفقة"
-              accent={C.r4} grad="linear-gradient(135deg,#dc2626,#f87171)" spark={data.weeklyHistory.slice(-8).map((_,i)=>Math.max(0,data.atRiskCount-i%2))}
+              accent={C.r4} spark={data.weeklyHistory.slice(-8).map((_,i)=>Math.max(0,data.atRiskCount-i%2))}
               icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M8.6 3.2 1.5 15a2 2 0 0 0 1.4 2.5h14.2a2 2 0 0 0 1.4-2.5L11.4 3.2a2 2 0 0 0-2.8 0z"/><line x1="10" y1="7" x2="10" y2="11"/><line x1="10" y1="14" x2="10.01" y2="14"/></svg>}/>
           </div>
           <div className="sm:col-span-2 xl:col-span-1 row-span-2">
@@ -997,13 +997,13 @@ export default function RevenueTab() {
           </div>
           <div>
             <KpiCard label="نسبة الفوز" note={`${data.wonThisMonthCount} ربح · ${data.lostThisMonthCount} خسارة`}
-              value={data.winRateThisMonth} fmt={n=>`${n}%`} accent={C.e4} grad="linear-gradient(135deg,#059669,#34d399)"
+              value={data.winRateThisMonth} fmt={n=>`${n}%`} accent={C.e4}
               ring={{pct:data.winRateThisMonth}}
               icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><circle cx="10" cy="7" r="5"/><path d="m8 10 2 2 2-2M10 18v-5"/></svg>}/>
           </div>
           <div>
             <KpiCard label="متوسط الصفقة" note="للصفقات النشطة" value={data.avgDealSAR} unit="ر.س"
-              accent={C.i4} grad="linear-gradient(135deg,#4338ca,#818cf8)" spark={wonSpark}
+              accent={C.i4} spark={wonSpark}
               icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><line x1="10" y1="1" x2="10" y2="19"/><path d="M14 4H8a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6H5"/></svg>}/>
           </div>
         </div>

@@ -94,10 +94,10 @@ function Section({ title, action, children }: { title: string; action?: React.Re
 }
 
 /* ─── Styled form input ─────────────────────────────────────────────── */
-const inputCls = "h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition";
-const selectCls = "h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-[14px] text-slate-700 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition appearance-none";
-const textareaCls = "w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition resize-none";
-const btnPrimary = "h-11 w-full rounded-xl bg-emerald-600 text-[14px] font-semibold text-white shadow-sm shadow-emerald-600/20 transition hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50";
+const inputCls = "h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-[#3a9080] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3a9080]/20 transition";
+const selectCls = "h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 text-[14px] text-slate-700 focus:border-[#3a9080] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3a9080]/20 transition appearance-none";
+const textareaCls = "w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-[#3a9080] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3a9080]/20 transition resize-none";
+const btnPrimary = "h-11 w-full rounded-xl bg-[#1a5c4f] text-[14px] font-semibold text-white shadow-sm shadow-[#1a5c4f]/20 transition hover:bg-[#15503f] active:scale-[0.98] disabled:opacity-50";
 
 export default function LeadSlideOver({
   lead,
@@ -160,7 +160,6 @@ export default function LeadSlideOver({
   const [editStageId, setEditStageId] = useState("");
   const [editSourceId, setEditSourceId] = useState("");
   const [editOwnerId, setEditOwnerId] = useState("");
-  const [editCompany, setEditCompany] = useState("");
   const [savingInfo, setSavingInfo] = useState(false);
 
   const open = lead != null;
@@ -398,7 +397,6 @@ export default function LeadSlideOver({
     setEditOwnerId(data.owner || "");
     setEditStageId("");
     setEditSourceId("");
-    setEditCompany(data.establishment_name || "");
     setEditingInfo(true);
   }
 
@@ -461,7 +459,7 @@ export default function LeadSlideOver({
   const outcomeBadge = isJunkLead
     ? { label: "جنك", cls: "bg-red-50 text-red-600 ring-1 ring-red-200" }
     : isResponded
-    ? { label: "رد العميل", cls: "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200" }
+    ? { label: "رد العميل", cls: "bg-[#f0faf8] text-[#1a5c4f] ring-1 ring-[#b8ddd2]" }
     : isNoResponse
     ? { label: "لم يرد", cls: "bg-amber-50 text-amber-600 ring-1 ring-amber-200" }
     : { label: "جديد", cls: "bg-slate-50 text-slate-500 ring-1 ring-slate-200" };
@@ -484,14 +482,14 @@ export default function LeadSlideOver({
           <>
             {/* ─── Header ──────────────────────────────────────── */}
             <div className="relative flex-none border-b border-slate-200/70 bg-white">
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/[0.03] to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#1a5c4f]/[0.03] to-transparent" />
               <div className="relative flex items-center justify-between px-8 py-6">
                 <div className="flex items-center gap-5">
                   <div className="relative">
-                    <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-700 text-xl font-bold text-white shadow-lg shadow-emerald-600/20">
+                    <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#1a5c4f] text-xl font-bold text-white shadow-sm shadow-[#1a5c4f]/20">
                       {initials(data.full_name)}
                     </span>
-                    <span className={`absolute -bottom-1 -left-1 flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-white ${isResponded ? "bg-emerald-500" : isNoResponse ? "bg-amber-400" : isJunkLead ? "bg-red-400" : "bg-slate-300"}`}>
+                    <span className={`absolute -bottom-1 -left-1 flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-white ${isResponded ? "bg-[#238066]" : isNoResponse ? "bg-amber-400" : isJunkLead ? "bg-red-400" : "bg-slate-300"}`}>
                       <span className="block h-2 w-2 rounded-full bg-white" />
                     </span>
                   </div>
@@ -531,11 +529,11 @@ export default function LeadSlideOver({
                     }}
                     className={`flex items-center gap-2 rounded-xl border-2 px-5 py-3 text-[14px] font-semibold transition-all ${
                       outcomeMode === "responded" || isResponded
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-500/10"
-                        : "border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/50"
+                        ? "border-[#238066] bg-[#f0faf8] text-[#15503f] shadow-sm shadow-[#238066]/10"
+                        : "border-slate-200 text-slate-600 hover:border-[#7ec8b5] hover:bg-[#f0faf8]/50"
                     }`}
                   >
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-[13px]">✅</span>
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#d6f0ea] text-[13px]">✅</span>
                     رد العميل
                   </button>
                   <button
@@ -565,7 +563,7 @@ export default function LeadSlideOver({
                   {canConvert && (
                     <button
                       onClick={() => setDealOpen(true)}
-                      className="ml-auto flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-3 text-[14px] font-bold text-white shadow-md shadow-emerald-600/25 transition hover:shadow-lg hover:shadow-emerald-600/30 active:scale-[0.98]"
+                      className="ml-auto flex items-center gap-2 rounded-xl bg-[#1a5c4f] px-6 py-3 text-[14px] font-bold text-white shadow-sm shadow-[#1a5c4f]/25 transition hover:bg-[#15503f] active:scale-[0.98]"
                     >
                       <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>
                       تحويل إلى صفقة
@@ -574,9 +572,9 @@ export default function LeadSlideOver({
                 </div>
 
                 {outcomeMode === "responded" && (
-                  <div className="mt-5 space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-5">
+                  <div className="mt-5 space-y-4 rounded-xl border border-[#b8ddd2] bg-[#f0faf8]/50 p-5">
                     <div>
-                      <p className="mb-3 text-[13px] font-semibold text-emerald-700">1. اختر طريقة الرد:</p>
+                      <p className="mb-3 text-[13px] font-semibold text-[#15503f]">1. اختر طريقة الرد:</p>
                       <div className="flex flex-wrap gap-2.5">
                         {activityTypes.map((t) => (
                           <button
@@ -584,8 +582,8 @@ export default function LeadSlideOver({
                             onClick={() => setRespondedMethodId(t.id)}
                             className={`rounded-xl border-2 px-5 py-2.5 text-[14px] font-semibold shadow-sm transition ${
                               respondedMethodId === t.id
-                                ? "border-emerald-600 bg-emerald-600 text-white shadow-emerald-600/20"
-                                : "border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-100"
+                                ? "border-[#1a5c4f] bg-[#1a5c4f] text-white shadow-[#1a5c4f]/20"
+                                : "border-[#7ec8b5] bg-white text-[#15503f] hover:bg-[#d6f0ea]"
                             }`}
                           >
                             {t.label}
@@ -595,8 +593,8 @@ export default function LeadSlideOver({
                     </div>
 
                     {respondedMethodId && (
-                      <div className="border-t border-emerald-200 pt-4">
-                        <p className="mb-2 text-[13px] font-semibold text-emerald-700">
+                      <div className="border-t border-[#b8ddd2] pt-4">
+                        <p className="mb-2 text-[13px] font-semibold text-[#15503f]">
                           2. وش صار في التواصل؟ <span className="text-red-500">*</span>
                         </p>
                         <textarea
@@ -606,13 +604,13 @@ export default function LeadSlideOver({
                           rows={4}
                           autoFocus
                           placeholder="اكتب ملخص التواصل… مثلاً: العميل مهتم بنظام كاشير لمطعمه، طلب عرض سعر بكرة"
-                          className="w-full rounded-xl border-2 border-emerald-200 bg-white px-4 py-3 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition resize-none"
+                          className="w-full rounded-xl border-2 border-[#b8ddd2] bg-white px-4 py-3 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-[#238066] focus:outline-none focus:ring-2 focus:ring-[#238066]/20 transition resize-none"
                         />
                         <div className="mt-3 flex gap-2.5">
                           <button
                             onClick={markResponded}
                             disabled={savingOutcome || !respondedNote.trim()}
-                            className="flex-1 h-11 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-[14px] font-bold text-white shadow-md shadow-emerald-600/20 transition hover:shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 h-11 rounded-xl bg-[#1a5c4f] text-[14px] font-bold text-white shadow-sm shadow-[#1a5c4f]/20 transition hover:bg-[#15503f] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {savingOutcome ? "جارِ الحفظ…" : "✓ حفظ الرد"}
                           </button>
@@ -656,14 +654,14 @@ export default function LeadSlideOver({
                       <button onClick={() => setEditingInfo(false)} className="rounded-lg px-3 py-1.5 text-[13px] font-semibold text-slate-500 transition hover:bg-slate-100">
                         إلغاء
                       </button>
-                      <button onClick={saveInfoEdit} disabled={savingInfo} className="rounded-lg bg-emerald-600 px-4 py-1.5 text-[13px] font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50">
+                      <button onClick={saveInfoEdit} disabled={savingInfo} className="rounded-lg bg-[#1a5c4f] px-4 py-1.5 text-[13px] font-semibold text-white transition hover:bg-[#15503f] disabled:opacity-50">
                         {savingInfo ? "جارِ الحفظ…" : "حفظ"}
                       </button>
                     </div>
                   ) : (
                     <button
                       onClick={startEditingInfo}
-                      className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold text-emerald-700 transition hover:bg-emerald-50"
+                      className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold text-[#15503f] transition hover:bg-[#f0faf8]"
                     >
                       <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
                       تعديل
@@ -772,7 +770,7 @@ export default function LeadSlideOver({
               {/* ─── AI Lead Score ──────────────────────────────── */}
               {!leadScore && (
                 <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-                  <svg className="h-5 w-5 animate-spin text-emerald-600" viewBox="0 0 24 24" fill="none">
+                  <svg className="h-5 w-5 animate-spin text-[#1a5c4f]" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.4 0 0 5.4 0 12h4z" />
                   </svg>
@@ -781,7 +779,7 @@ export default function LeadSlideOver({
               )}
               {leadScore && (
                 <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-                  <div className="border-b border-slate-100 bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4">
+                  <div className="border-b border-slate-100 bg-[#141c2e] px-6 py-4">
                     <h3 className="text-[15px] font-bold text-white">تقييم AI للعميل</h3>
                   </div>
                   <div className="p-6">
@@ -813,15 +811,15 @@ export default function LeadSlideOver({
                         </div>
                       </div>
                     </div>
-                    <div className={`mt-5 rounded-xl p-3.5 text-center text-[14px] font-semibold ${leadScore.isJunk ? "bg-red-50 text-red-700 ring-1 ring-red-200" : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"}`}>
+                    <div className={`mt-5 rounded-xl p-3.5 text-center text-[14px] font-semibold ${leadScore.isJunk ? "bg-red-50 text-red-700 ring-1 ring-red-200" : "bg-[#f0faf8] text-[#15503f] ring-1 ring-[#b8ddd2]"}`}>
                       {leadScore.isJunk ? "🚫 عميل محتمل جنك — أولوية منخفضة" : "✅ عميل واعد — يستحق المتابعة الفورية"}
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-[13px] font-medium text-slate-600">📍 {leadScore.source}</span>
-                      <span className={`rounded-lg px-3 py-1.5 text-[13px] font-medium ${leadScore.hasCampaign ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>
+                      <span className={`rounded-lg px-3 py-1.5 text-[13px] font-medium ${leadScore.hasCampaign ? "bg-[#f0faf8] text-[#1a5c4f]" : "bg-slate-100 text-slate-500"}`}>
                         {leadScore.hasCampaign ? "💰 حملة مدفوعة" : "💰 عضوي"}
                       </span>
-                      <span className={`rounded-lg px-3 py-1.5 text-[13px] font-medium ${leadScore.matched ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>
+                      <span className={`rounded-lg px-3 py-1.5 text-[13px] font-medium ${leadScore.matched ? "bg-[#f0faf8] text-[#1a5c4f]" : "bg-slate-100 text-slate-500"}`}>
                         {leadScore.matched ? "🏢 تم المطابقة" : "🏢 لم يطابق"}
                       </span>
                     </div>
@@ -837,7 +835,7 @@ export default function LeadSlideOver({
                     onClick={() => setActiveTab("activities")}
                     className={`flex-1 py-4 text-center text-[14px] font-semibold transition ${
                       activeTab === "activities"
-                        ? "border-b-2 border-emerald-600 text-emerald-700"
+                        ? "border-b-2 border-[#1a5c4f] text-[#15503f]"
                         : "text-slate-400 hover:text-slate-600"
                     }`}
                   >
@@ -848,7 +846,7 @@ export default function LeadSlideOver({
                     onClick={() => setActiveTab("tasks")}
                     className={`flex-1 py-4 text-center text-[14px] font-semibold transition ${
                       activeTab === "tasks"
-                        ? "border-b-2 border-emerald-600 text-emerald-700"
+                        ? "border-b-2 border-[#1a5c4f] text-[#15503f]"
                         : "text-slate-400 hover:text-slate-600"
                     }`}
                   >
@@ -865,7 +863,7 @@ export default function LeadSlideOver({
                         <p className="text-[13px] text-slate-400">سجّل تواصلك مع العميل</p>
                         <button
                           onClick={() => setAddingActivity((v) => !v)}
-                          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold transition ${addingActivity ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
+                          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold transition ${addingActivity ? "bg-red-50 text-red-600" : "bg-[#f0faf8] text-[#15503f] hover:bg-[#d6f0ea]"}`}
                         >
                           {addingActivity ? "✕ إلغاء" : "+ إضافة نشاط"}
                         </button>
@@ -907,7 +905,7 @@ export default function LeadSlideOver({
                                   : "border-slate-100 bg-slate-50/50 hover:border-slate-200"
                               }`}
                             >
-                              <div className={`mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-xl text-[14px] ${a.is_system ? "bg-slate-100 text-slate-500" : "bg-emerald-100 text-emerald-600"}`}>
+                              <div className={`mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-xl text-[14px] ${a.is_system ? "bg-slate-100 text-slate-500" : "bg-[#d6f0ea] text-[#1a5c4f]"}`}>
                                 {a.is_system ? "⚙️" : "📞"}
                               </div>
                               <div className="min-w-0 flex-1">
@@ -933,7 +931,7 @@ export default function LeadSlideOver({
                         <p className="text-[13px] text-slate-400">المهام المرتبطة بهذا العميل</p>
                         <button
                           onClick={() => setAddingTask((v) => !v)}
-                          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold transition ${addingTask ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
+                          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold transition ${addingTask ? "bg-red-50 text-red-600" : "bg-[#f0faf8] text-[#15503f] hover:bg-[#d6f0ea]"}`}
                         >
                           {addingTask ? "✕ إلغاء" : "+ إضافة مهمة"}
                         </button>
@@ -989,7 +987,7 @@ export default function LeadSlideOver({
                                   <div key={t.id} className="relative">
                                     {/* Vertical connector line between chained tasks */}
                                     {isPartOfChain && idx < tasks.length - 1 && allLeadTasks.some((x) => x.depends_on_task_id === t.id) && (
-                                      <div className="absolute left-[19px] top-[52px] bottom-0 w-0.5 bg-gradient-to-b from-emerald-300 to-amber-300 z-0" />
+                                      <div className="absolute left-[19px] top-[52px] bottom-0 w-0.5 bg-gradient-to-b from-[#7ec8b5] to-amber-300 z-0" />
                                     )}
                                     <div className={`relative z-10 group flex items-start gap-3 rounded-xl border p-4 transition mb-2 ${isBlocked ? "border-amber-200 bg-amber-50/30" : "border-slate-100 bg-slate-50/50 hover:border-slate-200"} ${completingId === t.id ? "opacity-40" : ""}`}>
                                       {/* Step indicator */}
@@ -1002,7 +1000,7 @@ export default function LeadSlideOver({
                                           <button
                                             onClick={() => setCompleteTarget(t)}
                                             aria-label="إنهاء المهمة"
-                                            className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-emerald-400 bg-white transition hover:bg-emerald-50 group-hover:border-emerald-500"
+                                            className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#3a9080] bg-white transition hover:bg-[#f0faf8] group-hover:border-[#238066]"
                                           />
                                         ) : (
                                           <span title="بس المسؤول عن المهمة يقدر ينهيها" className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-slate-200 opacity-50" />
@@ -1017,10 +1015,10 @@ export default function LeadSlideOver({
                                             </span>
                                           )}
                                           {!isBlocked && isPartOfChain && !t.depends_on_task_id && (
-                                            <span className="rounded-lg bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-600">الخطوة الأولى</span>
+                                            <span className="rounded-lg bg-[#f0faf8] px-2.5 py-1 text-[11px] font-semibold text-[#1a5c4f]">الخطوة الأولى</span>
                                           )}
                                           {t.task_types?.label && (
-                                            <span className="rounded-lg bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-700">{t.task_types.label}</span>
+                                            <span className="rounded-lg bg-[#f0faf8] px-2.5 py-1 text-[12px] font-semibold text-[#15503f]">{t.task_types.label}</span>
                                           )}
                                           {t.due_at && (
                                             <span className="flex items-center gap-1 text-[12px] text-slate-400">
@@ -1060,15 +1058,15 @@ export default function LeadSlideOver({
                                   {completedTasks.map((t) => (
                                     <div key={t.id} className="rounded-xl border border-slate-100 bg-white p-4">
                                       <div className="flex items-start gap-3">
-                                        <span className="mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full bg-emerald-100">
-                                          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-emerald-600"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></svg>
+                                        <span className="mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[#d6f0ea]">
+                                          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-[#1a5c4f]"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></svg>
                                         </span>
                                         <div className="min-w-0 flex-1">
                                           <p dir="auto" className="text-[14px] font-semibold text-slate-600 line-through">{t.title || "مهمة"}</p>
                                           {t.completion_note && (
-                                            <div className="mt-2 rounded-lg bg-emerald-50 px-3 py-2">
-                                              <p className="text-[11px] font-semibold text-emerald-700 mb-0.5">ملاحظة الإنجاز:</p>
-                                              <p dir="auto" className="text-[13px] leading-relaxed text-emerald-800">{t.completion_note}</p>
+                                            <div className="mt-2 rounded-lg bg-[#f0faf8] px-3 py-2">
+                                              <p className="text-[11px] font-semibold text-[#15503f] mb-0.5">ملاحظة الإنجاز:</p>
+                                              <p dir="auto" className="text-[13px] leading-relaxed text-[#0d3b30]">{t.completion_note}</p>
                                             </div>
                                           )}
                                           <div className="mt-1.5 flex flex-wrap items-center gap-2">
