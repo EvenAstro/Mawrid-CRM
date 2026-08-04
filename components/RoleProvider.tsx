@@ -51,7 +51,7 @@ export default function RoleProvider({ children }: { children: React.ReactNode }
         setRole(profile?.role ?? null);
         setPermissions(perms);
       } catch (err) {
-        console.error("[RoleProvider] load failed", err);
+        console.warn("[RoleProvider] load failed", err);
         if (cancelled) return;
         setRole(null);
         setPermissions(null);
@@ -64,7 +64,7 @@ export default function RoleProvider({ children }: { children: React.ReactNode }
       .getUser()
       .then(({ data }) => load(data.user?.id ?? null))
       .catch((err) => {
-        console.error("[RoleProvider] getUser failed", err);
+        console.warn("[RoleProvider] getUser failed", err);
         load(null);
       });
 

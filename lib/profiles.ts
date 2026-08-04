@@ -28,7 +28,7 @@ export async function fetchCurrentProfile(): Promise<Profile | null> {
   try {
     ({ data: userRes } = await supabase.auth.getUser());
   } catch (err) {
-    console.error("[profiles] getUser failed", err);
+    console.warn("[profiles] getUser failed", err);
     return null;
   }
   if (!userRes.user) return null;
