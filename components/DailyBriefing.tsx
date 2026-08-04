@@ -182,7 +182,7 @@ export default function DailyBriefing() {
       try {
         ({ data: userRes } = await supabase.auth.getUser());
       } catch (err) {
-        console.error("[DailyBriefing] getUser failed", err);
+        console.warn("[DailyBriefing] getUser failed", err);
       }
       const name = (userRes.user?.user_metadata?.full_name as string) || (userRes.user?.email ?? "").split("@")[0] || "";
       let briefing: BriefingData;
