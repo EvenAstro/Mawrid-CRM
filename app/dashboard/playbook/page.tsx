@@ -7,6 +7,7 @@ import {
   type PlaybookData,
   type PlaybookGroup,
   type DataQualityReport,
+  type LeaderboardRow,
 } from "@/lib/playbook/buildPlaybook";
 import { money } from "@/lib/format";
 import Skeleton from "@/components/ui/Skeleton";
@@ -59,13 +60,19 @@ function GroupCard({ g, baselineWinRatePct }: { g: PlaybookGroup; baselineWinRat
   const liftColor = g.liftPP > 0 ? "#10b981" : "#ef4444";
 
   return (
-    <div className={`${CARD} flex flex-col p-5 transition-shadow hover:shadow-[0_2px_10px_rgba(0,0,0,0.05)]`}>
+    <div className={`${CARD} relative flex flex-col overflow-hidden p-5 pt-6 transition-shadow hover:shadow-[0_2px_10px_rgba(0,0,0,0.05)]`}>
+      <span className="absolute inset-x-0 top-0 h-1" style={{ background: color }} />
       {/* Header row */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p dir="auto" className="truncate text-[15px] font-bold leading-tight text-ink">
             {g.tagLabel}
           </p>
+          {g.tagDescription && (
+            <p dir="auto" className="mt-0.5 truncate text-[11px] text-[#94a3b8]">
+              {g.tagDescription}
+            </p>
+          )}
           <p dir="auto" className="mt-1 text-[12px] text-muted">
             من مصدر <span className="font-semibold text-ink-secondary">{g.source}</span>
           </p>
@@ -228,6 +235,44 @@ function HeroStat({ label, value, sub }: { label: string; value: string; sub?: s
       <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">{label}</p>
       <p className="mt-0.5 text-[20px] font-black tabular-nums text-white">{value}</p>
       {sub && <p className="text-[10px] text-white/60">{sub}</p>}
+    </div>
+  );
+}
+
+/* ---------- Leaderboard (by-objection / by-source rollups) ---------- */
+function LeaderboardCard({ title, icon, rows }: { title: string; icon: string; rows: LeaderboardRow[] }) {
+  if (rows.length === 0) return null;
+  const maxRate = Math.max(...rows.map((r) => r.winRatePct), 1);
+  return (
+    <div className={`${CARD} p-5`}>
+      <div className="mb-3 flex items-center gap-2">
+        <span className="flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-mint text-primary">{icon}</span>
+        <h3 className="text-[13px] font-bold text-ink">{title}</h3>
+      </div>
+      <div className="flex flex-col gap-2.5">
+        {rows.map((r) => {
+          const color = winRateColor(r.winRatePct);
+          return (
+            <div key={r.key} className="flex items-center gap-3">
+              <span dir="auto" className="w-[110px] flex-none truncate text-[12px] font-semibold text-ink-secondary sm:w-[140px]">
+                {r.label}
+              </span>
+              <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-gray-100">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{ width: `${(r.winRatePct / maxRate) * 100}%`, background: color, opacity: r.confident ? 1 : 0.4 }}
+                />
+              </div>
+              <span className="w-9 flex-none text-left text-[12px] font-bold tabular-nums" style={{ color }}>
+                {r.winRatePct}%
+              </span>
+              <span className="w-11 flex-none text-left text-[10px] tabular-nums text-[#94a3b8]">
+                {r.total} صفقة{!r.confident && " ⚠️"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -415,23 +460,20 @@ export default function PlaybookPage() {
         </div>
       </section>
 
-      {/* ═══ 2. DATA QUALITY ═════════════════════════════════════ */}
-      <DataQualityPanel q={data.quality} coveragePct={data.coverage.coveragePct} />
-
-      {/* ═══ 3. AT A GLANCE — 2 big signals ═════════════════════════ */}
+      {/* ═══ 2. RECOMMENDATIONS — what to actually do ═══════════════ */}
       {(h.bestGroup || h.worstGroup) && (
         <section>
           <div className="mb-3 flex items-center gap-2">
             <span className="h-4 w-1 rounded-full bg-primary" />
-            <h2 className="text-[14px] font-bold uppercase tracking-wider text-ink-secondary">أهم إشارتين</h2>
+            <h2 className="text-[14px] font-bold uppercase tracking-wider text-ink-secondary">توصيات فورية</h2>
           </div>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {h.bestGroup && (
               <BigHighlight
-                eyebrow="أنجح تركيبة — كرّرها"
-                title={`${h.bestGroup.tagLabel} · ${h.bestGroup.source}`}
+                eyebrow="كمّل بنفس الأسلوب"
+                title={`لما يجيك "${h.bestGroup.tagLabel}" من ${h.bestGroup.source}`}
                 value={`${h.bestGroup.winRatePct}%`}
-                subtitle={`مبنية على ${h.bestGroup.total} صفقة (${h.bestGroup.won} مربوحة، ${h.bestGroup.lost} مخسورة)`}
+                subtitle={`مبنية على ${h.bestGroup.total} صفقة (${h.bestGroup.won} مربوحة، ${h.bestGroup.lost} مخسورة) — هذا أعلى معدل فوز عندكم`}
                 tone="positive"
                 icon="🏆"
                 sampleMessage={h.bestGroup.wonClosingMessages[0]}
@@ -439,10 +481,10 @@ export default function PlaybookPage() {
             )}
             {h.worstGroup && (
               <BigHighlight
-                eyebrow="أضعف تركيبة — راجع طريقتك"
-                title={`${h.worstGroup.tagLabel} · ${h.worstGroup.source}`}
+                eyebrow="غيّر طريقتك هنا"
+                title={`لما يجيك "${h.worstGroup.tagLabel}" من ${h.worstGroup.source}`}
                 value={`${h.worstGroup.winRatePct}%`}
-                subtitle={`مبنية على ${h.worstGroup.total} صفقة (${h.worstGroup.won} مربوحة، ${h.worstGroup.lost} مخسورة)`}
+                subtitle={`مبنية على ${h.worstGroup.total} صفقة (${h.worstGroup.won} مربوحة، ${h.worstGroup.lost} مخسورة) — هذا أضعف معدل فوز عندكم`}
                 tone="negative"
                 icon="🎯"
               />
@@ -451,7 +493,24 @@ export default function PlaybookPage() {
         </section>
       )}
 
-      {/* ═══ 4. ALL PATTERNS — filter + grid ═══════════════════════ */}
+      {/* ═══ 3. LEADERBOARDS — the big picture before the detail ═══ */}
+      {(data.byObjection.length > 0 || data.bySource.length > 0) && (
+        <section>
+          <div className="mb-3 flex items-center gap-2">
+            <span className="h-4 w-1 rounded-full bg-primary" />
+            <h2 className="text-[14px] font-bold uppercase tracking-wider text-ink-secondary">نظرة عامة</h2>
+          </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <LeaderboardCard title="نسبة الفوز حسب حالة العميل" icon="📋" rows={data.byObjection} />
+            <LeaderboardCard title="نسبة الفوز حسب المصدر" icon="📡" rows={data.bySource} />
+          </div>
+        </section>
+      )}
+
+      {/* ═══ 4. DATA QUALITY ═════════════════════════════════════ */}
+      <DataQualityPanel q={data.quality} coveragePct={data.coverage.coveragePct} />
+
+      {/* ═══ 5. ALL PATTERNS — filter + grid ═══════════════════════ */}
       <section>
         <div className="mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -551,42 +610,32 @@ export default function PlaybookPage() {
         )}
       </section>
 
-      {/* ═══ 5. LEGEND — how to read this ══════════════════════════ */}
-      <section className={`${CARD} p-6`}>
-        <div className="mb-4 flex items-center gap-2">
-          <span className="h-4 w-1 rounded-full bg-primary" />
-          <h2 className="text-[14px] font-bold uppercase tracking-wider text-ink-secondary">كيف تقرأ الأرقام</h2>
-        </div>
-        <div className="grid grid-cols-1 gap-5 text-[13px] leading-relaxed text-ink-secondary sm:grid-cols-2">
-          <div className="flex gap-3">
-            <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-mint text-primary">📊</span>
-            <div>
-              <p className="mb-0.5 font-semibold text-ink">مجال الثقة 95%</p>
-              <p dir="auto" className="text-[12.5px] text-muted">3 من 4 = 75% بس المجال قد يكون [30% — 95%]. مجال واسع = عيّنة صغيرة، ما نعرف بالضبط.</p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-mint text-primary">📈</span>
-            <div>
-              <p className="mb-0.5 font-semibold text-ink">الفرق عن المتوسط</p>
-              <p dir="auto" className="text-[12.5px] text-muted">"▲ 15 نقطة" يعني هذي التركيبة تنغلق بمعدل أعلى بـ 15 نقطة من متوسطكم ({data.baselineWinRatePct}%).</p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-mint text-primary">💬</span>
-            <div>
-              <p className="mb-0.5 font-semibold text-ink">آخر رسالة قبل الفوز</p>
-              <p dir="auto" className="text-[12.5px] text-muted">الرسالة الأخيرة اللي طلعت من عندكم قبل ما تنغلق الصفقة فعلياً — الأقرب لـ "الجملة اللي أقفلت".</p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-mint text-primary">🔬</span>
-            <div>
-              <p className="mb-0.5 font-semibold text-ink">جودة البيانات مفتوحة</p>
-              <p dir="auto" className="text-[12.5px] text-muted">قسم "جودة البيانات" فوق يوضّح كم صفقة استبعدنا ولماذا، وكم بيانات ناقصة ضمن المدخل — عشان تعرف مصدر الأرقام.</p>
-            </div>
-          </div>
-        </div>
+      {/* ═══ 6. LEGEND — compact strip, details on hover/tap ═══════ */}
+      <section className={`${CARD} flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-3 text-[12px] text-muted`}>
+        <span
+          title="3 من 4 = 75% بس المجال قد يكون [30% — 95%]. مجال واسع = عيّنة صغيرة، ما نعرف بالضبط."
+          className="flex cursor-help items-center gap-1.5"
+        >
+          📊 <span className="font-semibold text-ink-secondary">مجال الثقة 95%</span>
+        </span>
+        <span
+          title={`"▲ 15 نقطة" يعني هذي التركيبة تنغلق بمعدل أعلى بـ 15 نقطة من متوسطكم (${data.baselineWinRatePct}%).`}
+          className="flex cursor-help items-center gap-1.5"
+        >
+          📈 <span className="font-semibold text-ink-secondary">الفرق عن المتوسط</span>
+        </span>
+        <span
+          title="الرسالة الأخيرة اللي طلعت من عندكم قبل ما تنغلق الصفقة فعلياً — الأقرب لـ الجملة اللي أقفلت."
+          className="flex cursor-help items-center gap-1.5"
+        >
+          💬 <span className="font-semibold text-ink-secondary">آخر رسالة قبل الفوز</span>
+        </span>
+        <span
+          title="قسم جودة البيانات فوق يوضّح كم صفقة استبعدنا ولماذا، وكم بيانات ناقصة ضمن المدخل."
+          className="flex cursor-help items-center gap-1.5"
+        >
+          🔬 <span className="font-semibold text-ink-secondary">جودة البيانات مفتوحة</span>
+        </span>
       </section>
     </div>
   );

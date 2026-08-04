@@ -112,6 +112,18 @@ export interface PlaybookHighlights {
   bestSource: { source: string; winRatePct: number; total: number } | null;
 }
 
+/** One row of the "by objection" / "by source" leaderboards — rolled up
+ * across all sub-groups so the reader gets the big picture before diving
+ * into the tag × source detail cards. */
+export interface LeaderboardRow {
+  key: string;
+  label: string;
+  winRatePct: number;
+  total: number;
+  liftPP: number;
+  confident: boolean;
+}
+
 /** Transparent breakdown of why some resolved deals didn't make it into the
  * playbook — surfaced on the page so the user can see the true data quality
  * instead of trusting one aggregate coverage %. */
@@ -137,6 +149,10 @@ export interface PlaybookData {
   sources: string[];
   /** Per-deal data-quality accounting — see DataQualityReport. */
   quality: DataQualityReport;
+  /** Win rate rolled up per objection tag (across all sources), sorted best-first. */
+  byObjection: LeaderboardRow[];
+  /** Win rate rolled up per lead source (across all objections), sorted best-first. */
+  bySource: LeaderboardRow[];
 }
 
 function isSituationalTag(v: string | null): v is SituationalTag {
@@ -425,6 +441,31 @@ export async function buildPlaybook(): Promise<PlaybookData> {
 
   const sources = [...new Set(groups.map((g) => g.source))].sort();
 
+  // Full leaderboards (not just the single best/worst) — every tag/source
+  // that has at least one resolved deal, sorted best win-rate first. Groups
+  // below MIN_SAMPLE are still shown but flagged as not-confident.
+  const byObjection: LeaderboardRow[] = [...perTag.entries()]
+    .map(([tag, v]) => ({
+      key: tag,
+      label: TAG_LABELS[tag] ?? tag,
+      winRatePct: v.total ? Math.round((v.won / v.total) * 100) : 0,
+      total: v.total,
+      liftPP: v.total ? Math.round((v.won / v.total - baselineWinRate) * 100) : 0,
+      confident: v.total >= MIN_SAMPLE,
+    }))
+    .sort((a, b) => b.winRatePct - a.winRatePct);
+
+  const bySource: LeaderboardRow[] = [...perSource.entries()]
+    .map(([source, v]) => ({
+      key: source,
+      label: source,
+      winRatePct: v.total ? Math.round((v.won / v.total) * 100) : 0,
+      total: v.total,
+      liftPP: v.total ? Math.round((v.won / v.total - baselineWinRate) * 100) : 0,
+      confident: v.total >= MIN_SAMPLE,
+    }))
+    .sort((a, b) => b.winRatePct - a.winRatePct);
+
   return {
     groups,
     coverage: {
@@ -436,5 +477,7 @@ export async function buildPlaybook(): Promise<PlaybookData> {
     highlights: { bestGroup, worstGroup, bestObjection, hardestObjection, bestSource },
     sources,
     quality,
+    byObjection,
+    bySource,
   };
 }
