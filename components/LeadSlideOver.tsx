@@ -8,7 +8,7 @@ import NewDealSlideOver from "@/components/NewDealSlideOver";
 import CompleteTaskModal from "@/components/CompleteTaskModal";
 import { fetchLeadScoreModel, scoreWithModel } from "@/lib/leadScore/computeLeadScore";
 import { fetchProfiles, type Profile } from "@/lib/profiles";
-import { initials, formatDate, formatDateTime, todayInput, profileName } from "@/lib/format";
+import { initials, formatDate, formatDateTime, formatPhone, todayInput, profileName } from "@/lib/format";
 import { useRole } from "@/components/RoleProvider";
 import { canActOnTask } from "@/lib/permissions";
 import { logAudit, fieldChangeMessage } from "@/lib/auditLog";
@@ -496,7 +496,7 @@ export default function LeadSlideOver({
                   <div className="min-w-0">
                     <h2 dir="auto" className="truncate text-[22px] font-bold text-slate-900">{data.full_name || "عميل بدون اسم"}</h2>
                     <div className="mt-1 flex items-center gap-3">
-                      {data.phone && <span className="text-[14px] text-slate-500">{data.phone}</span>}
+                      {data.phone && <span dir="ltr" className="text-[14px] text-slate-500">{formatPhone(data.phone)}</span>}
                       {data.email && <span className="text-[14px] text-slate-500">{data.email}</span>}
                     </div>
                   </div>
@@ -724,7 +724,7 @@ export default function LeadSlideOver({
                       </div>
                       <div className="flex items-center justify-between border-b border-slate-100 py-3">
                         <span className="text-[13px] font-semibold text-slate-400">الجوال</span>
-                        <span dir="ltr" className="text-[14px] font-medium text-slate-800">{data.phone || "—"}</span>
+                        <span dir="ltr" className="text-[14px] font-medium text-slate-800">{formatPhone(data.phone)}</span>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-x-6">

@@ -28,6 +28,26 @@ export function formatTime(iso: string | null | undefined): string {
   return d.toLocaleTimeString("ar-SA", { hour: "numeric", minute: "2-digit" });
 }
 
+/** "+966 50 123 4567" — group a raw phone number into readable chunks
+ * instead of one unbroken digit string. Saudi mobile numbers (+966 5XXXXXXXX)
+ * get the natural 2-3-4 grouping; anything else falls back to 3-digit groups
+ * after the country code / leading digits. */
+export function formatPhone(phone: string | null | undefined): string {
+  if (!phone) return "—";
+  const plus = phone.trim().startsWith("+") ? "+" : "";
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) return phone;
+
+  if (digits.startsWith("966") && digits.length === 12) {
+    const rest = digits.slice(3);
+    return `+966 ${rest.slice(0, 2)} ${rest.slice(2, 5)} ${rest.slice(5)}`;
+  }
+
+  const groups: string[] = [];
+  for (let i = 0; i < digits.length; i += 3) groups.push(digits.slice(i, i + 3));
+  return plus + groups.join(" ");
+}
+
 /** Day-group header: "اليوم", "أمس", else "٢ يوليو". */
 export function dayHeader(iso: string | null | undefined): string {
   if (!iso) return "—";

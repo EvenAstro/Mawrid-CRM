@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { SearchIcon } from "@/components/navIcons";
-import { initials, formatDate, downloadCSV } from "@/lib/format";
+import { initials, formatDate, formatPhone, downloadCSV } from "@/lib/format";
 import Button from "@/components/ui/Button";
 import SlideOver from "@/components/ui/SlideOver";
 import Skeleton from "@/components/ui/Skeleton";
@@ -167,15 +167,15 @@ export default function ContactsPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => (
             <div key={c.id} className={`group relative flex flex-col rounded-2xl border bg-white p-5 shadow-[0_2px_8px_rgba(26,92,79,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(26,92,79,0.12)] ${checked.has(c.id) ? "border-[#1a5c4f]" : "border-[#d6ece5]"}`}>
-              <input
-                type="checkbox"
-                checked={checked.has(c.id)}
-                onChange={() => toggleChecked(c.id)}
-                onClick={(e) => e.stopPropagation()}
-                className="absolute left-4 top-4 h-4 w-4 accent-[#1a5c4f]"
-                aria-label="تحديد"
-              />
               <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={checked.has(c.id)}
+                  onChange={() => toggleChecked(c.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-4 w-4 flex-none accent-[#1a5c4f]"
+                  aria-label="تحديد"
+                />
                 <span className={`flex h-11 w-11 flex-none items-center justify-center rounded-full bg-gradient-to-br shadow-sm text-[15px] font-bold text-white ${AVATAR_GRADIENT}`}>{initials(c.full_name)}</span>
                 <div className="min-w-0 flex-1">
                   <p dir="auto" className="truncate text-[15px] font-semibold text-ink">{c.full_name || "بدون اسم"}</p>
@@ -187,7 +187,7 @@ export default function ContactsPage() {
               </div>
               <div className="mt-4 flex flex-col gap-1.5 text-[13px] text-ink-secondary">
                 {c.establishments?.name && <p dir="auto" className="flex items-center gap-1.5 truncate"><span className="text-[11px]">🏢</span>{c.establishments.name}</p>}
-                <p className="flex items-center gap-1.5 truncate"><span className="text-[11px]">📞</span>{c.phone || "—"}</p>
+                <p dir="ltr" className="flex items-center justify-end gap-1.5 truncate"><span className="text-[11px]">📞</span>{formatPhone(c.phone)}</p>
                 <p className="flex items-center gap-1.5 truncate"><span className="text-[11px]">✉️</span>{c.email || "—"}</p>
               </div>
               <div className="mt-4 flex items-center justify-between border-t border-[#e8f0ec] pt-3">
@@ -267,7 +267,7 @@ export default function ContactsPage() {
 
             {/* Info rows */}
             <div className="overflow-hidden rounded-2xl border border-[#d6ece5] bg-white shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
-              <Detail icon="📱" label="الجوال" value={selected.phone} />
+              <Detail icon="📱" label="الجوال" value={formatPhone(selected.phone)} phone />
               <Detail icon="✉️" label="الإيميل" value={selected.email} />
               <Detail icon="🏢" label="الشركة" value={selected.establishments?.name ?? null} />
               <Detail icon="💼" label="المنصب" value={selected.role} />
@@ -287,13 +287,13 @@ export default function ContactsPage() {
   );
 }
 
-function Detail({ icon, label, value, last }: { icon: string; label: string; value: string | null; last?: boolean }) {
+function Detail({ icon, label, value, last, phone }: { icon: string; label: string; value: string | null; last?: boolean; phone?: boolean }) {
   return (
     <div className={`flex items-center gap-3 px-4 py-3 ${last ? "" : "border-b border-[#eef4f1]"}`}>
       <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-[#f0faf8] text-sm">{icon}</span>
       <div className="min-w-0 flex-1">
         <p className="text-[11px] font-semibold text-muted">{label}</p>
-        <p dir="auto" className="mt-0.5 truncate text-[14px] font-semibold text-ink">{value || "—"}</p>
+        <p dir={phone ? "ltr" : "auto"} className={`mt-0.5 truncate text-[14px] font-semibold text-ink ${phone ? "text-end" : ""}`}>{value || "—"}</p>
       </div>
     </div>
   );

@@ -8,7 +8,7 @@ import NewLeadSlideOver from "@/components/NewLeadSlideOver";
 import { fetchLeadScoreModel, getAIScore, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
 import { useRole } from "@/components/RoleProvider";
 import { canViewAllData } from "@/lib/permissions";
-import { initials, formatDate, downloadCSV } from "@/lib/format";
+import { initials, formatDate, formatPhone, downloadCSV } from "@/lib/format";
 import { useToast } from "@/components/Toast";
 
 const PAGE_SIZE = 15;
@@ -520,8 +520,8 @@ export default function LeadsPage() {
                             <p dir="auto" className="truncate text-[14px] font-semibold text-slate-900">
                               {lead.full_name || "Unnamed lead"}
                             </p>
-                            <p className="truncate text-[12px] text-slate-400">
-                              {lead.phone || lead.email || "—"}
+                            <p dir={lead.phone ? "ltr" : "auto"} className="truncate text-end text-[12px] text-slate-400">
+                              {lead.phone ? formatPhone(lead.phone) : (lead.email || "—")}
                             </p>
                           </div>
                         </div>
