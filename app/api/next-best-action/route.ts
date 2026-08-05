@@ -4,6 +4,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { getContext, getDealMeta, type MatchTier } from "@/lib/nextBestAction/getContext";
 import { buildPrompt } from "@/lib/nextBestAction/buildPrompt";
 import { requireUser } from "@/lib/auth/requireUser";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -45,7 +46,16 @@ function isValidModelOutput(v: unknown): v is Omit<Recommendation, "matchTier"> 
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await requireUser(req))) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  const caller = await requireUser(req);
+  if (!caller) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
+  const rl = checkRateLimit(`${caller.id}:next-best-action`, 40, 60_000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "rate_limit", message: "طلبات كثيرة جداً — حاول بعد شوي." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+    );
+  }
 
   let body: { dealId?: unknown };
   try {
