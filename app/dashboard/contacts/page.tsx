@@ -42,6 +42,14 @@ export default function ContactsPage() {
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [openContactId, setOpenContactId] = useState<string | null>(null);
+
+  // Honor ?open= from deep-links (e.g. the command palette).
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const o = p.get("open");
+    if (o) setOpenContactId(o);
+  }, []);
 
   const load = useCallback(async () => {
     setError(false);
@@ -63,6 +71,23 @@ export default function ContactsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Open the deep-linked contact once data has loaded — falls back to a
+  // direct fetch since the loaded page (limit 60) may not include it.
+  useEffect(() => {
+    if (!openContactId || loading) return;
+    const match = contacts.find((c) => c.id === openContactId);
+    if (match) {
+      setSelected(match);
+      setOpenContactId(null);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase.from("contacts").select("*, establishments(name)").eq("id", openContactId).maybeSingle();
+      if (data) setSelected(data as unknown as Contact);
+      setOpenContactId(null);
+    })();
+  }, [openContactId, loading, contacts]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();

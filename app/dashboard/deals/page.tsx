@@ -58,6 +58,14 @@ export default function DealsPage() {
   const [overStage, setOverStage] = useState<string | null>(null);
   const [addStage, setAddStage] = useState<string | null | undefined>(undefined);
   const [selected, setSelected] = useState<Deal | null>(null);
+  const [openDealId, setOpenDealId] = useState<string | null>(null);
+
+  // Honor ?open= from deep-links (e.g. the command palette).
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const o = p.get("open");
+    if (o) setOpenDealId(o);
+  }, []);
 
   const load = useCallback(async () => {
     setError(false);
@@ -93,6 +101,16 @@ export default function DealsPage() {
     if (roleLoading) return;
     load();
   }, [roleLoading, load]);
+
+  // Open the deep-linked deal once data has loaded.
+  useEffect(() => {
+    if (!openDealId || !deals.length) return;
+    const match = deals.find((d) => String(d.id) === openDealId);
+    if (match) {
+      setSelected(match);
+      setOpenDealId(null);
+    }
+  }, [openDealId, deals]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
