@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import { requireUser } from "@/lib/auth/requireUser";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct";
@@ -57,6 +58,14 @@ export async function GET(req: NextRequest) {
   const caller = await requireUser(req);
   if (!caller) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   const userId = caller.id;
+
+  const rl = checkRateLimit(`${userId}:rep-coach`, 20, 60_000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "rate_limit", message: "طلبات كثيرة جداً — حاول بعد شوي." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+    );
+  }
 
   try {
     const now = new Date();

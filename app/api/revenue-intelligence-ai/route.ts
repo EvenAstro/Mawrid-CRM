@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/requireUser";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct";
@@ -16,7 +17,16 @@ const SYSTEM = `أنت محلل مبيعات متخصص مدمج في لوحة �
 - إذا سألوا عن توقعات أو استراتيجية، كن محدداً ومستنداً للبيانات`;
 
 export async function POST(req: NextRequest) {
-  if (!(await requireUser(req))) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  const caller = await requireUser(req);
+  if (!caller) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
+  const rl = checkRateLimit(`${caller.id}:revenue-intelligence-ai`, 15, 60_000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "rate_limit", message: "طلبات كثيرة جداً — حاول بعد شوي." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+    );
+  }
 
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "OPENROUTER_API_KEY missing" }, { status: 500 });
