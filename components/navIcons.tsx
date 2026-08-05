@@ -75,14 +75,6 @@ export const TasksIcon = ({ className }: P) => (
   </Svg>
 );
 
-/* inbox */
-export const TicketsIcon = ({ className }: P) => (
-  <Svg className={className}>
-    <path d="M4 13h4l1.5 2.5h5L16 13h4" />
-    <path d="M4 13 6 5h12l2 8v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-5Z" />
-  </Svg>
-);
-
 /* bar-chart-2 */
 export const AnalyticsIcon = ({ className }: P) => (
   <Svg className={className}>

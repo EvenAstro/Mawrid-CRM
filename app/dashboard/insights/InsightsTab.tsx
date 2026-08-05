@@ -123,22 +123,24 @@ function Donut({ rows }: { rows: { label: string; count: number }[] }) {
     return <p className="py-8 text-center text-[13px] text-[#94a3b8]">لا توجد بيانات</p>;
   }
   const R = 68, r = 42, cx = 90, cy = 90;
-  let acc = 0;
-  const slices = rows.map((row, i) => {
-    const frac = row.count / total;
-    const start = acc;
-    const end = acc + frac;
-    acc = end;
-    const a0 = start * Math.PI * 2 - Math.PI / 2;
-    const a1 = end * Math.PI * 2 - Math.PI / 2;
-    const large = frac > 0.5 ? 1 : 0;
-    const x0 = cx + R * Math.cos(a0), y0 = cy + R * Math.sin(a0);
-    const x1 = cx + R * Math.cos(a1), y1 = cy + R * Math.sin(a1);
-    const xi0 = cx + r * Math.cos(a0), yi0 = cy + r * Math.sin(a0);
-    const xi1 = cx + r * Math.cos(a1), yi1 = cy + r * Math.sin(a1);
-    const path = `M ${x0} ${y0} A ${R} ${R} 0 ${large} 1 ${x1} ${y1} L ${xi1} ${yi1} A ${r} ${r} 0 ${large} 0 ${xi0} ${yi0} Z`;
-    return { path, color: PALETTE[i % PALETTE.length], row, pct: Math.round(frac * 100) };
-  });
+  const { slices } = rows.reduce<{ acc: number; slices: { path: string; color: string; row: { label: string; count: number }; pct: number }[] }>(
+    (state, row, i) => {
+      const frac = row.count / total;
+      const start = state.acc;
+      const end = start + frac;
+      const a0 = start * Math.PI * 2 - Math.PI / 2;
+      const a1 = end * Math.PI * 2 - Math.PI / 2;
+      const large = frac > 0.5 ? 1 : 0;
+      const x0 = cx + R * Math.cos(a0), y0 = cy + R * Math.sin(a0);
+      const x1 = cx + R * Math.cos(a1), y1 = cy + R * Math.sin(a1);
+      const xi0 = cx + r * Math.cos(a0), yi0 = cy + r * Math.sin(a0);
+      const xi1 = cx + r * Math.cos(a1), yi1 = cy + r * Math.sin(a1);
+      const path = `M ${x0} ${y0} A ${R} ${R} 0 ${large} 1 ${x1} ${y1} L ${xi1} ${yi1} A ${r} ${r} 0 ${large} 0 ${xi0} ${yi0} Z`;
+      const slice = { path, color: PALETTE[i % PALETTE.length], row, pct: Math.round(frac * 100) };
+      return { acc: end, slices: [...state.slices, slice] };
+    },
+    { acc: 0, slices: [] },
+  );
   return (
     <div className="flex items-center gap-6">
       <svg viewBox="0 0 180 180" width="180" height="180" className="flex-none">
