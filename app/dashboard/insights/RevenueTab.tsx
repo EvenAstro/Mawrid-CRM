@@ -496,12 +496,14 @@ function DistPills({categories}:{categories:RevenueIntelligenceData["categories"
   const colors=[CAT.commit.hex,CAT.best_case.hex,CAT.pipeline.hex];
   const grads=[CAT.commit.grad,CAT.best_case.grad,CAT.pipeline.grad];
   const SIZE=92, R=35, SW=10, circ=2*Math.PI*R;
-  let offset=0;
-  const slices=categories.map((c,i)=>{
-    const pct=total?c.totalSAR/total:0, dash=pct*circ;
-    const sl={pct,dash,offset,color:colors[i]??"#ccc"};
-    offset+=dash; return sl;
-  });
+  const { slices } = categories.reduce<{ offset: number; slices: { pct: number; dash: number; offset: number; color: string }[] }>(
+    (state, c, i) => {
+      const pct = total ? c.totalSAR / total : 0, dash = pct * circ;
+      const sl = { pct, dash, offset: state.offset, color: colors[i] ?? "#ccc" };
+      return { offset: state.offset + dash, slices: [...state.slices, sl] };
+    },
+    { offset: 0, slices: [] },
+  );
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-5">

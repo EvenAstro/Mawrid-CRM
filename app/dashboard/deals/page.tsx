@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
@@ -59,9 +59,16 @@ export default function DealsPage() {
   const [addStage, setAddStage] = useState<string | null | undefined>(undefined);
   const [selected, setSelected] = useState<Deal | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     setError(false);
-    let dealsQuery = supabase.from("deals").select("*, pipeline_stages(label, color, terminal_type), lost_reasons(label)").is("deleted_at", null);
+    // Explicit cap (see leads/page.tsx for the same pattern) so growth past
+    // this doesn't silently drop deals off the board via PostgREST's
+    // unsignaled default row cap.
+    let dealsQuery = supabase
+      .from("deals")
+      .select("*, pipeline_stages(label, color, terminal_type), lost_reasons(label)", { count: "exact" })
+      .is("deleted_at", null)
+      .limit(2000);
     // Sales reps only see deals assigned to them; managers/admins see all.
     if (!canViewAllData(role) && userId) {
       dealsQuery = dealsQuery.eq("owner_id", userId);
@@ -74,15 +81,18 @@ export default function DealsPage() {
       console.error("[Deals] fetch failed", d.error, s.error);
       setError(true);
     } else {
+      if (d.count != null && d.data && d.count > d.data.length) {
+        console.warn(`[Deals] loaded ${d.data.length} of ${d.count} deals — hit the 2000-row cap, consider server-side pagination`);
+      }
       setDeals((d.data as unknown as Deal[]) ?? []);
       setStages((s.data as unknown as StageCol[]) ?? []);
     }
     setLoading(false);
-  }
+  }, [role, userId]);
   useEffect(() => {
     if (roleLoading) return;
     load();
-  }, [roleLoading, role, userId]);
+  }, [roleLoading, load]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();

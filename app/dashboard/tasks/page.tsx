@@ -103,7 +103,7 @@ export default function TasksPage() {
     if (tt.data) setTypes(tt.data as TaskType[]);
     setProfiles(pf);
     setLoading(false);
-  }, [role, userId, limit]);
+  }, [userId, limit]);
   useEffect(() => {
     if (roleLoading) return;
     load();

@@ -542,8 +542,8 @@ function Lesson({ lesson }: { lesson: AiReport["lesson"] }) {
 }
 
 // ── Cost grid ───────────────────────────────────────────────────────────────
-function CostGrid({ cost }: { cost: InvestigationPayload["costAnalysis"] }) {
-  const Card = ({ label, value, color }: { label: string; value: string; color: string }) => (
+function CostGridCard({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
     <div className="rounded-xl p-5 text-center" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
       <p className="text-[12px]" style={{ fontFamily: "Cairo, sans-serif", color: C.muted }}>{label}</p>
       <p className="mt-2" dir="ltr" style={{ fontFamily: "Cairo, sans-serif", fontWeight: 800, fontSize: 28, color }}>
@@ -551,12 +551,14 @@ function CostGrid({ cost }: { cost: InvestigationPayload["costAnalysis"] }) {
       </p>
     </div>
   );
+}
+function CostGrid({ cost }: { cost: InvestigationPayload["costAnalysis"] }) {
   return (
     <div>
       <div className="grid gap-3 sm:grid-cols-3">
-        <Card label="هذه الصفقة" value={`${cost.currency} ${money(cost.this_deal)}`} color={C.white} />
-        <Card label="حالات مشابهة" value={String(cost.similar_losses_count)} color={C.teal} />
-        <Card label="التكلفة الكلية للنمط" value={`${cost.currency} ${money(cost.total_pattern_cost)}`} color={C.red} />
+        <CostGridCard label="هذه الصفقة" value={`${cost.currency} ${money(cost.this_deal)}`} color={C.white} />
+        <CostGridCard label="حالات مشابهة" value={String(cost.similar_losses_count)} color={C.teal} />
+        <CostGridCard label="التكلفة الكلية للنمط" value={`${cost.currency} ${money(cost.total_pattern_cost)}`} color={C.red} />
       </div>
       <p className="mt-2 text-[12px]" style={{ fontFamily: "Cairo, sans-serif", color: C.muted }}>
         بناءً على {cost.similar_losses_count} صفقات بنفس النمط

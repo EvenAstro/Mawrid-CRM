@@ -9,6 +9,8 @@ import Button from "@/components/ui/Button";
 import Skeleton from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import LogActivitySlideOver from "@/components/LogActivitySlideOver";
+import { useRole } from "@/components/RoleProvider";
+import { canViewAllData } from "@/lib/permissions";
 
 interface Activity {
   id: string;
@@ -39,6 +41,7 @@ function iconFor(label?: string | null) {
 }
 
 export default function ActivitiesPage() {
+  const { role, userId, loading: roleLoading } = useRole();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [leadNames, setLeadNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -51,11 +54,42 @@ export default function ActivitiesPage() {
 
   const load = useCallback(async () => {
     setError(false);
-    const { data, error: err, count } = await supabase
+
+    // Sales reps only see activities tied to leads/deals they own; managers
+    // and admins see everything — same boundary as the leads/deals/tasks
+    // pages, applied here via the entities the activity is attached to
+    // (activities themselves have no owner_id column).
+    let ownedLeadIds: string[] | null = null;
+    let ownedDealIds: string[] | null = null;
+    if (!canViewAllData(role) && userId) {
+      const [leadsRes, dealsRes] = await Promise.all([
+        supabase.from("leads").select("id").eq("owner_id", userId).is("deleted_at", null),
+        supabase.from("deals").select("id").eq("owner_id", userId).is("deleted_at", null),
+      ]);
+      ownedLeadIds = (leadsRes.data ?? []).map((l) => String(l.id));
+      ownedDealIds = (dealsRes.data ?? []).map((d) => String(d.id));
+      if (ownedLeadIds.length === 0 && ownedDealIds.length === 0) {
+        setActivities([]);
+        setTotal(0);
+        setLoading(false);
+        return;
+      }
+    }
+
+    let query = supabase
       .from("activities")
       .select("*, activity_types(label, color)", { count: "exact" })
       .order("occurred_at", { ascending: false })
       .range(0, limit - 1);
+
+    if (ownedLeadIds != null && ownedDealIds != null) {
+      const clauses: string[] = [];
+      if (ownedLeadIds.length) clauses.push(`and(entity_type.eq.lead,entity_id.in.(${ownedLeadIds.join(",")}))`);
+      if (ownedDealIds.length) clauses.push(`and(entity_type.eq.deal,entity_id.in.(${ownedDealIds.join(",")}))`);
+      query = query.or(clauses.join(","));
+    }
+
+    const { data, error: err, count } = await query;
     if (err) {
       console.error("[Activities] fetch failed", err);
       setError(true);
@@ -74,11 +108,12 @@ export default function ActivitiesPage() {
       setLeadNames((prev) => ({ ...prev, ...map }));
     }
     setLoading(false);
-  }, [limit]);
+  }, [limit, role, userId]);
 
   useEffect(() => {
+    if (roleLoading) return;
     load();
-  }, [load]);
+  }, [roleLoading, load]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();

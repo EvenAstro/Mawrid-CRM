@@ -43,6 +43,12 @@ export function formatPhone(phone: string | null | undefined): string {
     return `+966 ${rest.slice(0, 2)} ${rest.slice(2, 5)} ${rest.slice(5)}`;
   }
 
+  // Local Saudi format (05XXXXXXXX, 10 digits) — same 2-3-4 grouping as the
+  // +966 form above, just without the country code.
+  if (digits.startsWith("05") && digits.length === 10) {
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+  }
+
   const groups: string[] = [];
   for (let i = 0; i < digits.length; i += 3) groups.push(digits.slice(i, i + 3));
   return plus + groups.join(" ");

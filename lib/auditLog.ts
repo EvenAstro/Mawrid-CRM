@@ -23,7 +23,8 @@ export async function logAudit(leadId: string | number, userId: string | null, m
   const { error } = await supabase.from("activities").insert(row);
   if (error) {
     console.error("[logAudit] insert failed, retrying without is_system", error);
-    const { is_system: _, ...fallback } = row;
+    const fallback: Partial<typeof row> = { ...row };
+    delete fallback.is_system;
     await supabase.from("activities").insert(fallback);
   }
 }

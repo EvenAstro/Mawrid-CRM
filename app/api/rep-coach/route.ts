@@ -6,6 +6,37 @@ const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct";
 const MS_PER_DAY = 86_400_000;
 
+// Saudi Arabia doesn't observe DST, so a fixed +3h offset from UTC is safe
+// year-round. This route runs server-side (Vercel functions default to
+// UTC), so without this every "today"/hour-of-day check below — the
+// overdue-task boundary, the greeting hour, the "no outbound yet" nudge —
+// would silently compute against UTC's midnight/clock instead of the rep's
+// actual Riyadh wall clock, misfiring by 3 hours in both directions.
+const RIYADH_OFFSET_MS = 3 * 60 * 60 * 1000;
+
+/** The current instant, shifted so its UTC-getters read as Riyadh wall-clock time. */
+function riyadhNow(): Date {
+  return new Date(Date.now() + RIYADH_OFFSET_MS);
+}
+
+/** Real UTC instants for the start/end of "today" in Riyadh — safe to compare
+ * directly against due_at/occurred_at columns, which are stored in UTC. */
+function riyadhDayBounds(shiftedNow: Date): { start: Date; end: Date } {
+  const y = shiftedNow.getUTCFullYear(), m = shiftedNow.getUTCMonth(), d = shiftedNow.getUTCDate();
+  const startOfShiftedDayMs = Date.UTC(y, m, d, 0, 0, 0, 0);
+  const start = new Date(startOfShiftedDayMs - RIYADH_OFFSET_MS);
+  const end = new Date(start.getTime() + MS_PER_DAY);
+  return { start, end };
+}
+
+/** "HH:MM" for a UTC timestamp, as it reads on a Riyadh wall clock. */
+function riyadhTimeStr(d: Date): string {
+  const shifted = new Date(d.getTime() + RIYADH_OFFSET_MS);
+  const h = shifted.getUTCHours().toString().padStart(2, "0");
+  const m = shifted.getUTCMinutes().toString().padStart(2, "0");
+  return `${h}:${m}`;
+}
+
 interface Directive {
   id: string;
   type: "urgent" | "warning" | "remind" | "praise";
@@ -29,10 +60,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const now = new Date();
-    const todayStart = new Date(now);
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(todayStart);
-    todayEnd.setDate(todayEnd.getDate() + 1);
+    const shiftedNow = riyadhNow();
+    const { start: todayStart, end: todayEnd } = riyadhDayBounds(shiftedNow);
     const ds = todayStart.toISOString();
     const de = todayEnd.toISOString();
     const sevenDaysAgo = new Date(now.getTime() - 7 * MS_PER_DAY).toISOString();
@@ -169,9 +198,7 @@ export async function GET(req: NextRequest) {
       const mDate = new Date(m.occurred_at!);
       const isToday = mDate >= todayStart && mDate < todayEnd;
       const isTomorrow = mDate >= todayEnd && mDate < new Date(todayEnd.getTime() + MS_PER_DAY);
-      const h = mDate.getHours();
-      const min = mDate.getMinutes();
-      const timeStr = `${h.toString().padStart(2, "0")}:${min.toString().padStart(2, "0")}`;
+      const timeStr = riyadhTimeStr(mDate);
       const desc = m.body ? ` — ${m.body.slice(0, 50)}` : "";
       if (isToday) {
         const hoursLeft = (mDate.getTime() - now.getTime()) / 3600000;
@@ -215,9 +242,7 @@ export async function GET(req: NextRequest) {
     // 5. Today's upcoming tasks
     todayTasks.forEach((t) => {
       const dueTime = new Date(t.due_at!);
-      const h = dueTime.getHours();
-      const m = dueTime.getMinutes();
-      const timeStr = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+      const timeStr = riyadhTimeStr(dueTime);
       const isUpcoming = dueTime.getTime() - now.getTime() < 2 * 3600 * 1000 && dueTime > now;
       directives.push({
         id: `d${idx++}`, type: isUpcoming ? "warning" : "remind",
@@ -234,9 +259,7 @@ export async function GET(req: NextRequest) {
       const dueDate = new Date(t.due_at!);
       const daysDiff = Math.ceil((dueDate.getTime() - now.getTime()) / MS_PER_DAY);
       const dayLabel = daysDiff <= 1 ? "بكرة" : `بعد ${daysDiff} أيام`;
-      const h = dueDate.getHours();
-      const m = dueDate.getMinutes();
-      const timeStr = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+      const timeStr = riyadhTimeStr(dueDate);
       directives.push({
         id: `d${idx++}`, type: "remind", icon: "📅",
         message: `${ya}عندك مهمة "${t.title || "بدون عنوان"}" ${dayLabel} الساعة ${timeStr} — جهّز لها`,
@@ -268,13 +291,13 @@ export async function GET(req: NextRequest) {
     });
 
     // 7. Activity warnings
-    if (outboundCount === 0 && now.getHours() >= 10) {
+    if (outboundCount === 0 && shiftedNow.getUTCHours() >= 10) {
       directives.push({
         id: `d${idx++}`, type: "warning", icon: "📵",
         message: "ما سويت أي تواصل اليوم — ابدأ اتصل على عملائك الحين",
         action: "افتح النشاطات", actionHref: "/dashboard/activities",
       });
-    } else if (outboundCount > 0 && outboundCount < 3 && now.getHours() >= 12) {
+    } else if (outboundCount > 0 && outboundCount < 3 && shiftedNow.getUTCHours() >= 12) {
       directives.push({
         id: `d${idx++}`, type: "remind", icon: "📱",
         message: `تواصلت مع ${outboundCount} بس — حاول توصل ٥ على الأقل اليوم`,
@@ -377,7 +400,7 @@ ${directivesList || "لا توجيهات — كل شيء تمام"}
     }
 
     if (!aiSummary) {
-      const hour = now.getHours();
+      const hour = shiftedNow.getUTCHours();
       const greeting = hour < 10 ? "صباح الخير" : hour < 16 ? "هلا والله" : "مساء الخير";
       const nameGreet = firstName ? ` يا ${firstName}` : "";
       const urgentCount = directives.filter((d) => d.type === "urgent").length;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { SearchIcon, LeadsIcon } from "@/components/navIcons";
 import LeadSlideOver, { type Lead } from "@/components/LeadSlideOver";
@@ -118,23 +118,31 @@ export default function LeadsPage() {
     if (o) setOpenLeadId(o);
   }, []);
 
-  async function load() {
+  const load = useCallback(async () => {
     setError(false);
     // Alias normalized_phone/normalized_email to the phone/email the UI expects.
     let query = supabase
       .from("leads")
       .select(
         `*, phone:normalized_phone, email:normalized_email, pipeline_stages(label, color), sources(label), junk_reasons(label)`,
+        { count: "exact" },
       )
       .is("deleted_at", null)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      // Explicit cap so growth past this doesn't silently drop leads off the
+      // bottom of the list — without an explicit range PostgREST applies its
+      // own default (1000) with no client-visible signal that rows were cut.
+      .limit(2000);
 
     // Sales reps only see leads assigned to them; managers/admins see all.
     if (!canViewAllData(role) && userId) {
       query = query.eq("owner_id", userId);
     }
 
-    const { data, error: err } = await query;
+    const { data, error: err, count } = await query;
+    if (count != null && data && count > data.length) {
+      console.warn(`[Leads] loaded ${data.length} of ${count} leads — hit the 2000-row cap, consider server-side pagination`);
+    }
 
     if (err) {
       console.error("[Leads] Supabase fetch failed", err);
@@ -143,12 +151,12 @@ export default function LeadsPage() {
       setLeads(data as unknown as Lead[]);
     }
     setLoading(false);
-  }
+  }, [role, userId]);
 
   useEffect(() => {
     if (roleLoading) return; // wait for the current user's role to resolve first
     load();
-  }, [roleLoading, role, userId]);
+  }, [roleLoading, load]);
 
   useEffect(() => {
     fetchLeadScoreModel()
