@@ -76,7 +76,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [router]);
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center bg-ivory text-muted">Loading…</div>;
+    return <div dir="rtl" className="flex min-h-screen items-center justify-center bg-ivory text-muted">جارِ التحميل…</div>;
   }
 
   return (

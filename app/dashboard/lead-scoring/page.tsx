@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchLeadScoreModel, scoreWithModel, type LeadScoreModel, type LeadScoreResult } from "@/lib/leadScore/computeLeadScore";
+import Skeleton from "@/components/ui/Skeleton";
 
 function Toggle({
   id,
@@ -117,7 +118,12 @@ export default function LeadScoringPage() {
         </p>
 
         {loadingModel ? (
-          <p className="py-6 text-center text-[14px] text-muted">جارِ تحميل بيانات النموذج…</p>
+          <div className="flex flex-col gap-5">
+            <Skeleton className="h-12" />
+            <Skeleton className="h-16" />
+            <Skeleton className="h-16" />
+            <Skeleton className="h-14 rounded-full" />
+          </div>
         ) : (
           <div className="flex flex-col gap-5">
             {/* Source */}
