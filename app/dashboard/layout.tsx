@@ -14,6 +14,7 @@ import { FEATURES } from "@/lib/features";
 import { UsersIcon } from "@/components/navIcons";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
 import SupervisorBot from "@/components/SupervisorBot";
+import CommandPalette from "@/components/CommandPalette";
 import {
   DashboardIcon,
   ContactsIcon,
@@ -293,6 +294,15 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
           </div>
         </div>
         <div className="flex flex-none items-center gap-3">
+          <button
+            onClick={() => window.dispatchEvent(new Event("mawrid:open-command-palette"))}
+            aria-label="بحث شامل"
+            className="hidden items-center gap-2 rounded-lg border border-[#e8ece9] bg-[#f8faf9] px-3 py-1.5 text-[13px] text-[#94a3b8] transition hover:border-[#1a5c4f]/30 hover:text-[#1a5c4f] sm:flex"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" className="h-4 w-4"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></svg>
+            <span>بحث...</span>
+            <kbd className="rounded border border-[#e8ece9] bg-white px-1 text-[10px] font-semibold">⌘K</kbd>
+          </button>
           <NotificationsDropdown />
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#141c2e]">
             <span className="text-xs font-bold text-white">{userInitials}</span>
@@ -312,6 +322,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
       <CopilotWidget />
       <SupervisorBot />
       <DailyBriefing />
+      <CommandPalette />
     </div>
   );
 }
