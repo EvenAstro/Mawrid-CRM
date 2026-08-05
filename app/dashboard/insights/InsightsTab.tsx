@@ -498,7 +498,7 @@ function InsightsChat({ data }: { data: InsightsData }) {
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <p dir="auto" className="text-[17px] font-extrabold">أهلاً 👋 أنا مساعدك مورد</p>
-            <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#7ee7cd]">Live</span>
+            <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#7ee7cd]">مباشر</span>
           </div>
           <p dir="auto" className="mt-0.5 text-[12.5px] text-white/70">
             عندي اطلاع كامل على كل الأرقام الظاهرة فوق ({data.rangeLabel}) — اسألني أي شيء
@@ -509,7 +509,7 @@ function InsightsChat({ data }: { data: InsightsData }) {
           <p className="text-[15px] font-bold tabular-nums">{data.kpis.activeDeals}</p>
         </div>
         <div className="hidden flex-none rounded-xl bg-white/10 px-3 py-1.5 text-center sm:block">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-white/60">Pipeline</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-white/60">المسار</p>
           <p className="text-[15px] font-bold tabular-nums">SAR {sar(data.kpis.pipelineValueSAR)}</p>
         </div>
       </div>
@@ -663,7 +663,7 @@ export default function InsightsTab() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">لوحة الرؤى</h1>
-                <span className="rounded-full bg-[#3a9080]/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#5ec4b0]">Live</span>
+                <span className="rounded-full bg-[#3a9080]/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#5ec4b0]">مباشر</span>
                 {refreshing && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3a9080]" />}
               </div>
               <p dir="auto" className="mt-1 text-sm text-white/50">كل الأرقام مفلترة على: <span className="font-semibold text-white/80">{data.rangeLabel}</span></p>

@@ -433,7 +433,7 @@ export default function DashboardPage() {
       {/* Middle row */}
       <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
         <div className={`${CARD} relative overflow-hidden lg:col-span-2`}>
-          <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-[#6366f1] to-[#a5b4fc]" />
+          <span className="absolute inset-x-0 top-0 h-1 bg-[#6366f1]" />
           <CardHead
             icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><path d="M3 17V9M9 17V4M15 17v-6M3 3v14h14" strokeLinecap="round" strokeLinejoin="round" /></svg>}
             color="#6366f1"
@@ -450,7 +450,7 @@ export default function DashboardPage() {
         </div>
 
         <div className={`${CARD} relative flex flex-col overflow-hidden`}>
-          <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-[#1a5c4f] to-[#38d39f]" />
+          <span className="absolute inset-x-0 top-0 h-1 bg-[#1a5c4f]" />
           <CardHead
             icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><circle cx="10" cy="10" r="7" /><path d="M10 6v4l3 2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
             color="#1a5c4f"
@@ -501,7 +501,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Sales Overview */}
         <div className={`${CARD} relative overflow-hidden`}>
-          <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-[#f59e0b] to-[#fcd34d]" />
+          <span className="absolute inset-x-0 top-0 h-1 bg-[#f59e0b]" />
           <CardHead
             icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><path d="M10 2v8l6.5 3.8A8 8 0 1 1 10 2Z" strokeLinejoin="round" /></svg>}
             color="#f59e0b"
@@ -555,7 +555,7 @@ export default function DashboardPage() {
 
         {/* Activity Feed */}
         <div className={`${CARD} relative overflow-hidden`}>
-          <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-[#0ea5e9] to-[#7dd3fc]" />
+          <span className="absolute inset-x-0 top-0 h-1 bg-[#0ea5e9]" />
           <CardHead
             icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><path d="M2 10h4l2-6 4 12 2-6h4" strokeLinecap="round" strokeLinejoin="round" /></svg>}
             color="#0ea5e9"
@@ -599,7 +599,7 @@ export default function DashboardPage() {
 
         {/* Recent Leads */}
         <div className={`${CARD} relative overflow-hidden`}>
-          <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-[#ec4899] to-[#f9a8d4]" />
+          <span className="absolute inset-x-0 top-0 h-1 bg-[#ec4899]" />
           <CardHead
             icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><circle cx="7" cy="7" r="3" /><circle cx="14" cy="9" r="2.4" /><path d="M2.5 17c.6-3 2.4-4.8 4.5-4.8s3.9 1.8 4.5 4.8M12.8 12.4c1.7.2 3 1.6 3.5 4" strokeLinecap="round" /></svg>}
             color="#ec4899"

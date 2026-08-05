@@ -247,9 +247,24 @@ export default function UsersPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-16 text-center text-[14px] text-slate-500">جارِ التحميل…</td>
-              </tr>
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="border-b border-[#e8f0ec] last:border-0">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <span className="h-10 w-10 flex-none animate-pulse rounded-xl bg-[#eef4f1]" />
+                      <div className="flex flex-col gap-1.5">
+                        <span className="h-3 w-28 animate-pulse rounded bg-[#eef4f1]" />
+                        <span className="h-2.5 w-36 animate-pulse rounded bg-[#eef4f1]" />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4"><span className="inline-block h-5 w-16 animate-pulse rounded-full bg-[#eef4f1]" /></td>
+                  <td className="px-6 py-4"><span className="inline-block h-8 w-32 animate-pulse rounded-lg bg-[#eef4f1]" /></td>
+                  {canEdit && <td className="px-6 py-4"><span className="inline-block h-8 w-24 animate-pulse rounded-lg bg-[#eef4f1]" /></td>}
+                  {canEdit && <td className="px-6 py-4"><span className="inline-block h-8 w-16 animate-pulse rounded-lg bg-[#eef4f1]" /></td>}
+                  {canDelete && <td className="px-6 py-4" />}
+                </tr>
+              ))
             ) : filteredProfiles.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-6 py-16 text-center text-[14px] text-slate-500">لا يوجد مستخدمون</td>
