@@ -3,10 +3,12 @@
 import { useState } from "react";
 import InsightsTab from "./InsightsTab";
 import RevenueTab from "./RevenueTab";
+import LeaderboardTab from "./LeaderboardTab";
 
 const TABS = [
   { key: "insights", label: "الرؤى التحليلية", icon: "📊" },
   { key: "revenue", label: "ذكاء الإيرادات", icon: "💰" },
+  { key: "leaderboard", label: "أداء الفريق", icon: "🏆" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -35,7 +37,7 @@ export default function UnifiedInsightsPage() {
       </div>
 
       {/* Active tab */}
-      {tab === "insights" ? <InsightsTab /> : <RevenueTab />}
+      {tab === "insights" ? <InsightsTab /> : tab === "revenue" ? <RevenueTab /> : <LeaderboardTab />}
     </div>
   );
 }
