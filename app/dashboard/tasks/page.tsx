@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 import { formatTime, formatDateTime, profileName, downloadCSV } from "@/lib/format";
 import Button from "@/components/ui/Button";
@@ -12,21 +11,7 @@ import CompleteTaskModal from "@/components/CompleteTaskModal";
 import { fetchProfiles, type Profile } from "@/lib/profiles";
 import { useRole } from "@/components/RoleProvider";
 import { canActOnTask } from "@/lib/permissions";
-
-interface Task {
-  id: string;
-  title: string | null;
-  description: string | null;
-  due_at: string | null;
-  entity_type: string | null;
-  completion_note: string | null;
-  assignee_uid: string | null;
-  task_types: { label: string; color: string | null } | null;
-}
-interface TaskType {
-  id: string;
-  label: string;
-}
+import { fetchTasksPage, completeTask, createTask as createTaskRow, editTask, type Task, type TaskType } from "@/lib/models/tasks";
 
 
 function startOfDay(d: Date) {
@@ -88,19 +73,11 @@ export default function TasksPage() {
   const profileMap = useMemo(() => new Map(profiles.map((p) => [p.id, p])), [profiles]);
 
   const load = useCallback(async () => {
-    let tasksQuery = supabase.from("tasks").select("*, task_types(label, color)", { count: "exact" }).is("completed_at", null).order("due_at", { ascending: true }).range(0, limit - 1);
     // Everyone only sees tasks assigned to them, regardless of role.
-    if (userId) {
-      tasksQuery = tasksQuery.eq("assignee_uid", userId);
-    }
-    const [tk, tt, pf] = await Promise.all([
-      tasksQuery,
-      supabase.from("task_types").select("id, label"),
-      fetchProfiles(),
-    ]);
-    if (tk.data) setTasks(tk.data as unknown as Task[]);
-    setTotal(tk.count ?? tk.data?.length ?? 0);
-    if (tt.data) setTypes(tt.data as TaskType[]);
+    const [{ tasks, total, types }, pf] = await Promise.all([fetchTasksPage(userId, limit), fetchProfiles()]);
+    setTasks(tasks);
+    setTotal(total);
+    setTypes(types);
     setProfiles(pf);
     setLoading(false);
   }, [userId, limit]);
@@ -143,10 +120,7 @@ export default function TasksPage() {
   const complete = useCallback(async (t: Task, note: string) => {
     if (completing.has(t.id)) return;
     setCompleting((p) => new Set(p).add(t.id));
-    const { error } = await supabase
-      .from("tasks")
-      .update({ completed_at: new Date().toISOString(), completion_note: note })
-      .eq("id", t.id);
+    const { error } = await completeTask(t.id, note);
     if (error) {
       console.error("[Tasks] complete failed", error);
       toast("تعذّر تحديث المهمة", "error");
@@ -165,17 +139,13 @@ export default function TasksPage() {
   async function createTask() {
     if (!nt.title.trim()) { setNtErr("العنوان مطلوب"); return; }
     setSaving(true);
-    const now = new Date().toISOString();
     const dueAt = nt.due ? new Date(`${nt.due}T${nt.time || "09:00"}:00`).toISOString() : null;
-    const { error } = await supabase.from("tasks").insert({
-      id: crypto.randomUUID(),
+    const { error } = await createTaskRow({
       title: nt.title.trim(),
       description: nt.description.trim() || null,
-      due_at: dueAt,
-      task_type_id: nt.typeId || null,
-      assignee_uid: nt.assigneeId || null,
-      created_at: now,
-      updated_at: now,
+      dueAt,
+      taskTypeId: nt.typeId || null,
+      assigneeId: nt.assigneeId || null,
     });
     setSaving(false);
     if (error) {
@@ -206,10 +176,7 @@ export default function TasksPage() {
     if (!editDraft.title.trim()) { toast("العنوان مطلوب", "error"); return; }
     setSavingEdit(true);
     const dueAt = editDraft.due ? new Date(`${editDraft.due}T${editDraft.time || "09:00"}:00`).toISOString() : null;
-    const { error } = await supabase
-      .from("tasks")
-      .update({ title: editDraft.title.trim(), due_at: dueAt, updated_at: new Date().toISOString() })
-      .eq("id", detail.id);
+    const { error } = await editTask(detail.id, editDraft.title.trim(), dueAt);
     setSavingEdit(false);
     if (error) {
       console.error("[Tasks] edit failed", error);

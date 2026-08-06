@@ -10,6 +10,10 @@ import LogActivitySlideOver from "@/components/LogActivitySlideOver";
 import AddContactSlideOver from "@/components/AddContactSlideOver";
 import { dayHeader, dayKey, formatDateTime, initials, money, compactSAR } from "@/lib/format";
 import { fetchLeadScoreModel, getAIScore, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
+import { fetchLeadsSummary } from "@/lib/models/leads";
+import { fetchDealsSummary } from "@/lib/models/deals";
+import { fetchRecentActivities } from "@/lib/models/activities";
+import { fetchUpcomingTasks, completeTaskQuick } from "@/lib/models/tasks";
 
 /* ---------- Types ---------- */
 type Stage = { label: string; terminal_type: string | null } | null;
@@ -254,10 +258,10 @@ export default function DashboardPage() {
     try {
       const [{ data: user }, l, d, a, t] = await Promise.all([
         supabase.auth.getUser(),
-        supabase.from("leads").select("*, sources(label), pipeline_stages(label, terminal_type)").is("deleted_at", null),
-        supabase.from("deals").select("*, pipeline_stages(label, terminal_type)").is("deleted_at", null),
-        supabase.from("activities").select("*, activity_types(label)").order("occurred_at", { ascending: false }).limit(5),
-        supabase.from("tasks").select("*").is("completed_at", null).order("due_at", { ascending: true }).limit(5),
+        fetchLeadsSummary(),
+        fetchDealsSummary(),
+        fetchRecentActivities(5),
+        fetchUpcomingTasks(5),
       ]);
       const firstErr = l.error || d.error || a.error || t.error;
       if (firstErr) {
@@ -290,10 +294,7 @@ export default function DashboardPage() {
     async (task: Task) => {
       if (completing.has(task.id)) return;
       setCompleting((prev) => new Set(prev).add(task.id));
-      const { error: upErr } = await supabase
-        .from("tasks")
-        .update({ completed_at: new Date().toISOString() })
-        .eq("id", task.id);
+      const { error: upErr } = await completeTaskQuick(String(task.id));
       if (upErr) {
         console.error("[Dashboard] Failed to complete task", upErr);
         toast("تعذّر تحديث المهمة", "error");

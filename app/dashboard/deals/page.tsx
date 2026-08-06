@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 import { SearchIcon } from "@/components/navIcons";
 import { money, formatDate, downloadCSV } from "@/lib/format";
@@ -13,28 +12,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import NewDealSlideOver from "@/components/NewDealSlideOver";
 import NextBestActionCard from "@/components/NextBestActionCard";
 import { useRole } from "@/components/RoleProvider";
-import { canViewAllData } from "@/lib/permissions";
-
-interface Deal {
-  id: string;
-  name: string | null;
-  stage_id: string | null;
-  expected_value_minor: number | null;
-  won_value_minor: number | null;
-  currency_code: string | null;
-  probability_pct: number | null;
-  target_close_date: string | null;
-  notes: string | null;
-  pipeline_stages: { label: string; color: string | null; terminal_type: string | null } | null;
-  lost_reasons: { label: string } | null;
-}
-interface StageCol {
-  id: string;
-  label: string;
-  color: string | null;
-  sort_order: number;
-  terminal_type: string | null;
-}
+import { fetchDealsBoard, moveDealStage, type Deal, type StageCol } from "@/lib/models/deals";
 
 function dealValue(d: Deal): string {
   const minor = d.won_value_minor ?? d.expected_value_minor;
@@ -69,31 +47,13 @@ export default function DealsPage() {
 
   const load = useCallback(async () => {
     setError(false);
-    // Explicit cap (see leads/page.tsx for the same pattern) so growth past
-    // this doesn't silently drop deals off the board via PostgREST's
-    // unsignaled default row cap.
-    let dealsQuery = supabase
-      .from("deals")
-      .select("*, pipeline_stages(label, color, terminal_type), lost_reasons(label)", { count: "exact" })
-      .is("deleted_at", null)
-      .limit(2000);
-    // Sales reps only see deals assigned to them; managers/admins see all.
-    if (!canViewAllData(role) && userId) {
-      dealsQuery = dealsQuery.eq("owner_id", userId);
-    }
-    const [d, s] = await Promise.all([
-      dealsQuery,
-      supabase.from("pipeline_stages").select("*").eq("pipeline", "deal").order("sort_order"),
-    ]);
-    if (d.error || s.error) {
-      console.error("[Deals] fetch failed", d.error, s.error);
+    try {
+      const { deals: d, stages: s } = await fetchDealsBoard(role, userId);
+      setDeals(d);
+      setStages(s);
+    } catch (err) {
+      console.error("[Deals] fetch failed", err);
       setError(true);
-    } else {
-      if (d.count != null && d.data && d.count > d.data.length) {
-        console.warn(`[Deals] loaded ${d.data.length} of ${d.count} deals — hit the 2000-row cap, consider server-side pagination`);
-      }
-      setDeals((d.data as unknown as Deal[]) ?? []);
-      setStages((s.data as unknown as StageCol[]) ?? []);
     }
     setLoading(false);
   }, [role, userId]);
@@ -138,7 +98,7 @@ export default function DealsPage() {
           : d,
       ),
     );
-    const { error: upErr } = await supabase.from("deals").update({ stage_id: toStageId, updated_at: new Date().toISOString() }).eq("id", dealId);
+    const { error: upErr } = await moveDealStage(dealId, toStageId);
     if (upErr) {
       console.error("[Deals] stage update failed", upErr);
       toast("تعذّر نقل الصفقة", "error");

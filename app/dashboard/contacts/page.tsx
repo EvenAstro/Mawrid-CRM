@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { SearchIcon } from "@/components/navIcons";
 import { initials, formatDate, formatPhone, downloadCSV } from "@/lib/format";
 import Button from "@/components/ui/Button";
@@ -10,19 +9,7 @@ import Skeleton from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import AddContactSlideOver from "@/components/AddContactSlideOver";
 import { useToast } from "@/components/Toast";
-
-interface Contact {
-  id: string;
-  full_name: string | null;
-  role: string | null;
-  phone: string | null;
-  email: string | null;
-  preferred_channel: string | null;
-  notes: string | null;
-  created_at: string | null;
-  establishment_id: string | null;
-  establishments: { name: string } | null;
-}
+import { fetchContactsPage, fetchContactById, softDeleteContacts, type Contact } from "@/lib/models/contacts";
 
 const AVATAR_GRADIENT = "from-[#1a5c4f] to-[#0f3a30]";
 const ACCENT = "#1a5c4f";
@@ -53,18 +40,13 @@ export default function ContactsPage() {
 
   const load = useCallback(async () => {
     setError(false);
-    const { data, error: err, count } = await supabase
-      .from("contacts")
-      .select("*, establishments(name)", { count: "exact" })
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .range(0, limit - 1);
-    if (err) {
+    try {
+      const { contacts, total } = await fetchContactsPage(limit);
+      setContacts(contacts);
+      setTotal(total);
+    } catch (err) {
       console.error("[Contacts] fetch failed", err);
       setError(true);
-    } else {
-      setContacts((data as unknown as Contact[]) ?? []);
-      setTotal(count ?? (data as unknown as Contact[])?.length ?? 0);
     }
     setLoading(false);
   }, [limit]);
@@ -83,8 +65,8 @@ export default function ContactsPage() {
       return;
     }
     (async () => {
-      const { data } = await supabase.from("contacts").select("*, establishments(name)").eq("id", openContactId).maybeSingle();
-      if (data) setSelected(data as unknown as Contact);
+      const data = await fetchContactById(openContactId);
+      if (data) setSelected(data);
       setOpenContactId(null);
     })();
   }, [openContactId, loading, contacts]);
@@ -123,7 +105,7 @@ export default function ContactsPage() {
 
   async function deleteContacts(ids: string[]) {
     setDeleting(true);
-    const { error } = await supabase.from("contacts").update({ deleted_at: new Date().toISOString() }).in("id", ids);
+    const { error } = await softDeleteContacts(ids);
     setDeleting(false);
     if (error) {
       console.error("[Contacts] delete failed", error);
