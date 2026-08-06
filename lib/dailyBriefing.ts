@@ -1,4 +1,7 @@
 import { supabase } from "@/lib/supabase";
+import { fetchTasksDueToday, fetchOverdueTasks, fetchTasksByIds } from "@/lib/models/tasks";
+import { fetchStaleDealsForBriefing } from "@/lib/models/deals";
+import { fetchActivityTimestampsByEntityIds } from "@/lib/models/activities";
 
 export interface BriefingTask {
   id: string;
@@ -43,28 +46,9 @@ export async function fetchBriefingData(): Promise<BriefingData> {
   const userId = userRes.user?.id;
 
   const [todayRes, overdueRes, dealsRes] = await Promise.all([
-    supabase
-      .from("tasks")
-      .select("id, title, due_at, depends_on_task_id")
-      .gte("due_at", todayStr)
-      .lt("due_at", tomorrow.toISOString())
-      .is("completed_at", null)
-      .eq("assignee_uid", userId ?? "")
-      .order("due_at", { ascending: true }),
-    supabase
-      .from("tasks")
-      .select("id, title, due_at, depends_on_task_id")
-      .lt("due_at", todayStr)
-      .is("completed_at", null)
-      .eq("assignee_uid", userId ?? "")
-      .order("due_at", { ascending: true })
-      .limit(5),
-    supabase
-      .from("deals")
-      .select("id, name, lead_id, updated_at, expected_value_minor, leads(full_name), pipeline_stages(terminal_type)")
-      .is("deleted_at", null)
-      .order("updated_at", { ascending: true })
-      .limit(30),
+    fetchTasksDueToday(userId ?? "", todayStr, tomorrow.toISOString()),
+    fetchOverdueTasks(userId ?? "", todayStr),
+    fetchStaleDealsForBriefing(),
   ]);
 
   let todayTasks = (todayRes.data as unknown as BriefingTask[]) ?? [];
@@ -73,10 +57,7 @@ export async function fetchBriefingData(): Promise<BriefingData> {
   const allBriefingTasks = [...todayTasks, ...overdueTasks];
   const depIds = allBriefingTasks.map((t) => t.depends_on_task_id).filter((id): id is string => !!id);
   if (depIds.length > 0) {
-    const { data: depData } = await supabase
-      .from("tasks")
-      .select("id, title, completed_at")
-      .in("id", depIds);
+    const { data: depData } = await fetchTasksByIds(depIds);
     const depMap = new Map((depData as { id: string; title: string | null; completed_at: string | null }[] ?? []).map((d) => [d.id, d]));
     function markBlocked(tasks: BriefingTask[]): BriefingTask[] {
       return tasks.map((t) => {
@@ -107,21 +88,12 @@ export async function fetchBriefingData(): Promise<BriefingData> {
   const leadIds = activeDeals.map((d) => d.lead_id).filter((id): id is string => !!id);
 
   const lastActivityAt = new Map<string, string>();
-  const cols = "entity_type, entity_id, occurred_at";
   const [dealActRes, leadActRes] = await Promise.all([
     dealIds.length
-      ? Promise.all(
-          chunk(dealIds, 50).map((c) =>
-            supabase.from("activities").select(cols).eq("entity_type", "deal").in("entity_id", c),
-          ),
-        )
+      ? Promise.all(chunk(dealIds, 50).map((c) => fetchActivityTimestampsByEntityIds("deal", c)))
       : Promise.resolve([]),
     leadIds.length
-      ? Promise.all(
-          chunk(leadIds, 50).map((c) =>
-            supabase.from("activities").select(cols).eq("entity_type", "lead").in("entity_id", c),
-          ),
-        )
+      ? Promise.all(chunk(leadIds, 50).map((c) => fetchActivityTimestampsByEntityIds("lead", c)))
       : Promise.resolve([]),
   ]);
   type Act = { entity_type: string; entity_id: string; occurred_at: string | null };

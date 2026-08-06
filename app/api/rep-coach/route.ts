@@ -2,6 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import { requireUser } from "@/lib/auth/requireUser";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { fetchProfileGreetingName } from "@/lib/profiles";
+import {
+  fetchRepCoachOverdueTasks,
+  fetchRepCoachTodayTasks,
+  fetchRepCoachUpcomingTasks,
+  fetchRepCoachCompletedToday,
+  fetchRepCoachNoDueDateTasks,
+  fetchRepCoachYesterdayCompletedIds,
+} from "@/lib/models/tasks";
+import {
+  fetchRepCoachStaleDeals,
+  fetchRepCoachBigDeals,
+  fetchRepCoachPipeline,
+  fetchRepCoachQuoteDeals,
+} from "@/lib/models/deals";
+import { fetchRepCoachTodayActivities, fetchRepCoachUpcomingMeetings } from "@/lib/models/activities";
+import { fetchRepCoachNewLeads } from "@/lib/models/leads";
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct";
@@ -78,11 +95,7 @@ export async function GET(req: NextRequest) {
     const twoDaysAgo = new Date(now.getTime() - 2 * MS_PER_DAY).toISOString();
 
     // Fetch user profile for personalized greeting
-    const profileRes = await supabase
-      .from("profiles")
-      .select("first_name, full_name")
-      .eq("id", userId)
-      .maybeSingle();
+    const profileRes = await fetchProfileGreetingName(supabase, userId);
     const firstName = profileRes.data?.first_name || profileRes.data?.full_name?.split(" ")[0] || null;
 
     const threeDaysFromNow = new Date(now.getTime() + 3 * MS_PER_DAY).toISOString();
@@ -102,48 +115,22 @@ export async function GET(req: NextRequest) {
       quoteDealsRes,
       yesterdayCompletedRes,
     ] = await Promise.all([
-      supabase.from("tasks").select("id, title, due_at")
-        .eq("assignee_uid", userId).lt("due_at", ds).is("completed_at", null)
-        .order("due_at", { ascending: true }).limit(10),
-      supabase.from("tasks").select("id, title, due_at")
-        .eq("assignee_uid", userId).gte("due_at", ds).lt("due_at", de).is("completed_at", null)
-        .order("due_at", { ascending: true }).limit(10),
+      fetchRepCoachOverdueTasks(supabase, userId, ds),
+      fetchRepCoachTodayTasks(supabase, userId, ds, de),
       // Upcoming tasks — tomorrow to 3 days from now
-      supabase.from("tasks").select("id, title, due_at")
-        .eq("assignee_uid", userId).gte("due_at", de).lte("due_at", threeDaysFromNow).is("completed_at", null)
-        .order("due_at", { ascending: true }).limit(10),
-      supabase.from("tasks").select("id, title, completed_at")
-        .eq("assignee_uid", userId).gte("completed_at", ds).lt("completed_at", de).limit(20),
-      supabase.from("tasks").select("id, title, created_at")
-        .eq("assignee_uid", userId).is("due_at", null).is("completed_at", null)
-        .order("created_at", { ascending: false }).limit(10),
-      supabase.from("deals").select("id, name, updated_at, expected_value, leads(full_name)")
-        .is("deleted_at", null).is("closed_at", null).lt("updated_at", sevenDaysAgo)
-        .order("updated_at", { ascending: true }).limit(10),
-      supabase.from("activities").select("id, entity_type, entity_id, direction, occurred_at")
-        .eq("user_id", userId).gte("occurred_at", ds).lt("occurred_at", de),
-      supabase.from("leads").select("id, full_name, company_name, created_at")
-        .is("deleted_at", null).gte("created_at", twoDaysAgo)
-        .order("created_at", { ascending: false }).limit(10),
-      supabase.from("deals").select("id, name, expected_value, stage, updated_at, leads(full_name)")
-        .is("deleted_at", null).is("closed_at", null)
-        .order("expected_value", { ascending: false }).limit(5),
-      supabase.from("deals").select("id, name, stage, expected_value, leads(full_name)")
-        .is("deleted_at", null).is("closed_at", null)
-        .order("created_at", { ascending: false }).limit(20),
+      fetchRepCoachUpcomingTasks(supabase, userId, de, threeDaysFromNow),
+      fetchRepCoachCompletedToday(supabase, userId, ds, de),
+      fetchRepCoachNoDueDateTasks(supabase, userId),
+      fetchRepCoachStaleDeals(supabase, sevenDaysAgo),
+      fetchRepCoachTodayActivities(supabase, userId, ds, de),
+      fetchRepCoachNewLeads(supabase, twoDaysAgo),
+      fetchRepCoachBigDeals(supabase),
+      fetchRepCoachPipeline(supabase),
       // Upcoming meetings — activities with "meeting" type in the next 3 days
-      supabase.from("activities").select("id, body, occurred_at, activity_types!inner(label)")
-        .eq("user_id", userId).gte("occurred_at", ds).lte("occurred_at", threeDaysFromNow)
-        .ilike("activity_types.label", "%meeting%")
-        .order("occurred_at", { ascending: true }).limit(10),
+      fetchRepCoachUpcomingMeetings(supabase, userId, ds, threeDaysFromNow),
       // Deals in quote/proposal stage — need follow-up if not updated in 3+ days
-      supabase.from("deals").select("id, name, expected_value, updated_at, leads(full_name), pipeline_stages!inner(label)")
-        .is("deleted_at", null).is("closed_at", null).lt("updated_at", threeDaysAgo)
-        .ilike("pipeline_stages.label", "%عرض%")
-        .order("updated_at", { ascending: true }).limit(10),
-      supabase.from("tasks").select("id").eq("assignee_uid", userId)
-        .gte("completed_at", new Date(todayStart.getTime() - MS_PER_DAY).toISOString())
-        .lt("completed_at", ds),
+      fetchRepCoachQuoteDeals(supabase, threeDaysAgo),
+      fetchRepCoachYesterdayCompletedIds(supabase, userId, new Date(todayStart.getTime() - MS_PER_DAY).toISOString(), ds),
     ]);
 
     type Task = { id: string; title: string | null; due_at: string | null };

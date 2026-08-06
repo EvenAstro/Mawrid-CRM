@@ -13,7 +13,8 @@ import { useRole } from "@/components/RoleProvider";
 import { canActOnTask } from "@/lib/permissions";
 import { logAudit, fieldChangeMessage } from "@/lib/auditLog";
 import { fetchLeadTouchpoints, markLeadResponded, markLeadNoResponse, markLeadJunk, updateLead } from "@/lib/models/leads";
-import { createLeadTask } from "@/lib/models/tasks";
+import { createLeadTask, fetchLeadOpenTasks, fetchLeadCompletedTasks, fetchLeadAllTasksCompact, completeLeadTask } from "@/lib/models/tasks";
+import { fetchLeadActivities } from "@/lib/models/activities";
 import {
   fetchActiveActivityTypes,
   fetchJunkReasons,
@@ -177,39 +178,15 @@ export default function LeadSlideOver({
   useEffect(() => { if (lead) setShown(lead); }, [lead]);
 
   async function refetchActivities(leadId: string | number) {
-    const { data } = await supabase
-      .from("activities")
-      .select("*, activity_types(label)")
-      .eq("entity_id", leadId)
-      .eq("entity_type", "lead")
-      .order("occurred_at", { ascending: false })
-      .limit(30);
+    const { data } = await fetchLeadActivities(leadId);
     setActivities((data as unknown as Activity[]) || []);
   }
 
   async function refetchTasks(leadId: string | number) {
-    const filter = `lead_id.eq.${leadId},and(entity_id.eq.${leadId},entity_type.eq.lead)`;
     const [openRes, doneRes, allRes] = await Promise.all([
-      supabase
-        .from("tasks")
-        .select("*, task_types(label, color)")
-        .or(filter)
-        .is("completed_at", null)
-        .order("due_at", { ascending: true, nullsFirst: false })
-        .limit(30),
-      supabase
-        .from("tasks")
-        .select("*, task_types(label, color)")
-        .or(filter)
-        .not("completed_at", "is", null)
-        .order("completed_at", { ascending: false })
-        .limit(20),
-      supabase
-        .from("tasks")
-        .select("id, title, completed_at, depends_on_task_id, lead_id")
-        .or(filter)
-        .order("due_at", { ascending: true, nullsFirst: false })
-        .limit(50),
+      fetchLeadOpenTasks(leadId),
+      fetchLeadCompletedTasks(leadId),
+      fetchLeadAllTasksCompact(leadId),
     ]);
     setTasks((openRes.data as unknown as Task[]) || []);
     setCompletedTasks((doneRes.data as unknown as Task[]) || []);
@@ -381,10 +358,7 @@ export default function LeadSlideOver({
   async function completeTask(note: string) {
     if (!completeTarget || !data) return;
     setCompletingId(completeTarget.id);
-    const { error } = await supabase
-      .from("tasks")
-      .update({ completed_at: new Date().toISOString(), completion_note: note })
-      .eq("id", completeTarget.id);
+    const { error } = await completeLeadTask(String(completeTarget.id), note);
     setCompletingId(null);
     if (error) { toast("تعذّر إنهاء المهمة", "error"); return; }
     const unblocked = allLeadTasks.filter((t) => t.depends_on_task_id === completeTarget.id && !t.completed_at);

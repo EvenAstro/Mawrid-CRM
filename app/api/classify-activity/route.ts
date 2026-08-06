@@ -4,6 +4,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { classifyActivity } from "@/lib/classifyActivity";
 import { requireUser } from "@/lib/auth/requireUser";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { setActivitySituationalTag } from "@/lib/models/activities";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -44,10 +45,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ activityId, tag: null });
   }
 
-  const { error } = await supabase
-    .from("activities")
-    .update({ situational_tag: tag, tag_computed_at: new Date().toISOString() })
-    .eq("id", activityId);
+  const { error } = await setActivitySituationalTag(supabase, activityId, tag);
 
   if (error) {
     console.error("[classify-activity] update failed", error);

@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { canViewAllData } from "@/lib/permissions";
 import type { Role } from "@/lib/profiles";
@@ -149,4 +150,38 @@ export async function markLeadNoResponse(leadId: string | number, at: string): P
     .update({ contact_outcome: "no_response", contact_outcome_at: at, updated_at: at })
     .eq("id", leadId);
   return { error };
+}
+
+/** Minimal select for the insights builder — id/date/junk/source only. */
+export async function fetchLeadsForInsights() {
+  return supabase.from("leads").select("id, created_at, junk_reason_id, sources(label)").is("deleted_at", null);
+}
+
+/** Minimal select for the lead-score model builder. */
+export async function fetchLeadsForScoring() {
+  return supabase.from("leads").select("id, junk_reason_id, establishment_id, sources(label)").is("deleted_at", null);
+}
+
+/** All lead_touchpoints (lead_id + campaign_id) — used by the lead-score model builder. */
+export async function fetchAllLeadTouchpoints() {
+  return supabase.from("lead_touchpoints").select("lead_id, campaign_id");
+}
+
+/** Minimal select for the Copilot business snapshot. */
+export async function fetchLeadsForSnapshot(client: SupabaseClient) {
+  return client.from("leads").select("id, junk_reason_id, created_at, sources(label)").is("deleted_at", null);
+}
+
+/** Leads created in the last N days, for the rep-coach briefing. */
+export async function fetchRepCoachNewLeads(client: SupabaseClient, sinceIso: string) {
+  return client.from("leads").select("id, full_name, company_name, created_at")
+    .is("deleted_at", null).gte("created_at", sinceIso)
+    .order("created_at", { ascending: false }).limit(10);
+}
+
+/** Leads created in the last day, for the notifications dropdown. */
+export async function fetchNotifNewLeads(sinceIso: string) {
+  return supabase.from("leads").select("id, company_name, created_at")
+    .gte("created_at", sinceIso)
+    .order("created_at", { ascending: false }).limit(5);
 }

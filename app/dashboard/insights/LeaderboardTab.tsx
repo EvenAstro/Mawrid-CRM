@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { fetchProfiles, type Profile } from "@/lib/profiles";
 import { profileName, money } from "@/lib/format";
 import Skeleton from "@/components/ui/Skeleton";
+import { fetchDealsForLeaderboard } from "@/lib/models/deals";
+import { fetchCompletedTasksSince } from "@/lib/models/tasks";
+import { fetchOutboundActivitiesSince } from "@/lib/models/activities";
 
 interface RepStats {
   userId: string;
@@ -39,21 +41,9 @@ export default function LeaderboardTab() {
         const since = monthStart();
         const [profiles, dealsRes, tasksRes, activitiesRes] = await Promise.all([
           fetchProfiles(),
-          supabase
-            .from("deals")
-            .select("owner_id, won_value_minor, expected_value_minor, updated_at, pipeline_stages(terminal_type)")
-            .is("deleted_at", null)
-            .gte("updated_at", since),
-          supabase
-            .from("tasks")
-            .select("assignee_uid, completed_at")
-            .not("completed_at", "is", null)
-            .gte("completed_at", since),
-          supabase
-            .from("activities")
-            .select("user_id, direction, occurred_at")
-            .eq("direction", "outbound")
-            .gte("occurred_at", since),
+          fetchDealsForLeaderboard(since),
+          fetchCompletedTasksSince(since),
+          fetchOutboundActivitiesSince(since),
         ]);
 
         if (cancelled) return;

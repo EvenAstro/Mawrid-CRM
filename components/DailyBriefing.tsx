@@ -7,6 +7,7 @@ import { useCopilot } from "@/components/copilot/CopilotProvider";
 import Button from "@/components/ui/Button";
 import { fetchBriefingData, type BriefingData, type BriefingTask, type StuckDeal } from "@/lib/dailyBriefing";
 import CompleteTaskModal from "@/components/CompleteTaskModal";
+import { completeTask as completeTaskRow } from "@/lib/models/tasks";
 
 const BRIEFING_KEY = "mawrid_briefing_seen";
 const PANEL_KEY = "mawrid_briefing_panel_collapsed";
@@ -229,10 +230,7 @@ export default function DailyBriefing() {
   const completeTask = useCallback(async (task: BriefingTask, note: string) => {
     if (completing.has(task.id)) return;
     setCompleting((prev) => new Set(prev).add(task.id));
-    const { error } = await supabase
-      .from("tasks")
-      .update({ completed_at: new Date().toISOString(), completion_note: note })
-      .eq("id", task.id);
+    const { error } = await completeTaskRow(task.id, note);
     if (error) {
       console.error("[DailyBriefing] Failed to complete task", error);
       setCompleting((prev) => {

@@ -4,6 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { BellIcon } from "@/components/navIcons";
+import { fetchNotifOverdueTasks, fetchNotifTodayTasks } from "@/lib/models/tasks";
+import { fetchNotifStuckDeals } from "@/lib/models/deals";
+import { fetchNotifNewLeads } from "@/lib/models/leads";
 
 interface Notification {
   id: string;
@@ -68,36 +71,10 @@ export default function NotificationsDropdown() {
     todayEnd.setDate(todayEnd.getDate() + 1);
 
     const [overdueRes, upcomingRes, dealsRes, leadsRes] = await Promise.all([
-      supabase
-        .from("tasks")
-        .select("id, title, due_at")
-        .lt("due_at", todayStart.toISOString())
-        .is("completed_at", null)
-        .eq("assignee_uid", userId)
-        .order("due_at", { ascending: false })
-        .limit(5),
-      supabase
-        .from("tasks")
-        .select("id, title, due_at")
-        .gte("due_at", todayStart.toISOString())
-        .lt("due_at", todayEnd.toISOString())
-        .is("completed_at", null)
-        .eq("assignee_uid", userId)
-        .order("due_at", { ascending: true })
-        .limit(5),
-      supabase
-        .from("deals")
-        .select("id, name, updated_at, expected_value")
-        .is("closed_at", null)
-        .lt("updated_at", new Date(now.getTime() - 7 * MS_PER_DAY).toISOString())
-        .order("updated_at", { ascending: true })
-        .limit(5),
-      supabase
-        .from("leads")
-        .select("id, company_name, created_at")
-        .gte("created_at", new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString())
-        .order("created_at", { ascending: false })
-        .limit(5),
+      fetchNotifOverdueTasks(userId, todayStart.toISOString()),
+      fetchNotifTodayTasks(userId, todayStart.toISOString(), todayEnd.toISOString()),
+      fetchNotifStuckDeals(new Date(now.getTime() - 7 * MS_PER_DAY).toISOString()),
+      fetchNotifNewLeads(new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()),
     ]);
 
     const notifs: Notification[] = [];

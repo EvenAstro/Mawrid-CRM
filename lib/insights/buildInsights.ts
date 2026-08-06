@@ -1,4 +1,7 @@
-import { supabase } from "@/lib/supabase";
+import { fetchLeadsForInsights } from "@/lib/models/leads";
+import { fetchDealsForInsights } from "@/lib/models/deals";
+import { fetchActivityTimestamps } from "@/lib/models/activities";
+import { fetchDealStagesFull } from "@/lib/models/refData";
 
 export type DateRangeKey = "7d" | "30d" | "90d" | "year" | "all" | "custom";
 
@@ -149,15 +152,10 @@ export async function buildInsights(range: DateRangeKey, custom?: CustomRange): 
   const { from, to } = rangeToDates(range, custom);
 
   const [leadsRes, dealsRes, actsRes, stagesRes] = await Promise.all([
-    supabase.from("leads").select("id, created_at, junk_reason_id, sources(label)").is("deleted_at", null),
-    supabase
-      .from("deals")
-      .select(
-        "id, name, lead_id, stage_id, expected_value_minor, won_value_minor, probability_pct, created_at, updated_at, pipeline_stages(id, label, color, terminal_type, sort_order), lost_reasons(label), leads(full_name)",
-      )
-      .is("deleted_at", null),
-    supabase.from("activities").select("occurred_at"),
-    supabase.from("pipeline_stages").select("id, label, color, terminal_type, sort_order").eq("pipeline", "deal").order("sort_order"),
+    fetchLeadsForInsights(),
+    fetchDealsForInsights(),
+    fetchActivityTimestamps(),
+    fetchDealStagesFull(),
   ]);
   if (leadsRes.error) console.error("[buildInsights] leads fetch failed", leadsRes.error);
   if (dealsRes.error) console.error("[buildInsights] deals fetch failed", dealsRes.error);

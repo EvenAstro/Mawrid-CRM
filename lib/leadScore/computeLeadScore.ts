@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { fetchLeadsForScoring, fetchAllLeadTouchpoints } from "@/lib/models/leads";
 
 /** Below this per-segment sample size, fall back to the overall base rate — a
  * source with 3 leads shouldn't produce a more "confident" number than one
@@ -43,8 +43,8 @@ function rate(s: RateStat, fallback: number): number {
  */
 export async function fetchLeadScoreModel(): Promise<LeadScoreModel> {
   const [leadsRes, tpsRes] = await Promise.all([
-    supabase.from("leads").select("id, junk_reason_id, establishment_id, sources(label)").is("deleted_at", null),
-    supabase.from("lead_touchpoints").select("lead_id, campaign_id"),
+    fetchLeadsForScoring(),
+    fetchAllLeadTouchpoints(),
   ]);
   if (leadsRes.error) console.error("[leadScore] leads fetch failed", leadsRes.error);
   if (tpsRes.error) console.error("[leadScore] lead_touchpoints fetch failed", tpsRes.error);
