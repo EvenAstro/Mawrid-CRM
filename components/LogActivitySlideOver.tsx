@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 import { todayInput } from "@/lib/format";
+import { createActivity } from "@/lib/models/activities";
+import { fetchActiveActivityTypes } from "@/lib/models/refData";
+import { searchLeadsByName } from "@/lib/models/leads";
 
 interface ActivityType {
   id: string;
@@ -38,12 +41,7 @@ export default function LogActivitySlideOver({
 
   useEffect(() => {
     if (!open || types.length) return;
-    supabase
-      .from("activity_types")
-      .select("id, label")
-      .eq("is_archived", false)
-      .order("sort_order", { ascending: true })
-      .then(({ data }) => data && setTypes(data as ActivityType[]));
+    fetchActiveActivityTypes().then(setTypes).catch((err) => console.error("[LogActivity] fetchActiveActivityTypes failed", err));
   }, [open, types.length]);
 
   // Live lead search
@@ -54,13 +52,8 @@ export default function LogActivitySlideOver({
     }
     let active = true;
     const t = setTimeout(async () => {
-      const { data } = await supabase
-        .from("leads")
-        .select("id, full_name")
-        .ilike("full_name", `%${query.trim()}%`)
-        .is("deleted_at", null)
-        .limit(6);
-      if (active) setHits((data as LeadHit[]) || []);
+      const data = await searchLeadsByName(query.trim());
+      if (active) setHits(data.map((l) => ({ id: String(l.id), full_name: l.full_name })));
     }, 250);
     return () => {
       active = false;
@@ -97,20 +90,15 @@ export default function LogActivitySlideOver({
     }
     setSaving(true);
     const { data: userData } = await supabase.auth.getUser();
-    const now = new Date().toISOString();
-    const activityId = crypto.randomUUID();
     const trimmedNotes = notes.trim();
-    const { error } = await supabase.from("activities").insert({
-      id: activityId,
-      entity_type: "lead",
-      entity_id: selected.id,
-      activity_type_id: typeId,
+    const { error, id: activityId } = await createActivity({
+      entityType: "lead",
+      entityId: selected.id,
+      activityTypeId: typeId,
       body: trimmedNotes || null,
       direction,
-      occurred_at: new Date(date + "T00:00:00").toISOString(),
-      user_id: userData.user?.id ?? null,
-      created_at: now,
-      updated_at: now,
+      occurredAt: new Date(date + "T00:00:00").toISOString(),
+      userId: userData.user?.id ?? null,
     });
     setSaving(false);
     if (error) {

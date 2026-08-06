@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { upsertProfileFromSignup } from "@/lib/profiles";
 import { MailIcon, LockIcon, UserIcon, EyeIcon, EyeOffIcon } from "@/components/icons";
 
 const features = ["يجهز خلال أقل من دقيقة", "تقييم العملاء بالذكاء الاصطناعي", "رؤية كاملة لمسار المبيعات"];
@@ -67,12 +68,7 @@ export default function RegisterPage() {
     // Belt-and-suspenders: the DB trigger creates this row too, but insert
     // here in case the trigger isn't set up yet on this Supabase project.
     if (data.user) {
-      await supabase.from("profiles").upsert({
-        id: data.user.id,
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        email: email.trim(),
-      });
+      await upsertProfileFromSignup(data.user.id, firstName.trim(), lastName.trim(), email.trim());
     }
     setLoading(false);
     router.push("/dashboard");

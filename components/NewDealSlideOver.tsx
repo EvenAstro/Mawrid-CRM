@@ -6,6 +6,8 @@ import { useToast } from "@/components/Toast";
 import SlideOver from "@/components/ui/SlideOver";
 import Button from "@/components/ui/Button";
 import { Input, Textarea, Select } from "@/components/ui/Field";
+import { searchLeadsByName } from "@/lib/models/leads";
+import { createDeal } from "@/lib/models/deals";
 
 interface Stage {
   id: string;
@@ -63,13 +65,8 @@ export default function NewDealSlideOver({
     }
     let active = true;
     const t = setTimeout(async () => {
-      const { data } = await supabase
-        .from("leads")
-        .select("id, full_name")
-        .ilike("full_name", `%${query.trim()}%`)
-        .is("deleted_at", null)
-        .limit(6);
-      if (active) setHits((data as LeadHit[]) || []);
+      const data = await searchLeadsByName(query.trim());
+      if (active) setHits(data.map((l) => ({ id: String(l.id), full_name: l.full_name })));
     }, 250);
     return () => {
       active = false;
@@ -96,22 +93,18 @@ export default function NewDealSlideOver({
       return;
     }
     setSaving(true);
-    const now = new Date().toISOString();
     const minor = amount.trim() ? Math.round(parseFloat(amount) * 100) : null;
     const { data: userData } = await supabase.auth.getUser();
-    const { error } = await supabase.from("deals").insert({
-      id: crypto.randomUUID(),
+    const { error } = await createDeal({
       name: name.trim(),
-      lead_id: customer?.id ?? null,
-      stage_id: stageId || null,
-      expected_value_minor: Number.isFinite(minor as number) ? minor : null,
-      currency_code: currency,
-      probability_pct: probability.trim() ? Math.round(parseFloat(probability)) : 0,
-      target_close_date: closeDate || null,
+      leadId: customer?.id ?? null,
+      stageId: stageId || null,
+      expectedValueMinor: Number.isFinite(minor as number) ? minor : null,
+      currencyCode: currency,
+      probabilityPct: probability.trim() ? Math.round(parseFloat(probability)) : 0,
+      targetCloseDate: closeDate || null,
       notes: notes.trim() || null,
-      owner_id: userData.user?.id ?? null,
-      created_at: now,
-      updated_at: now,
+      ownerId: userData.user?.id ?? null,
     });
     setSaving(false);
     if (error) {

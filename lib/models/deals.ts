@@ -81,3 +81,40 @@ export async function fetchOwnedDealIds(userId: string): Promise<(string | numbe
 export async function fetchDealsSummary() {
   return supabase.from("deals").select("*, pipeline_stages(label, terminal_type)").is("deleted_at", null);
 }
+
+export interface NewDealInput {
+  name: string;
+  leadId: string | null;
+  stageId: string | null;
+  expectedValueMinor: number | null;
+  currencyCode: string;
+  probabilityPct: number;
+  targetCloseDate: string | null;
+  notes: string | null;
+  ownerId: string | null;
+}
+
+/** Creates a new deal. */
+export async function createDeal(input: NewDealInput): Promise<{ error: Error | null }> {
+  const now = new Date().toISOString();
+  const { error } = await supabase.from("deals").insert({
+    id: crypto.randomUUID(),
+    name: input.name,
+    lead_id: input.leadId,
+    stage_id: input.stageId,
+    expected_value_minor: input.expectedValueMinor,
+    currency_code: input.currencyCode,
+    probability_pct: input.probabilityPct,
+    target_close_date: input.targetCloseDate,
+    notes: input.notes,
+    owner_id: input.ownerId,
+    created_at: now,
+    updated_at: now,
+  });
+  return { error };
+}
+
+/** Global command-palette search — deals matching name. */
+export async function searchDealsForPalette(likePattern: string, limit = 5) {
+  return supabase.from("deals").select("id, name").is("deleted_at", null).ilike("name", likePattern).limit(limit);
+}

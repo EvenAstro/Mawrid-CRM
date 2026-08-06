@@ -3,11 +3,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
-
-interface Source {
-  id: string;
-  label: string;
-}
+import { fetchActiveSources, fetchAllPipelineStages, type Source } from "@/lib/models/refData";
+import { createLead } from "@/lib/models/leads";
 
 export default function NewLeadSlideOver({
   open,
@@ -31,16 +28,8 @@ export default function NewLeadSlideOver({
   useEffect(() => {
     if (!open || sources.length) return;
     (async () => {
-      const [{ data: src }, { data: stages }] = await Promise.all([
-        supabase
-          .from("sources")
-          .select("id, label")
-          .eq("is_archived", false)
-          .order("sort_order", { ascending: true }),
-        supabase.from("pipeline_stages").select("id, label, terminal_type"),
-      ]);
-      if (src) setSources(src as Source[]);
-      const list = (stages as { id: string; label: string; terminal_type: string | null }[]) || [];
+      const [src, list] = await Promise.all([fetchActiveSources(), fetchAllPipelineStages()]);
+      setSources(src);
       const start =
         list.find((s) => s.label.toLowerCase() === "new") ||
         list.find((s) => s.terminal_type == null);
@@ -70,18 +59,14 @@ export default function NewLeadSlideOver({
       return;
     }
     setSaving(true);
-    const now = new Date().toISOString();
     const { data: userData } = await supabase.auth.getUser();
-    const { error } = await supabase.from("leads").insert({
-      id: crypto.randomUUID(),
-      full_name: fullName.trim(),
-      normalized_phone: phone.trim() || null,
-      primary_source_id: sourceId || null,
-      stage_id: defaultStageId,
+    const { error } = await createLead({
+      fullName: fullName.trim(),
+      normalizedPhone: phone.trim() || null,
+      primarySourceId: sourceId || null,
+      stageId: defaultStageId,
       notes: notes.trim() || null,
-      owner_id: userData.user?.id ?? null,
-      created_at: now,
-      updated_at: now,
+      ownerId: userData.user?.id ?? null,
     });
     setSaving(false);
     if (error) {

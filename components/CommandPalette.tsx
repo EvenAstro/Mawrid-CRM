@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { FEATURES } from "@/lib/features";
 import { useRole } from "@/components/RoleProvider";
+import { searchLeadsForPalette } from "@/lib/models/leads";
+import { searchDealsForPalette } from "@/lib/models/deals";
+import { searchContactsForPalette } from "@/lib/models/contacts";
 
 type ResultKind = "page" | "lead" | "deal" | "contact";
 
@@ -46,9 +48,9 @@ async function remoteResults(query: string): Promise<Result[]> {
   const like = `%${q}%`;
 
   const [leadsRes, dealsRes, contactsRes] = await Promise.all([
-    supabase.from("leads").select("id, full_name, company_name").is("deleted_at", null).or(`full_name.ilike.${like},company_name.ilike.${like}`).limit(5),
-    supabase.from("deals").select("id, name").is("deleted_at", null).ilike("name", like).limit(5),
-    supabase.from("contacts").select("id, full_name, role").is("deleted_at", null).ilike("full_name", like).limit(5),
+    searchLeadsForPalette(like),
+    searchDealsForPalette(like),
+    searchContactsForPalette(like),
   ]);
 
   const results: Result[] = [];
