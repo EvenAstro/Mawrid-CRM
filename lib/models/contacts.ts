@@ -40,3 +40,31 @@ export async function softDeleteContacts(ids: string[]): Promise<{ error: Error 
   const { error } = await supabase.from("contacts").update({ deleted_at: new Date().toISOString() }).in("id", ids);
   return { error };
 }
+
+export interface ContactPayload {
+  full_name: string;
+  phone: string | null;
+  email: string | null;
+  establishment_id: string | null;
+  role: string | null;
+  notes: string | null;
+  updated_at: string;
+}
+
+/** Creates or updates a contact — used by AddContactSlideOver. */
+export async function saveContact(
+  payload: ContactPayload,
+  existingId?: string,
+): Promise<{ error: Error | null }> {
+  if (existingId) {
+    const { error } = await supabase.from("contacts").update(payload).eq("id", existingId);
+    return { error };
+  }
+  const { error } = await supabase.from("contacts").insert({ id: crypto.randomUUID(), ...payload, created_at: payload.updated_at });
+  return { error };
+}
+
+/** Global command-palette search — contacts matching name. */
+export async function searchContactsForPalette(likePattern: string, limit = 5) {
+  return supabase.from("contacts").select("id, full_name, role").is("deleted_at", null).ilike("full_name", likePattern).limit(limit);
+}

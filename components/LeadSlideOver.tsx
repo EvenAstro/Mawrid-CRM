@@ -12,6 +12,16 @@ import { initials, formatDate, formatDateTime, formatPhone, todayInput, profileN
 import { useRole } from "@/components/RoleProvider";
 import { canActOnTask } from "@/lib/permissions";
 import { logAudit, fieldChangeMessage } from "@/lib/auditLog";
+import { fetchLeadTouchpoints, markLeadResponded, markLeadNoResponse, markLeadJunk, updateLead } from "@/lib/models/leads";
+import { createLeadTask } from "@/lib/models/tasks";
+import {
+  fetchActiveActivityTypes,
+  fetchJunkReasons,
+  fetchPipelineStages,
+  fetchAllSources,
+  fetchTaskTypes,
+} from "@/lib/models/refData";
+import { createActivity } from "@/lib/models/activities";
 
 
 export interface Lead {
@@ -223,15 +233,15 @@ export default function LeadSlideOver({
 
     const fetchAll = async () => {
       const [tps] = await Promise.all([
-        supabase.from("lead_touchpoints").select("campaign_id, raw_payload").eq("lead_id", lead.id),
+        fetchLeadTouchpoints(lead.id),
         refetchActivities(lead.id),
         refetchTasks(lead.id),
-        supabase.from("activity_types").select("id, label").eq("is_archived", false).order("sort_order", { ascending: true }).then(({ data }) => data && setActivityTypes(data as ActivityType[])),
-        supabase.from("junk_reasons").select("id, label").then(({ data }) => data && setJunkReasons(data as JunkReason[])),
-        supabase.from("pipeline_stages").select("id, label").eq("pipeline", "deal").order("sort_order", { ascending: true }).then(({ data }) => data && setDealStages(data as DealStage[])),
-        supabase.from("pipeline_stages").select("id, label").eq("pipeline", "lead").order("sort_order", { ascending: true }).then(({ data }) => data && setLeadStages(data as DealStage[])),
-        supabase.from("sources").select("id, label").then(({ data }) => data && setSourcesList(data as { id: string; label: string }[])),
-        supabase.from("task_types").select("id, label").then(({ data }) => data && setTaskTypes(data as TaskType[])),
+        fetchActiveActivityTypes().then(setActivityTypes),
+        fetchJunkReasons().then(setJunkReasons),
+        fetchPipelineStages("deal").then(setDealStages),
+        fetchPipelineStages("lead").then(setLeadStages),
+        fetchAllSources().then(setSourcesList),
+        fetchTaskTypes().then(setTaskTypes),
         fetchProfiles().then(setProfiles),
       ]);
 
@@ -276,15 +286,16 @@ export default function LeadSlideOver({
     const now = new Date().toISOString();
     const t = activityTypes.find((x) => x.id === respondedMethodId);
     const { data: userData } = await supabase.auth.getUser();
-    const { error: actErr } = await supabase.from("activities").insert({
-      id: crypto.randomUUID(), entity_type: "lead", entity_id: data.id,
-      activity_type_id: respondedMethodId, body: respondedNote.trim(), direction: "inbound",
-      occurred_at: now, user_id: userData.user?.id ?? null, created_at: now, updated_at: now,
+    const { error: actErr } = await createActivity({
+      entityType: "lead",
+      entityId: data.id,
+      activityTypeId: respondedMethodId,
+      body: respondedNote.trim(),
+      direction: "inbound",
+      occurredAt: now,
+      userId: userData.user?.id ?? null,
     });
-    const { error: leadErr } = await supabase
-      .from("leads")
-      .update({ contact_outcome: "responded", contact_outcome_at: now, updated_at: now })
-      .eq("id", data.id);
+    const { error: leadErr } = await markLeadResponded(data.id, now);
     setSavingOutcome(false);
     if (actErr || leadErr) { toast("تعذّر حفظ التصنيف", "error"); return; }
     toast(`تم تسجيل الرد عبر ${t?.label ?? "اتصال"}`);
@@ -300,10 +311,7 @@ export default function LeadSlideOver({
     if (!data) return;
     setSavingOutcome(true);
     const now = new Date().toISOString();
-    const { error } = await supabase
-      .from("leads")
-      .update({ contact_outcome: "no_response", contact_outcome_at: now, updated_at: now })
-      .eq("id", data.id);
+    const { error } = await markLeadNoResponse(data.id, now);
     setSavingOutcome(false);
     if (error) { toast("تعذّر حفظ التصنيف", "error"); return; }
     toast("تم تصنيف العميل كـ لم يرد");
@@ -315,7 +323,7 @@ export default function LeadSlideOver({
     if (!data) return;
     setSavingOutcome(true);
     const now = new Date().toISOString();
-    const { error } = await supabase.from("leads").update({ junk_reason_id: reasonId, updated_at: now }).eq("id", data.id);
+    const { error } = await markLeadJunk(data.id, String(reasonId), now);
     setSavingOutcome(false);
     if (error) { toast("تعذّر حفظ التصنيف", "error"); return; }
     const r = junkReasons.find((x) => String(x.id) === String(reasonId));
@@ -330,12 +338,15 @@ export default function LeadSlideOver({
     if (!actTypeId) { toast("اختر نوع النشاط", "error"); return; }
     setSavingActivity(true);
     const { data: userData } = await supabase.auth.getUser();
-    const now = new Date().toISOString();
     const occurred = new Date(`${actDate}T${actTime || "00:00"}:00`).toISOString();
-    const { error } = await supabase.from("activities").insert({
-      id: crypto.randomUUID(), entity_type: "lead", entity_id: data.id,
-      activity_type_id: actTypeId, body: actNotes.trim() || null, direction: actDirection,
-      occurred_at: occurred, user_id: userData.user?.id ?? null, created_at: now, updated_at: now,
+    const { error } = await createActivity({
+      entityType: "lead",
+      entityId: data.id,
+      activityTypeId: actTypeId,
+      body: actNotes.trim() || null,
+      direction: actDirection,
+      occurredAt: occurred,
+      userId: userData.user?.id ?? null,
     });
     setSavingActivity(false);
     if (error) { toast("تعذّر تسجيل النشاط", "error"); return; }
@@ -349,14 +360,14 @@ export default function LeadSlideOver({
     if (!data) return;
     if (!taskTitle.trim()) { toast("اكتب عنوان المهمة", "error"); return; }
     setSavingTask(true);
-    const now = new Date().toISOString();
     const dueAt = taskDue ? new Date(`${taskDue}T${taskTime || "09:00"}:00`).toISOString() : null;
-    const { error } = await supabase.from("tasks").insert({
-      id: crypto.randomUUID(), title: taskTitle.trim(), description: null, due_at: dueAt,
-      task_type_id: taskTypeId || null, assignee_uid: taskAssigneeId || null,
-      depends_on_task_id: taskDependsOn || null, lead_id: String(data.id),
-      entity_type: "lead", entity_id: data.id,
-      created_at: now, updated_at: now,
+    const { error } = await createLeadTask({
+      title: taskTitle.trim(),
+      dueAt,
+      taskTypeId: taskTypeId || null,
+      assigneeId: taskAssigneeId || null,
+      dependsOnTaskId: taskDependsOn || null,
+      leadId: data.id,
     });
     setSavingTask(false);
     if (error) { toast("تعذّر إضافة المهمة", "error"); return; }
@@ -436,7 +447,7 @@ export default function LeadSlideOver({
     if (editStageId) patch.stage_id = editStageId;
     if (editSourceId) patch.primary_source_id = editSourceId;
 
-    const { error } = await supabase.from("leads").update(patch).eq("id", data.id);
+    const { error } = await updateLead(data.id, patch);
     setSavingInfo(false);
     if (error) { toast("تعذّر حفظ التعديلات", "error"); console.error("[saveInfoEdit]", error); return; }
     toast("تم حفظ بيانات العميل");

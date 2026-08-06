@@ -1,16 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 import SlideOver from "@/components/ui/SlideOver";
 import Button from "@/components/ui/Button";
 import { Input, Textarea, Select } from "@/components/ui/Field";
-
-interface Establishment {
-  id: string;
-  name: string;
-}
+import { saveContact } from "@/lib/models/contacts";
+import { fetchEstablishments, type Establishment } from "@/lib/models/establishments";
 
 export interface EditableContact {
   id: string;
@@ -48,13 +44,7 @@ export default function AddContactSlideOver({
 
   useEffect(() => {
     if (!open || companies.length) return;
-    supabase
-      .from("establishments")
-      .select("id, name")
-      .is("deleted_at", null)
-      .order("name", { ascending: true })
-      .limit(500)
-      .then(({ data }) => data && setCompanies(data as Establishment[]));
+    fetchEstablishments().then(setCompanies).catch((err) => console.error("[AddContact] fetchEstablishments failed", err));
   }, [open, companies.length]);
 
   useEffect(() => {
@@ -100,9 +90,7 @@ export default function AddContactSlideOver({
       notes: notes.trim() || null,
       updated_at: now,
     };
-    const { error } = isEdit
-      ? await supabase.from("contacts").update(payload).eq("id", contact!.id)
-      : await supabase.from("contacts").insert({ id: crypto.randomUUID(), ...payload, created_at: now });
+    const { error } = await saveContact(payload, isEdit ? contact!.id : undefined);
     setSaving(false);
     if (error) {
       console.error("[AddContact] save failed", error);

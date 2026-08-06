@@ -96,3 +96,32 @@ export async function completeTaskQuick(taskId: string): Promise<{ error: Error 
   const { error } = await supabase.from("tasks").update({ completed_at: new Date().toISOString() }).eq("id", taskId);
   return { error };
 }
+
+export interface NewLeadTaskInput {
+  title: string;
+  dueAt: string | null;
+  taskTypeId: string | null;
+  assigneeId: string | null;
+  dependsOnTaskId: string | null;
+  leadId: string | number;
+}
+
+/** Creates a task linked to a lead — used by LeadSlideOver's "add task" form. */
+export async function createLeadTask(input: NewLeadTaskInput): Promise<{ error: Error | null }> {
+  const now = new Date().toISOString();
+  const { error } = await supabase.from("tasks").insert({
+    id: crypto.randomUUID(),
+    title: input.title,
+    description: null,
+    due_at: input.dueAt,
+    task_type_id: input.taskTypeId,
+    assignee_uid: input.assigneeId,
+    depends_on_task_id: input.dependsOnTaskId,
+    lead_id: String(input.leadId),
+    entity_type: "lead",
+    entity_id: input.leadId,
+    created_at: now,
+    updated_at: now,
+  });
+  return { error };
+}

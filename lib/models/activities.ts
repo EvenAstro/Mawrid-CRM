@@ -60,3 +60,32 @@ export async function fetchActivitiesPage(
 export async function fetchRecentActivities(limit: number) {
   return supabase.from("activities").select("*, activity_types(label)").order("occurred_at", { ascending: false }).limit(limit);
 }
+
+export interface NewActivityInput {
+  entityType: string;
+  entityId: string | number;
+  activityTypeId?: string | null;
+  body: string | null;
+  direction: string;
+  occurredAt: string;
+  userId: string | null;
+}
+
+/** Logs a new activity — used by every "log activity" form/action in the app. */
+export async function createActivity(input: NewActivityInput): Promise<{ error: Error | null; id: string }> {
+  const now = new Date().toISOString();
+  const id = crypto.randomUUID();
+  const { error } = await supabase.from("activities").insert({
+    id,
+    entity_type: input.entityType,
+    entity_id: input.entityId,
+    activity_type_id: input.activityTypeId ?? null,
+    body: input.body,
+    direction: input.direction,
+    occurred_at: input.occurredAt,
+    user_id: input.userId,
+    created_at: now,
+    updated_at: now,
+  });
+  return { error, id };
+}

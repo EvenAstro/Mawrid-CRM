@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Skeleton from "@/components/ui/Skeleton";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
+import { createActivity } from "@/lib/models/activities";
 
 // Module-level: survives panel open/close within a session, resets on full page
 // reload — matching "dismiss for this session only, cleared on next page load".
@@ -154,17 +155,13 @@ export default function NextBestActionCard({
     if (!action) return;
     setExecuting(true);
     const { data: userData } = await supabase.auth.getUser();
-    const now = new Date().toISOString();
-    const { error: insertErr } = await supabase.from("activities").insert({
-      id: crypto.randomUUID(),
-      entity_type: entityType,
-      entity_id: dealId,
+    const { error: insertErr } = await createActivity({
+      entityType,
+      entityId: dealId,
       body: `تم تنفيذ التوصية: ${action}`,
       direction: "outbound",
-      occurred_at: now,
-      user_id: userData.user?.id ?? null,
-      created_at: now,
-      updated_at: now,
+      occurredAt: new Date().toISOString(),
+      userId: userData.user?.id ?? null,
     });
     setExecuting(false);
     if (insertErr) {

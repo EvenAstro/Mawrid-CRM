@@ -5,6 +5,7 @@ import { getContext, getDealMeta, type MatchTier } from "@/lib/nextBestAction/ge
 import { buildPrompt } from "@/lib/nextBestAction/buildPrompt";
 import { requireUser } from "@/lib/auth/requireUser";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { fetchCachedRecommendation, upsertRecommendationCache } from "@/lib/models/nextBestActionCache";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -85,11 +86,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (!force) {
-    const { data: cached } = await supabase
-      .from("next_best_action_cache")
-      .select("recommendation, generated_at, activity_count_at_generation")
-      .eq("deal_id", dealId)
-      .maybeSingle();
+    const cached = await fetchCachedRecommendation(supabase, dealId);
 
     if (cached) {
       const rec = cached.recommendation as Recommendation;
@@ -169,12 +166,7 @@ export async function POST(req: NextRequest) {
   const recommendation: Recommendation = { ...parsed, matchTier: context.matchTier, stageId: context.stageId };
   const generatedAt = new Date().toISOString();
 
-  const { error: upsertError } = await supabase.from("next_best_action_cache").upsert({
-    deal_id: dealId,
-    recommendation,
-    generated_at: generatedAt,
-    activity_count_at_generation: context.activityCount,
-  });
+  const { error: upsertError } = await upsertRecommendationCache(supabase, dealId, recommendation, generatedAt, context.activityCount);
   if (upsertError) {
     // Non-fatal: recommendation is still valid, it just won't be cached this
     // time (e.g. the RLS policy from Step 1 hasn't been applied yet).

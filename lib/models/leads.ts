@@ -72,3 +72,81 @@ export async function fetchOwnedLeadIds(userId: string): Promise<(string | numbe
 export async function fetchLeadsSummary() {
   return supabase.from("leads").select("*, sources(label), pipeline_stages(label, terminal_type)").is("deleted_at", null);
 }
+
+/** Searches leads by name for the deal/quick-search pickers (autocomplete). */
+export async function searchLeadsByName(query: string, limit = 6): Promise<LeadRef[]> {
+  const { data, error } = await supabase
+    .from("leads")
+    .select("id, full_name")
+    .ilike("full_name", `%${query}%`)
+    .is("deleted_at", null)
+    .limit(limit);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export interface NewLeadInput {
+  fullName: string;
+  normalizedPhone: string | null;
+  primarySourceId: string | null;
+  stageId: string | null;
+  notes: string | null;
+  ownerId: string | null;
+}
+
+/** Creates a new lead. */
+export async function createLead(input: NewLeadInput): Promise<{ error: Error | null }> {
+  const now = new Date().toISOString();
+  const { error } = await supabase.from("leads").insert({
+    id: crypto.randomUUID(),
+    full_name: input.fullName,
+    normalized_phone: input.normalizedPhone,
+    primary_source_id: input.primarySourceId,
+    stage_id: input.stageId,
+    notes: input.notes,
+    owner_id: input.ownerId,
+    created_at: now,
+    updated_at: now,
+  });
+  return { error };
+}
+
+/** Global command-palette search — leads matching name or company. */
+export async function searchLeadsForPalette(likePattern: string, limit = 5) {
+  return supabase.from("leads").select("id, full_name, company_name").is("deleted_at", null).or(`full_name.ilike.${likePattern},company_name.ilike.${likePattern}`).limit(limit);
+}
+
+/** Touchpoint rows for a lead (campaign attribution) — used by LeadSlideOver. */
+export async function fetchLeadTouchpoints(leadId: string | number) {
+  return supabase.from("lead_touchpoints").select("campaign_id, raw_payload").eq("lead_id", leadId);
+}
+
+/** Marks a lead as having responded, with the timestamp used to patch UI state. */
+export async function markLeadResponded(leadId: string | number, at: string): Promise<{ error: Error | null }> {
+  const { error } = await supabase
+    .from("leads")
+    .update({ contact_outcome: "responded", contact_outcome_at: at, updated_at: at })
+    .eq("id", leadId);
+  return { error };
+}
+
+/** Marks a lead as junk with the given reason. */
+export async function markLeadJunk(leadId: string | number, reasonId: string, at: string): Promise<{ error: Error | null }> {
+  const { error } = await supabase.from("leads").update({ junk_reason_id: reasonId, updated_at: at }).eq("id", leadId);
+  return { error };
+}
+
+/** Applies an arbitrary partial patch to a lead (edit form save). */
+export async function updateLead(leadId: string | number, patch: Record<string, unknown>): Promise<{ error: Error | null }> {
+  const { error } = await supabase.from("leads").update(patch).eq("id", leadId);
+  return { error };
+}
+
+/** Marks a lead as not having responded, with the timestamp used to patch UI state. */
+export async function markLeadNoResponse(leadId: string | number, at: string): Promise<{ error: Error | null }> {
+  const { error } = await supabase
+    .from("leads")
+    .update({ contact_outcome: "no_response", contact_outcome_at: at, updated_at: at })
+    .eq("id", leadId);
+  return { error };
+}

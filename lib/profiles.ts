@@ -49,3 +49,17 @@ export async function updateProfileRole(profileId: string, role: Role): Promise<
   const { error } = await supabase.from("profiles").update({ role, updated_at: new Date().toISOString() }).eq("id", profileId);
   return { error };
 }
+
+/**
+ * Belt-and-suspenders profile upsert right after signup — the DB trigger
+ * creates this row too, but this covers the case where the trigger isn't
+ * set up yet on a given Supabase project.
+ */
+export async function upsertProfileFromSignup(userId: string, firstName: string, lastName: string, email: string): Promise<void> {
+  await supabase.from("profiles").upsert({
+    id: userId,
+    first_name: firstName,
+    last_name: lastName,
+    email,
+  });
+}
