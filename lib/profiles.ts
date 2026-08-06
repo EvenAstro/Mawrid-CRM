@@ -43,3 +43,9 @@ export async function fetchCurrentProfile(): Promise<Profile | null> {
   }
   return (data as Profile | null) ?? null;
 }
+
+/** Updates a user's role. */
+export async function updateProfileRole(profileId: string, role: Role): Promise<{ error: Error | null }> {
+  const { error } = await supabase.from("profiles").update({ role, updated_at: new Date().toISOString() }).eq("id", profileId);
+  return { error };
+}

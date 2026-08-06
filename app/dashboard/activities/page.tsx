@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
 import { SearchIcon } from "@/components/navIcons";
 import { dayHeader, dayKey, formatDateTime } from "@/lib/format";
 import Button from "@/components/ui/Button";
@@ -10,17 +9,8 @@ import Skeleton from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import LogActivitySlideOver from "@/components/LogActivitySlideOver";
 import { useRole } from "@/components/RoleProvider";
-import { canViewAllData } from "@/lib/permissions";
-
-interface Activity {
-  id: string;
-  body: string | null;
-  occurred_at: string | null;
-  direction: string | null;
-  entity_type: string | null;
-  entity_id: string | null;
-  activity_types: { label: string; color: string | null } | null;
-}
+import { fetchActivitiesPage, type Activity } from "@/lib/models/activities";
+import { fetchLeadRefs } from "@/lib/models/leads";
 
 const PAGE = 20;
 const CHIPS = [
@@ -54,58 +44,21 @@ export default function ActivitiesPage() {
 
   const load = useCallback(async () => {
     setError(false);
+    try {
+      const { activities: list, total } = await fetchActivitiesPage(role, userId, limit);
+      setActivities(list);
+      setTotal(total);
 
-    // Sales reps only see activities tied to leads/deals they own; managers
-    // and admins see everything — same boundary as the leads/deals/tasks
-    // pages, applied here via the entities the activity is attached to
-    // (activities themselves have no owner_id column).
-    let ownedLeadIds: string[] | null = null;
-    let ownedDealIds: string[] | null = null;
-    if (!canViewAllData(role) && userId) {
-      const [leadsRes, dealsRes] = await Promise.all([
-        supabase.from("leads").select("id").eq("owner_id", userId).is("deleted_at", null),
-        supabase.from("deals").select("id").eq("owner_id", userId).is("deleted_at", null),
-      ]);
-      ownedLeadIds = (leadsRes.data ?? []).map((l) => String(l.id));
-      ownedDealIds = (dealsRes.data ?? []).map((d) => String(d.id));
-      if (ownedLeadIds.length === 0 && ownedDealIds.length === 0) {
-        setActivities([]);
-        setTotal(0);
-        setLoading(false);
-        return;
+      const leadIds = Array.from(new Set(list.filter((a) => a.entity_type === "lead" && a.entity_id).map((a) => a.entity_id as string)));
+      if (leadIds.length) {
+        const leads = await fetchLeadRefs(leadIds);
+        const map: Record<string, string> = {};
+        leads.forEach((l) => { if (l.full_name) map[String(l.id)] = l.full_name; });
+        setLeadNames((prev) => ({ ...prev, ...map }));
       }
-    }
-
-    let query = supabase
-      .from("activities")
-      .select("*, activity_types(label, color)", { count: "exact" })
-      .order("occurred_at", { ascending: false })
-      .range(0, limit - 1);
-
-    if (ownedLeadIds != null && ownedDealIds != null) {
-      const clauses: string[] = [];
-      if (ownedLeadIds.length) clauses.push(`and(entity_type.eq.lead,entity_id.in.(${ownedLeadIds.join(",")}))`);
-      if (ownedDealIds.length) clauses.push(`and(entity_type.eq.deal,entity_id.in.(${ownedDealIds.join(",")}))`);
-      query = query.or(clauses.join(","));
-    }
-
-    const { data, error: err, count } = await query;
-    if (err) {
+    } catch (err) {
       console.error("[Activities] fetch failed", err);
       setError(true);
-      setLoading(false);
-      return;
-    }
-    const list = (data as unknown as Activity[]) || [];
-    setActivities(list);
-    setTotal(count ?? list.length);
-
-    const leadIds = Array.from(new Set(list.filter((a) => a.entity_type === "lead" && a.entity_id).map((a) => a.entity_id as string)));
-    if (leadIds.length) {
-      const { data: leads } = await supabase.from("leads").select("id, full_name").in("id", leadIds);
-      const map: Record<string, string> = {};
-      (leads as { id: string; full_name: string | null }[] | null)?.forEach((l) => { if (l.full_name) map[l.id] = l.full_name; });
-      setLeadNames((prev) => ({ ...prev, ...map }));
     }
     setLoading(false);
   }, [limit, role, userId]);

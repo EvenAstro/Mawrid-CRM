@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
-import { fetchCurrentProfile, fetchProfiles, type Profile, type Role } from "@/lib/profiles";
+import { fetchCurrentProfile, fetchProfiles, updateProfileRole, type Profile, type Role } from "@/lib/profiles";
 import { initials, profileName } from "@/lib/format";
 import UserPermissionsModal from "@/components/UserPermissionsModal";
 
@@ -58,7 +58,7 @@ export default function UsersPage() {
       return;
     }
     setSavingId(p.id);
-    const { error } = await supabase.from("profiles").update({ role, updated_at: new Date().toISOString() }).eq("id", p.id);
+    const { error } = await updateProfileRole(p.id, role);
     setSavingId(null);
     if (error) {
       console.error("[Users] role change failed", error);
