@@ -83,3 +83,8 @@ export async function fetchTaskTypes(): Promise<TaskTypeRef[]> {
   if (error) throw error;
   return (data as TaskTypeRef[]) ?? [];
 }
+
+/** Deal pipeline stages with full display fields — used by the insights builder. */
+export async function fetchDealStagesFull() {
+  return supabase.from("pipeline_stages").select("id, label, color, terminal_type, sort_order").eq("pipeline", "deal").order("sort_order");
+}

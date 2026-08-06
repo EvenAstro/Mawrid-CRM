@@ -1,5 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { SITUATIONAL_TAGS, type SituationalTag } from "@/lib/classifyActivity";
+import { fetchDealsForPlaybook } from "@/lib/models/deals";
+import { fetchActivitiesByEntityIds } from "@/lib/models/activities";
 
 /** Below this sample size we don't hide the group — but we don't call it a
  * "confirmed pattern" either. Confidence-interval width and MIN_SAMPLE
@@ -195,12 +197,7 @@ function wilsonInterval(successes: number, trials: number): [number, number] {
  *   page, so coverage isn't presented as a single opaque percentage.
  */
 export async function buildPlaybook(): Promise<PlaybookData> {
-  const dealsRes = await supabase
-    .from("deals")
-    .select(
-      "id, name, lead_id, expected_value_minor, won_value_minor, created_at, updated_at, pipeline_stages(label, terminal_type), lost_reasons(label), leads(sources(label))",
-    )
-    .is("deleted_at", null);
+  const dealsRes = await fetchDealsForPlaybook();
   if (dealsRes.error) console.error("[buildPlaybook] deals fetch failed", dealsRes.error);
 
   const allDeals = (dealsRes.data as unknown as DealRow[]) ?? [];
@@ -210,13 +207,12 @@ export async function buildPlaybook(): Promise<PlaybookData> {
 
   const dealIds = resolved.map((d) => d.id);
   const leadIds = resolved.map((d) => d.lead_id).filter((id): id is string => !!id);
-  const cols = "entity_type, entity_id, direction, occurred_at, body, situational_tag";
 
   const [dealActs, leadActs] = await Promise.all([
     Promise.all(
       chunk(dealIds, 50).map(async (c) => {
         if (!c.length) return [] as ActivityRow[];
-        const { data, error } = await supabase.from("activities").select(cols).eq("entity_type", "deal").in("entity_id", c);
+        const { data, error } = await fetchActivitiesByEntityIds(supabase, "deal", c);
         if (error) console.error("[buildPlaybook] deal-activities chunk failed", error);
         return (data as unknown as ActivityRow[]) ?? [];
       }),
@@ -224,7 +220,7 @@ export async function buildPlaybook(): Promise<PlaybookData> {
     Promise.all(
       chunk(leadIds, 50).map(async (c) => {
         if (!c.length) return [] as ActivityRow[];
-        const { data, error } = await supabase.from("activities").select(cols).eq("entity_type", "lead").in("entity_id", c);
+        const { data, error } = await fetchActivitiesByEntityIds(supabase, "lead", c);
         if (error) console.error("[buildPlaybook] lead-activities chunk failed", error);
         return (data as unknown as ActivityRow[]) ?? [];
       }),

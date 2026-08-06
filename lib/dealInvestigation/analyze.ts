@@ -1,6 +1,8 @@
 import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import { getContext } from "@/lib/nextBestAction/getContext";
 import type { SituationalTag } from "@/lib/classifyActivity";
+import { fetchEntityActivitiesAdmin } from "@/lib/models/activities";
+import { fetchDealForInvestigation, fetchDealValuesByIds } from "@/lib/models/deals";
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct";
@@ -137,23 +139,14 @@ function dealValueSAR(expectedMinor: number | null, wonMinor: number | null): nu
 
 /** All activities for a deal (deal-linked + originating-lead-linked), oldest first. */
 async function fetchDealActivities(dealId: string, leadId: string | null): Promise<RawActivityRow[]> {
-  const cols = "id, body, direction, occurred_at, situational_tag, activity_types(label)";
   const rows: RawActivityRow[] = [];
 
-  const { data: dealActs, error: e1 } = await supabase
-    .from("activities")
-    .select(cols)
-    .eq("entity_type", "deal")
-    .eq("entity_id", dealId);
+  const { data: dealActs, error: e1 } = await fetchEntityActivitiesAdmin(supabase, "deal", dealId);
   if (e1) console.error("[investigation] deal activities fetch failed", e1);
   if (dealActs) rows.push(...(dealActs as unknown as RawActivityRow[]));
 
   if (leadId) {
-    const { data: leadActs, error: e2 } = await supabase
-      .from("activities")
-      .select(cols)
-      .eq("entity_type", "lead")
-      .eq("entity_id", leadId);
+    const { data: leadActs, error: e2 } = await fetchEntityActivitiesAdmin(supabase, "lead", leadId);
     if (e2) console.error("[investigation] lead activities fetch failed", e2);
     if (leadActs) rows.push(...(leadActs as unknown as RawActivityRow[]));
   }
@@ -273,13 +266,7 @@ function isReport(v: unknown): v is AiReport {
 // ── Main entry ─────────────────────────────────────────────────────────────
 
 export async function analyzeDeal(dealId: string): Promise<InvestigationPayload | null> {
-  const { data: dealRaw, error: dealErr } = await supabase
-    .from("deals")
-    .select(
-      "id, name, lead_id, expected_value_minor, won_value_minor, currency_code, created_at, updated_at, pipeline_stages(label, terminal_type)",
-    )
-    .eq("id", dealId)
-    .single();
+  const { data: dealRaw, error: dealErr } = await fetchDealForInvestigation(supabase, dealId);
 
   if (dealErr || !dealRaw) {
     console.error("[investigation] deal not found", dealErr);
@@ -338,10 +325,7 @@ export async function analyzeDeal(dealId: string): Promise<InvestigationPayload 
 
   const valueById = new Map<string, { valueSAR: number | null; createdAt: string | null; resolvedAt: string | null }>();
   if (similarIds.length) {
-    const { data: extraRaw } = await supabase
-      .from("deals")
-      .select("id, expected_value_minor, won_value_minor, created_at, updated_at")
-      .in("id", similarIds);
+    const { data: extraRaw } = await fetchDealValuesByIds(supabase, similarIds);
     for (const r of (extraRaw as unknown as RawDealRow[]) ?? []) {
       valueById.set(r.id, {
         valueSAR: dealValueSAR(r.expected_value_minor, r.won_value_minor),

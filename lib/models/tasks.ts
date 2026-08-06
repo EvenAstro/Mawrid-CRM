@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
 /** Data-access layer for the `tasks` and `task_types` tables. */
@@ -124,4 +125,124 @@ export async function createLeadTask(input: NewLeadTaskInput): Promise<{ error: 
     updated_at: now,
   });
   return { error };
+}
+
+/** Tasks due today for a user, for the daily briefing. */
+export async function fetchTasksDueToday(userId: string, todayStr: string, tomorrowIso: string) {
+  return supabase
+    .from("tasks")
+    .select("id, title, due_at, depends_on_task_id")
+    .gte("due_at", todayStr)
+    .lt("due_at", tomorrowIso)
+    .is("completed_at", null)
+    .eq("assignee_uid", userId)
+    .order("due_at", { ascending: true });
+}
+
+/** A user's 5 most-overdue open tasks, for the daily briefing. */
+export async function fetchOverdueTasks(userId: string, todayStr: string) {
+  return supabase
+    .from("tasks")
+    .select("id, title, due_at, depends_on_task_id")
+    .lt("due_at", todayStr)
+    .is("completed_at", null)
+    .eq("assignee_uid", userId)
+    .order("due_at", { ascending: true })
+    .limit(5);
+}
+
+/** Title/completion status for a batch of tasks — used to resolve "blocked by" dependencies. */
+export async function fetchTasksByIds(ids: string[]) {
+  return supabase.from("tasks").select("id, title, completed_at").in("id", ids);
+}
+
+/** Up to 200 open tasks app-wide, soonest-due first — used by the Copilot business snapshot. */
+export async function fetchOpenTasksForSnapshot(client: SupabaseClient) {
+  return client.from("tasks").select("title, due_at").is("completed_at", null).order("due_at", { ascending: true }).limit(200);
+}
+
+/** Overdue open tasks for the rep-coach briefing. */
+export async function fetchRepCoachOverdueTasks(client: SupabaseClient, userId: string, beforeIso: string) {
+  return client.from("tasks").select("id, title, due_at")
+    .eq("assignee_uid", userId).lt("due_at", beforeIso).is("completed_at", null)
+    .order("due_at", { ascending: true }).limit(10);
+}
+
+/** Tasks due today for the rep-coach briefing. */
+export async function fetchRepCoachTodayTasks(client: SupabaseClient, userId: string, dayStartIso: string, dayEndIso: string) {
+  return client.from("tasks").select("id, title, due_at")
+    .eq("assignee_uid", userId).gte("due_at", dayStartIso).lt("due_at", dayEndIso).is("completed_at", null)
+    .order("due_at", { ascending: true }).limit(10);
+}
+
+/** Tasks due tomorrow through N days out, for the rep-coach briefing. */
+export async function fetchRepCoachUpcomingTasks(client: SupabaseClient, userId: string, fromIso: string, toIso: string) {
+  return client.from("tasks").select("id, title, due_at")
+    .eq("assignee_uid", userId).gte("due_at", fromIso).lte("due_at", toIso).is("completed_at", null)
+    .order("due_at", { ascending: true }).limit(10);
+}
+
+/** Tasks completed today, for the rep-coach briefing. */
+export async function fetchRepCoachCompletedToday(client: SupabaseClient, userId: string, dayStartIso: string, dayEndIso: string) {
+  return client.from("tasks").select("id, title, completed_at")
+    .eq("assignee_uid", userId).gte("completed_at", dayStartIso).lt("completed_at", dayEndIso).limit(20);
+}
+
+/** Open tasks with no due date, for the rep-coach briefing. */
+export async function fetchRepCoachNoDueDateTasks(client: SupabaseClient, userId: string) {
+  return client.from("tasks").select("id, title, created_at")
+    .eq("assignee_uid", userId).is("due_at", null).is("completed_at", null)
+    .order("created_at", { ascending: false }).limit(10);
+}
+
+/** Count of tasks completed yesterday, for the rep-coach briefing's streak calc. */
+export async function fetchRepCoachYesterdayCompletedIds(client: SupabaseClient, userId: string, yesterdayStartIso: string, todayStartIso: string) {
+  return client.from("tasks").select("id").eq("assignee_uid", userId)
+    .gte("completed_at", yesterdayStartIso).lt("completed_at", todayStartIso);
+}
+
+/** Open tasks linked to a lead (by either lead_id or entity_id/type), for LeadSlideOver. */
+export async function fetchLeadOpenTasks(leadId: string | number) {
+  const filter = `lead_id.eq.${leadId},and(entity_id.eq.${leadId},entity_type.eq.lead)`;
+  return supabase.from("tasks").select("*, task_types(label, color)").or(filter).is("completed_at", null)
+    .order("due_at", { ascending: true, nullsFirst: false }).limit(30);
+}
+
+/** Completed tasks linked to a lead, for LeadSlideOver. */
+export async function fetchLeadCompletedTasks(leadId: string | number) {
+  const filter = `lead_id.eq.${leadId},and(entity_id.eq.${leadId},entity_type.eq.lead)`;
+  return supabase.from("tasks").select("*, task_types(label, color)").or(filter).not("completed_at", "is", null)
+    .order("completed_at", { ascending: false }).limit(20);
+}
+
+/** Every task linked to a lead (compact fields), for LeadSlideOver's dependency-chain logic. */
+export async function fetchLeadAllTasksCompact(leadId: string | number) {
+  const filter = `lead_id.eq.${leadId},and(entity_id.eq.${leadId},entity_type.eq.lead)`;
+  return supabase.from("tasks").select("id, title, completed_at, depends_on_task_id, lead_id").or(filter)
+    .order("due_at", { ascending: true, nullsFirst: false }).limit(50);
+}
+
+/** Marks a lead-linked task complete with a note. */
+export async function completeLeadTask(taskId: string, note: string): Promise<{ error: Error | null }> {
+  const { error } = await supabase.from("tasks").update({ completed_at: new Date().toISOString(), completion_note: note }).eq("id", taskId);
+  return { error };
+}
+
+/** Tasks completed since a date, by assignee — used by the rep leaderboard. */
+export async function fetchCompletedTasksSince(sinceIso: string) {
+  return supabase.from("tasks").select("assignee_uid, completed_at").not("completed_at", "is", null).gte("completed_at", sinceIso);
+}
+
+/** A user's overdue open tasks, newest-due-first, for the notifications dropdown. */
+export async function fetchNotifOverdueTasks(userId: string, beforeIso: string) {
+  return supabase.from("tasks").select("id, title, due_at")
+    .lt("due_at", beforeIso).is("completed_at", null).eq("assignee_uid", userId)
+    .order("due_at", { ascending: false }).limit(5);
+}
+
+/** A user's tasks due today, for the notifications dropdown. */
+export async function fetchNotifTodayTasks(userId: string, dayStartIso: string, dayEndIso: string) {
+  return supabase.from("tasks").select("id, title, due_at")
+    .gte("due_at", dayStartIso).lt("due_at", dayEndIso).is("completed_at", null).eq("assignee_uid", userId)
+    .order("due_at", { ascending: true }).limit(5);
 }

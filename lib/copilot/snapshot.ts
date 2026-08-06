@@ -1,5 +1,9 @@
 import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import { money } from "@/lib/format";
+import { fetchLeadsForSnapshot } from "@/lib/models/leads";
+import { fetchDealsForSnapshot } from "@/lib/models/deals";
+import { fetchActivitiesByEntityIds, fetchRecentActivitiesAdmin, fetchLatestActivityTimestamp } from "@/lib/models/activities";
+import { fetchOpenTasksForSnapshot } from "@/lib/models/tasks";
 
 const DAY_MS = 86_400_000;
 const STUCK_DAYS = 7;
@@ -88,17 +92,16 @@ function valueSAR(d: DealRow): number {
 }
 
 async function fetchActivitiesFor(dealIds: string[], leadIds: string[]): Promise<ActivityRow[]> {
-  const cols = "entity_type, entity_id, occurred_at";
   const out: ActivityRow[] = [];
   for (const c of chunk(dealIds, CHUNK_SIZE)) {
     if (!c.length) continue;
-    const { data } = await supabase.from("activities").select(cols).eq("entity_type", "deal").in("entity_id", c);
-    if (data) out.push(...(data as ActivityRow[]));
+    const { data } = await fetchActivitiesByEntityIds(supabase, "deal", c);
+    if (data) out.push(...(data as unknown as ActivityRow[]));
   }
   for (const c of chunk(leadIds, CHUNK_SIZE)) {
     if (!c.length) continue;
-    const { data } = await supabase.from("activities").select(cols).eq("entity_type", "lead").in("entity_id", c);
-    if (data) out.push(...(data as ActivityRow[]));
+    const { data } = await fetchActivitiesByEntityIds(supabase, "lead", c);
+    if (data) out.push(...(data as unknown as ActivityRow[]));
   }
   return out;
 }
@@ -112,20 +115,11 @@ async function fetchActivitiesFor(dealIds: string[], leadIds: string[]): Promise
  */
 export async function buildSnapshot(): Promise<BusinessSnapshot> {
   const [leadsRes, dealsRes, recentActsRes, latestActRes, tasksRes] = await Promise.all([
-    supabase.from("leads").select("id, junk_reason_id, created_at, sources(label)").is("deleted_at", null),
-    supabase
-      .from("deals")
-      .select(
-        "id, name, lead_id, expected_value_minor, won_value_minor, currency_code, probability_pct, created_at, updated_at, pipeline_stages(label, terminal_type), lost_reasons(label)",
-      )
-      .is("deleted_at", null),
-    supabase
-      .from("activities")
-      .select("entity_type, entity_id, body, direction, occurred_at, activity_types(label)")
-      .order("occurred_at", { ascending: false })
-      .limit(12),
-    supabase.from("activities").select("occurred_at").order("occurred_at", { ascending: false }).limit(1),
-    supabase.from("tasks").select("title, due_at").is("completed_at", null).order("due_at", { ascending: true }).limit(200),
+    fetchLeadsForSnapshot(supabase),
+    fetchDealsForSnapshot(supabase),
+    fetchRecentActivitiesAdmin(supabase, 12),
+    fetchLatestActivityTimestamp(supabase),
+    fetchOpenTasksForSnapshot(supabase),
   ]);
 
   const leads = (leadsRes.data as unknown as LeadRow[]) ?? [];

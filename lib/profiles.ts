@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
 export type Role = "admin" | "manager" | "sales";
@@ -62,4 +63,45 @@ export async function upsertProfileFromSignup(userId: string, firstName: string,
     last_name: lastName,
     email,
   });
+}
+
+/** First name / full name only, for a personalized greeting — used by rep-coach. */
+export async function fetchProfileGreetingName(client: SupabaseClient, userId: string) {
+  return client.from("profiles").select("first_name, full_name").eq("id", userId).maybeSingle();
+}
+
+/** A single profile's role — used by admin routes to authorize the caller/target. */
+export async function fetchProfileRole(client: SupabaseClient, userId: string): Promise<Role | undefined> {
+  const { data } = await client.from("profiles").select("role").eq("id", userId).maybeSingle();
+  return data?.role;
+}
+
+/** Updates a profile's basic info (name/email) — used after an admin edits a teammate's account. */
+export async function updateProfileInfo(
+  client: SupabaseClient,
+  userId: string,
+  info: { firstName: string; lastName: string; email: string },
+): Promise<{ error: Error | null }> {
+  const { error } = await client
+    .from("profiles")
+    .update({ first_name: info.firstName, last_name: info.lastName, email: info.email, updated_at: new Date().toISOString() })
+    .eq("id", userId);
+  return { error };
+}
+
+/** Creates or overwrites a profile row with role — used by the admin create-user route. */
+export async function upsertProfileWithRole(
+  client: SupabaseClient,
+  userId: string,
+  info: { firstName: string; lastName: string; email: string; role: Role },
+): Promise<{ error: Error | null }> {
+  const { error } = await client.from("profiles").upsert({
+    id: userId,
+    first_name: info.firstName,
+    last_name: info.lastName,
+    email: info.email,
+    role: info.role,
+    updated_at: new Date().toISOString(),
+  });
+  return { error };
 }

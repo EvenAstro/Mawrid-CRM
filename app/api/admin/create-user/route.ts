@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
+import { fetchProfileRole, upsertProfileWithRole } from "@/lib/profiles";
 
 /**
  * Creates a new team member account with a set password + role, invoked only
@@ -50,12 +51,7 @@ export async function POST(req: NextRequest) {
   if (callerErr || !callerUser.user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
-  const { data: callerProfile } = await callerClient
-    .from("profiles")
-    .select("role")
-    .eq("id", callerUser.user.id)
-    .maybeSingle();
-  const callerRole = callerProfile?.role;
+  const callerRole = await fetchProfileRole(callerClient, callerUser.user.id);
   if (callerRole !== "admin" && callerRole !== "manager") {
     return NextResponse.json({ error: "Not authorized" }, { status: 403 });
   }
@@ -76,13 +72,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: createErr?.message || "Could not create account" }, { status: 400 });
   }
 
-  const { error: profileErr } = await adminClient.from("profiles").upsert({
-    id: created.user.id,
-    first_name: firstName.trim(),
-    last_name: lastName.trim(),
+  const { error: profileErr } = await upsertProfileWithRole(adminClient, created.user.id, {
+    firstName: firstName.trim(),
+    lastName: lastName.trim(),
     email: email.trim(),
-    role,
-    updated_at: new Date().toISOString(),
+    role: role as "admin" | "manager" | "sales",
   });
   if (profileErr) {
     console.error("[create-user] profile upsert failed", profileErr);

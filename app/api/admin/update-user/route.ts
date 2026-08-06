@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
+import { fetchProfileRole, updateProfileInfo } from "@/lib/profiles";
 
 /**
  * Updates an existing teammate's name/email/password, invoked from
@@ -50,12 +51,7 @@ export async function POST(req: NextRequest) {
   if (callerErr || !callerUser.user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
-  const { data: callerProfile } = await callerClient
-    .from("profiles")
-    .select("role")
-    .eq("id", callerUser.user.id)
-    .maybeSingle();
-  const callerRole = callerProfile?.role;
+  const callerRole = await fetchProfileRole(callerClient, callerUser.user.id);
   if (callerRole !== "admin" && callerRole !== "manager") {
     return NextResponse.json({ error: "Not authorized" }, { status: 403 });
   }
@@ -65,12 +61,8 @@ export async function POST(req: NextRequest) {
   // A manager cannot edit an admin's account (email/password/name) — same
   // boundary as creating and role-changing admin accounts.
   if (callerRole === "manager") {
-    const { data: targetProfile } = await adminClient
-      .from("profiles")
-      .select("role")
-      .eq("id", userId)
-      .maybeSingle();
-    if (targetProfile?.role === "admin") {
+    const targetRole = await fetchProfileRole(adminClient, userId);
+    if (targetRole === "admin") {
       return NextResponse.json({ error: "Only an admin can edit an admin account" }, { status: 403 });
     }
   }
@@ -87,10 +79,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: updateErr.message || "Could not update account" }, { status: 400 });
   }
 
-  const { error: profileErr } = await adminClient
-    .from("profiles")
-    .update({ first_name: firstName.trim(), last_name: lastName.trim(), email: email.trim(), updated_at: new Date().toISOString() })
-    .eq("id", userId);
+  const { error: profileErr } = await updateProfileInfo(adminClient, userId, {
+    firstName: firstName.trim(),
+    lastName: lastName.trim(),
+    email: email.trim(),
+  });
   if (profileErr) {
     console.error("[update-user] profile update failed", profileErr);
   }
