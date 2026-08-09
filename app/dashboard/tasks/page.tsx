@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useToast } from "@/components/Toast";
-import { formatTime, formatDateTime, profileName, downloadCSV } from "@/lib/format";
+import { formatTime, formatDateTime, profileName, downloadCSV, DATE_LOCALE } from "@/lib/format";
 import Button from "@/components/ui/Button";
 import SlideOver from "@/components/ui/SlideOver";
 import Skeleton from "@/components/ui/Skeleton";
@@ -312,7 +312,7 @@ export default function TasksPage() {
         {/* Calendar */}
         <div className="h-fit rounded-2xl border border-[#d6ece5] bg-white p-5 shadow-[0_2px_8px_rgba(26,92,79,0.05)] lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-[15px] font-semibold text-ink">{month.toLocaleDateString("ar-SA", { month: "long", year: "numeric" })}</span>
+            <span className="text-[15px] font-semibold text-ink">{month.toLocaleDateString(DATE_LOCALE, { month: "long", year: "numeric" })}</span>
             <div className="flex gap-1">
               <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="rounded px-2 py-0.5 text-[15px] text-ink-secondary transition hover:bg-[#f0faf8]">‹</button>
               <button onClick={() => { setMonth(new Date(today.getFullYear(), today.getMonth(), 1)); setDayFilter(null); }} className="rounded-lg bg-[#1a5c4f] px-2.5 py-0.5 text-[13px] font-semibold text-white transition hover:bg-[#15503f]">اليوم</button>
@@ -409,7 +409,7 @@ export default function TasksPage() {
                 </div>
                 <div>
                   <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">تاريخ الاستحقاق</p>
-                  <p className="mt-1 text-[15px] text-ink">{detail.due_at ? new Date(detail.due_at).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" }) : "—"}</p>
+                  <p className="mt-1 text-[15px] text-ink">{detail.due_at ? new Date(detail.due_at).toLocaleString(DATE_LOCALE, { dateStyle: "medium", timeStyle: "short" }) : "—"}</p>
                 </div>
                 <div>
                   <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">المسؤول</p>

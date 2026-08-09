@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { money } from "@/lib/format";
 
 interface Directive {
   id: string;
@@ -498,7 +499,7 @@ export default function SupervisorBot() {
                     <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-gradient-to-l from-[#f0faf8] to-white border border-[#d6ece5] px-4 py-3">
                       <span className="flex h-8 w-8 flex-none items-center justify-center rounded-xl bg-[#1a5c4f]/10 text-sm">💰</span>
                       <span className="text-[13px] font-bold text-[#1a5c4f]">
-                        قيمة المسار: {(data.stats.pipelineValue / 100).toLocaleString("ar-SA")} ر.س
+                        قيمة المسار: {money(data.stats.pipelineValue / 100)} ر.س
                       </span>
                     </div>
                   )}

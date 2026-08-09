@@ -11,7 +11,7 @@ import { useToast } from "@/components/Toast";
 import NewLeadSlideOver from "@/components/NewLeadSlideOver";
 import LogActivitySlideOver from "@/components/LogActivitySlideOver";
 import AddContactSlideOver from "@/components/AddContactSlideOver";
-import { dayHeader, dayKey, formatDateTime, initials, money, compactSAR } from "@/lib/format";
+import { dayHeader, dayKey, formatDateTime, initials, money, compactSAR, DATE_LOCALE, formatLongDate } from "@/lib/format";
 import { fetchLeadScoreModel, getAIScore, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
 import { fetchLeadsSummary } from "@/lib/models/leads";
 import { fetchDealsSummary } from "@/lib/models/deals";
@@ -62,7 +62,7 @@ function greeting() {
   return "مساء الخير";
 }
 function longDate(d: Date) {
-  return d.toLocaleDateString("ar-SA", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+  return formatLongDate(d);
 }
 function timeOf(iso: string | null) {
   if (!iso) return "—";
@@ -381,10 +381,10 @@ export default function DashboardPage() {
     const anchor = latestDate([...deals.map((d) => d.created_at), ...leads.map((l) => l.created_at)]);
     const days = last7Days(anchor);
     const series = days.map((day) => ({
-      label: day.toLocaleDateString("ar-SA", { weekday: "short" }),
+      label: day.toLocaleDateString(DATE_LOCALE, { weekday: "short" }),
       value: deals.filter((d) => sameDay(d.created_at, day)).reduce((s, d) => s + dealValue(d), 0),
     }));
-    const seriesRange = `${days[0].toLocaleDateString("ar-SA", { month: "short", day: "numeric" })} – ${days[6].toLocaleDateString("ar-SA", { month: "short", day: "numeric" })}`;
+    const seriesRange = `${days[0].toLocaleDateString(DATE_LOCALE, { month: "short", day: "numeric" })} – ${days[6].toLocaleDateString(DATE_LOCALE, { month: "short", day: "numeric" })}`;
 
     // Cumulative counts across the same 7-day window, for the KPI sparklines —
     // running totals (not per-day deltas) so the trend line reads as growth.
@@ -537,7 +537,7 @@ export default function DashboardPage() {
             subtitle={longDate(now)}
             action={
               <p className="rounded-xl bg-[#f0faf8] px-3 py-1.5 text-lg font-black tabular-nums text-[#1a5c4f]">
-                {now.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}
+                {now.toLocaleTimeString(DATE_LOCALE, { hour: "2-digit", minute: "2-digit" })}
               </p>
             }
           />

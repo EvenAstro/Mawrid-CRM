@@ -1,31 +1,62 @@
 /** Shared formatting helpers so dates/money render identically across the app. */
 
+/**
+ * The one locale the whole product formats dates and times with.
+ *
+ * Both extensions are load-bearing, and neither is optional:
+ *
+ *   -u-ca-gregory — plain "ar-SA" resolves to the Islamic (Umm al-Qura)
+ *     calendar in Chrome and Safari, so every date in the app rendered as
+ *     Hijri: 2026-08-09 showed as "٢٦ صفر ١٤٤٨ هـ". Deal close dates and
+ *     contract dates could not be reconciled. Node's ICU resolves "ar-SA" to
+ *     gregory instead, which is why this survived every non-browser check.
+ *
+ *   -nu-latn — plain "ar-SA" also resolves to Arabic-Indic digits (٠١٢٣),
+ *     while money went through an en-US NumberFormat (0123). The same card
+ *     showed both. Latin digits everywhere is the house style, and it keeps
+ *     tabular-nums alignment working in tables.
+ *
+ * Anything formatting a date or time outside these helpers must use this
+ * constant. A bare "ar-SA" anywhere in the codebase is a bug.
+ */
+export const DATE_LOCALE = "ar-SA-u-ca-gregory-nu-latn";
+
 const nf = new Intl.NumberFormat("en-US");
 
-/** "٢ يوليو · ١:٠٠ م" — the canonical timestamp format for the whole app. */
+/** "9 أغسطس · 01:00 م" — the canonical timestamp format for the whole app. */
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  const date = d.toLocaleDateString("ar-SA", { month: "short", day: "numeric" });
-  const time = d.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
+  const date = d.toLocaleDateString(DATE_LOCALE, { month: "short", day: "numeric" });
+  const time = d.toLocaleTimeString(DATE_LOCALE, { hour: "2-digit", minute: "2-digit" });
   return `${date} · ${time}`;
 }
 
-/** "٢ يوليو ٢٠٢٦" — date only. */
+/** "9 أغسطس 2026" — date only. */
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("ar-SA", { year: "numeric", month: "short", day: "numeric" });
+  return d.toLocaleDateString(DATE_LOCALE, { year: "numeric", month: "short", day: "numeric" });
 }
 
-/** "١:٠٠ م" — time only. */
+/** "1:00 م" — time only. */
 export function formatTime(iso: string | null | undefined): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString("ar-SA", { hour: "numeric", minute: "2-digit" });
+  return d.toLocaleTimeString(DATE_LOCALE, { hour: "numeric", minute: "2-digit" });
+}
+
+/** "الأحد، 09 أغسطس 2026" — long form for page headers. */
+export function formatLongDate(d: Date): string {
+  return d.toLocaleDateString(DATE_LOCALE, {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 /** "+966 50 123 4567" — group a raw phone number into readable chunks
@@ -66,7 +97,7 @@ export function dayHeader(iso: string | null | undefined): string {
   const diff = Math.round((today.getTime() - day.getTime()) / 86_400_000);
   if (diff === 0) return "اليوم";
   if (diff === 1) return "أمس";
-  return d.toLocaleDateString("ar-SA", { month: "short", day: "numeric" });
+  return d.toLocaleDateString(DATE_LOCALE, { month: "short", day: "numeric" });
 }
 
 /** Sortable day key (YYYY-MM-DD) for grouping. */

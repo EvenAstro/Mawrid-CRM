@@ -8,6 +8,7 @@ import {
   type DealCategory,
 } from "@/lib/revenueIntelligence/buildRevenueIntelligence";
 import { supabase } from "@/lib/supabase";
+import { money, formatDate, DATE_LOCALE } from "@/lib/format";
 
 /* ═══ Global CSS ══════════════════════════════════════════════════════════ */
 const GLOBAL_CSS = `
@@ -37,7 +38,7 @@ const GLOBAL_CSS = `
 const sarK = (n: number) =>
   n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)} مليون` :
   n >= 1_000     ? `${(n / 1_000).toFixed(0)} ألف` : `${n}`;
-const sarFull = (n: number) => n.toLocaleString("ar-SA");
+const sarFull = (n: number) => money(n);
 
 /* ═══ Design Tokens ═══════════════════════════════════════════════════════ */
 const C = {
@@ -82,7 +83,7 @@ function calcHealth(d: RevenueIntelligenceData) {
 /* ═══ AI helpers ══════════════════════════════════════════════════════════ */
 function buildContext(d: RevenueIntelligenceData) {
   return [
-    `التاريخ: ${new Date(d.asOf).toLocaleDateString("ar-SA")}`,
+    `التاريخ: ${formatDate(d.asOf)}`,
     `خط المبيعات: ${sarFull(d.totalPipelineSAR)} ريال | ${d.deals.length} صفقة`,
     `الإيراد المرجّح: ${sarFull(d.weightedPipelineSAR)} ريال`,
     `مُغلق هذا الشهر: ${sarFull(d.wonThisMonthSAR)} ريال (${d.wonThisMonthCount} صفقة)`,
@@ -966,7 +967,7 @@ export default function RevenueTab() {
                 </h1>
                 <p className="text-white/30 text-[11px] mt-4 font-medium flex items-center gap-2">
                   <svg viewBox="0 0 14 14" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="7" cy="7" r="5.5"/><path d="M7 4v3l2 1"/></svg>
-                  {new Date(data.asOf).toLocaleString("ar-SA",{weekday:"long",day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}
+                  {new Date(data.asOf).toLocaleString(DATE_LOCALE,{weekday:"long",day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}
                 </p>
               </div>
               <div className="flex flex-wrap gap-3 ri-up" style={{animationDelay:".1s"}}>
