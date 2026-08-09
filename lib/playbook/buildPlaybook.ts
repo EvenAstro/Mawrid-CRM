@@ -1,4 +1,3 @@
-import { supabase } from "@/lib/supabase";
 import { SITUATIONAL_TAGS, type SituationalTag } from "@/lib/classifyActivity";
 import { fetchDealsForPlaybook } from "@/lib/models/deals";
 import { fetchActivitiesByEntityIds } from "@/lib/models/activities";
@@ -212,7 +211,7 @@ export async function buildPlaybook(): Promise<PlaybookData> {
     Promise.all(
       chunk(dealIds, 50).map(async (c) => {
         if (!c.length) return [] as ActivityRow[];
-        const { data, error } = await fetchActivitiesByEntityIds(supabase, "deal", c);
+        const { data, error } = await fetchActivitiesByEntityIds("deal", c);
         if (error) console.error("[buildPlaybook] deal-activities chunk failed", error);
         return (data as unknown as ActivityRow[]) ?? [];
       }),
@@ -220,7 +219,7 @@ export async function buildPlaybook(): Promise<PlaybookData> {
     Promise.all(
       chunk(leadIds, 50).map(async (c) => {
         if (!c.length) return [] as ActivityRow[];
-        const { data, error } = await fetchActivitiesByEntityIds(supabase, "lead", c);
+        const { data, error } = await fetchActivitiesByEntityIds("lead", c);
         if (error) console.error("[buildPlaybook] lead-activities chunk failed", error);
         return (data as unknown as ActivityRow[]) ?? [];
       }),

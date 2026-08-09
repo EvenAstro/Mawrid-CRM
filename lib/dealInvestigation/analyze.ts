@@ -1,4 +1,3 @@
-import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import { getContext } from "@/lib/nextBestAction/getContext";
 import type { SituationalTag } from "@/lib/classifyActivity";
 import { fetchEntityActivitiesAdmin } from "@/lib/models/activities";
@@ -141,12 +140,12 @@ function dealValueSAR(expectedMinor: number | null, wonMinor: number | null): nu
 async function fetchDealActivities(dealId: string, leadId: string | null): Promise<RawActivityRow[]> {
   const rows: RawActivityRow[] = [];
 
-  const { data: dealActs, error: e1 } = await fetchEntityActivitiesAdmin(supabase, "deal", dealId);
+  const { data: dealActs, error: e1 } = await fetchEntityActivitiesAdmin("deal", dealId);
   if (e1) console.error("[investigation] deal activities fetch failed", e1);
   if (dealActs) rows.push(...(dealActs as unknown as RawActivityRow[]));
 
   if (leadId) {
-    const { data: leadActs, error: e2 } = await fetchEntityActivitiesAdmin(supabase, "lead", leadId);
+    const { data: leadActs, error: e2 } = await fetchEntityActivitiesAdmin("lead", leadId);
     if (e2) console.error("[investigation] lead activities fetch failed", e2);
     if (leadActs) rows.push(...(leadActs as unknown as RawActivityRow[]));
   }
@@ -266,7 +265,7 @@ function isReport(v: unknown): v is AiReport {
 // ── Main entry ─────────────────────────────────────────────────────────────
 
 export async function analyzeDeal(dealId: string): Promise<InvestigationPayload | null> {
-  const { data: dealRaw, error: dealErr } = await fetchDealForInvestigation(supabase, dealId);
+  const { data: dealRaw, error: dealErr } = await fetchDealForInvestigation(dealId);
 
   if (dealErr || !dealRaw) {
     console.error("[investigation] deal not found", dealErr);
@@ -325,7 +324,7 @@ export async function analyzeDeal(dealId: string): Promise<InvestigationPayload 
 
   const valueById = new Map<string, { valueSAR: number | null; createdAt: string | null; resolvedAt: string | null }>();
   if (similarIds.length) {
-    const { data: extraRaw } = await fetchDealValuesByIds(supabase, similarIds);
+    const { data: extraRaw } = await fetchDealValuesByIds(similarIds);
     for (const r of (extraRaw as unknown as RawDealRow[]) ?? []) {
       valueById.set(r.id, {
         valueSAR: dealValueSAR(r.expected_value_minor, r.won_value_minor),

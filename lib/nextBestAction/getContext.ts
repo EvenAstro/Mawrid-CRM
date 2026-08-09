@@ -1,6 +1,5 @@
-import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import type { SituationalTag } from "@/lib/classifyActivity";
-import { fetchActivitiesByEntityIds, countActivitiesMatching } from "@/lib/models/activities";
+import { fetchActivitiesByEntityIdsAdmin, countActivitiesMatching } from "@/lib/models/activities";
 import { fetchDealStageContext, fetchResolvedDealsExcept, fetchDealLeadId, fetchDealLeadAndStage } from "@/lib/models/deals";
 
 export type MatchTier = "exact" | "stage" | "tag" | "none";
@@ -74,13 +73,13 @@ async function fetchActivitiesFor(dealIds: string[], leadIds: string[]): Promise
 
   for (const c of chunk(dealIds, CHUNK_SIZE)) {
     if (!c.length) continue;
-    const { data, error } = await fetchActivitiesByEntityIds(supabase, "deal", c);
+    const { data, error } = await fetchActivitiesByEntityIdsAdmin("deal", c);
     if (error) console.error("[getContext] deal-activities chunk fetch failed", error);
     if (data) results.push(...(data as RawActivity[]));
   }
   for (const c of chunk(leadIds, CHUNK_SIZE)) {
     if (!c.length) continue;
-    const { data, error } = await fetchActivitiesByEntityIds(supabase, "lead", c);
+    const { data, error } = await fetchActivitiesByEntityIdsAdmin("lead", c);
     if (error) console.error("[getContext] lead-activities chunk fetch failed", error);
     if (data) results.push(...(data as RawActivity[]));
   }
@@ -153,7 +152,7 @@ async function enrichCandidates(candidates: CandidateDeal[]): Promise<EnrichedCa
  * only signal available.
  */
 export async function getContext(dealId: string): Promise<DealContext | null> {
-  const { data: deal, error: dealError } = await fetchDealStageContext(supabase, dealId);
+  const { data: deal, error: dealError } = await fetchDealStageContext(dealId);
 
   if (dealError || !deal) {
     console.error("[getContext] deal not found", dealError);
@@ -186,7 +185,7 @@ export async function getContext(dealId: string): Promise<DealContext | null> {
 
   // Deals table is small (~hundreds of rows) — fetching it whole is fine;
   // it's the activities table (thousands of rows) that needs targeted queries.
-  const { data: resolvedDealsRaw, error: resolvedError } = await fetchResolvedDealsExcept(supabase, liveDeal.id);
+  const { data: resolvedDealsRaw, error: resolvedError } = await fetchResolvedDealsExcept(liveDeal.id);
 
   if (resolvedError || !resolvedDealsRaw) {
     console.error("[getContext] resolved deals fetch failed", resolvedError);
@@ -266,24 +265,24 @@ export async function getContext(dealId: string): Promise<DealContext | null> {
 
 /** Cheap activity count for a deal (deal-linked + originating-lead-linked), used for cache staleness checks. */
 export async function getActivityCount(dealId: string): Promise<number> {
-  const { data: deal } = await fetchDealLeadId(supabase, dealId);
+  const { data: deal } = await fetchDealLeadId(dealId);
   if (!deal) return 0;
 
   const orFilter = deal.lead_id
     ? `and(entity_type.eq.deal,entity_id.eq.${dealId}),and(entity_type.eq.lead,entity_id.eq.${deal.lead_id})`
     : null;
-  const { count } = await countActivitiesMatching(supabase, orFilter, "deal", dealId);
+  const { count } = await countActivitiesMatching(orFilter, "deal", dealId);
   return count ?? 0;
 }
 
 /** Cheap staleness signals for cache reads: current activity count + current stage_id. */
 export async function getDealMeta(dealId: string): Promise<{ activityCount: number; stageId: string | null }> {
-  const { data: deal } = await fetchDealLeadAndStage(supabase, dealId);
+  const { data: deal } = await fetchDealLeadAndStage(dealId);
   if (!deal) return { activityCount: 0, stageId: null };
 
   const orFilter = deal.lead_id
     ? `and(entity_type.eq.deal,entity_id.eq.${dealId}),and(entity_type.eq.lead,entity_id.eq.${deal.lead_id})`
     : null;
-  const { count } = await countActivitiesMatching(supabase, orFilter, "deal", dealId);
+  const { count } = await countActivitiesMatching(orFilter, "deal", dealId);
   return { activityCount: count ?? 0, stageId: deal.stage_id ?? null };
 }

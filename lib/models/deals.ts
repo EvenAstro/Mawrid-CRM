@@ -1,5 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { canViewAllData } from "@/lib/permissions";
 import type { Role } from "@/lib/profiles";
 
@@ -131,8 +131,8 @@ export async function fetchDealsForInsights() {
 }
 
 /** Full deal record for the investigation report — server-side, no RLS scoping. */
-export async function fetchDealForInvestigation(client: SupabaseClient, dealId: string) {
-  return client
+export async function fetchDealForInvestigation(dealId: string) {
+  return supabaseAdmin
     .from("deals")
     .select(
       "id, name, lead_id, expected_value_minor, won_value_minor, currency_code, created_at, updated_at, pipeline_stages(label, terminal_type)",
@@ -142,18 +142,18 @@ export async function fetchDealForInvestigation(client: SupabaseClient, dealId: 
 }
 
 /** Value/timing fields for a batch of deals — used to enrich "similar deals" comparisons. */
-export async function fetchDealValuesByIds(client: SupabaseClient, ids: string[]) {
-  return client.from("deals").select("id, expected_value_minor, won_value_minor, created_at, updated_at").in("id", ids);
+export async function fetchDealValuesByIds(ids: string[]) {
+  return supabaseAdmin.from("deals").select("id, expected_value_minor, won_value_minor, created_at, updated_at").in("id", ids);
 }
 
 /** A deal's stage/lead linkage, for the next-best-action context builder. */
-export async function fetchDealStageContext(client: SupabaseClient, dealId: string) {
-  return client.from("deals").select("id, lead_id, stage_id, updated_at, pipeline_stages(label, terminal_type)").eq("id", dealId).single();
+export async function fetchDealStageContext(dealId: string) {
+  return supabaseAdmin.from("deals").select("id, lead_id, stage_id, updated_at, pipeline_stages(label, terminal_type)").eq("id", dealId).single();
 }
 
 /** Every non-deleted deal's stage/lead linkage except the given one — used to find "similar" resolved deals. */
-export async function fetchResolvedDealsExcept(client: SupabaseClient, excludeDealId: string) {
-  return client
+export async function fetchResolvedDealsExcept(excludeDealId: string) {
+  return supabaseAdmin
     .from("deals")
     .select("id, lead_id, stage_id, updated_at, pipeline_stages(label, terminal_type)")
     .is("deleted_at", null)
@@ -161,13 +161,13 @@ export async function fetchResolvedDealsExcept(client: SupabaseClient, excludeDe
 }
 
 /** A deal's lead_id only — used before an activity-count lookup. */
-export async function fetchDealLeadId(client: SupabaseClient, dealId: string) {
-  return client.from("deals").select("lead_id").eq("id", dealId).single();
+export async function fetchDealLeadId(dealId: string) {
+  return supabaseAdmin.from("deals").select("lead_id").eq("id", dealId).single();
 }
 
 /** A deal's lead_id and stage_id — used before an activity-count + stage lookup. */
-export async function fetchDealLeadAndStage(client: SupabaseClient, dealId: string) {
-  return client.from("deals").select("lead_id, stage_id").eq("id", dealId).single();
+export async function fetchDealLeadAndStage(dealId: string) {
+  return supabaseAdmin.from("deals").select("lead_id, stage_id").eq("id", dealId).single();
 }
 
 /** The 30 least-recently-updated active deals, for the daily briefing's "stuck deals" section. */
@@ -201,8 +201,8 @@ export async function fetchDealsForRevenueIntelligence() {
 }
 
 /** Full select for the Copilot business snapshot. */
-export async function fetchDealsForSnapshot(client: SupabaseClient) {
-  return client
+export async function fetchDealsForSnapshot() {
+  return supabaseAdmin
     .from("deals")
     .select(
       "id, name, lead_id, expected_value_minor, won_value_minor, currency_code, probability_pct, created_at, updated_at, pipeline_stages(label, terminal_type), lost_reasons(label)",
@@ -211,29 +211,29 @@ export async function fetchDealsForSnapshot(client: SupabaseClient) {
 }
 
 /** Active deals stale for 7+ days, for the rep-coach briefing. */
-export async function fetchRepCoachStaleDeals(client: SupabaseClient, staleBeforeIso: string) {
-  return client.from("deals").select("id, name, updated_at, expected_value, leads(full_name)")
+export async function fetchRepCoachStaleDeals(staleBeforeIso: string) {
+  return supabaseAdmin.from("deals").select("id, name, updated_at, expected_value, leads(full_name)")
     .is("deleted_at", null).is("closed_at", null).lt("updated_at", staleBeforeIso)
     .order("updated_at", { ascending: true }).limit(10);
 }
 
 /** Top 5 active deals by expected value, for the rep-coach briefing. */
-export async function fetchRepCoachBigDeals(client: SupabaseClient) {
-  return client.from("deals").select("id, name, expected_value, stage, updated_at, leads(full_name)")
+export async function fetchRepCoachBigDeals() {
+  return supabaseAdmin.from("deals").select("id, name, expected_value, stage, updated_at, leads(full_name)")
     .is("deleted_at", null).is("closed_at", null)
     .order("expected_value", { ascending: false }).limit(5);
 }
 
 /** 20 most recently created active deals, for the rep-coach briefing's pipeline view. */
-export async function fetchRepCoachPipeline(client: SupabaseClient) {
-  return client.from("deals").select("id, name, stage, expected_value, leads(full_name)")
+export async function fetchRepCoachPipeline() {
+  return supabaseAdmin.from("deals").select("id, name, stage, expected_value, leads(full_name)")
     .is("deleted_at", null).is("closed_at", null)
     .order("created_at", { ascending: false }).limit(20);
 }
 
 /** Deals in a quote/proposal stage (Arabic "عرض") stale for 3+ days, for the rep-coach briefing. */
-export async function fetchRepCoachQuoteDeals(client: SupabaseClient, staleBeforeIso: string) {
-  return client.from("deals").select("id, name, expected_value, updated_at, leads(full_name), pipeline_stages!inner(label)")
+export async function fetchRepCoachQuoteDeals(staleBeforeIso: string) {
+  return supabaseAdmin.from("deals").select("id, name, expected_value, updated_at, leads(full_name), pipeline_stages!inner(label)")
     .is("deleted_at", null).is("closed_at", null).lt("updated_at", staleBeforeIso)
     .ilike("pipeline_stages.label", "%عرض%")
     .order("updated_at", { ascending: true }).limit(10);

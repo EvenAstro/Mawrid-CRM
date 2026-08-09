@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import { requireUser } from "@/lib/auth/requireUser";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { fetchProfileGreetingName } from "@/lib/profiles";
@@ -95,7 +94,7 @@ export async function GET(req: NextRequest) {
     const twoDaysAgo = new Date(now.getTime() - 2 * MS_PER_DAY).toISOString();
 
     // Fetch user profile for personalized greeting
-    const profileRes = await fetchProfileGreetingName(supabase, userId);
+    const profileRes = await fetchProfileGreetingName(userId);
     const firstName = profileRes.data?.first_name || profileRes.data?.full_name?.split(" ")[0] || null;
 
     const threeDaysFromNow = new Date(now.getTime() + 3 * MS_PER_DAY).toISOString();
@@ -115,22 +114,22 @@ export async function GET(req: NextRequest) {
       quoteDealsRes,
       yesterdayCompletedRes,
     ] = await Promise.all([
-      fetchRepCoachOverdueTasks(supabase, userId, ds),
-      fetchRepCoachTodayTasks(supabase, userId, ds, de),
+      fetchRepCoachOverdueTasks(userId, ds),
+      fetchRepCoachTodayTasks(userId, ds, de),
       // Upcoming tasks — tomorrow to 3 days from now
-      fetchRepCoachUpcomingTasks(supabase, userId, de, threeDaysFromNow),
-      fetchRepCoachCompletedToday(supabase, userId, ds, de),
-      fetchRepCoachNoDueDateTasks(supabase, userId),
-      fetchRepCoachStaleDeals(supabase, sevenDaysAgo),
-      fetchRepCoachTodayActivities(supabase, userId, ds, de),
-      fetchRepCoachNewLeads(supabase, twoDaysAgo),
-      fetchRepCoachBigDeals(supabase),
-      fetchRepCoachPipeline(supabase),
+      fetchRepCoachUpcomingTasks(userId, de, threeDaysFromNow),
+      fetchRepCoachCompletedToday(userId, ds, de),
+      fetchRepCoachNoDueDateTasks(userId),
+      fetchRepCoachStaleDeals(sevenDaysAgo),
+      fetchRepCoachTodayActivities(userId, ds, de),
+      fetchRepCoachNewLeads(twoDaysAgo),
+      fetchRepCoachBigDeals(),
+      fetchRepCoachPipeline(),
       // Upcoming meetings — activities with "meeting" type in the next 3 days
-      fetchRepCoachUpcomingMeetings(supabase, userId, ds, threeDaysFromNow),
+      fetchRepCoachUpcomingMeetings(userId, ds, threeDaysFromNow),
       // Deals in quote/proposal stage — need follow-up if not updated in 3+ days
-      fetchRepCoachQuoteDeals(supabase, threeDaysAgo),
-      fetchRepCoachYesterdayCompletedIds(supabase, userId, new Date(todayStart.getTime() - MS_PER_DAY).toISOString(), ds),
+      fetchRepCoachQuoteDeals(threeDaysAgo),
+      fetchRepCoachYesterdayCompletedIds(userId, new Date(todayStart.getTime() - MS_PER_DAY).toISOString(), ds),
     ]);
 
     type Task = { id: string; title: string | null; due_at: string | null };

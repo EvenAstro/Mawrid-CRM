@@ -1,5 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { canViewAllData } from "@/lib/permissions";
 import type { Role } from "@/lib/profiles";
 import type { Lead } from "@/components/LeadSlideOver";
@@ -168,13 +168,13 @@ export async function fetchAllLeadTouchpoints() {
 }
 
 /** Minimal select for the Copilot business snapshot. */
-export async function fetchLeadsForSnapshot(client: SupabaseClient) {
-  return client.from("leads").select("id, junk_reason_id, created_at, sources(label)").is("deleted_at", null);
+export async function fetchLeadsForSnapshot() {
+  return supabaseAdmin.from("leads").select("id, junk_reason_id, created_at, sources(label)").is("deleted_at", null);
 }
 
 /** Leads created in the last N days, for the rep-coach briefing. */
-export async function fetchRepCoachNewLeads(client: SupabaseClient, sinceIso: string) {
-  return client.from("leads").select("id, full_name, company_name, created_at")
+export async function fetchRepCoachNewLeads(sinceIso: string) {
+  return supabaseAdmin.from("leads").select("id, full_name, company_name, created_at")
     .is("deleted_at", null).gte("created_at", sinceIso)
     .order("created_at", { ascending: false }).limit(10);
 }
