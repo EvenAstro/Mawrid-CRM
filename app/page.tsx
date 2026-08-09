@@ -75,12 +75,12 @@ export default function LandingPage() {
         </div>
 
         <div className="relative mx-auto max-w-[720px] text-center">
-          <span className="dash-fade inline-flex items-center gap-2 rounded-full border border-[#3a9080]/20 bg-[#f0faf8] px-5 py-2.5 text-[13px] font-bold text-[#1a5c4f]" style={{ animationDelay: "60ms" }}>
+          <span className="mk-enter inline-flex items-center gap-2 rounded-full border border-[#3a9080]/20 bg-[#f0faf8] px-5 py-2.5 text-[13px] font-bold text-[#1a5c4f]" style={{ animationDelay: "60ms" }}>
             <span className="land-blip h-1.5 w-1.5 rounded-full bg-[#3a9080]" />
             منصة مبيعات ذكية لفريقك
           </span>
 
-          <h1 className="dash-fade mt-7 text-[42px] font-black leading-[1.14] tracking-tight text-[#141c2e] sm:text-[58px]" style={{ animationDelay: "150ms" }}>
+          <h1 className="mk-enter mt-7 text-[42px] font-black leading-[1.14] tracking-tight text-[#141c2e] sm:text-[58px]" style={{ animationDelay: "150ms" }}>
             نظّم مبيعاتك
             <br />
             <span className="relative inline-block text-[#3a9080]">
@@ -91,11 +91,11 @@ export default function LandingPage() {
             </span>
           </h1>
 
-          <p className="dash-fade mx-auto mt-7 max-w-[480px] text-[17px] leading-[1.8] text-[#5a7069]" style={{ animationDelay: "250ms" }}>
+          <p className="mk-enter mx-auto mt-7 max-w-[480px] text-[17px] leading-[1.8] text-[#5a7069]" style={{ animationDelay: "250ms" }}>
             تابع عملاءك، أغلق صفقاتك، وارفع إيراداتك — كل شيء في مكان واحد مصمم لفريقك.
           </p>
 
-          <div className="dash-fade mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row" style={{ animationDelay: "340ms" }}>
+          <div className="mk-enter mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row" style={{ animationDelay: "340ms" }}>
             <Link href="/login" className="w-full rounded-2xl bg-[#141c2e] px-10 py-4 text-[16px] font-bold text-white shadow-[0_6px_26px_rgba(20,28,46,0.25)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_34px_rgba(20,28,46,0.32)] sm:w-auto">
               ابدأ الحين
             </Link>
@@ -104,7 +104,7 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <p className="dash-fade mt-5 text-[12px] font-medium text-[#94a3b8]" style={{ animationDelay: "420ms" }}>للأعضاء المخوّلين فقط</p>
+          <p className="mk-enter mt-5 text-[12px] font-medium text-[#94a3b8]" style={{ animationDelay: "420ms" }}>للأعضاء المخوّلين فقط</p>
         </div>
 
         {/* Live product preview */}

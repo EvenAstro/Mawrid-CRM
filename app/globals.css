@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./tokens.css";
 
 :root {
   --background: #ffffff;
@@ -41,8 +42,10 @@
     transform: translateY(0);
   }
 }
+/* Route-change fade. Kept at 90ms: short enough to read as a cut rather than
+   an entrance, which is what the no-entrance rule is actually protecting. */
 .page-content {
-  animation: premiumFadeIn 0.2s ease;
+  animation: premiumFadeIn var(--motion-instant) var(--ease-standard);
 }
 @media (prefers-reduced-motion: reduce) {
   .page-content {
@@ -50,29 +53,97 @@
   }
 }
 
+/* Bridges tokens.css into Tailwind so the semantic layer is reachable as
+   utilities: bg-surface-raised, text-content-secondary, border-subtle, … */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  /* Cairo everywhere — Arabic + English */
-  --font-sans: var(--font-cairo), system-ui, sans-serif;
-  --font-cairo: var(--font-cairo), system-ui, sans-serif;
+  --color-background: var(--surface-page);
+  --color-foreground: var(--content-primary);
 
-  /* ---- Mawrid brand palette ---- */
-  --color-primary: #1a5c4f; /* teal — buttons, active, links */
-  --color-primary-dark: #15503f; /* deep teal — hover */
-  --color-primary-light: #2d8570; /* gradient end */
-  --color-mint: #f0faf8; /* soft accents, badges, hover */
-  --color-ivory: #ffffff; /* page background is now pure white */
-  --color-ink: #1e1b4b; /* headlines, primary text */
-  --color-ink-secondary: #334155; /* body text */
-  --color-muted: #94a3b8; /* labels, captions */
-  --color-border-light: #e8ece9; /* light borders */
-  --color-navy: #1e1b4b;
+  --font-sans: var(--font-body);
+  --font-body: var(--font-body);
+  --font-display: var(--font-display);
+  --font-cairo: var(--font-body);
 
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --color-info: #6366f1;
+  /* ---- Semantic: surface ---- */
+  --color-surface-page: var(--surface-page);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-active: var(--surface-active);
+  --color-surface-accent: var(--surface-accent);
+  --color-surface-accent-hover: var(--surface-accent-hover);
+  --color-surface-accent-subtle: var(--surface-accent-subtle);
+  --color-surface-inverse: var(--surface-inverse);
+  --color-surface-inverse-raised: var(--surface-inverse-raised);
+  --color-surface-inverse-hover: var(--surface-inverse-hover);
+  --color-surface-inverse-deep: var(--surface-inverse-deep);
+
+  /* ---- Semantic: content ---- */
+  --color-content-primary: var(--content-primary);
+  --color-content-secondary: var(--content-secondary);
+  --color-content-tertiary: var(--content-tertiary);
+  --color-content-disabled: var(--content-disabled);
+  --color-content-accent: var(--content-accent);
+  --color-content-on-accent: var(--content-on-accent);
+  --color-content-inverse-primary: var(--content-inverse-primary);
+  --color-content-inverse-secondary: var(--content-inverse-secondary);
+  --color-content-inverse-tertiary: var(--content-inverse-tertiary);
+  --color-content-inverse-accent: var(--content-inverse-accent);
+
+  /* ---- Semantic: border (border-subtle, border-strong, …) ---- */
+  --color-subtle: var(--border-subtle);
+  --color-default: var(--border-default);
+  --color-strong: var(--border-strong);
+  --color-accent: var(--border-accent);
+  --color-focus: var(--border-focus);
+  --color-inverse: var(--border-inverse);
+  --color-inverse-strong: var(--border-inverse-strong);
+
+  /* ---- Semantic: status ---- */
+  --color-success-fg: var(--status-success-fg);
+  --color-success-bg: var(--status-success-bg);
+  --color-success-border: var(--status-success-border);
+  --color-warning-fg: var(--status-warning-fg);
+  --color-warning-bg: var(--status-warning-bg);
+  --color-warning-border: var(--status-warning-border);
+  --color-danger-fg: var(--status-danger-fg);
+  --color-danger-bg: var(--status-danger-bg);
+  --color-danger-border: var(--status-danger-border);
+  --color-info-fg: var(--status-info-fg);
+  --color-info-bg: var(--status-info-bg);
+  --color-info-border: var(--status-info-border);
+
+  /* ---- Radius + layout as utilities ---- */
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+
+  /* ------------------------------------------------------------------
+     LEGACY ALIASES — every merged component still uses these names. They
+     now resolve through the semantic layer, so three of them shift value.
+     Those shifts are intentional and are listed in the PR rationale:
+       text-ink / bg-navy  #1e1b4b -> #141c2e  (one navy, not two)
+       text-muted          #94a3b8 -> #5a7069  (2.9:1 failed AA; now 5.4:1)
+       bg-ivory            page bg is now surface-page, not pure white
+     ------------------------------------------------------------------ */
+  --color-primary: var(--brand-teal-700);
+  --color-primary-dark: var(--brand-teal-800);
+  --color-primary-light: var(--brand-teal-500);
+  --color-mint: var(--surface-accent-subtle);
+  --color-ivory: var(--surface-raised);
+  --color-ink: var(--content-primary);
+  --color-ink-secondary: var(--content-secondary);
+  --color-muted: var(--content-tertiary);
+  --color-border-light: var(--border-subtle);
+  --color-navy: var(--surface-inverse);
+
+  --color-success: var(--brand-green-500);
+  --color-warning: var(--brand-amber-500);
+  --color-danger: var(--brand-red-500);
+  --color-info: var(--brand-indigo-500);
 
   /* ---- Premium scales wired as utilities (bg-teal-700, text-gray-400, …) ---- */
   --color-teal-900: #0d3b30;
@@ -96,24 +167,131 @@
 }
 
 body {
-  background: #ffffff;
-  color: var(--color-ink);
-  font-family: var(--font-cairo), system-ui, sans-serif;
-  line-height: 1.6;
+  background: var(--surface-page);
+  color: var(--content-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--text-body-lh);
 }
 
-/* Bold, tight Cairo headings */
-.font-cairo,
+/* Headings take the display face. Weight is capped at 700 here so no screen
+   can accidentally ask for a synthesised Plex 800 (see tokens.css). */
 h1,
 h2,
-h3 {
-  font-family: var(--font-cairo), system-ui, sans-serif;
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-title);
+  line-height: var(--text-title-2-lh);
+  color: var(--content-primary);
 }
-h1,
-h2,
-h3 {
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+.font-cairo {
+  font-family: var(--font-body);
+}
+
+/* ---- Type ramp as utilities. Each sets size, leading and tracking together,
+   because setting them apart is how a scale drifts. ---- */
+.t-display-1 {
+  font-family: var(--font-display);
+  font-size: var(--text-display-1);
+  line-height: var(--text-display-1-lh);
+  letter-spacing: var(--tracking-display);
+  font-weight: var(--weight-bold);
+}
+.t-display-2 {
+  font-family: var(--font-display);
+  font-size: var(--text-display-2);
+  line-height: var(--text-display-2-lh);
+  letter-spacing: var(--tracking-display);
+  font-weight: var(--weight-bold);
+}
+.t-title-1 {
+  font-family: var(--font-display);
+  font-size: var(--text-title-1);
+  line-height: var(--text-title-1-lh);
+  letter-spacing: var(--tracking-title);
+  font-weight: var(--weight-bold);
+}
+.t-title-2 {
+  font-family: var(--font-display);
+  font-size: var(--text-title-2);
+  line-height: var(--text-title-2-lh);
+  letter-spacing: var(--tracking-title);
+  font-weight: var(--weight-semibold);
+}
+.t-title-3 {
+  font-family: var(--font-display);
+  font-size: var(--text-title-3);
+  line-height: var(--text-title-3-lh);
+  font-weight: var(--weight-semibold);
+}
+.t-body-lg {
+  font-size: var(--text-body-lg);
+  line-height: var(--text-body-lg-lh);
+}
+.t-body {
+  font-size: var(--text-body);
+  line-height: var(--text-body-lh);
+}
+.t-body-sm {
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm-lh);
+}
+.t-caption {
+  font-size: var(--text-caption);
+  line-height: var(--text-caption-lh);
+}
+.t-micro {
+  font-size: var(--text-micro);
+  line-height: var(--text-micro-lh);
+}
+.t-eyebrow {
+  font-size: var(--text-caption);
+  line-height: var(--text-caption-lh);
+  letter-spacing: var(--tracking-caps);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+}
+/* Figures in KPIs and tables must not jitter as they count or update. */
+.t-figure {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  font-weight: var(--weight-extrabold);
+  letter-spacing: -0.01em;
+}
+
+/* ---- Elevation as utilities ---- */
+.e-1 {
+  box-shadow: var(--elevation-1);
+}
+.e-2 {
+  box-shadow: var(--elevation-2);
+}
+.e-overlay {
+  box-shadow: var(--elevation-overlay);
+}
+.e-inverse-1 {
+  box-shadow: var(--elevation-inverse-1);
+}
+.e-inverse-2 {
+  box-shadow: var(--elevation-inverse-2);
+}
+.e-accent {
+  box-shadow: var(--elevation-accent);
+}
+
+/* ---- Focus. One visible ring everywhere, keyboard-only so pointer users
+   don't see it on click. Never remove this without a replacement. ---- */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+.on-inverse :focus-visible {
+  box-shadow: var(--focus-ring-inverse);
 }
 
 /* Soft teal-tinted card shadow */
@@ -127,11 +305,11 @@ button,
 input,
 [role="button"] {
   transition:
-    color 0.18s ease,
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease;
+    color var(--motion-base) var(--ease-standard),
+    background-color var(--motion-base) var(--ease-standard),
+    border-color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard),
+    transform var(--motion-base) var(--ease-standard);
 }
 
 /* Input focus ring */
@@ -217,8 +395,9 @@ input[type="checkbox"].ls-toggle:checked + .ls-toggle-label::after {
   }
 }
 
-/* Dashboard data-load fade-in */
-@keyframes dashFade {
+/* Entrance animation, marketing surfaces only (landing hero, auth showcase).
+   Named `mk-` so it reads as marketing at the call site. */
+@keyframes mkEnter {
   from {
     opacity: 0;
     transform: translateY(8px);
@@ -228,13 +407,27 @@ input[type="checkbox"].ls-toggle:checked + .ls-toggle-label::after {
     transform: translateY(0);
   }
 }
-.dash-fade {
-  animation: dashFade 0.45s ease both;
+.mk-enter {
+  animation: mkEnter var(--motion-mk-base) var(--ease-standard) both;
 }
 @media (prefers-reduced-motion: reduce) {
-  .dash-fade {
+  .mk-enter {
     animation: none;
   }
+}
+
+/* `.dash-fade` is intentionally inert.
+
+   Meridian's motion rule is that dashboard content never animates in. These
+   screens block on Supabase and on the AI routes, so a 450ms entrance runs
+   *after* the user has already waited — it delays the content they were
+   waiting for and makes a slow screen feel slower. The class is kept rather
+   than deleted so the not-yet-rebuilt screens keep compiling; each batch
+   strips its own usages, and the class goes when the last one does.
+
+   Remaining usages: app/dashboard/leads/page.tsx. */
+.dash-fade {
+  animation: none;
 }
 
 /* KPI sparkline self-draw (components/ui/Sparkline.tsx) */
