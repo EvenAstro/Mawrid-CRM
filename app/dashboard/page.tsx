@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { LeadsIcon, CheckCircleIcon, RevenueIcon, TrendingUpIcon } from "@/components/navIcons";
-import { PhoneIcon, ChatBubbleIcon, MailIcon, CalendarIcon, DotIcon, EmptyChartIcon, CelebrationIcon, WifiOffIcon } from "@/components/icons";
+import { LeadsIcon, CheckCircleIcon, RevenueIcon, TrendingUpIcon, ActivitiesIcon } from "@/components/navIcons";
+import { PhoneIcon, ChatBubbleIcon, MailIcon, CalendarIcon, DotIcon, EmptyChartIcon, CelebrationIcon, WifiOffIcon, ChartBarIcon, TargetIcon, ClockIcon } from "@/components/icons";
+import { Panel, PanelHead, CommandBand, BandButton } from "@/components/ui/Panel";
 import CountUp from "@/components/ui/CountUp";
 import Sparkline from "@/components/ui/Sparkline";
 import { useToast } from "@/components/Toast";
@@ -102,24 +103,33 @@ function latestDate(iso: (string | null)[]): Date {
   // Use the most recent data point, but never a future date beyond today.
   return new Date(Math.min(max || now, now));
 }
-function trendText(cur: number, prev: number): { text: string; cls: string; dir: "up" | "down" | "flat" } {
-  if (prev === 0 && cur === 0) return { text: "لا بيانات بعد", cls: "text-[#94a3b8]", dir: "flat" };
-  if (prev === 0) return { text: "أول شهر", cls: "text-[#94a3b8]", dir: "flat" };
+function trendText(cur: number, prev: number): { text: string; dir: "up" | "down" | "flat" } {
+  if (prev === 0 && cur === 0) return { text: "لا بيانات بعد", dir: "flat" };
+  if (prev === 0) return { text: "أول شهر", dir: "flat" };
   const pct = Math.round(((cur - prev) / prev) * 100);
-  if (pct === 0) return { text: "بدون تغيير", cls: "text-[#94a3b8]", dir: "flat" };
-  if (pct > 0) return { text: `${pct}% عن الشهر الماضي`, cls: "text-[#10b981]", dir: "up" };
-  return { text: `${Math.abs(pct)}% عن الشهر الماضي`, cls: "text-[#ef4444]", dir: "down" };
+  if (pct === 0) return { text: "بدون تغيير", dir: "flat" };
+  if (pct > 0) return { text: `${pct}% عن الشهر الماضي`, dir: "up" };
+  return { text: `${Math.abs(pct)}% عن الشهر الماضي`, dir: "down" };
 }
+/* Status hues on navy need their light-surface values lifted, or they fail
+   contrast against the band. These are the -500 stops, which clear AA there. */
+const TREND_ON_NAVY: Record<"up" | "down" | "flat", string> = {
+  up: "text-[#6ee7b7]",
+  down: "text-[#fca5a5]",
+  flat: "text-[color:var(--content-inverse-tertiary)]",
+};
+const OVERVIEW_DOT = {
+  accent: "bg-[var(--content-accent)]",
+  success: "bg-[var(--status-success-fg)]",
+  danger: "bg-[var(--status-danger-fg)]",
+} as const;
+const OVERVIEW_BADGE = {
+  accent: "bg-[var(--surface-accent-subtle)] text-[color:var(--content-accent)]",
+  success: "bg-[var(--status-success-bg)] text-[color:var(--status-success-fg)]",
+  danger: "bg-[var(--status-danger-bg)] text-[color:var(--status-danger-fg)]",
+} as const;
 function taskTitle(t: Task) {
   return t.title || t.name || "مهمة بدون عنوان";
-}
-function activityColor(label?: string | null) {
-  const l = (label || "").toLowerCase();
-  if (l.includes("whatsapp")) return "#10b981";
-  if (l.includes("call")) return "#1a5c4f";
-  if (l.includes("email")) return "#8b5cf6";
-  if (l.includes("deal") || l.includes("meeting")) return "#f59e0b";
-  return "#1a5c4f";
 }
 function ActivityGlyph({ label, className }: { label?: string | null; className?: string }) {
   const l = (label || "").toLowerCase();
@@ -130,17 +140,10 @@ function ActivityGlyph({ label, className }: { label?: string | null; className?
   return <DotIcon className={className} />;
 }
 function aiPill(score: number) {
-  if (score >= 70) return "bg-green-50 text-green-700 border border-green-100";
-  if (score >= 40) return "bg-amber-50 text-amber-700 border border-amber-100";
-  return "bg-red-50 text-red-700 border border-red-100";
+  if (score >= 70) return "bg-[var(--status-success-bg)] text-[color:var(--status-success-fg)] border border-[var(--status-success-border)]";
+  if (score >= 40) return "bg-[var(--status-warning-bg)] text-[color:var(--status-warning-fg)] border border-[var(--status-warning-border)]";
+  return "bg-[var(--status-danger-bg)] text-[color:var(--status-danger-fg)] border border-[var(--status-danger-border)]";
 }
-const AVATAR_GRADIENTS = [
-  "from-[#1a5c4f] to-[#0f3a30]",
-  "from-[#6366f1] to-[#4338ca]",
-  "from-[#f59e0b] to-[#c2660a]",
-  "from-[#0ea5e9] to-[#0369a1]",
-  "from-[#ec4899] to-[#be185d]",
-];
 
 /* ---------- Chart ---------- */
 function PipelineChart({ points }: { points: { label: string; value: number }[] }) {
@@ -163,10 +166,10 @@ function PipelineChart({ points }: { points: { label: string; value: number }[] 
   if (allZero) {
     return (
       <div className="flex h-44 flex-col items-center justify-center gap-3 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f0faf8] text-[#1a5c4f]"><EmptyChartIcon className="h-6 w-6" /></div>
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--surface-accent-subtle)] text-[color:var(--content-accent)]"><EmptyChartIcon className="h-6 w-6" /></div>
         <div>
-          <p dir="auto" className="text-[18px] font-semibold text-[#1e1b4b]">لا توجد صفقات هذا الأسبوع</p>
-          <p dir="auto" className="mt-1 text-sm text-[#3f554e]">ستظهر قيمة الصفقات الجديدة هنا عند إضافتها.</p>
+          <p dir="auto" className="t-title-3 text-[color:var(--content-primary)]">لا توجد صفقات هذا الأسبوع</p>
+          <p dir="auto" className="t-body-sm mt-1 text-[color:var(--content-secondary)]">ستظهر قيمة الصفقات الجديدة هنا عند إضافتها.</p>
         </div>
       </div>
     );
@@ -175,27 +178,29 @@ function PipelineChart({ points }: { points: { label: string; value: number }[] 
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="170" onMouseLeave={() => setHover(null)}>
       <defs>
         <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1a5c4f" stopOpacity="0.18" />
-          <stop offset="100%" stopColor="#1a5c4f" stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--content-accent)" stopOpacity="0.16" />
+          <stop offset="100%" stopColor="var(--content-accent)" stopOpacity="0" />
         </linearGradient>
       </defs>
       {[0, 0.5, 1].map((g) => (
-        <line key={g} x1={padL} x2={W - padR} y1={y(maxVal * g)} y2={y(maxVal * g)} stroke="#f1f5f9" strokeWidth="1" />
+        <line key={g} x1={padL} x2={W - padR} y1={y(maxVal * g)} y2={y(maxVal * g)} stroke="var(--border-subtle)" strokeWidth="1" />
       ))}
-      {area && <path d={area} fill="url(#areaGrad)" className="chart-area-draw" />}
-      {line && <path d={line} fill="none" stroke="#1a5c4f" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="chart-line-draw" />}
+      {/* No draw-in: this chart sits behind a network fetch, and animating it
+          after the wait only pushes the numbers further away. */}
+      {area && <path d={area} fill="url(#areaGrad)" />}
+      {line && <path d={line} fill="none" stroke="var(--content-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
       {points.map((p, i) => (
         <g key={p.label}>
-          <text x={x(i)} y={H - 6} textAnchor="middle" fontSize="10" fill="#94a3b8">{p.label}</text>
-          <circle cx={x(i)} cy={y(p.value)} r="4" fill="white" stroke="#1a5c4f" strokeWidth="2" className="chart-dot-pop" style={{ animationDelay: `${0.5 + i * 0.08}s` }} />
+          <text x={x(i)} y={H - 6} textAnchor="middle" fontSize="10" fill="var(--content-tertiary)">{p.label}</text>
+          <circle cx={x(i)} cy={y(p.value)} r="4" fill="var(--surface-raised)" stroke="var(--content-accent)" strokeWidth="2" />
           <circle cx={x(i)} cy={y(p.value)} r="14" fill="transparent" onMouseEnter={() => setHover(i)} />
         </g>
       ))}
       {hover != null && (
         <g>
-          <line x1={x(hover)} x2={x(hover)} y1={padT} y2={H - padB} stroke="#1a5c4f" strokeWidth="1" strokeDasharray="3 3" />
-          <rect x={Math.min(Math.max(x(hover) - 46, 2), W - 94)} y={Math.max(y(points[hover].value) - 40, 2)} width="92" height="32" rx="6" fill="#1e1b4b" />
-          <text x={Math.min(Math.max(x(hover), 48), W - 48)} y={Math.max(y(points[hover].value) - 26, 14)} textAnchor="middle" fontSize="9" fill="#a5b4c9">{points[hover].label}</text>
+          <line x1={x(hover)} x2={x(hover)} y1={padT} y2={H - padB} stroke="var(--content-accent)" strokeWidth="1" strokeDasharray="3 3" />
+          <rect x={Math.min(Math.max(x(hover) - 46, 2), W - 94)} y={Math.max(y(points[hover].value) - 40, 2)} width="92" height="32" rx="6" fill="var(--surface-inverse)" />
+          <text x={Math.min(Math.max(x(hover), 48), W - 48)} y={Math.max(y(points[hover].value) - 26, 14)} textAnchor="middle" fontSize="9" fill="var(--content-inverse-tertiary)">{points[hover].label}</text>
           <text x={Math.min(Math.max(x(hover), 48), W - 48)} y={Math.max(y(points[hover].value) - 14, 26)} textAnchor="middle" fontSize="10" fontWeight="700" fill="white">SAR {money(points[hover].value)}</text>
         </g>
       )}
@@ -206,10 +211,10 @@ function PipelineChart({ points }: { points: { label: string; value: number }[] 
 function Skeleton() {
   return (
     <div className="flex flex-col gap-6">
-      <div className="skeleton-shimmer h-28 rounded-3xl" />
+      <div className="skeleton-shimmer h-[188px] rounded-[var(--radius-lg)]" />
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-2xl border border-[#d6ece5] bg-white p-6">
+          <div key={i} className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-pad)]">
             <div className="flex items-center justify-between">
               <div className="skeleton-shimmer h-11 w-11 rounded-2xl" />
               <div className="skeleton-shimmer h-5 w-20 rounded-full" />
@@ -220,14 +225,14 @@ function Skeleton() {
         ))}
       </div>
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <div className="rounded-2xl border border-[#d6ece5] bg-white p-6 lg:col-span-2">
+        <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-pad)] lg:col-span-2">
           <div className="mb-4 flex items-center gap-3">
             <div className="skeleton-shimmer h-10 w-10 rounded-xl" />
             <div className="skeleton-shimmer h-4 w-32 rounded" />
           </div>
           <div className="skeleton-shimmer h-40 rounded-xl" />
         </div>
-        <div className="rounded-2xl border border-[#d6ece5] bg-white p-6">
+        <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-pad)]">
           <div className="mb-4 flex items-center gap-3">
             <div className="skeleton-shimmer h-10 w-10 rounded-xl" />
             <div className="skeleton-shimmer h-4 w-20 rounded" />
@@ -242,7 +247,7 @@ function Skeleton() {
       </div>
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-2xl border border-[#d6ece5] bg-white p-6">
+          <div key={i} className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-pad)]">
             <div className="mb-4 flex items-center gap-3">
               <div className="skeleton-shimmer h-10 w-10 rounded-xl" />
               <div className="skeleton-shimmer h-4 w-24 rounded" />
@@ -260,24 +265,6 @@ function Skeleton() {
   );
 }
 
-const CARD = "rounded-2xl border border-[#d6ece5] bg-white p-6 shadow-[0_2px_8px_rgba(26,92,79,0.04)] transition-all duration-200 hover:shadow-[0_4px_16px_rgba(26,92,79,0.08)]";
-
-function CardHead({ icon, color, title, subtitle, action }: { icon: React.ReactNode; color: string; title: string; subtitle?: string; action?: React.ReactNode }) {
-  return (
-    <div className="mb-4 flex items-center justify-between gap-3">
-      <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl" style={{ backgroundColor: `${color}17`, color }}>
-          {icon}
-        </span>
-        <div>
-          <h3 className="text-[16px] font-bold tracking-[-0.01em] text-[#1e1b4b]">{title}</h3>
-          {subtitle && <p className="mt-0.5 text-xs text-[#94a3b8]">{subtitle}</p>}
-        </div>
-      </div>
-      {action}
-    </div>
-  );
-}
 
 /* ---------- Page ---------- */
 export default function DashboardPage() {
@@ -422,16 +409,16 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-500"><WifiOffIcon className="h-7 w-7" /></div>
+        <div className="flex h-16 w-16 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--status-danger-bg)] text-[color:var(--status-danger-fg)]"><WifiOffIcon className="h-7 w-7" /></div>
         <div>
-          <h2 className="text-xl font-bold text-[#1e1b4b]">خطأ في الاتصال</h2>
-          <p className="mt-1 max-w-sm text-sm text-[#94a3b8]">
+          <h2 className="t-title-2 text-[color:var(--content-primary)]">خطأ في الاتصال</h2>
+          <p className="t-body-sm mt-1 max-w-sm text-[color:var(--content-tertiary)]">
             لم نتمكن من الوصول للخادم. تحقق من اتصالك وحاول مرة أخرى.
           </p>
         </div>
         <button
           onClick={() => { setLoading(true); load(); }}
-          className="rounded-xl bg-[#1a5c4f] px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-[#1a5c4f]/20 transition hover:bg-[#15503f]"
+          className="t-body-sm rounded-[var(--radius-md)] bg-[var(--surface-accent)] px-5 py-2.5 font-semibold text-[color:var(--content-on-accent)] transition-colors hover:bg-[var(--surface-accent-hover)]"
         >
           إعادة المحاولة
         </button>
@@ -439,125 +426,124 @@ export default function DashboardPage() {
     );
   }
 
+  // One accent, not four. The KPI tiles previously carried a different hue
+  // each, which made the row read as a colour chart rather than a number row.
+  // Semantic colour is reserved for the trend, where up/down actually means
+  // something.
   const kpis = [
-    { label: "إجمالي العملاء", n: m.total_leads, format: (v: number) => String(Math.round(v)), Icon: LeadsIcon, color: "#1a5c4f", trend: m.leadsTrend, href: "/dashboard/leads", spark: m.leadsSeries },
-    { label: "عملاء نظيفون", n: m.clean_leads, format: (v: number) => String(Math.round(v)), Icon: CheckCircleIcon, color: "#10b981", trend: m.cleanTrend, href: "/dashboard/leads?filter=clean", spark: m.cleanSeries },
-    { label: "صفقات نشطة", n: m.total_deals, format: (v: number) => String(Math.round(v)), Icon: RevenueIcon, color: "#f59e0b", trend: m.dealsTrend, href: "/dashboard/deals?filter=active", spark: m.dealsSeries },
-    { label: "قيمة الصفقات", n: m.pipeline_value, format: (v: number) => `SAR ${compactSAR(v)}`, Icon: TrendingUpIcon, color: "#6366f1", trend: m.pipeTrend, href: "/dashboard/insights", spark: m.pipeSeries },
+    { label: "إجمالي العملاء", n: m.total_leads, format: (v: number) => String(Math.round(v)), Icon: LeadsIcon, trend: m.leadsTrend, href: "/dashboard/leads", spark: m.leadsSeries },
+    { label: "عملاء نظيفون", n: m.clean_leads, format: (v: number) => String(Math.round(v)), Icon: CheckCircleIcon, trend: m.cleanTrend, href: "/dashboard/leads?filter=clean", spark: m.cleanSeries },
+    { label: "صفقات نشطة", n: m.total_deals, format: (v: number) => String(Math.round(v)), Icon: RevenueIcon, trend: m.dealsTrend, href: "/dashboard/deals?filter=active", spark: m.dealsSeries },
+    { label: "قيمة الصفقات", n: m.pipeline_value, format: (v: number) => `SAR ${compactSAR(v)}`, Icon: TrendingUpIcon, trend: m.pipeTrend, href: "/dashboard/insights", spark: m.pipeSeries },
   ];
 
   const overview = [
-    { dot: "#1a5c4f", label: "قيمة الصفقات", value: `SAR ${money(m.pipeline_value)}`, badge: "bg-[#f0faf8] text-[#1a5c4f]" },
-    { dot: "#10b981", label: "عملاء نظيفون", value: m.clean_leads, badge: "bg-green-50 text-green-700" },
-    { dot: "#ef4444", label: "عملاء غير مؤهلين", value: m.junk_leads, badge: "bg-red-50 text-red-700" },
+    { tone: "accent" as const, label: "قيمة الصفقات", value: `SAR ${money(m.pipeline_value)}` },
+    { tone: "success" as const, label: "عملاء نظيفون", value: m.clean_leads },
+    { tone: "danger" as const, label: "عملاء غير مؤهلين", value: m.junk_leads },
   ];
 
   return (
-    <div>
-      {/* Hero header */}
-      <div className="dash-fade mb-6 rounded-3xl bg-[#141c2e] px-7 py-7">
-        <div className="flex flex-wrap items-center justify-between gap-5">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white/10 text-lg font-bold text-white">
-              {initials(firstName || "أنت")}
-            </div>
-            <div>
-              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">{greeting()}، {firstName || "بك"}</h1>
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-white/50">
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.6} className="h-3.5 w-3.5"><rect x="3" y="4" width="14" height="13" rx="2" /><path d="M3 8h14M7 2v4M13 2v4" strokeLinecap="round" /></svg>
-                {longDate(now)}
-              </p>
-            </div>
+    <div className="flex flex-col gap-[var(--space-card-gap)]">
+      {/* The KPI row lives inside the navy band rather than as four more white
+          cards below it. That is the Meridian read: dark structure carrying
+          the summary, ivory surfaces carrying the detail. */}
+      <CommandBand
+        icon={<span className="t-title-3 font-bold text-[color:var(--content-inverse-accent)]">{initials(firstName || "أنت")}</span>}
+        title={`${greeting()}، ${firstName || "بك"}`}
+        subtitle={
+          <span className="flex items-center gap-1.5">
+            <CalendarIcon className="h-3.5 w-3.5" />
+            {longDate(now)}
+          </span>
+        }
+        actions={
+          <>
+            <BandButton onClick={() => setNewLeadOpen(true)}>+ عميل جديد</BandButton>
+            <BandButton variant="ghost" onClick={() => setLogActivityOpen(true)}>تسجيل نشاط</BandButton>
+            <BandButton variant="ghost" onClick={() => setAddContactOpen(true)}>إضافة جهة اتصال</BandButton>
+          </>
+        }
+        footer={
+          <div className="grid grid-cols-1 divide-y divide-[var(--border-inverse)] sm:grid-cols-2 sm:divide-y-0 md:grid-cols-4">
+            {kpis.map(({ label, n, format, Icon, trend, href, spark }, i) => (
+              <Link
+                key={label}
+                href={href}
+                className={`group flex flex-col gap-2 px-6 py-5 transition-colors duration-[var(--motion-fast)] ease-[var(--ease-standard)] hover:bg-white/[0.05] ${
+                  i > 0 ? "sm:border-s sm:border-[var(--border-inverse)]" : ""
+                }`}
+              >
+                <span className="flex items-center gap-2 text-[color:var(--content-inverse-tertiary)]">
+                  <Icon className="h-4 w-4" />
+                  <span className="t-caption font-semibold">{label}</span>
+                </span>
+                <span className="t-figure text-[28px] leading-none text-[color:var(--content-inverse-primary)]">
+                  <CountUp value={n} format={format} />
+                </span>
+                <span className="flex items-center justify-between gap-2">
+                  <span className={`t-micro flex items-center gap-1 font-bold ${TREND_ON_NAVY[trend.dir]}`}>
+                    {trend.dir === "up" && <svg viewBox="0 0 12 12" fill="currentColor" className="h-2.5 w-2.5"><path d="M6 2l4 5H7v3H5V7H2z" /></svg>}
+                    {trend.dir === "down" && <svg viewBox="0 0 12 12" fill="currentColor" className="h-2.5 w-2.5"><path d="M6 10 2 5h3V2h2v3h3z" /></svg>}
+                    {trend.text}
+                  </span>
+                  {spark.length >= 2 && <Sparkline values={spark} color="#7ec8b5" width={64} height={20} />}
+                </span>
+              </Link>
+            ))}
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setNewLeadOpen(true)} className="rounded-xl bg-[#3a9080] px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#328173]">+ عميل جديد</button>
-            <button onClick={() => setLogActivityOpen(true)} className="rounded-xl border border-white/15 bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-white/90 transition-all hover:bg-white/[0.12]">تسجيل نشاط</button>
-            <button onClick={() => setAddContactOpen(true)} className="rounded-xl border border-white/15 bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-white/90 transition-all hover:bg-white/[0.12]">إضافة جهة اتصال</button>
-          </div>
-        </div>
-      </div>
-
-      {/* KPIs */}
-      <div className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {kpis.map(({ label, n, format, Icon, color, trend, href, spark }, i) => (
-          <Link
-            key={label}
-            href={href}
-            className="dash-fade group relative overflow-hidden rounded-2xl border border-[#d6ece5] bg-white p-6 shadow-[0_2px_8px_rgba(26,92,79,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(26,92,79,0.1)]"
-            style={{ animationDelay: `${60 + i * 70}ms` }}
-          >
-            <div className="flex items-center justify-between">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ backgroundColor: `${color}17`, color }}>
-                <Icon className="h-5 w-5" />
-              </span>
-              <span className={`flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold ${trend.dir === "up" ? "bg-emerald-50" : trend.dir === "down" ? "bg-red-50" : "bg-[#f1f5f9]"} ${trend.cls}`}>
-                {trend.dir === "up" && <svg viewBox="0 0 12 12" fill="currentColor" className="h-2.5 w-2.5"><path d="M6 2l4 5H7v3H5V7H2z" /></svg>}
-                {trend.dir === "down" && <svg viewBox="0 0 12 12" fill="currentColor" className="h-2.5 w-2.5"><path d="M6 10 2 5h3V2h2v3h3z" /></svg>}
-                {trend.text}
-              </span>
-            </div>
-            <p className="relative mt-4 text-[13px] font-semibold text-[#7c8b86]">{label}</p>
-            <p className="relative mt-1 text-[36px] font-black leading-none tracking-tight text-[#1e1b4b]">
-              <CountUp value={n} format={format} />
-            </p>
-            {spark.length >= 2 && (
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 opacity-40">
-                <Sparkline values={spark} color={color} width={260} height={30} delay={200 + i * 70} />
-              </div>
-            )}
-          </Link>
-        ))}
-      </div>
+        }
+      />
 
       {/* Middle row */}
-      <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <div className={`${CARD} dash-fade relative overflow-hidden lg:col-span-2`} style={{ animationDelay: "340ms" }}>
-          <span className="absolute inset-x-0 top-0 h-1 bg-[#6366f1]" />
-          <CardHead
-            icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><path d="M3 17V9M9 17V4M15 17v-6M3 3v14h14" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-            color="#6366f1"
+      <div className="grid grid-cols-1 gap-[var(--space-card-gap)] lg:grid-cols-3">
+        <Panel className="p-[var(--space-card-pad)] lg:col-span-2">
+          <PanelHead
+            icon={<ChartBarIcon className="h-5 w-5" />}
             title="نشاط الصفقات"
             subtitle={`قيمة الصفقات · ${m.seriesRange}`}
-            action={<span className="rounded-full border border-[#e4e4fb] bg-[#f5f5ff] px-3 py-1 text-xs font-semibold text-[#6366f1]">آخر ٧ أيام</span>}
+            action={<span className="t-micro rounded-full bg-[var(--surface-sunken)] px-3 py-1 font-bold text-[color:var(--content-tertiary)]">آخر ٧ أيام</span>}
+            className="mb-4"
           />
           <PipelineChart points={m.series} />
-          <div className="mt-4 flex gap-8 border-t border-[#e8f0ec] pt-4">
-            <div><p className="text-lg font-bold text-[#1e1b4b]">{m.total_deals}</p><p className="text-xs text-[#94a3b8]">إجمالي الصفقات</p></div>
-            <div><p className="text-lg font-bold text-green-600">{m.won}</p><p className="text-xs text-[#94a3b8]">مكسوبة</p></div>
-            <div><p className="text-lg font-bold text-red-600">{m.lost}</p><p className="text-xs text-[#94a3b8]">خاسرة</p></div>
+          <div className="mt-4 flex gap-8 border-t border-[var(--border-subtle)] pt-4">
+            <div><p className="t-figure text-[18px] text-[color:var(--content-primary)]">{m.total_deals}</p><p className="t-caption text-[color:var(--content-tertiary)]">إجمالي الصفقات</p></div>
+            <div><p className="t-figure text-[18px] text-[color:var(--status-success-fg)]">{m.won}</p><p className="t-caption text-[color:var(--content-tertiary)]">مكسوبة</p></div>
+            <div><p className="t-figure text-[18px] text-[color:var(--status-danger-fg)]">{m.lost}</p><p className="t-caption text-[color:var(--content-tertiary)]">خاسرة</p></div>
           </div>
-        </div>
+        </Panel>
 
-        <div className={`${CARD} dash-fade relative flex flex-col overflow-hidden`} style={{ animationDelay: "400ms" }}>
-          <span className="absolute inset-x-0 top-0 h-1 bg-[#1a5c4f]" />
-          <CardHead
-            icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><circle cx="10" cy="10" r="7" /><path d="M10 6v4l3 2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-            color="#1a5c4f"
+        <Panel className="flex flex-col p-[var(--space-card-pad)]">
+          <PanelHead
+            icon={<ClockIcon className="h-5 w-5" />}
             title="اليوم"
             subtitle={longDate(now)}
             action={
-              <p className="rounded-xl bg-[#f0faf8] px-3 py-1.5 text-lg font-black tabular-nums text-[#1a5c4f]">
+              <p className="t-figure rounded-[var(--radius-sm)] bg-[var(--surface-accent-subtle)] px-3 py-1.5 text-[17px] text-[color:var(--content-accent)]">
                 {now.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}
               </p>
             }
+            className="mb-4"
           />
-          <div className="flex-1 border-t border-[#e8f0ec] pt-4">
-            <p className="mb-3 text-xs font-semibold tracking-wider text-[#94a3b8]">المهام القادمة</p>
+          <div className="flex-1 border-t border-[var(--border-subtle)] pt-4">
+            <p className="t-eyebrow mb-3 text-[color:var(--content-tertiary)]">المهام القادمة</p>
             {tasks.length === 0 ? (
-              <p className="flex items-center justify-center gap-2 py-6 text-center text-sm text-[#94a3b8]">
-                <CelebrationIcon className="h-4 w-4 text-[#1a5c4f]" /> لا مهام لليوم!
+              <p className="t-body-sm flex items-center justify-center gap-2 py-6 text-center text-[color:var(--content-tertiary)]">
+                <CelebrationIcon className="h-4 w-4 text-[color:var(--content-accent)]" /> لا مهام لليوم!
               </p>
             ) : (
               tasks.map((t) => {
                 const done = completing.has(t.id);
                 return (
-                  <div key={t.id} className="flex items-center gap-3 border-b border-[#e8f0ec] py-2.5 last:border-0">
+                  <div key={t.id} className="flex items-center gap-3 border-b border-[var(--border-subtle)] py-2.5 last:border-0">
                     <button
                       type="button"
                       onClick={() => completeTask(t)}
-                      aria-label="Mark task complete"
-                      className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-                        done ? "border-[#1a5c4f] bg-[#1a5c4f] text-white" : "border-gray-100 hover:border-[#1a5c4f]"
+                      aria-label={`إنهاء المهمة: ${taskTitle(t)}`}
+                      className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-[var(--motion-fast)] ${
+                        done
+                          ? "border-[var(--content-accent)] bg-[var(--content-accent)] text-white"
+                          : "border-[var(--border-strong)] hover:border-[var(--content-accent)]"
                       }`}
                     >
                       {done && (
@@ -566,85 +552,78 @@ export default function DashboardPage() {
                         </svg>
                       )}
                     </button>
-                    <span dir="auto" className={`flex-1 truncate text-sm transition-colors ${done ? "text-[#94a3b8] line-through" : "text-[#334155]"}`}>
+                    <span dir="auto" className={`t-body-sm flex-1 truncate transition-colors ${done ? "text-[color:var(--content-tertiary)] line-through" : "text-[color:var(--content-secondary)]"}`}>
                       {taskTitle(t)}
                     </span>
-                    <span className="text-xs text-[#94a3b8]">{timeOf(t.due_at)}</span>
+                    <span className="t-caption tabular-nums text-[color:var(--content-tertiary)]">{timeOf(t.due_at)}</span>
                   </div>
                 );
               })
             )}
           </div>
-        </div>
+        </Panel>
       </div>
 
       {/* Bottom row */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        {/* Sales Overview */}
-        <div className={`${CARD} dash-fade relative overflow-hidden`} style={{ animationDelay: "460ms" }}>
-          <span className="absolute inset-x-0 top-0 h-1 bg-[#f59e0b]" />
-          <CardHead
-            icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><path d="M10 2v8l6.5 3.8A8 8 0 1 1 10 2Z" strokeLinejoin="round" /></svg>}
-            color="#f59e0b"
-            title="ملخص المبيعات"
-          />
+      <div className="grid grid-cols-1 gap-[var(--space-card-gap)] lg:grid-cols-3">
+        {/* Sales overview */}
+        <Panel className="p-[var(--space-card-pad)]">
+          <PanelHead icon={<TargetIcon className="h-5 w-5" />} title="ملخص المبيعات" className="mb-4" />
 
-          {/* Win-rate ring with won/lost split */}
-          <div className="mb-5 flex items-center gap-5 border-b border-[#e8f0ec] pb-5">
+          <div className="mb-5 flex items-center gap-5 border-b border-[var(--border-subtle)] pb-5">
             <div className="relative h-28 w-28 flex-none">
-              <svg viewBox="0 0 120 120" className="h-28 w-28 -rotate-90">
-                <circle cx="60" cy="60" r="50" fill="none" stroke="#eef4f1" strokeWidth="12" />
+              <svg viewBox="0 0 120 120" className="h-28 w-28 -rotate-90" role="img" aria-label={`نسبة الفوز ${m.win_rate.toFixed(0)} بالمئة`}>
+                <circle cx="60" cy="60" r="50" fill="none" stroke="var(--surface-sunken)" strokeWidth="12" />
                 <circle
-                  cx="60" cy="60" r="50" fill="none" stroke="#ef4444" strokeWidth="12" strokeLinecap="round" opacity="0.85"
+                  cx="60" cy="60" r="50" fill="none" stroke="var(--status-danger-fg)" strokeWidth="12" strokeLinecap="round" opacity="0.8"
                   strokeDasharray={`${m.total_deals ? (m.lost / m.total_deals) * 314.16 : 0} 314.16`}
                 />
                 <circle
-                  cx="60" cy="60" r="50" fill="none" stroke="#1a5c4f" strokeWidth="12" strokeLinecap="round"
+                  cx="60" cy="60" r="50" fill="none" stroke="var(--content-accent)" strokeWidth="12" strokeLinecap="round"
                   strokeDasharray={`${(Math.min(100, m.win_rate) / 100) * 314.16} 314.16`}
-                  style={{ transition: "stroke-dasharray 0.6s ease" }}
+                  style={{ transition: "stroke-dasharray var(--motion-slow) var(--ease-standard)" }}
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-[22px] font-black leading-none text-[#1e1b4b]">{m.win_rate.toFixed(0)}%</span>
-                <span className="mt-1 text-[9px] font-semibold text-[#94a3b8]">نسبة الفوز</span>
+                <span className="t-figure text-[22px] leading-none text-[color:var(--content-primary)]">{m.win_rate.toFixed(0)}%</span>
+                <span className="t-micro mt-1 font-semibold text-[color:var(--content-tertiary)]">نسبة الفوز</span>
               </div>
             </div>
             <div className="flex-1 space-y-2">
-              <div className="flex items-center justify-between rounded-xl bg-[#f0faf8] px-3 py-2">
-                <span className="flex items-center gap-1.5 text-xs font-semibold text-[#1a5c4f]"><span className="h-2 w-2 rounded-full bg-[#1a5c4f]" />مكسوبة</span>
-                <span className="text-sm font-black text-[#1a5c4f]">{m.won}</span>
+              <div className="flex items-center justify-between rounded-[var(--radius-sm)] bg-[var(--status-success-bg)] px-3 py-2">
+                <span className="t-caption flex items-center gap-1.5 font-semibold text-[color:var(--status-success-fg)]"><span className="h-2 w-2 rounded-full bg-current" />مكسوبة</span>
+                <span className="t-figure text-[15px] text-[color:var(--status-success-fg)]">{m.won}</span>
               </div>
-              <div className="flex items-center justify-between rounded-xl bg-red-50 px-3 py-2">
-                <span className="flex items-center gap-1.5 text-xs font-semibold text-red-700"><span className="h-2 w-2 rounded-full bg-red-500" />خاسرة</span>
-                <span className="text-sm font-black text-red-700">{m.lost}</span>
+              <div className="flex items-center justify-between rounded-[var(--radius-sm)] bg-[var(--status-danger-bg)] px-3 py-2">
+                <span className="t-caption flex items-center gap-1.5 font-semibold text-[color:var(--status-danger-fg)]"><span className="h-2 w-2 rounded-full bg-current" />خاسرة</span>
+                <span className="t-figure text-[15px] text-[color:var(--status-danger-fg)]">{m.lost}</span>
               </div>
             </div>
           </div>
 
           <div className="space-y-1">
             {overview.map((o) => (
-              <div key={o.label} className="flex items-center justify-between rounded-xl px-2 py-2 transition-colors hover:bg-[#f8faf9]">
+              <div key={o.label} className="flex items-center justify-between rounded-[var(--radius-sm)] px-2 py-2 transition-colors duration-[var(--motion-fast)] hover:bg-[var(--surface-hover)]">
                 <div className="flex items-center gap-2.5">
-                  <div className="h-2 w-2 flex-none rounded-full" style={{ backgroundColor: o.dot }} />
-                  <span className="text-sm text-[#334155]">{o.label}</span>
+                  <div className={`h-2 w-2 flex-none rounded-full ${OVERVIEW_DOT[o.tone]}`} />
+                  <span className="t-body-sm text-[color:var(--content-secondary)]">{o.label}</span>
                 </div>
-                <span className={`rounded-md px-2 py-0.5 text-sm font-bold ${o.badge}`}>{o.value}</span>
+                <span className={`t-figure rounded-[var(--radius-xs)] px-2 py-0.5 text-[13.5px] ${OVERVIEW_BADGE[o.tone]}`}>{o.value}</span>
               </div>
             ))}
           </div>
-        </div>
+        </Panel>
 
-        {/* Activity Feed */}
-        <div className={`${CARD} dash-fade relative overflow-hidden`} style={{ animationDelay: "520ms" }}>
-          <span className="absolute inset-x-0 top-0 h-1 bg-[#0ea5e9]" />
-          <CardHead
-            icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><path d="M2 10h4l2-6 4 12 2-6h4" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-            color="#0ea5e9"
+        {/* Activity feed */}
+        <Panel className="p-[var(--space-card-pad)]">
+          <PanelHead
+            icon={<ActivitiesIcon className="h-5 w-5" />}
             title="آخر النشاطات"
-            action={<Link href="/dashboard/activities" className="text-xs font-semibold text-[#0ea5e9] hover:underline">عرض الكل ←</Link>}
+            action={<Link href="/dashboard/activities" className="t-caption font-semibold text-[color:var(--content-accent)] hover:underline">عرض الكل ←</Link>}
+            className="mb-4"
           />
           {activities.length === 0 ? (
-            <p className="py-6 text-center text-sm text-[#94a3b8]">لا توجد نشاطات مسجلة</p>
+            <p className="t-body-sm py-6 text-center text-[color:var(--content-tertiary)]">لا توجد نشاطات مسجلة</p>
           ) : (
             (() => {
               const groups: { key: string; header: string; items: Activity[] }[] = [];
@@ -656,60 +635,60 @@ export default function DashboardPage() {
               }
               return groups.map((g) => (
                 <div key={g.key}>
-                  <p className="mb-1 inline-block rounded-full bg-[#f1f5f9] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#7c8b86]">{g.header}</p>
+                  <p className="t-eyebrow mb-1 inline-block rounded-full bg-[var(--surface-sunken)] px-2.5 py-0.5 text-[color:var(--content-tertiary)]">{g.header}</p>
                   <div className="relative">
-                    {g.items.length > 1 && <span className="absolute right-[13px] top-1 bottom-1 w-px bg-[#e8f0ec]" />}
-                    {g.items.map((a) => {
-                      const c = activityColor(a.activity_types?.label);
-                      return (
-                        <div key={a.id} className="relative flex gap-3 rounded-xl px-1 py-2.5 transition-colors hover:bg-[#f8faf9]">
-                          <span className="relative z-10 mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full ring-4 ring-white" style={{ backgroundColor: `${c}1a`, color: c }}><ActivityGlyph label={a.activity_types?.label} className="h-3.5 w-3.5" /></span>
-                          <div className="min-w-0 flex-1">
-                            <p dir="auto" className="line-clamp-2 text-sm leading-relaxed text-[#475569]">{a.body || a.activity_types?.label || "Activity"}</p>
-                            <span className="text-xs text-[#94a3b8]">{formatDateTime(a.occurred_at)}</span>
-                          </div>
+                    {g.items.length > 1 && <span className="absolute inset-y-1 right-[13px] w-px bg-[var(--border-subtle)]" />}
+                    {g.items.map((a) => (
+                      <div key={a.id} className="relative flex gap-3 rounded-[var(--radius-sm)] px-1 py-2.5 transition-colors duration-[var(--motion-fast)] hover:bg-[var(--surface-hover)]">
+                        <span className="relative z-10 mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[var(--surface-accent-subtle)] text-[color:var(--content-accent)] ring-4 ring-[var(--surface-raised)]">
+                          <ActivityGlyph label={a.activity_types?.label} className="h-3.5 w-3.5" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p dir="auto" className="t-body-sm line-clamp-2 text-[color:var(--content-secondary)]">{a.body || a.activity_types?.label || "نشاط"}</p>
+                          <span className="t-caption text-[color:var(--content-tertiary)]">{formatDateTime(a.occurred_at)}</span>
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                   </div>
                 </div>
               ));
             })()
           )}
-        </div>
+        </Panel>
 
-        {/* Recent Leads */}
-        <div className={`${CARD} dash-fade relative overflow-hidden`} style={{ animationDelay: "580ms" }}>
-          <span className="absolute inset-x-0 top-0 h-1 bg-[#ec4899]" />
-          <CardHead
-            icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><circle cx="7" cy="7" r="3" /><circle cx="14" cy="9" r="2.4" /><path d="M2.5 17c.6-3 2.4-4.8 4.5-4.8s3.9 1.8 4.5 4.8M12.8 12.4c1.7.2 3 1.6 3.5 4" strokeLinecap="round" /></svg>}
-            color="#ec4899"
+        {/* Recent leads */}
+        <Panel className="p-[var(--space-card-pad)]">
+          <PanelHead
+            icon={<LeadsIcon className="h-5 w-5" />}
             title="أحدث العملاء"
-            action={<Link href="/dashboard/leads" className="text-xs font-semibold text-[#ec4899] hover:underline">عرض الكل ←</Link>}
+            action={<Link href="/dashboard/leads" className="t-caption font-semibold text-[color:var(--content-accent)] hover:underline">عرض الكل ←</Link>}
+            className="mb-4"
           />
           {m.recentLeads.length === 0 ? (
             <div className="py-6 text-center">
-              <p className="text-sm text-[#94a3b8]">لا يوجد عملاء بعد — أضف أول عميل</p>
-              <button onClick={() => setNewLeadOpen(true)} className="mt-3 rounded-full bg-[#1a5c4f] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#15503f]">+ عميل جديد</button>
+              <p className="t-body-sm text-[color:var(--content-tertiary)]">لا يوجد عملاء بعد — أضف أول عميل</p>
+              <button onClick={() => setNewLeadOpen(true)} className="t-caption mt-3 rounded-full bg-[var(--surface-accent)] px-4 py-2 font-semibold text-[color:var(--content-on-accent)] transition-colors hover:bg-[var(--surface-accent-hover)]">+ عميل جديد</button>
             </div>
           ) : (
-            m.recentLeads.map((l, i) => {
+            m.recentLeads.map((l) => {
               const score = getAIScore(l, scoreModel);
               return (
-                <Link key={l.id} href={`/dashboard/leads?open=${l.id}`} className="flex items-center gap-3 rounded-xl px-1 py-2.5 transition-colors hover:bg-[#f8faf9]">
-                  <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br shadow-sm ${AVATAR_GRADIENTS[i % AVATAR_GRADIENTS.length]}`}>
-                    <span className="text-xs font-bold text-white">{initials(l.full_name)}</span>
+                <Link key={l.id} href={`/dashboard/leads?open=${l.id}`} className="flex items-center gap-3 rounded-[var(--radius-sm)] px-1 py-2.5 transition-colors duration-[var(--motion-fast)] hover:bg-[var(--surface-hover)]">
+                  {/* One avatar treatment. The five-gradient rotation it replaces
+                      encoded nothing — position in a list is not an attribute. */}
+                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[var(--surface-inverse)]">
+                    <span className="t-micro font-bold text-white">{initials(l.full_name)}</span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p dir="auto" className="truncate text-sm font-semibold text-[#1e1b4b]">{l.full_name || "عميل بدون اسم"}</p>
-                    <p className="text-xs text-[#94a3b8]">{l.sources?.label || "—"}</p>
+                    <p dir="auto" className="t-body-sm truncate font-semibold text-[color:var(--content-primary)]">{l.full_name || "عميل بدون اسم"}</p>
+                    <p className="t-caption text-[color:var(--content-tertiary)]">{l.sources?.label || "—"}</p>
                   </div>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${aiPill(score)}`}>{score}%</span>
+                  <span className={`t-figure rounded-full px-2 py-0.5 text-[12px] ${aiPill(score)}`}>{score}%</span>
                 </Link>
               );
             })
           )}
-        </div>
+        </Panel>
       </div>
 
       <NewLeadSlideOver open={newLeadOpen} onClose={() => setNewLeadOpen(false)} onCreated={load} />

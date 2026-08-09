@@ -166,132 +166,150 @@
   --color-gray-25: #fafcfb;
 }
 
-body {
-  background: var(--surface-page);
-  color: var(--content-primary);
-  font-family: var(--font-body);
-  font-size: var(--text-body);
-  line-height: var(--text-body-lh);
+/* Layering matters here. Tailwind emits its utilities into `@layer utilities`,
+   and unlayered CSS beats every layer regardless of specificity — so a bare
+   `h1 { color }` rule silently overrides `text-*` on every heading. Base
+   element styles go in `base`; the type and elevation ramps go in
+   `components`, below utilities, so a screen can still override them. */
+@layer base {
+  body {
+    background: var(--surface-page);
+    color: var(--content-primary);
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    line-height: var(--text-body-lh);
+  }
+
+  /* Headings take the display face. Weight is capped at 700 here so no screen
+     can accidentally ask for a synthesised Plex 800 (see tokens.css). */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-title);
+    line-height: var(--text-title-2-lh);
+    color: var(--content-primary);
+  }
+  .font-cairo {
+    font-family: var(--font-body);
+  }
+  /* ---- Focus. One visible ring everywhere, keyboard-only so pointer users
+     don't see it on click. Never remove this without a replacement. ---- */
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: var(--radius-sm);
+  }
+  .on-inverse :focus-visible {
+    box-shadow: var(--focus-ring-inverse);
+  }
 }
 
-/* Headings take the display face. Weight is capped at 700 here so no screen
-   can accidentally ask for a synthesised Plex 800 (see tokens.css). */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-display);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-title);
-  line-height: var(--text-title-2-lh);
-  color: var(--content-primary);
-}
-.font-cairo {
-  font-family: var(--font-body);
-}
+@layer components {
+  /* ---- Type ramp as utilities. Each sets size, leading and tracking together,
+     because setting them apart is how a scale drifts. ---- */
+  .t-display-1 {
+    font-family: var(--font-display);
+    font-size: var(--text-display-1);
+    line-height: var(--text-display-1-lh);
+    letter-spacing: var(--tracking-display);
+    font-weight: var(--weight-bold);
+  }
+  .t-display-2 {
+    font-family: var(--font-display);
+    font-size: var(--text-display-2);
+    line-height: var(--text-display-2-lh);
+    letter-spacing: var(--tracking-display);
+    font-weight: var(--weight-bold);
+  }
+  .t-title-1 {
+    font-family: var(--font-display);
+    font-size: var(--text-title-1);
+    line-height: var(--text-title-1-lh);
+    letter-spacing: var(--tracking-title);
+    font-weight: var(--weight-bold);
+  }
+  /* The command-band title carries a person's name, so it must not be clipped
+     on a narrow screen. Fluid down to title-2 rather than truncated. */
+  .t-title-fluid {
+    font-family: var(--font-display);
+    font-size: clamp(var(--text-title-2), 4.6vw, var(--text-title-1));
+    line-height: var(--text-title-1-lh);
+    letter-spacing: var(--tracking-title);
+    font-weight: var(--weight-bold);
+    text-wrap: balance;
+  }
+  .t-title-2 {
+    font-family: var(--font-display);
+    font-size: var(--text-title-2);
+    line-height: var(--text-title-2-lh);
+    letter-spacing: var(--tracking-title);
+    font-weight: var(--weight-semibold);
+  }
+  .t-title-3 {
+    font-family: var(--font-display);
+    font-size: var(--text-title-3);
+    line-height: var(--text-title-3-lh);
+    font-weight: var(--weight-semibold);
+  }
+  .t-body-lg {
+    font-size: var(--text-body-lg);
+    line-height: var(--text-body-lg-lh);
+  }
+  .t-body {
+    font-size: var(--text-body);
+    line-height: var(--text-body-lh);
+  }
+  .t-body-sm {
+    font-size: var(--text-body-sm);
+    line-height: var(--text-body-sm-lh);
+  }
+  .t-caption {
+    font-size: var(--text-caption);
+    line-height: var(--text-caption-lh);
+  }
+  .t-micro {
+    font-size: var(--text-micro);
+    line-height: var(--text-micro-lh);
+  }
+  .t-eyebrow {
+    font-size: var(--text-caption);
+    line-height: var(--text-caption-lh);
+    letter-spacing: var(--tracking-caps);
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+  }
+  /* Figures in KPIs and tables must not jitter as they count or update. */
+  .t-figure {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    font-weight: var(--weight-extrabold);
+    letter-spacing: -0.01em;
+  }
 
-/* ---- Type ramp as utilities. Each sets size, leading and tracking together,
-   because setting them apart is how a scale drifts. ---- */
-.t-display-1 {
-  font-family: var(--font-display);
-  font-size: var(--text-display-1);
-  line-height: var(--text-display-1-lh);
-  letter-spacing: var(--tracking-display);
-  font-weight: var(--weight-bold);
-}
-.t-display-2 {
-  font-family: var(--font-display);
-  font-size: var(--text-display-2);
-  line-height: var(--text-display-2-lh);
-  letter-spacing: var(--tracking-display);
-  font-weight: var(--weight-bold);
-}
-.t-title-1 {
-  font-family: var(--font-display);
-  font-size: var(--text-title-1);
-  line-height: var(--text-title-1-lh);
-  letter-spacing: var(--tracking-title);
-  font-weight: var(--weight-bold);
-}
-.t-title-2 {
-  font-family: var(--font-display);
-  font-size: var(--text-title-2);
-  line-height: var(--text-title-2-lh);
-  letter-spacing: var(--tracking-title);
-  font-weight: var(--weight-semibold);
-}
-.t-title-3 {
-  font-family: var(--font-display);
-  font-size: var(--text-title-3);
-  line-height: var(--text-title-3-lh);
-  font-weight: var(--weight-semibold);
-}
-.t-body-lg {
-  font-size: var(--text-body-lg);
-  line-height: var(--text-body-lg-lh);
-}
-.t-body {
-  font-size: var(--text-body);
-  line-height: var(--text-body-lh);
-}
-.t-body-sm {
-  font-size: var(--text-body-sm);
-  line-height: var(--text-body-sm-lh);
-}
-.t-caption {
-  font-size: var(--text-caption);
-  line-height: var(--text-caption-lh);
-}
-.t-micro {
-  font-size: var(--text-micro);
-  line-height: var(--text-micro-lh);
-}
-.t-eyebrow {
-  font-size: var(--text-caption);
-  line-height: var(--text-caption-lh);
-  letter-spacing: var(--tracking-caps);
-  font-weight: var(--weight-bold);
-  text-transform: uppercase;
-}
-/* Figures in KPIs and tables must not jitter as they count or update. */
-.t-figure {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-  font-weight: var(--weight-extrabold);
-  letter-spacing: -0.01em;
-}
-
-/* ---- Elevation as utilities ---- */
-.e-1 {
-  box-shadow: var(--elevation-1);
-}
-.e-2 {
-  box-shadow: var(--elevation-2);
-}
-.e-overlay {
-  box-shadow: var(--elevation-overlay);
-}
-.e-inverse-1 {
-  box-shadow: var(--elevation-inverse-1);
-}
-.e-inverse-2 {
-  box-shadow: var(--elevation-inverse-2);
-}
-.e-accent {
-  box-shadow: var(--elevation-accent);
-}
-
-/* ---- Focus. One visible ring everywhere, keyboard-only so pointer users
-   don't see it on click. Never remove this without a replacement. ---- */
-:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-  border-radius: var(--radius-sm);
-}
-.on-inverse :focus-visible {
-  box-shadow: var(--focus-ring-inverse);
+  /* ---- Elevation as utilities ---- */
+  .e-1 {
+    box-shadow: var(--elevation-1);
+  }
+  .e-2 {
+    box-shadow: var(--elevation-2);
+  }
+  .e-overlay {
+    box-shadow: var(--elevation-overlay);
+  }
+  .e-inverse-1 {
+    box-shadow: var(--elevation-inverse-1);
+  }
+  .e-inverse-2 {
+    box-shadow: var(--elevation-inverse-2);
+  }
+  .e-accent {
+    box-shadow: var(--elevation-accent);
+  }
 }
 
 /* Soft teal-tinted card shadow */

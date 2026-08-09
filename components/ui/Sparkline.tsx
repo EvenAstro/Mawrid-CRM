@@ -1,10 +1,14 @@
 "use client";
 
 /**
- * A tiny inline trend line for KPI cards — draws itself in on mount via a
- * stroke-dashoffset animation (see .spark-draw in globals.css). Purely
- * decorative context (the real numbers live in the KPI card itself), so
- * values are normalized to fit the viewBox and no axes/labels are drawn.
+ * A tiny inline trend line for KPI tiles.
+ *
+ * `animate` is opt-in rather than always-on: under the Meridian motion rule
+ * dashboard content does not animate in, and the self-drawing stroke is an
+ * entrance like any other. Marketing surfaces pass `animate` to get it back.
+ *
+ * Values are normalised to the viewBox with no axes or labels — the real
+ * figure lives in the tile beside it, so this only has to carry shape.
  */
 export default function Sparkline({
   values,
@@ -12,12 +16,14 @@ export default function Sparkline({
   width = 84,
   height = 28,
   delay = 0,
+  animate = false,
 }: {
   values: number[];
   color: string;
   width?: number;
   height?: number;
   delay?: number;
+  animate?: boolean;
 }) {
   if (values.length < 2) return null;
   const max = Math.max(...values, 1);
@@ -30,9 +36,16 @@ export default function Sparkline({
     y: height - pad - ((v - min) / range) * (height - pad * 2),
   }));
   const line = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
+  const last = points[points.length - 1];
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} className="overflow-visible">
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      width={width}
+      height={height}
+      className="overflow-visible"
+      aria-hidden="true"
+    >
       <path
         d={line}
         fill="none"
@@ -40,9 +53,11 @@ export default function Sparkline({
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="spark-draw"
-        style={{ animationDelay: `${delay}ms`, stroke: color }}
+        className={animate ? "spark-draw" : undefined}
+        style={animate ? { animationDelay: `${delay}ms`, stroke: color } : { stroke: color }}
       />
+      {/* The endpoint is the value that matters — the rest is just the path to it. */}
+      <circle cx={last.x} cy={last.y} r={2.2} fill={color} />
     </svg>
   );
 }

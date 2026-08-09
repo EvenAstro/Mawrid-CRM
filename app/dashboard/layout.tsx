@@ -77,7 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [router]);
 
   if (loading) {
-    return <div dir="rtl" className="flex min-h-screen items-center justify-center bg-ivory text-muted">جارِ التحميل…</div>;
+    return <div dir="rtl" className="flex min-h-screen items-center justify-center bg-[var(--surface-page)] text-[color:var(--content-tertiary)]">جارِ التحميل…</div>;
   }
 
   return (
@@ -183,7 +183,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
   const effectiveCollapsed = collapsed && !isMobile;
 
   return (
-    <div className="min-h-screen bg-[#f0f5f3]">
+    <div className="min-h-screen bg-[var(--surface-page)]">
       {/* Mobile drawer backdrop */}
       {isMobile && mobileOpen && (
         <div
@@ -197,26 +197,26 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
           which is where it's docked, since the app is RTL). */}
       <div
         style={{ width: sidebarWidth }}
-        className={`fixed inset-y-0 right-0 z-40 flex flex-col bg-[#141c2e] transition-all duration-300 ${
+        className={`fixed inset-y-0 right-0 z-40 flex flex-col bg-[var(--surface-inverse)] transition-transform duration-[var(--motion-slow)] ease-[var(--ease-standard)] ${
           isMobile ? (mobileOpen ? "translate-x-0" : "translate-x-full") : "translate-x-0"
         }`}
       >
         {/* Logo */}
-        <div className="flex h-[72px] items-center justify-between px-4">
+        <div className="flex h-[var(--layout-topbar)] flex-none items-center justify-between px-4">
           <div className="flex min-w-0 items-center gap-3">
             <svg viewBox="0 0 36 36" className="h-9 w-9 flex-none" fill="none">
               <rect width="36" height="36" rx="9" fill="#3a9080" />
               <path d="M18 5C11.37 5 6 10.37 6 17c0 6.63 5.37 12 12 12h7v-7h-7a5 5 0 1 1 0-10c2.76 0 5 2.24 5 5v12h7V17C30 10.37 24.63 5 18 5z" fill="white" />
             </svg>
             {(!collapsed || isMobile) && (
-              <span className="block truncate text-[28px] font-bold tracking-wide text-white" style={{ fontFamily: "var(--font-cairo), system-ui, sans-serif" }}>مَــوْرد</span>
+              <span className="block truncate text-[26px] font-bold tracking-wide text-white" style={{ fontFamily: "var(--font-display)" }}>مَــوْرد</span>
             )}
           </div>
           {isMobile ? (
             <button
               onClick={() => setMobileOpen(false)}
               aria-label="إغلاق القائمة"
-              className="flex-none rounded-lg p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white"
+              className="flex-none rounded-[var(--radius-sm)] p-1.5 text-[color:var(--content-inverse-tertiary)] transition-colors hover:bg-white/10 hover:text-white"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
                 <path d="M18 6 6 18M6 6l12 12" />
@@ -226,7 +226,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
             <button
               onClick={toggleCollapse}
               aria-label={collapsed ? "توسيع القائمة" : "طي القائمة"}
-              className={`flex-none rounded-lg p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white ${collapsed ? "absolute -left-3 top-5 z-10 rounded-full border border-[#e8ece9] bg-white text-[#141c2e] shadow-lg" : ""}`}
+              className={`flex-none rounded-[var(--radius-sm)] p-1.5 text-[color:var(--content-inverse-tertiary)] transition-colors hover:bg-white/10 hover:text-white ${collapsed ? "absolute -left-3 top-5 z-10 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[color:var(--content-primary)] e-2" : ""}`}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={`h-4 w-4 transition-transform ${collapsed ? "rotate-180" : ""}`}>
                 <path d="M9 18l6-6-6-6" />
@@ -241,7 +241,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
           {navGroups.map((group) => (
             <div key={group.heading} className="mt-6 first:mt-0">
               {!effectiveCollapsed && (
-                <p className="mb-2 px-3 text-[11px] font-bold tracking-wider text-[#3a9080]">
+                <p className="t-eyebrow mb-2 px-3 text-[color:var(--content-inverse-tertiary)]">
                   {group.heading}
                 </p>
               )}
@@ -254,13 +254,13 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
                       href={href}
                       title={effectiveCollapsed ? label : undefined}
                       data-nav-active={active ? "true" : undefined}
-                      className={`relative z-[1] flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] transition-colors ${
+                      className={`relative z-[1] flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-[length:var(--text-body)] transition-colors duration-[var(--motion-fast)] ease-[var(--ease-standard)] ${
                         active
-                          ? "font-bold text-[#5ec4b0]"
-                          : "font-medium text-white/50 hover:bg-white/6 hover:text-white/85"
+                          ? "font-bold text-[color:var(--content-inverse-accent)]"
+                          : "font-medium text-[color:var(--content-inverse-tertiary)] hover:bg-white/[0.06] hover:text-[color:var(--content-inverse-primary)]"
                       } ${effectiveCollapsed ? "justify-center px-0" : ""}`}
                     >
-                      <Icon className={`h-[20px] w-[20px] flex-shrink-0 ${active ? "text-[#5ec4b0]" : ""}`} />
+                      <Icon className="h-5 w-5 flex-shrink-0" />
                       {!effectiveCollapsed && label}
                     </Link>
                   );
@@ -271,18 +271,18 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
         </nav>
 
         {/* User */}
-        <div className="border-t border-white/8 px-3 pb-4 pt-4">
+        <div className="border-t border-[var(--border-inverse)] px-3 pb-4 pt-4">
           <div className={`flex items-center gap-3 rounded-xl px-2 py-2 ${effectiveCollapsed ? "justify-center" : ""}`}>
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#3a9080]">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[var(--brand-teal-400)]">
               <span className="text-sm font-bold text-white">{userInitials}</span>
             </div>
             {!effectiveCollapsed && (
               <>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-semibold text-white/90">{displayName}</p>
-                  <p className="truncate text-[11px] text-white/35">{email}</p>
+                  <p className="truncate text-[length:var(--text-body-sm)] font-semibold text-[color:var(--content-inverse-primary)]">{displayName}</p>
+                  <p dir="ltr" className="t-micro truncate text-end text-[color:var(--content-inverse-tertiary)]">{email}</p>
                 </div>
-                <button onClick={handleLogout} aria-label="تسجيل الخروج" className="flex-none rounded-lg p-1.5 text-white/25 transition-colors hover:bg-white/10 hover:text-red-400">
+                <button onClick={handleLogout} aria-label="تسجيل الخروج" className="flex-none rounded-[var(--radius-sm)] p-1.5 text-[color:var(--content-inverse-tertiary)] transition-colors hover:bg-white/10 hover:text-[#fca5a5]">
                   <LogoutIcon className="h-4 w-4" />
                 </button>
               </>
@@ -294,14 +294,14 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
       {/* Top bar */}
       <div
         style={{ right: contentOffset }}
-        className="fixed left-0 top-0 z-20 flex h-[56px] items-center justify-between gap-3 border-b border-[#e8ece9] bg-white px-4 transition-all duration-300 md:px-8"
+        className="fixed left-0 top-0 z-20 flex h-[var(--layout-topbar)] items-center justify-between gap-3 border-b border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4 transition-[right] duration-[var(--motion-slow)] ease-[var(--ease-standard)] md:px-8"
       >
         <div className="flex min-w-0 items-center gap-3">
           {isMobile && (
             <button
               onClick={() => setMobileOpen(true)}
               aria-label="فتح القائمة"
-              className="flex-none rounded-lg p-1.5 text-[#475569] transition hover:bg-[#f0faf8]"
+              className="flex-none rounded-[var(--radius-sm)] p-1.5 text-[color:var(--content-secondary)] transition-colors hover:bg-[var(--surface-accent-subtle)]"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
                 <path d="M4 6h16M4 12h16M4 18h16" />
@@ -309,23 +309,23 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
             </button>
           )}
           <div className="flex min-w-0 items-center gap-2 text-[14px]">
-            <span className="hidden text-[#94a3b8] sm:inline">مساحة العمل</span>
-            <span className="hidden text-[#d1d5db] sm:inline">/</span>
-            <span className="truncate font-semibold text-[#1e1b4b]">{pageName}</span>
+            <span className="hidden text-[color:var(--content-tertiary)] sm:inline">مساحة العمل</span>
+            <span className="hidden text-[color:var(--border-strong)] sm:inline">/</span>
+            <span className="truncate font-semibold text-[color:var(--content-primary)]">{pageName}</span>
           </div>
         </div>
         <div className="flex flex-none items-center gap-3">
           <button
             onClick={() => window.dispatchEvent(new Event("mawrid:open-command-palette"))}
             aria-label="بحث شامل"
-            className="hidden items-center gap-2 rounded-lg border border-[#e8ece9] bg-[#f8faf9] px-3 py-1.5 text-[13px] text-[#94a3b8] transition hover:border-[#1a5c4f]/30 hover:text-[#1a5c4f] sm:flex"
+            className="hidden items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3 py-1.5 text-[length:var(--text-body-sm)] text-[color:var(--content-tertiary)] transition-colors duration-[var(--motion-fast)] hover:border-[var(--border-accent)] hover:text-[color:var(--content-accent)] sm:flex"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" className="h-4 w-4"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></svg>
             <span>بحث...</span>
-            <kbd className="rounded border border-[#e8ece9] bg-white px-1 text-[10px] font-semibold">⌘K</kbd>
+            <kbd className="t-micro rounded-[var(--radius-xs)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-1 font-semibold">⌘K</kbd>
           </button>
           <NotificationsDropdown />
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#141c2e]">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-inverse)]">
             <span className="text-xs font-bold text-white">{userInitials}</span>
           </div>
         </div>
@@ -334,9 +334,9 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
       {/* Main */}
       <main
         style={{ marginRight: contentOffset, paddingLeft: "var(--briefing-rail-width, 52px)" }}
-        className="min-h-screen bg-[#f0f5f3] pt-[56px] transition-all duration-300"
+        className="min-h-screen bg-[var(--surface-page)] pt-[var(--layout-topbar)] transition-[margin,padding] duration-[var(--motion-slow)] ease-[var(--ease-standard)]"
       >
-        <div key={pathname} className="page-content mx-auto max-w-[1600px] p-4 sm:p-6 md:p-8">
+        <div key={pathname} className="page-content mx-auto max-w-[var(--layout-content-max)] p-[var(--space-gutter-sm)] md:p-[var(--space-gutter)]">
           {roleLoading ? null : currentFeature && !can(currentFeature.key) ? null : children}
         </div>
       </main>
