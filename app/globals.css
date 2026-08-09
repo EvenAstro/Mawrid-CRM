@@ -325,6 +325,150 @@ input[type="checkbox"].ls-toggle:checked + .ls-toggle-label::after {
   box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
+/* ===================== Auth pages (login/register) ===================== */
+
+/* Slow ambient drift for the dot-grid mesh on the showcase panel */
+@keyframes authMeshDrift {
+  from { background-position: 0 0; }
+  to { background-position: 52px 52px; }
+}
+.auth-mesh { animation: authMeshDrift 18s linear infinite; }
+
+/* Three independently-timed floating blobs — different durations so the
+   panel never reads as a fixed loop */
+@keyframes authFloatA {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-22px, 26px) scale(1.06); }
+}
+@keyframes authFloatB {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(18px, -20px) scale(1.08); }
+}
+@keyframes authFloatC {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-14px, -18px) scale(0.94); }
+}
+.auth-blob-a { animation: authFloatA 13s ease-in-out infinite; }
+.auth-blob-b { animation: authFloatB 16s ease-in-out infinite; }
+.auth-blob-c { animation: authFloatC 11s ease-in-out infinite; }
+
+/* Staggered entrance for showcase content — delays set inline */
+@keyframes authIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.auth-in {
+  opacity: 0;
+  animation: authIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Form card entrance — slightly delayed so the showcase panel leads */
+@keyframes authCardIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.auth-card-in { animation: authCardIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
+
+/* Individual form fields stagger in after the card — delays set inline */
+@keyframes authFieldIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.auth-field-in {
+  opacity: 0;
+  animation: authFieldIn 0.45s ease both;
+}
+
+/* Submit button: soft breathing glow while a request is in flight */
+@keyframes authGlowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(26, 92, 79, 0.35); }
+  50% { box-shadow: 0 0 0 8px rgba(26, 92, 79, 0); }
+}
+.auth-btn-loading { animation: authGlowPulse 1.6s ease-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-mesh,
+  .auth-blob-a,
+  .auth-blob-b,
+  .auth-blob-c,
+  .auth-in,
+  .auth-card-in,
+  .auth-field-in,
+  .auth-btn-loading {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ===================== Landing page ===================== */
+
+/* Hero background glows */
+@keyframes landFloat1 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-26px, 30px); }
+}
+@keyframes landFloat2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(24px, -22px); }
+}
+.land-glow-1 { animation: landFloat1 15s ease-in-out infinite; }
+.land-glow-2 { animation: landFloat2 19s ease-in-out infinite; }
+
+/* "Live" badge dot */
+@keyframes landBlip {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.75); }
+}
+.land-blip { animation: landBlip 2s ease-in-out infinite; }
+
+/* Hand-drawn underline under the hero accent word */
+.land-underline {
+  stroke-dasharray: 300;
+  stroke-dashoffset: 300;
+  animation: landUnderline 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.85s forwards;
+}
+@keyframes landUnderline {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Deal card traveling between kanban columns in the hero product mock.
+   -100% of own width minus the 10px column gap ≈ one column over (RTL: left). */
+@keyframes landTravel {
+  0%, 14% { transform: translate(0, 0) scale(1); opacity: 1; box-shadow: none; }
+  26% { transform: translate(0, -8px) scale(1.04); box-shadow: 0 10px 24px rgba(20, 28, 46, 0.16); }
+  46%, 72% { transform: translate(calc(-100% - 10px), -8px) scale(1.04); box-shadow: 0 10px 24px rgba(20, 28, 46, 0.16); }
+  84%, 100% { transform: translate(calc(-100% - 10px), 0) scale(1); box-shadow: none; }
+}
+.land-travel { animation: landTravel 7s cubic-bezier(0.65, 0, 0.35, 1) 2.6s infinite; }
+
+/* Scroll-triggered reveal (components/landing/Reveal.tsx toggles .in) */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .land-glow-1,
+  .land-glow-2,
+  .land-blip,
+  .land-underline,
+  .land-travel {
+    animation: none !important;
+  }
+  .land-underline { stroke-dashoffset: 0; }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 /* Custom thin teal scrollbar */
 * {
   scrollbar-width: thin;
