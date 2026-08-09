@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -140,6 +140,25 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
     if (!can(currentFeature.key)) router.replace("/dashboard");
   }, [roleLoading, currentFeature, can, router, permissions]);
 
+  // Sliding active-item pill: measures the active link's position within the
+  // nav on every route change / collapse toggle and glides the pill there,
+  // instead of the highlight just jumping between items.
+  const navRef = useRef<HTMLElement>(null);
+  const pillRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    const pill = pillRef.current;
+    if (!nav || !pill) return;
+    const activeEl = nav.querySelector<HTMLElement>('[data-nav-active="true"]');
+    if (!activeEl) {
+      pill.style.opacity = "0";
+      return;
+    }
+    pill.style.opacity = "1";
+    pill.style.height = `${activeEl.offsetHeight}px`;
+    pill.style.transform = `translateY(${activeEl.offsetTop}px)`;
+  });
+
   const navGroups = GROUP_ORDER.map((heading) => ({
     heading,
     items: FEATURES.filter((f) => f.group === heading && can(f.key)).map((f) => ({
@@ -217,7 +236,8 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <nav ref={navRef} className="relative flex-1 overflow-y-auto px-3 py-4">
+          <div ref={pillRef} className="nav-pill" style={{ opacity: 0, top: 0, height: 0 }} />
           {navGroups.map((group) => (
             <div key={group.heading} className="mt-6 first:mt-0">
               {!effectiveCollapsed && (
@@ -233,9 +253,10 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
                       key={label}
                       href={href}
                       title={effectiveCollapsed ? label : undefined}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] transition-all ${
+                      data-nav-active={active ? "true" : undefined}
+                      className={`relative z-[1] flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] transition-colors ${
                         active
-                          ? "bg-[#3a9080]/20 font-bold text-[#5ec4b0]"
+                          ? "font-bold text-[#5ec4b0]"
                           : "font-medium text-white/50 hover:bg-white/6 hover:text-white/85"
                       } ${effectiveCollapsed ? "justify-center px-0" : ""}`}
                     >

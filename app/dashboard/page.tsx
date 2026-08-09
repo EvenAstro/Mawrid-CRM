@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { LeadsIcon, CheckCircleIcon, RevenueIcon, TrendingUpIcon } from "@/components/navIcons";
+import { PhoneIcon, ChatBubbleIcon, MailIcon, CalendarIcon, DotIcon, EmptyChartIcon, CelebrationIcon, WifiOffIcon } from "@/components/icons";
+import CountUp from "@/components/ui/CountUp";
+import Sparkline from "@/components/ui/Sparkline";
 import { useToast } from "@/components/Toast";
 import NewLeadSlideOver from "@/components/NewLeadSlideOver";
 import LogActivitySlideOver from "@/components/LogActivitySlideOver";
@@ -118,13 +121,13 @@ function activityColor(label?: string | null) {
   if (l.includes("deal") || l.includes("meeting")) return "#f59e0b";
   return "#1a5c4f";
 }
-function activityGlyph(label?: string | null) {
+function ActivityGlyph({ label, className }: { label?: string | null; className?: string }) {
   const l = (label || "").toLowerCase();
-  if (l.includes("whatsapp")) return "💬";
-  if (l.includes("call")) return "📞";
-  if (l.includes("email")) return "✉️";
-  if (l.includes("meeting")) return "🗓️";
-  return "•";
+  if (l.includes("whatsapp")) return <ChatBubbleIcon className={className} />;
+  if (l.includes("call")) return <PhoneIcon className={className} />;
+  if (l.includes("email")) return <MailIcon className={className} />;
+  if (l.includes("meeting")) return <CalendarIcon className={className} />;
+  return <DotIcon className={className} />;
 }
 function aiPill(score: number) {
   if (score >= 70) return "bg-green-50 text-green-700 border border-green-100";
@@ -160,7 +163,7 @@ function PipelineChart({ points }: { points: { label: string; value: number }[] 
   if (allZero) {
     return (
       <div className="flex h-44 flex-col items-center justify-center gap-3 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f0faf8] text-2xl">📊</div>
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f0faf8] text-[#1a5c4f]"><EmptyChartIcon className="h-6 w-6" /></div>
         <div>
           <p dir="auto" className="text-[18px] font-semibold text-[#1e1b4b]">لا توجد صفقات هذا الأسبوع</p>
           <p dir="auto" className="mt-1 text-sm text-[#3f554e]">ستظهر قيمة الصفقات الجديدة هنا عند إضافتها.</p>
@@ -179,12 +182,12 @@ function PipelineChart({ points }: { points: { label: string; value: number }[] 
       {[0, 0.5, 1].map((g) => (
         <line key={g} x1={padL} x2={W - padR} y1={y(maxVal * g)} y2={y(maxVal * g)} stroke="#f1f5f9" strokeWidth="1" />
       ))}
-      {area && <path d={area} fill="url(#areaGrad)" />}
-      {line && <path d={line} fill="none" stroke="#1a5c4f" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
+      {area && <path d={area} fill="url(#areaGrad)" className="chart-area-draw" />}
+      {line && <path d={line} fill="none" stroke="#1a5c4f" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="chart-line-draw" />}
       {points.map((p, i) => (
         <g key={p.label}>
           <text x={x(i)} y={H - 6} textAnchor="middle" fontSize="10" fill="#94a3b8">{p.label}</text>
-          <circle cx={x(i)} cy={y(p.value)} r="4" fill="white" stroke="#1a5c4f" strokeWidth="2" />
+          <circle cx={x(i)} cy={y(p.value)} r="4" fill="white" stroke="#1a5c4f" strokeWidth="2" className="chart-dot-pop" style={{ animationDelay: `${0.5 + i * 0.08}s` }} />
           <circle cx={x(i)} cy={y(p.value)} r="14" fill="transparent" onMouseEnter={() => setHover(i)} />
         </g>
       ))}
@@ -201,13 +204,58 @@ function PipelineChart({ points }: { points: { label: string; value: number }[] 
 }
 
 function Skeleton() {
-  const box = "animate-pulse rounded-2xl bg-white";
   return (
     <div className="flex flex-col gap-6">
-      <div className="h-9 w-64 animate-pulse rounded-lg bg-white" />
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <div key={i} className={`${box} h-36 border border-[#d6ece5]`} />)}</div>
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3"><div className={`${box} h-80 border border-[#d6ece5] lg:col-span-2`} /><div className={`${box} h-80 border border-[#d6ece5]`} /></div>
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className={`${box} h-64 border border-[#d6ece5]`} />)}</div>
+      <div className="skeleton-shimmer h-28 rounded-3xl" />
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-2xl border border-[#d6ece5] bg-white p-6">
+            <div className="flex items-center justify-between">
+              <div className="skeleton-shimmer h-11 w-11 rounded-2xl" />
+              <div className="skeleton-shimmer h-5 w-20 rounded-full" />
+            </div>
+            <div className="skeleton-shimmer mt-4 h-3.5 w-24 rounded" />
+            <div className="skeleton-shimmer mt-2 h-8 w-16 rounded" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="rounded-2xl border border-[#d6ece5] bg-white p-6 lg:col-span-2">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="skeleton-shimmer h-10 w-10 rounded-xl" />
+            <div className="skeleton-shimmer h-4 w-32 rounded" />
+          </div>
+          <div className="skeleton-shimmer h-40 rounded-xl" />
+        </div>
+        <div className="rounded-2xl border border-[#d6ece5] bg-white p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="skeleton-shimmer h-10 w-10 rounded-xl" />
+            <div className="skeleton-shimmer h-4 w-20 rounded" />
+          </div>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 py-2.5">
+              <div className="skeleton-shimmer h-4 w-4 flex-none rounded-full" />
+              <div className="skeleton-shimmer h-3.5 flex-1 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="rounded-2xl border border-[#d6ece5] bg-white p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="skeleton-shimmer h-10 w-10 rounded-xl" />
+              <div className="skeleton-shimmer h-4 w-24 rounded" />
+            </div>
+            {Array.from({ length: 3 }).map((_, j) => (
+              <div key={j} className="flex items-center gap-3 py-2.5">
+                <div className="skeleton-shimmer h-7 w-7 flex-none rounded-full" />
+                <div className="skeleton-shimmer h-3.5 flex-1 rounded" />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -338,6 +386,24 @@ export default function DashboardPage() {
     }));
     const seriesRange = `${days[0].toLocaleDateString("ar-SA", { month: "short", day: "numeric" })} – ${days[6].toLocaleDateString("ar-SA", { month: "short", day: "numeric" })}`;
 
+    // Cumulative counts across the same 7-day window, for the KPI sparklines —
+    // running totals (not per-day deltas) so the trend line reads as growth.
+    let leadRunning = 0, cleanRunning = 0, dealRunning = 0, pipeRunning = 0;
+    const leadsSeries: number[] = [];
+    const cleanSeries: number[] = [];
+    const dealsSeries: number[] = [];
+    const pipeSeries: number[] = [];
+    for (const day of days) {
+      leadRunning += leads.filter((l) => sameDay(l.created_at, day)).length;
+      cleanRunning += leads.filter((l) => !l.junk_reason_id && sameDay(l.created_at, day)).length;
+      dealRunning += deals.filter((d) => sameDay(d.created_at, day)).length;
+      pipeRunning += deals.filter((d) => sameDay(d.created_at, day)).reduce((s, d) => s + dealValue(d), 0);
+      leadsSeries.push(leadRunning);
+      cleanSeries.push(cleanRunning);
+      dealsSeries.push(dealRunning);
+      pipeSeries.push(pipeRunning);
+    }
+
     // Recent Leads: exclude bot-stage leads (fake signups), newest first.
     const recentLeads = [...leads]
       .filter((l) => l.pipeline_stages?.terminal_type !== "bot")
@@ -348,7 +414,7 @@ export default function DashboardPage() {
     const cleanTrend = trendText(leads.filter((l) => !l.junk_reason_id && monthOffset(l.created_at, 0, anchor)).length, leads.filter((l) => !l.junk_reason_id && monthOffset(l.created_at, 1, anchor)).length);
     const dealsTrend = trendText(deals.filter((d) => monthOffset(d.created_at, 0, anchor)).length, deals.filter((d) => monthOffset(d.created_at, 1, anchor)).length);
     const pipeTrend = trendText(deals.filter((d) => monthOffset(d.created_at, 0, anchor)).reduce((s, d) => s + dealValue(d), 0), deals.filter((d) => monthOffset(d.created_at, 1, anchor)).reduce((s, d) => s + dealValue(d), 0));
-    return { total_leads, clean_leads, junk_leads, total_deals, won, lost, pipeline_value, win_rate, series, seriesRange, recentLeads, leadsTrend, cleanTrend, dealsTrend, pipeTrend };
+    return { total_leads, clean_leads, junk_leads, total_deals, won, lost, pipeline_value, win_rate, series, seriesRange, recentLeads, leadsTrend, cleanTrend, dealsTrend, pipeTrend, leadsSeries, cleanSeries, dealsSeries, pipeSeries };
   }, [leads, deals]);
 
   if (loading) return <Skeleton />;
@@ -356,7 +422,7 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-3xl">🔌</div>
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-500"><WifiOffIcon className="h-7 w-7" /></div>
         <div>
           <h2 className="text-xl font-bold text-[#1e1b4b]">خطأ في الاتصال</h2>
           <p className="mt-1 max-w-sm text-sm text-[#94a3b8]">
@@ -374,10 +440,10 @@ export default function DashboardPage() {
   }
 
   const kpis = [
-    { label: "إجمالي العملاء", value: String(m.total_leads), Icon: LeadsIcon, color: "#1a5c4f", trend: m.leadsTrend, href: "/dashboard/leads" },
-    { label: "عملاء نظيفون", value: String(m.clean_leads), Icon: CheckCircleIcon, color: "#10b981", trend: m.cleanTrend, href: "/dashboard/leads?filter=clean" },
-    { label: "صفقات نشطة", value: String(m.total_deals), Icon: RevenueIcon, color: "#f59e0b", trend: m.dealsTrend, href: "/dashboard/deals?filter=active" },
-    { label: "قيمة الصفقات", value: `SAR ${compactSAR(m.pipeline_value)}`, Icon: TrendingUpIcon, color: "#6366f1", trend: m.pipeTrend, href: "/dashboard/insights" },
+    { label: "إجمالي العملاء", n: m.total_leads, format: (v: number) => String(Math.round(v)), Icon: LeadsIcon, color: "#1a5c4f", trend: m.leadsTrend, href: "/dashboard/leads", spark: m.leadsSeries },
+    { label: "عملاء نظيفون", n: m.clean_leads, format: (v: number) => String(Math.round(v)), Icon: CheckCircleIcon, color: "#10b981", trend: m.cleanTrend, href: "/dashboard/leads?filter=clean", spark: m.cleanSeries },
+    { label: "صفقات نشطة", n: m.total_deals, format: (v: number) => String(Math.round(v)), Icon: RevenueIcon, color: "#f59e0b", trend: m.dealsTrend, href: "/dashboard/deals?filter=active", spark: m.dealsSeries },
+    { label: "قيمة الصفقات", n: m.pipeline_value, format: (v: number) => `SAR ${compactSAR(v)}`, Icon: TrendingUpIcon, color: "#6366f1", trend: m.pipeTrend, href: "/dashboard/insights", spark: m.pipeSeries },
   ];
 
   const overview = [
@@ -389,7 +455,7 @@ export default function DashboardPage() {
   return (
     <div>
       {/* Hero header */}
-      <div className="mb-6 rounded-3xl bg-[#141c2e] px-7 py-7">
+      <div className="dash-fade mb-6 rounded-3xl bg-[#141c2e] px-7 py-7">
         <div className="flex flex-wrap items-center justify-between gap-5">
           <div className="flex items-center gap-4">
             <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white/10 text-lg font-bold text-white">
@@ -413,8 +479,13 @@ export default function DashboardPage() {
 
       {/* KPIs */}
       <div className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {kpis.map(({ label, value, Icon, color, trend, href }) => (
-          <Link key={label} href={href} className="group rounded-2xl border border-[#d6ece5] bg-white p-6 shadow-[0_2px_8px_rgba(26,92,79,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(26,92,79,0.1)]">
+        {kpis.map(({ label, n, format, Icon, color, trend, href, spark }, i) => (
+          <Link
+            key={label}
+            href={href}
+            className="dash-fade group relative overflow-hidden rounded-2xl border border-[#d6ece5] bg-white p-6 shadow-[0_2px_8px_rgba(26,92,79,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(26,92,79,0.1)]"
+            style={{ animationDelay: `${60 + i * 70}ms` }}
+          >
             <div className="flex items-center justify-between">
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ backgroundColor: `${color}17`, color }}>
                 <Icon className="h-5 w-5" />
@@ -426,14 +497,21 @@ export default function DashboardPage() {
               </span>
             </div>
             <p className="relative mt-4 text-[13px] font-semibold text-[#7c8b86]">{label}</p>
-            <p className="relative mt-1 text-[36px] font-black leading-none tracking-tight text-[#1e1b4b]">{value}</p>
+            <p className="relative mt-1 text-[36px] font-black leading-none tracking-tight text-[#1e1b4b]">
+              <CountUp value={n} format={format} />
+            </p>
+            {spark.length >= 2 && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 opacity-40">
+                <Sparkline values={spark} color={color} width={260} height={30} delay={200 + i * 70} />
+              </div>
+            )}
           </Link>
         ))}
       </div>
 
       {/* Middle row */}
       <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <div className={`${CARD} relative overflow-hidden lg:col-span-2`}>
+        <div className={`${CARD} dash-fade relative overflow-hidden lg:col-span-2`} style={{ animationDelay: "340ms" }}>
           <span className="absolute inset-x-0 top-0 h-1 bg-[#6366f1]" />
           <CardHead
             icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><path d="M3 17V9M9 17V4M15 17v-6M3 3v14h14" strokeLinecap="round" strokeLinejoin="round" /></svg>}
@@ -450,7 +528,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className={`${CARD} relative flex flex-col overflow-hidden`}>
+        <div className={`${CARD} dash-fade relative flex flex-col overflow-hidden`} style={{ animationDelay: "400ms" }}>
           <span className="absolute inset-x-0 top-0 h-1 bg-[#1a5c4f]" />
           <CardHead
             icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><circle cx="10" cy="10" r="7" /><path d="M10 6v4l3 2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
@@ -466,7 +544,9 @@ export default function DashboardPage() {
           <div className="flex-1 border-t border-[#e8f0ec] pt-4">
             <p className="mb-3 text-xs font-semibold tracking-wider text-[#94a3b8]">المهام القادمة</p>
             {tasks.length === 0 ? (
-              <p className="py-6 text-center text-sm text-[#94a3b8]">🎉 لا مهام لليوم!</p>
+              <p className="flex items-center justify-center gap-2 py-6 text-center text-sm text-[#94a3b8]">
+                <CelebrationIcon className="h-4 w-4 text-[#1a5c4f]" /> لا مهام لليوم!
+              </p>
             ) : (
               tasks.map((t) => {
                 const done = completing.has(t.id);
@@ -501,7 +581,7 @@ export default function DashboardPage() {
       {/* Bottom row */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Sales Overview */}
-        <div className={`${CARD} relative overflow-hidden`}>
+        <div className={`${CARD} dash-fade relative overflow-hidden`} style={{ animationDelay: "460ms" }}>
           <span className="absolute inset-x-0 top-0 h-1 bg-[#f59e0b]" />
           <CardHead
             icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><path d="M10 2v8l6.5 3.8A8 8 0 1 1 10 2Z" strokeLinejoin="round" /></svg>}
@@ -555,7 +635,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Activity Feed */}
-        <div className={`${CARD} relative overflow-hidden`}>
+        <div className={`${CARD} dash-fade relative overflow-hidden`} style={{ animationDelay: "520ms" }}>
           <span className="absolute inset-x-0 top-0 h-1 bg-[#0ea5e9]" />
           <CardHead
             icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><path d="M2 10h4l2-6 4 12 2-6h4" strokeLinecap="round" strokeLinejoin="round" /></svg>}
@@ -583,7 +663,7 @@ export default function DashboardPage() {
                       const c = activityColor(a.activity_types?.label);
                       return (
                         <div key={a.id} className="relative flex gap-3 rounded-xl px-1 py-2.5 transition-colors hover:bg-[#f8faf9]">
-                          <span className="relative z-10 mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full text-xs ring-4 ring-white" style={{ backgroundColor: `${c}1a`, color: c }}>{activityGlyph(a.activity_types?.label)}</span>
+                          <span className="relative z-10 mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full ring-4 ring-white" style={{ backgroundColor: `${c}1a`, color: c }}><ActivityGlyph label={a.activity_types?.label} className="h-3.5 w-3.5" /></span>
                           <div className="min-w-0 flex-1">
                             <p dir="auto" className="line-clamp-2 text-sm leading-relaxed text-[#475569]">{a.body || a.activity_types?.label || "Activity"}</p>
                             <span className="text-xs text-[#94a3b8]">{formatDateTime(a.occurred_at)}</span>
@@ -599,7 +679,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent Leads */}
-        <div className={`${CARD} relative overflow-hidden`}>
+        <div className={`${CARD} dash-fade relative overflow-hidden`} style={{ animationDelay: "580ms" }}>
           <span className="absolute inset-x-0 top-0 h-1 bg-[#ec4899]" />
           <CardHead
             icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5"><circle cx="7" cy="7" r="3" /><circle cx="14" cy="9" r="2.4" /><path d="M2.5 17c.6-3 2.4-4.8 4.5-4.8s3.9 1.8 4.5 4.8M12.8 12.4c1.7.2 3 1.6 3.5 4" strokeLinecap="round" /></svg>}
