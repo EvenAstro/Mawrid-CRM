@@ -126,7 +126,7 @@
      now resolve through the semantic layer, so three of them shift value.
      Those shifts are intentional and are listed in the PR rationale:
        text-ink / bg-navy  #1e1b4b -> #141c2e  (one navy, not two)
-       text-muted          #94a3b8 -> #5a7069  (2.9:1 failed AA; now 5.4:1)
+       text-muted          #94a3b8 -> #5a7069  (2.6:1 failed AA; now 5.3:1)
        bg-ivory            page bg is now surface-page, not pure white
      ------------------------------------------------------------------ */
   --color-primary: var(--brand-teal-700);

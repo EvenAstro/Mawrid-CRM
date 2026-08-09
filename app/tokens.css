@@ -109,19 +109,19 @@
      SEMANTIC — CONTENT. Contrast ratios below are measured against the surface
      each token is meant to sit on; all clear WCAG AA for their size class.
      --------------------------------------------------------------------- */
-  --content-primary: var(--brand-navy-900); /* 14.8:1 on --surface-raised */
-  --content-secondary: var(--brand-neutral-600); /* 7.9:1  on --surface-raised */
-  --content-tertiary: var(--brand-neutral-500); /* 5.4:1  on --surface-raised */
+  --content-primary: var(--brand-navy-900); /* 17.0:1 on --surface-raised */
+  --content-secondary: var(--brand-neutral-600); /* 8.0:1  on --surface-raised */
+  --content-tertiary: var(--brand-neutral-500); /* 5.3:1 raised, 5.2:1 page */
   --content-disabled: var(--brand-neutral-300);
-  --content-accent: var(--brand-teal-700); /* 6.3:1  on --surface-raised */
-  --content-on-accent: var(--brand-white); /* 6.3:1  on --surface-accent */
+  --content-accent: var(--brand-teal-700); /* 7.8:1  on --surface-raised */
+  --content-on-accent: var(--brand-white); /* 7.8:1  on --surface-accent */
 
   /* On navy. -inverse-tertiary is deliberately not lighter: below this value it
      fails AA at 13px, which is the smallest text the rails use. */
-  --content-inverse-primary: var(--brand-white); /* 15.1:1 on --surface-inverse */
-  --content-inverse-secondary: #b9c4d6; /*  8.1:1 on --surface-inverse */
-  --content-inverse-tertiary: #8a97ae; /*  4.9:1 on --surface-inverse */
-  --content-inverse-accent: var(--brand-teal-300); /*  8.4:1 on --surface-inverse */
+  --content-inverse-primary: var(--brand-white); /* 17.0:1 on --surface-inverse */
+  --content-inverse-secondary: #b9c4d6; /*  9.7:1 on --surface-inverse */
+  --content-inverse-tertiary: #8a97ae; /*  5.8:1 on --surface-inverse */
+  --content-inverse-accent: var(--brand-teal-300); /*  8.8:1 on --surface-inverse */
 
   /* ---------------------------------------------------------------------
      SEMANTIC — BORDER. `subtle` is the default hairline; `default` is for
