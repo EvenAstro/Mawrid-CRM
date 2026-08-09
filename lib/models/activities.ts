@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { canViewAllData } from "@/lib/permissions";
 import type { Role } from "@/lib/profiles";
 import { fetchOwnedLeadIds } from "@/lib/models/leads";
@@ -101,17 +102,30 @@ export async function fetchActivityTimestamps() {
  * used by the deal investigation report, which needs to see all activity
  * regardless of RLS ownership scoping.
  */
-export async function fetchEntityActivitiesAdmin(client: SupabaseClient, entityType: string, entityId: string) {
-  return client
+export async function fetchEntityActivitiesAdmin(entityType: string, entityId: string) {
+  return supabaseAdmin
     .from("activities")
     .select("id, body, direction, occurred_at, situational_tag, activity_types(label)")
     .eq("entity_type", entityType)
     .eq("entity_id", entityId);
 }
 
-/** Activities matching a batch of entity ids (deal or lead) — chunked-caller-scoped read for context builders. */
-export async function fetchActivitiesByEntityIds(client: SupabaseClient, entityType: string, entityIds: string[]) {
-  return client
+/**
+ * Activities matching a batch of entity ids (deal or lead), scoped to the
+ * caller's own RLS access — used by the playbook builder, which runs in the
+ * signed-in rep's own browser session.
+ */
+export async function fetchActivitiesByEntityIds(entityType: string, entityIds: string[]) {
+  return supabase
+    .from("activities")
+    .select("entity_type, entity_id, direction, occurred_at, body, situational_tag")
+    .eq("entity_type", entityType)
+    .in("entity_id", entityIds);
+}
+
+/** Same as fetchActivitiesByEntityIds, but with full admin visibility — used by the AI context builders. */
+export async function fetchActivitiesByEntityIdsAdmin(entityType: string, entityIds: string[]) {
+  return supabaseAdmin
     .from("activities")
     .select("entity_type, entity_id, direction, occurred_at, body, situational_tag")
     .eq("entity_type", entityType)
@@ -119,8 +133,8 @@ export async function fetchActivitiesByEntityIds(client: SupabaseClient, entityT
 }
 
 /** Exact count of activities matching a raw filter expression — used by the next-best-action context builder. */
-export async function countActivitiesMatching(client: SupabaseClient, orFilter: string | null, entityType?: string, entityId?: string) {
-  let query = client.from("activities").select("id", { count: "exact", head: true });
+export async function countActivitiesMatching(orFilter: string | null, entityType?: string, entityId?: string) {
+  let query = supabaseAdmin.from("activities").select("id", { count: "exact", head: true });
   query = orFilter ? query.or(orFilter) : query.eq("entity_type", entityType!).eq("entity_id", entityId!);
   return query;
 }
@@ -165,8 +179,8 @@ export async function fetchDealActivitiesSince(sinceIso: string) {
 }
 
 /** The 12 most recent activities app-wide — used by the Copilot business snapshot. */
-export async function fetchRecentActivitiesAdmin(client: SupabaseClient, limit = 12) {
-  return client
+export async function fetchRecentActivitiesAdmin(limit = 12) {
+  return supabaseAdmin
     .from("activities")
     .select("entity_type, entity_id, body, direction, occurred_at, activity_types(label)")
     .order("occurred_at", { ascending: false })
@@ -174,19 +188,19 @@ export async function fetchRecentActivitiesAdmin(client: SupabaseClient, limit =
 }
 
 /** The single most recent activity's timestamp — used to anchor "now" for historical datasets. */
-export async function fetchLatestActivityTimestamp(client: SupabaseClient) {
-  return client.from("activities").select("occurred_at").order("occurred_at", { ascending: false }).limit(1);
+export async function fetchLatestActivityTimestamp() {
+  return supabaseAdmin.from("activities").select("occurred_at").order("occurred_at", { ascending: false }).limit(1);
 }
 
 /** Today's activities by this rep, for the rep-coach briefing's outbound-count calc. */
-export async function fetchRepCoachTodayActivities(client: SupabaseClient, userId: string, dayStartIso: string, dayEndIso: string) {
-  return client.from("activities").select("id, entity_type, entity_id, direction, occurred_at")
+export async function fetchRepCoachTodayActivities(userId: string, dayStartIso: string, dayEndIso: string) {
+  return supabaseAdmin.from("activities").select("id, entity_type, entity_id, direction, occurred_at")
     .eq("user_id", userId).gte("occurred_at", dayStartIso).lt("occurred_at", dayEndIso);
 }
 
 /** Upcoming meetings (activities tagged "meeting") in the next N days, for the rep-coach briefing. */
-export async function fetchRepCoachUpcomingMeetings(client: SupabaseClient, userId: string, fromIso: string, toIso: string) {
-  return client.from("activities").select("id, body, occurred_at, activity_types!inner(label)")
+export async function fetchRepCoachUpcomingMeetings(userId: string, fromIso: string, toIso: string) {
+  return supabaseAdmin.from("activities").select("id, body, occurred_at, activity_types!inner(label)")
     .eq("user_id", userId).gte("occurred_at", fromIso).lte("occurred_at", toIso)
     .ilike("activity_types.label", "%meeting%")
     .order("occurred_at", { ascending: true }).limit(10);

@@ -1,8 +1,7 @@
-import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import { money } from "@/lib/format";
 import { fetchLeadsForSnapshot } from "@/lib/models/leads";
 import { fetchDealsForSnapshot } from "@/lib/models/deals";
-import { fetchActivitiesByEntityIds, fetchRecentActivitiesAdmin, fetchLatestActivityTimestamp } from "@/lib/models/activities";
+import { fetchActivitiesByEntityIdsAdmin, fetchRecentActivitiesAdmin, fetchLatestActivityTimestamp } from "@/lib/models/activities";
 import { fetchOpenTasksForSnapshot } from "@/lib/models/tasks";
 
 const DAY_MS = 86_400_000;
@@ -95,12 +94,12 @@ async function fetchActivitiesFor(dealIds: string[], leadIds: string[]): Promise
   const out: ActivityRow[] = [];
   for (const c of chunk(dealIds, CHUNK_SIZE)) {
     if (!c.length) continue;
-    const { data } = await fetchActivitiesByEntityIds(supabase, "deal", c);
+    const { data } = await fetchActivitiesByEntityIdsAdmin("deal", c);
     if (data) out.push(...(data as unknown as ActivityRow[]));
   }
   for (const c of chunk(leadIds, CHUNK_SIZE)) {
     if (!c.length) continue;
-    const { data } = await fetchActivitiesByEntityIds(supabase, "lead", c);
+    const { data } = await fetchActivitiesByEntityIdsAdmin("lead", c);
     if (data) out.push(...(data as unknown as ActivityRow[]));
   }
   return out;
@@ -115,11 +114,11 @@ async function fetchActivitiesFor(dealIds: string[], leadIds: string[]): Promise
  */
 export async function buildSnapshot(): Promise<BusinessSnapshot> {
   const [leadsRes, dealsRes, recentActsRes, latestActRes, tasksRes] = await Promise.all([
-    fetchLeadsForSnapshot(supabase),
-    fetchDealsForSnapshot(supabase),
-    fetchRecentActivitiesAdmin(supabase, 12),
-    fetchLatestActivityTimestamp(supabase),
-    fetchOpenTasksForSnapshot(supabase),
+    fetchLeadsForSnapshot(),
+    fetchDealsForSnapshot(),
+    fetchRecentActivitiesAdmin(12),
+    fetchLatestActivityTimestamp(),
+    fetchOpenTasksForSnapshot(),
   ]);
 
   const leads = (leadsRes.data as unknown as LeadRow[]) ?? [];

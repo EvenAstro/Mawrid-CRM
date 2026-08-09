@@ -1,5 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /** Data-access layer for the `tasks` and `task_types` tables. */
 
@@ -157,47 +157,47 @@ export async function fetchTasksByIds(ids: string[]) {
 }
 
 /** Up to 200 open tasks app-wide, soonest-due first — used by the Copilot business snapshot. */
-export async function fetchOpenTasksForSnapshot(client: SupabaseClient) {
-  return client.from("tasks").select("title, due_at").is("completed_at", null).order("due_at", { ascending: true }).limit(200);
+export async function fetchOpenTasksForSnapshot() {
+  return supabaseAdmin.from("tasks").select("title, due_at").is("completed_at", null).order("due_at", { ascending: true }).limit(200);
 }
 
 /** Overdue open tasks for the rep-coach briefing. */
-export async function fetchRepCoachOverdueTasks(client: SupabaseClient, userId: string, beforeIso: string) {
-  return client.from("tasks").select("id, title, due_at")
+export async function fetchRepCoachOverdueTasks(userId: string, beforeIso: string) {
+  return supabaseAdmin.from("tasks").select("id, title, due_at")
     .eq("assignee_uid", userId).lt("due_at", beforeIso).is("completed_at", null)
     .order("due_at", { ascending: true }).limit(10);
 }
 
 /** Tasks due today for the rep-coach briefing. */
-export async function fetchRepCoachTodayTasks(client: SupabaseClient, userId: string, dayStartIso: string, dayEndIso: string) {
-  return client.from("tasks").select("id, title, due_at")
+export async function fetchRepCoachTodayTasks(userId: string, dayStartIso: string, dayEndIso: string) {
+  return supabaseAdmin.from("tasks").select("id, title, due_at")
     .eq("assignee_uid", userId).gte("due_at", dayStartIso).lt("due_at", dayEndIso).is("completed_at", null)
     .order("due_at", { ascending: true }).limit(10);
 }
 
 /** Tasks due tomorrow through N days out, for the rep-coach briefing. */
-export async function fetchRepCoachUpcomingTasks(client: SupabaseClient, userId: string, fromIso: string, toIso: string) {
-  return client.from("tasks").select("id, title, due_at")
+export async function fetchRepCoachUpcomingTasks(userId: string, fromIso: string, toIso: string) {
+  return supabaseAdmin.from("tasks").select("id, title, due_at")
     .eq("assignee_uid", userId).gte("due_at", fromIso).lte("due_at", toIso).is("completed_at", null)
     .order("due_at", { ascending: true }).limit(10);
 }
 
 /** Tasks completed today, for the rep-coach briefing. */
-export async function fetchRepCoachCompletedToday(client: SupabaseClient, userId: string, dayStartIso: string, dayEndIso: string) {
-  return client.from("tasks").select("id, title, completed_at")
+export async function fetchRepCoachCompletedToday(userId: string, dayStartIso: string, dayEndIso: string) {
+  return supabaseAdmin.from("tasks").select("id, title, completed_at")
     .eq("assignee_uid", userId).gte("completed_at", dayStartIso).lt("completed_at", dayEndIso).limit(20);
 }
 
 /** Open tasks with no due date, for the rep-coach briefing. */
-export async function fetchRepCoachNoDueDateTasks(client: SupabaseClient, userId: string) {
-  return client.from("tasks").select("id, title, created_at")
+export async function fetchRepCoachNoDueDateTasks(userId: string) {
+  return supabaseAdmin.from("tasks").select("id, title, created_at")
     .eq("assignee_uid", userId).is("due_at", null).is("completed_at", null)
     .order("created_at", { ascending: false }).limit(10);
 }
 
 /** Count of tasks completed yesterday, for the rep-coach briefing's streak calc. */
-export async function fetchRepCoachYesterdayCompletedIds(client: SupabaseClient, userId: string, yesterdayStartIso: string, todayStartIso: string) {
-  return client.from("tasks").select("id").eq("assignee_uid", userId)
+export async function fetchRepCoachYesterdayCompletedIds(userId: string, yesterdayStartIso: string, todayStartIso: string) {
+  return supabaseAdmin.from("tasks").select("id").eq("assignee_uid", userId)
     .gte("completed_at", yesterdayStartIso).lt("completed_at", todayStartIso);
 }
 

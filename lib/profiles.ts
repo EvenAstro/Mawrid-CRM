@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export type Role = "admin" | "manager" | "sales";
 
@@ -66,8 +67,8 @@ export async function upsertProfileFromSignup(userId: string, firstName: string,
 }
 
 /** First name / full name only, for a personalized greeting — used by rep-coach. */
-export async function fetchProfileGreetingName(client: SupabaseClient, userId: string) {
-  return client.from("profiles").select("first_name, full_name").eq("id", userId).maybeSingle();
+export async function fetchProfileGreetingName(userId: string) {
+  return supabaseAdmin.from("profiles").select("first_name, full_name").eq("id", userId).maybeSingle();
 }
 
 /** A single profile's role — used by admin routes to authorize the caller/target. */
