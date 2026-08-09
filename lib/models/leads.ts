@@ -2,7 +2,6 @@ import { supabase } from "@/lib/supabase";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { canViewAllData } from "@/lib/permissions";
 import type { Role } from "@/lib/profiles";
-import type { Lead } from "@/components/LeadSlideOver";
 
 /**
  * Data-access layer for the `leads` table — every `supabase.from("leads")`
@@ -10,6 +9,24 @@ import type { Lead } from "@/components/LeadSlideOver";
  * page or component. Pages describe *what* they need; this file is the only
  * place that knows the actual columns/joins involved.
  */
+
+export interface Lead {
+  id: string | number;
+  full_name: string | null;
+  phone: string | null;
+  email: string | null;
+  owner: string | null;
+  created_at: string | null;
+  junk_reason_id: number | null;
+  establishment_id?: number | string | null;
+  establishment_name?: string | null;
+  notes?: string | null;
+  contact_outcome?: string | null;
+  contact_outcome_at?: string | null;
+  pipeline_stages: { label: string; color: string | null } | null;
+  sources: { label: string } | null;
+  junk_reasons: { label: string } | null;
+}
 
 /**
  * Loads every lead visible to the given role, scoped to the signed-in rep

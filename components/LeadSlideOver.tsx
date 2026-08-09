@@ -12,7 +12,7 @@ import { initials, formatDate, formatDateTime, formatPhone, todayInput, profileN
 import { useRole } from "@/components/RoleProvider";
 import { canActOnTask } from "@/lib/permissions";
 import { logAudit, fieldChangeMessage } from "@/lib/auditLog";
-import { fetchLeadTouchpoints, markLeadResponded, markLeadNoResponse, markLeadJunk, updateLead } from "@/lib/models/leads";
+import { fetchLeadTouchpoints, markLeadResponded, markLeadNoResponse, markLeadJunk, updateLead, type Lead } from "@/lib/models/leads";
 import { createLeadTask, fetchLeadOpenTasks, fetchLeadCompletedTasks, fetchLeadAllTasksCompact, completeLeadTask } from "@/lib/models/tasks";
 import { fetchLeadActivities } from "@/lib/models/activities";
 import {
@@ -23,25 +23,6 @@ import {
   fetchTaskTypes,
 } from "@/lib/models/refData";
 import { createActivity } from "@/lib/models/activities";
-
-
-export interface Lead {
-  id: string | number;
-  full_name: string | null;
-  phone: string | null;
-  email: string | null;
-  owner: string | null;
-  created_at: string | null;
-  junk_reason_id: number | null;
-  establishment_id?: number | string | null;
-  establishment_name?: string | null;
-  notes?: string | null;
-  contact_outcome?: string | null;
-  contact_outcome_at?: string | null;
-  pipeline_stages: { label: string; color: string | null } | null;
-  sources: { label: string } | null;
-  junk_reasons: { label: string } | null;
-}
 
 interface Activity {
   id: number | string;

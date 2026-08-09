@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SearchIcon, LeadsIcon } from "@/components/navIcons";
-import LeadSlideOver, { type Lead } from "@/components/LeadSlideOver";
+import LeadSlideOver from "@/components/LeadSlideOver";
 import NewLeadSlideOver from "@/components/NewLeadSlideOver";
 import { fetchLeadScoreModel, getAIScore, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
 import { useRole } from "@/components/RoleProvider";
-import { fetchLeads, softDeleteLeads } from "@/lib/models/leads";
+import { fetchLeads, softDeleteLeads, type Lead } from "@/lib/models/leads";
 import { initials, formatDate, formatPhone, downloadCSV } from "@/lib/format";
 import { useToast } from "@/components/Toast";
 
