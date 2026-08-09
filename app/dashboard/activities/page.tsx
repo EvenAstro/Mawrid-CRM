@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { SearchIcon } from "@/components/navIcons";
+import { SearchIcon, ActivitiesIcon } from "@/components/navIcons";
+import { WifiOffIcon } from "@/components/icons";
 import { dayHeader, dayKey, formatDateTime } from "@/lib/format";
 import Button from "@/components/ui/Button";
 import Skeleton from "@/components/ui/Skeleton";
@@ -127,9 +128,9 @@ export default function ActivitiesPage() {
         {loading ? (
           <div className="p-6">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="mb-3 h-12" />)}</div>
         ) : error ? (
-          <EmptyState icon="🔌" title="خطأ في الاتصال" subtitle="تعذّر تحميل النشاطات." action={<Button onClick={() => { setLoading(true); load(); }}>إعادة المحاولة</Button>} />
+          <EmptyState icon={<WifiOffIcon className="h-6 w-6" />} title="خطأ في الاتصال" subtitle="تعذّر تحميل النشاطات." action={<Button onClick={() => { setLoading(true); load(); }}>إعادة المحاولة</Button>} />
         ) : filtered.length === 0 ? (
-          <EmptyState icon="⚡" title="لا توجد نشاطات مسجلة" subtitle="سجّل أول تواصل" action={<Button onClick={() => setLogOpen(true)}>+ تسجيل نشاط</Button>} />
+          <EmptyState icon={<ActivitiesIcon className="h-6 w-6" />} title="لا توجد نشاطات مسجلة" subtitle="سجّل أول تواصل" action={<Button onClick={() => setLogOpen(true)}>+ تسجيل نشاط</Button>} />
         ) : (
           <div className="flex flex-col p-4">
             {groups.map((g) => (

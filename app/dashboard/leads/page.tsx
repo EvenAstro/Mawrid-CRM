@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SearchIcon, LeadsIcon } from "@/components/navIcons";
+import { WifiOffIcon } from "@/components/icons";
 import LeadSlideOver from "@/components/LeadSlideOver";
 import NewLeadSlideOver from "@/components/NewLeadSlideOver";
 import { fetchLeadScoreModel, getAIScore, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
@@ -446,7 +447,7 @@ export default function LeadsPage() {
                 <tr>
                   <td colSpan={9} className="px-6 py-16">
                     <div className="flex flex-col items-center justify-center gap-3 text-center">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-2xl">🔌</div>
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-500"><WifiOffIcon className="h-6 w-6" /></div>
                       <p className="text-[15px] font-semibold text-slate-700">تعذّر الاتصال</p>
                       <p className="text-[13px] text-slate-400">لم نستطع تحميل بيانات العملاء</p>
                       <button
@@ -475,7 +476,7 @@ export default function LeadsPage() {
                   </td>
                 </tr>
               ) : (
-                pageRows.map((lead) => {
+                pageRows.map((lead, rowIndex) => {
                   const isJunk = lead.junk_reason_id != null;
                   const stageColor = lead.pipeline_stages?.color || "#059669";
                   const outcome = lead.contact_outcome;
@@ -483,7 +484,8 @@ export default function LeadsPage() {
                     <tr
                       key={lead.id}
                       onClick={() => setSelectedLead(lead)}
-                      className={`group cursor-pointer border-b border-[#e8f0ec] transition-all duration-100 last:border-0 hover:bg-[#f8faf9] ${isJunk ? "opacity-60" : ""}`}
+                      className={`tbl-row-accent dash-fade group cursor-pointer border-b border-[#e8f0ec] last:border-0 ${isJunk ? "opacity-60" : ""}`}
+                      style={{ animationDelay: rowIndex < 14 ? `${rowIndex * 28}ms` : "0ms" }}
                     >
                       <td className="px-3 py-4" onClick={(e) => e.stopPropagation()}>
                         <input

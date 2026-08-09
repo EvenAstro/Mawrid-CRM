@@ -30,13 +30,13 @@ export default function SlideOver({
     <>
       <div
         onClick={onClose}
-        className={`fixed inset-0 z-40 bg-ink/20 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 z-40 bg-ink/25 backdrop-blur-[6px] transition-opacity duration-300 ${
           open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       />
       <aside
-        style={{ maxWidth: width }}
-        className={`fixed left-0 top-0 z-50 flex h-screen w-full flex-col bg-[#f7faf9] shadow-[0_0_60px_rgba(0,0,0,0.15)] transition-transform duration-300 ease-in-out ${
+        style={{ maxWidth: width, transitionTimingFunction: "cubic-bezier(0.32, 0.72, 0, 1)" }}
+        className={`fixed left-0 top-0 z-50 flex h-screen w-full flex-col bg-[#f7faf9] shadow-[0_0_60px_rgba(0,0,0,0.15)] transition-transform duration-[420ms] ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >

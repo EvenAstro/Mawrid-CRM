@@ -237,6 +237,94 @@ input[type="checkbox"].ls-toggle:checked + .ls-toggle-label::after {
   }
 }
 
+/* KPI sparkline self-draw (components/ui/Sparkline.tsx) */
+.spark-draw {
+  stroke-dasharray: 220;
+  stroke-dashoffset: 220;
+  animation: sparkDraw 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes sparkDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Big line-chart self-draw (dashboard "نشاط الصفقات" chart) */
+.chart-line-draw {
+  stroke-dasharray: 900;
+  stroke-dashoffset: 900;
+  animation: chartLineDraw 1.1s cubic-bezier(0.4, 0, 0.2, 1) 0.15s forwards;
+}
+.chart-area-draw {
+  opacity: 0;
+  animation: chartAreaFade 0.6s ease 0.7s forwards;
+}
+.chart-dot-pop {
+  opacity: 0;
+  transform: scale(0);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chartDotPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes chartLineDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes chartAreaFade {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes chartDotPop {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spark-draw,
+  .chart-line-draw {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+  .chart-area-draw,
+  .chart-dot-pop {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}
+
+/* Sidebar active-item pill (app/dashboard/layout.tsx) — position/height set
+   inline via JS on nav change, this only supplies the smooth glide. */
+.nav-pill {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  border-radius: 12px;
+  background: rgba(58, 144, 128, 0.22);
+  border-right: 3px solid #7ee7cd;
+  transition: transform 0.32s cubic-bezier(0.5, 1.4, 0.5, 1), height 0.32s cubic-bezier(0.5, 1.4, 0.5, 1), opacity 0.15s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-pill {
+    transition: opacity 0.15s ease;
+  }
+}
+
+/* Table row hover accent (leads/deals/contacts tables) */
+.tbl-row-accent {
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.tbl-row-accent:hover {
+  background: var(--color-mint);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
 /* Custom thin teal scrollbar */
 * {
   scrollbar-width: thin;
