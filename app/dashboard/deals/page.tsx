@@ -99,7 +99,7 @@ export default function DealsPage() {
           : d,
       ),
     );
-    const { error: upErr } = await moveDealStage(dealId, toStageId);
+    const { error: upErr } = await moveDealStage(dealId, toStageId, prevStageId);
     if (upErr) {
       console.error("[Deals] stage update failed", upErr);
       toast("تعذّر نقل الصفقة", "error");
