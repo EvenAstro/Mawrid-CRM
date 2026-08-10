@@ -23,9 +23,24 @@ import { MIN_SAMPLE } from "@/lib/stats";
  * useful thing for a user to know about their own data.
  */
 
+/**
+ * Where a factor's number came from. Three states, not two.
+ *
+ * "manual" and "fallback" are both hand-set values, but they mean opposite
+ * things and must not share a label. `manual` is a weight nobody ever
+ * intended to measure — how bad a soft decline is, is a judgement. `fallback`
+ * is a weight we wanted to measure and could not, because the account has too
+ * little history yet.
+ *
+ * Only `fallback` is the product declining to derive, and that is the one
+ * state the panel has to show plainly. Since the playbook and lead scoring
+ * were deleted, it is the only place left in the product that visibly admits
+ * what it does not know.
+ */
 export type FactorBasis =
   | { kind: "derived"; sampleSize: number; baseline: number }
-  | { kind: "manual" };
+  | { kind: "manual" }
+  | { kind: "fallback"; sampleSize: number; needed: number };
 
 export interface HealthFactor {
   key: "turning_point" | "silence" | "no_next_step" | "one_sided" | "age";
@@ -237,7 +252,7 @@ export function computeHealth(
       contribution,
       basis: sb.derived
         ? { kind: "derived", sampleSize: sb.sampleSize, baseline: sb.value }
-        : { kind: "manual" },
+        : { kind: "fallback", sampleSize: sb.sampleSize, needed: MIN_SAMPLE },
     });
   } else {
     clear.push(`التواصل منتظم (${daysSilent} يوم)`);
@@ -296,7 +311,7 @@ export function computeHealth(
       contribution,
       basis: ab.derived
         ? { kind: "derived", sampleSize: ab.sampleSize, baseline: ab.value }
-        : { kind: "manual" },
+        : { kind: "fallback", sampleSize: ab.sampleSize, needed: MIN_SAMPLE },
     });
   } else if (ageDays != null) {
     clear.push(`العمر ضمن المعتاد (${ageDays} يوم)`);
