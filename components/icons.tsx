@@ -448,3 +448,23 @@ export function PaperclipIcon({ className = "h-4 w-4" }: { className?: string })
     </svg>
   );
 }
+
+/**
+ * The Supervisor's mark. A robot, but drawn the way the rest of the icon set
+ * is drawn — one stroke weight, currentColor, no fill and no face that blinks.
+ * The previous version was a cartoon with animating eyes; this reads as the
+ * same character without a loop that never stops.
+ */
+export function RobotIcon({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <rect x="3.5" y="7.5" width="17" height="12" rx="3.5" />
+      <path d="M12 7.5V4.2" />
+      <circle cx="12" cy="3" r="1.3" />
+      <path d="M1.5 12v3M22.5 12v3" />
+      <circle cx="9" cy="12.6" r="1.15" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="12.6" r="1.15" fill="currentColor" stroke="none" />
+      <path d="M9.3 16.2h5.4" />
+    </svg>
+  );
+}

@@ -9,7 +9,7 @@ import Composer from "@/components/copilot/Composer";
 import {
   AlertIcon,
   ClockIcon,
-  SparkIcon,
+  RobotIcon,
   TrophyIcon,
   XIcon,
 } from "@/components/icons";
@@ -132,14 +132,19 @@ export default function Supervisor() {
         <button
           onClick={() => setOpen(true)}
           aria-label={urgent > 0 ? `افتح المشرف — ${urgent} تنبيه يحتاج انتباهك` : "افتح المشرف"}
-          style={{ left: "calc(var(--briefing-rail-width, 52px) + 24px)" }}
-          className="fixed bottom-6 z-[55] flex h-14 w-14 items-center justify-center rounded-full bg-[var(--surface-inverse)] text-[color:var(--content-inverse-accent)] e-overlay transition-colors duration-[var(--motion-fast)] hover:bg-[var(--surface-inverse-hover)]"
+          title="المشرف"
+          className="fixed left-0 top-[184px] z-30 hidden w-[52px] flex-col items-center gap-1.5 rounded-e-[var(--radius-lg)] border border-s-0 border-[var(--border-subtle)] bg-[var(--surface-accent-subtle)] py-3.5 transition-colors duration-[var(--motion-fast)] hover:bg-[var(--surface-active)] md:flex"
         >
-          <SparkIcon className="h-6 w-6" />
-          {urgent > 0 && (
-            <span className="t-micro absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--status-danger-fg)] px-1 font-bold tabular-nums text-white ring-2 ring-[var(--surface-page)]">
+          <span className="relative flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--surface-raised)] text-[color:var(--content-accent)] e-1">
+            <RobotIcon className="h-4.5 w-4.5" />
+          </span>
+          <span className="t-micro font-bold text-[color:var(--content-accent)]">المشرف</span>
+          {urgent > 0 ? (
+            <span className="t-micro absolute right-1 top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--status-danger-fg)] px-1 font-bold tabular-nums text-white ring-2 ring-[var(--surface-accent-subtle)]">
               {urgent}
             </span>
+          ) : (
+            <span className="absolute right-2 top-2.5 h-2.5 w-2.5 rounded-full bg-[var(--status-success-fg)] ring-2 ring-[var(--surface-accent-subtle)]" />
           )}
         </button>
       )}
@@ -148,12 +153,12 @@ export default function Supervisor() {
         <aside
           role="dialog"
           aria-label="المشرف"
-          style={{ left: "calc(var(--briefing-rail-width, 52px) + 24px)" }}
-          className="fixed bottom-6 z-[55] flex h-[min(620px,calc(100vh-6rem))] w-[min(400px,calc(100vw-3rem))] flex-col overflow-hidden rounded-[var(--radius-lg)] bg-[var(--surface-raised)] e-overlay"
+          style={{ left: "calc(var(--briefing-rail-width, 52px) + 12px)" }}
+          className="fixed top-20 z-[55] flex h-[min(620px,calc(100vh-7rem))] w-[min(400px,calc(100vw-3rem))] flex-col overflow-hidden rounded-[var(--radius-lg)] bg-[var(--surface-raised)] e-overlay"
         >
           <header className="flex items-center gap-3 bg-[var(--surface-inverse)] px-4 py-3">
             <span className="flex h-9 w-9 flex-none items-center justify-center rounded-[var(--radius-sm)] bg-white/[0.08] text-[color:var(--content-inverse-accent)]">
-              <SparkIcon className="h-4 w-4" />
+              <RobotIcon className="h-5 w-5" />
             </span>
             <span className="min-w-0 flex-1">
               <h2 className="t-title-3 truncate text-[color:var(--content-inverse-primary)]">المشرف</h2>
