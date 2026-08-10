@@ -10,6 +10,30 @@
 -- Anchoring to now would mark every deal stalled and every task overdue.
 
 
+-- Every join below casts both sides to text. That is not laziness: this
+-- schema mixes uuid and text keys (deals.id is text, profiles.id is uuid),
+-- and an earlier version of this file assumed they matched and failed with
+-- "operator does not exist: uuid = text". Casting to text joins correctly
+-- regardless of which side is which, and a read-only check has no reason to
+-- care about index usage.
+
+
+-- ── -1. What are the key types actually? ─────────────────────────────────
+-- Run this first. It costs nothing and it settles the question instead of
+-- leaving it to be assumed again.
+select table_name, column_name, data_type
+from information_schema.columns
+where table_schema = 'public'
+  and (
+    (table_name = 'deals'      and column_name in ('id','owner_id','stage_id','lost_reason_id'))
+    or (table_name = 'leads'    and column_name in ('id','owner_id'))
+    or (table_name = 'profiles' and column_name in ('id','full_name','first_name','email'))
+    or (table_name = 'activities' and column_name in ('id','entity_id','user_id'))
+    or (table_name = 'pipeline_stages' and column_name = 'id')
+  )
+order by table_name, column_name;
+
+
 -- ── 0. How old is the data? ──────────────────────────────────────────────
 -- Decides whether "آخر نشاط" columns read as "قبل ٣ أيام" or "قبل ٧ أشهر".
 select
@@ -31,8 +55,8 @@ select
   count(*) filter (where s.terminal_type = 'lost')             as lost,
   round(sum(coalesce(d.won_value_minor, d.expected_value_minor, 0)) / 100.0) as value_sar
 from deals d
-left join pipeline_stages s on s.id = d.stage_id
-left join profiles p on p.id = d.owner_id
+left join pipeline_stages s on s.id::text = d.stage_id::text
+left join profiles p on p.id::text = d.owner_id::text
 where d.deleted_at is null
 group by 1, d.owner_id
 order by open_deals desc;
@@ -59,9 +83,9 @@ last_touch as (
          round(coalesce(d.won_value_minor, d.expected_value_minor, 0) / 100.0) as value_sar,
          max(a.occurred_at) as last_activity
   from deals d
-  left join pipeline_stages s on s.id = d.stage_id
+  left join pipeline_stages s on s.id::text = d.stage_id::text
   left join activities a
-         on a.entity_type = 'deal' and a.entity_id = d.id::text
+         on a.entity_type = 'deal' and a.entity_id::text = d.id::text
   where d.deleted_at is null and s.terminal_type is null
   group by d.id, d.name, d.owner_id, s.label, d.won_value_minor, d.expected_value_minor
 )
@@ -84,8 +108,8 @@ select d.name,
        max(a.occurred_at)                                   as last_activity,
        ((select data_now from anchor)::date - max(a.occurred_at)::date) as days_silent
 from deals d
-left join pipeline_stages s on s.id = d.stage_id
-left join activities a on a.entity_type = 'deal' and a.entity_id = d.id::text
+left join pipeline_stages s on s.id::text = d.stage_id::text
+left join activities a on a.entity_type = 'deal' and a.entity_id::text = d.id::text
 where d.deleted_at is null and s.terminal_type is null
 group by d.id, d.name, s.label, d.expected_value_minor
 having max(a.occurred_at) < (select data_now from anchor) - interval '7 days'
@@ -108,14 +132,12 @@ select d.id,
        count(a.id) filter (
          where a.situational_tag in ('soft_decline','awaiting_third_party',
                                      'awaiting_external_event','busy_reschedule')
-       )                                                             as turning_points,
-       lr.label                                                      as lost_reason
+       )                                                             as turning_points
 from deals d
-join pipeline_stages s on s.id = d.stage_id and s.terminal_type = 'lost'
-left join lost_reasons lr on lr.id = d.lost_reason_id
-left join activities a on a.entity_type = 'deal' and a.entity_id = d.id::text
+join pipeline_stages s on s.id::text = d.stage_id::text and s.terminal_type = 'lost'
+left join activities a on a.entity_type = 'deal' and a.entity_id::text = d.id::text
 where d.deleted_at is null
-group by d.id, d.name, lr.label
+group by d.id, d.name
 order by turning_points desc, activities desc
 limit 20;
 
