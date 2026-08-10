@@ -156,6 +156,15 @@ export default function ChatPage() {
     load();
   }
 
+  // Say what is still missing instead of leaving a dead button on screen.
+  const groupBlockedReason = !groupTitle.trim()
+    ? groupPicked.size === 0
+      ? "اكتب اسم المجموعة واختر عضواً واحداً على الأقل"
+      : "اكتب اسم المجموعة"
+    : groupPicked.size === 0
+      ? "اختر عضواً واحداً على الأقل"
+      : null;
+
   async function submitGroup() {
     const title = groupTitle.trim();
     if (!title || groupPicked.size === 0 || starting) return;
@@ -264,8 +273,9 @@ export default function ChatPage() {
               <input
                 value={groupTitle}
                 onChange={(e) => setGroupTitle(e.target.value)}
-                placeholder="اسم المجموعة"
+                placeholder="اسم المجموعة (مطلوب)"
                 aria-label="اسم المجموعة"
+                aria-required="true"
                 dir="auto"
                 className="t-body-sm mb-2 h-10 w-full rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface-raised)] px-3 text-[color:var(--content-primary)] placeholder:text-[color:var(--content-tertiary)] focus:border-[var(--border-focus)] focus:outline-none"
               />
@@ -303,8 +313,15 @@ export default function ChatPage() {
                 disabled={starting || !groupTitle.trim() || groupPicked.size === 0}
                 className="t-body-sm mt-2 h-10 w-full rounded-[var(--radius-md)] bg-[var(--surface-accent)] font-bold text-[color:var(--content-on-accent)] transition-colors hover:bg-[var(--surface-accent-hover)] disabled:cursor-not-allowed disabled:opacity-40"
               >
-                إنشاء المجموعة{groupPicked.size > 0 ? ` (${groupPicked.size})` : ""}
+                {starting
+                  ? "جارِ الإنشاء…"
+                  : `إنشاء المجموعة${groupPicked.size > 0 ? ` (${groupPicked.size})` : ""}`}
               </button>
+              {groupBlockedReason && (
+                <p className="t-caption mt-1.5 text-center text-[color:var(--content-tertiary)]">
+                  {groupBlockedReason}
+                </p>
+              )}
             </div>
           )}
 
