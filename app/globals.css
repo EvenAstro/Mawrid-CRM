@@ -112,6 +112,9 @@
   --color-info-fg: var(--status-info-fg);
   --color-info-bg: var(--status-info-bg);
   --color-info-border: var(--status-info-border);
+  --color-danger-on-inverse: var(--status-danger-on-inverse);
+  --color-warning-on-inverse: var(--status-warning-on-inverse);
+  --color-success-on-inverse: var(--status-success-on-inverse);
 
   /* ---- Radius + layout as utilities ---- */
   --radius-xs: var(--radius-xs);
@@ -209,33 +212,33 @@
   }
 }
 
-@layer components {
-  /* ---- Type ramp as utilities. Each sets size, leading and tracking together,
-     because setting them apart is how a scale drifts. ---- */
-  .t-display-1 {
+/* The type and elevation ramps are real Tailwind utilities, not plain
+   classes. @utility registers them in the utilities layer, which means
+   they accept variants — `sm:t-display-2` on the landing hero — and that
+   a later utility in the same class list wins, which is what you expect
+   when you write `t-body-sm text-[color:var(--content-accent)]`. */
+@utility t-display-1 {
     font-family: var(--font-display);
     font-size: var(--text-display-1);
     line-height: var(--text-display-1-lh);
     letter-spacing: var(--tracking-display);
     font-weight: var(--weight-bold);
   }
-  .t-display-2 {
+@utility t-display-2 {
     font-family: var(--font-display);
     font-size: var(--text-display-2);
     line-height: var(--text-display-2-lh);
     letter-spacing: var(--tracking-display);
     font-weight: var(--weight-bold);
   }
-  .t-title-1 {
+@utility t-title-1 {
     font-family: var(--font-display);
     font-size: var(--text-title-1);
     line-height: var(--text-title-1-lh);
     letter-spacing: var(--tracking-title);
     font-weight: var(--weight-bold);
   }
-  /* The command-band title carries a person's name, so it must not be clipped
-     on a narrow screen. Fluid down to title-2 rather than truncated. */
-  .t-title-fluid {
+@utility t-title-fluid {
     font-family: var(--font-display);
     font-size: clamp(var(--text-title-2), 4.6vw, var(--text-title-1));
     line-height: var(--text-title-1-lh);
@@ -243,74 +246,73 @@
     font-weight: var(--weight-bold);
     text-wrap: balance;
   }
-  .t-title-2 {
+@utility t-title-2 {
     font-family: var(--font-display);
     font-size: var(--text-title-2);
     line-height: var(--text-title-2-lh);
     letter-spacing: var(--tracking-title);
     font-weight: var(--weight-semibold);
   }
-  .t-title-3 {
+@utility t-title-3 {
     font-family: var(--font-display);
     font-size: var(--text-title-3);
     line-height: var(--text-title-3-lh);
     font-weight: var(--weight-semibold);
   }
-  .t-body-lg {
+@utility t-body-lg {
     font-size: var(--text-body-lg);
     line-height: var(--text-body-lg-lh);
   }
-  .t-body {
+@utility t-body {
     font-size: var(--text-body);
     line-height: var(--text-body-lh);
   }
-  .t-body-sm {
+@utility t-body-sm {
     font-size: var(--text-body-sm);
     line-height: var(--text-body-sm-lh);
   }
-  .t-caption {
+@utility t-caption {
     font-size: var(--text-caption);
     line-height: var(--text-caption-lh);
   }
-  .t-micro {
+@utility t-micro {
     font-size: var(--text-micro);
     line-height: var(--text-micro-lh);
   }
-  .t-eyebrow {
+@utility t-eyebrow {
     font-size: var(--text-caption);
     line-height: var(--text-caption-lh);
     letter-spacing: var(--tracking-caps);
     font-weight: var(--weight-bold);
     text-transform: uppercase;
   }
-  /* Figures in KPIs and tables must not jitter as they count or update. */
-  .t-figure {
+@utility t-figure-sm {font-size: var(--text-figure-sm); line-height: 1; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; font-weight: var(--weight-extrabold); letter-spacing: -0.01em;}
+@utility t-figure-md {font-size: var(--text-figure-md); line-height: 1; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; font-weight: var(--weight-extrabold); letter-spacing: -0.015em;}
+@utility t-figure-lg {font-size: var(--text-figure-lg); line-height: 1; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; font-weight: var(--weight-black); letter-spacing: -0.02em;}
+@utility t-figure {
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
     font-weight: var(--weight-extrabold);
     letter-spacing: -0.01em;
   }
-
-  /* ---- Elevation as utilities ---- */
-  .e-1 {
+@utility e-1 {
     box-shadow: var(--elevation-1);
   }
-  .e-2 {
+@utility e-2 {
     box-shadow: var(--elevation-2);
   }
-  .e-overlay {
+@utility e-overlay {
     box-shadow: var(--elevation-overlay);
   }
-  .e-inverse-1 {
+@utility e-inverse-1 {
     box-shadow: var(--elevation-inverse-1);
   }
-  .e-inverse-2 {
+@utility e-inverse-2 {
     box-shadow: var(--elevation-inverse-2);
   }
-  .e-accent {
+@utility e-accent {
     box-shadow: var(--elevation-accent);
   }
-}
 
 /* Soft teal-tinted card shadow */
 .shadow-brand {
@@ -432,20 +434,6 @@ input[type="checkbox"].ls-toggle:checked + .ls-toggle-label::after {
   .mk-enter {
     animation: none;
   }
-}
-
-/* `.dash-fade` is intentionally inert.
-
-   Meridian's motion rule is that dashboard content never animates in. These
-   screens block on Supabase and on the AI routes, so a 450ms entrance runs
-   *after* the user has already waited — it delays the content they were
-   waiting for and makes a slow screen feel slower. The class is kept rather
-   than deleted so the not-yet-rebuilt screens keep compiling; each batch
-   strips its own usages, and the class goes when the last one does.
-
-   Remaining usages: app/dashboard/leads/page.tsx. */
-.dash-fade {
-  animation: none;
 }
 
 /* KPI sparkline self-draw (components/ui/Sparkline.tsx) */

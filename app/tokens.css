@@ -147,6 +147,13 @@
   --status-danger-fg: var(--brand-red-700);
   --status-danger-bg: var(--brand-red-50);
   --status-danger-border: #fecaca;
+  /* On a navy ground the -fg stops above are unreadable, so status needs a
+     lifted set. Measured against --surface-inverse: danger 9.0:1, warning
+     11.8:1, success 11.2:1. Used by the loss report and any navy panel. */
+  --status-danger-on-inverse: #fca5a5;
+  --status-warning-on-inverse: #fcd34d;
+  --status-success-on-inverse: #6ee7b7;
+
   --status-info-fg: var(--brand-indigo-700);
   --status-info-bg: var(--brand-indigo-50);
   --status-info-border: #c7d2fe;
@@ -194,6 +201,14 @@
   --text-micro: 0.6875rem; /* 11px — badges. Floor: never smaller. */
   --text-micro-lh: 1.45;
 
+  /* Figures are a type role, not a heading. KPI values, gauge centres and
+     money totals were bypassing the ramp entirely with one-off pixel sizes
+     because there was nowhere for them to go. They set their own leading of 1
+     — a figure has no descenders to clear and should sit tight in its tile. */
+  --text-figure-sm: 1.25rem; /* 20px — inline totals, gauge centres */
+  --text-figure-md: 1.625rem; /* 26px — panel figures */
+  --text-figure-lg: 2rem; /* 32px — the one number a screen is about */
+
   /* Tracking. Arabic does not take negative tracking well — it breaks the
      joins — so display tracking applies to the Latin/numeral runs only, kept
      mild for that reason. */
@@ -235,6 +250,7 @@
 
   /* Named layout rhythm. Screens use these so density stays consistent. */
   --space-card-pad: var(--space-5); /* inside a card */
+  --space-card-compact: var(--space-4); /* inside a card in a 3-up grid */
   --space-card-gap: var(--space-4); /* between cards */
   --space-block: var(--space-8); /* between blocks on a page */
   --space-section: var(--space-16); /* between page sections (app) */
