@@ -72,3 +72,23 @@ export async function searchMessages(term: string, limit = 30) {
     .order("created_at", { ascending: false })
     .limit(limit);
 }
+
+/**
+ * The newest message in each of the given conversations, for the list preview.
+ *
+ * Uses the `last_message_at` the conversations table already maintains as the
+ * lookup key, so this is one exact query rather than N queries or a broad
+ * "recent messages" scan that would starve quiet conversations of a preview.
+ */
+export async function fetchLastMessages(
+  conversationIds: string[],
+  lastMessageAts: string[],
+) {
+  if (conversationIds.length === 0) return { data: [], error: null };
+  return supabase
+    .from("messages")
+    .select("id, conversation_id, sender_id, body, created_at, deleted_at")
+    .in("conversation_id", conversationIds)
+    .in("created_at", lastMessageAts)
+    .is("deleted_at", null);
+}

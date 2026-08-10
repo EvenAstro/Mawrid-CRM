@@ -13,6 +13,7 @@ import {
   type ConversationRow,
   type MemberRow,
 } from "@/lib/models/conversations";
+import { fetchLastMessages, type MessageRow } from "@/lib/models/messages";
 import { useConversation } from "@/lib/chat/useConversation";
 import { otherMemberId } from "@/lib/chat/grouping";
 import ChatThread, { Avatar } from "@/components/chat/ChatThread";
@@ -33,6 +34,12 @@ import { useToast } from "@/components/Toast";
  * the list and the thread are separate views, because a 280px list next to a
  * thread on a 375px screen leaves room for neither.
  */
+const ROLE_LABEL: Record<string, string> = {
+  admin: "أدمن",
+  manager: "مدير",
+  sales: "مندوب مبيعات",
+};
+
 export default function ChatPage() {
   const toast = useToast();
   const [meId, setMeId] = useState<string | null>(null);
@@ -45,6 +52,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [previews, setPreviews] = useState<Record<string, MessageRow>>({});
 
   const nameById = useMemo(() => {
     const m = new Map<string, string>();
@@ -92,10 +100,16 @@ export default function ChatPage() {
       setConversations(convs);
       setProfiles(profileList);
 
-      const [memberRes, unreadRes] = await Promise.all([
+      const [memberRes, unreadRes, previewRes] = await Promise.all([
         fetchMembersFor(convs.map((c) => c.id)),
         fetchUnreadCounts(),
+        fetchLastMessages(convs.map((c) => c.id), convs.map((c) => c.last_message_at)),
       ]);
+      const prev: Record<string, MessageRow> = {};
+      ((previewRes.data ?? []) as MessageRow[]).forEach((m) => {
+        if (!prev[m.conversation_id]) prev[m.conversation_id] = m;
+      });
+      setPreviews(prev);
       setMembers((memberRes.data ?? []) as MemberRow[]);
       const counts: Record<string, number> = {};
       ((unreadRes.data ?? []) as { conversation_id: string; unread: number }[]).forEach((r) => {
@@ -130,7 +144,7 @@ export default function ChatPage() {
     setStarting(false);
     if (err || !data) {
       console.error("[chat] could not open conversation", err);
-      toast("تعذّر فتح المحادثة", "error");
+      toast(err?.message ? `تعذّر فتح المحادثة: ${err.message}` : "تعذّر فتح المحادثة", "error");
       return;
     }
     setActiveId(data as string);
@@ -144,24 +158,30 @@ export default function ChatPage() {
     [conversations, q, titleOf],
   );
 
-  // People you have no thread with yet, so search doubles as "start a chat".
+  // Everyone you do not already have a thread with, listed always — not only
+  // when searching. A directory you can only reach by guessing a name is a
+  // directory nobody uses.
   const startable = useMemo(() => {
-    if (!q || !meId) return [];
+    if (!meId) return [];
     const existing = new Set(
       conversations
         .filter((c) => c.kind === "dm")
         .map((c) => otherMemberId(membersByConversation.get(c.id) ?? [], meId))
         .filter(Boolean) as string[],
     );
-    return profiles.filter(
-      (p) =>
-        p.id !== meId &&
-        !existing.has(p.id) &&
-        (profileName(p) || p.email || "").toLowerCase().includes(q),
-    );
+    return profiles
+      .filter((p) => p.id !== meId && !existing.has(p.id))
+      .filter((p) => !q || (profileName(p) || p.email || "").toLowerCase().includes(q))
+      .sort((a, b) => (profileName(a) || a.email || "").localeCompare(profileName(b) || b.email || "", "ar"));
   }, [q, meId, conversations, membersByConversation, profiles]);
 
   const active = conversations.find((c) => c.id === activeId) ?? null;
+  const activeRole = useMemo(() => {
+    if (!active || active.kind !== "dm" || !meId) return null;
+    const other = otherMemberId(membersByConversation.get(active.id) ?? [], meId);
+    const p = other ? profiles.find((x) => x.id === other) : null;
+    return p ? (ROLE_LABEL[p.role] ?? "عضو") : null;
+  }, [active, meId, membersByConversation, profiles]);
   const totalUnread = Object.values(unread).reduce((a, b) => a + b, 0);
 
   return (
@@ -223,15 +243,26 @@ export default function ChatPage() {
               />
             ) : (
               <>
+                {filteredConversations.length > 0 && (
+                  <p className="t-eyebrow sticky top-0 z-[1] flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3 py-2 text-[color:var(--content-tertiary)]">
+                    <span>المحادثات</span>
+                    <span className="tabular-nums">{filteredConversations.length}</span>
+                  </p>
+                )}
+
                 {filteredConversations.map((c) => {
                   const n = unread[c.id] ?? 0;
                   const isActive = c.id === activeId;
+                  const preview = previews[c.id];
+                  const previewText = preview
+                    ? `${preview.sender_id === meId ? "أنت: " : ""}${preview.body}`
+                    : "لا رسائل بعد";
                   return (
                     <button
                       key={c.id}
                       onClick={() => setActiveId(c.id)}
                       aria-current={isActive ? "true" : undefined}
-                      className={`relative flex w-full items-center gap-3 border-b border-[var(--border-subtle)] px-3 py-3 text-start transition-colors duration-[var(--motion-fast)] before:absolute before:inset-y-0 before:start-0 before:w-0.5 before:content-[''] ${
+                      className={`relative flex w-full items-start gap-3 border-b border-[var(--border-subtle)] px-3 py-3 text-start transition-colors duration-[var(--motion-fast)] before:absolute before:inset-y-0 before:start-0 before:w-0.5 before:content-[''] ${
                         isActive
                           ? "bg-[var(--surface-active)] before:bg-[var(--content-accent)]"
                           : "before:bg-transparent hover:bg-[var(--surface-hover)]"
@@ -239,15 +270,36 @@ export default function ChatPage() {
                     >
                       <Avatar name={titleOf(c)} />
                       <span className="min-w-0 flex-1">
-                        <span className="t-body-sm block truncate font-semibold text-[color:var(--content-primary)]">
-                          {titleOf(c)}
+                        <span className="flex items-baseline justify-between gap-2">
+                          <span
+                            className={`t-body-sm truncate ${
+                              n > 0
+                                ? "font-bold text-[color:var(--content-primary)]"
+                                : "font-semibold text-[color:var(--content-primary)]"
+                            }`}
+                          >
+                            {titleOf(c)}
+                          </span>
+                          <span className="t-micro flex-none tabular-nums text-[color:var(--content-tertiary)]">
+                            {formatTime(c.last_message_at)}
+                          </span>
                         </span>
-                        <span className="t-micro block text-[color:var(--content-tertiary)]">
-                          {formatTime(c.last_message_at)}
+                        {/* The preview is what makes a list of names a list of
+                            conversations. A timestamp alone tells you nothing
+                            about which thread to open. */}
+                        <span
+                          dir="auto"
+                          className={`t-caption mt-0.5 line-clamp-1 block ${
+                            n > 0
+                              ? "font-semibold text-[color:var(--content-secondary)]"
+                              : "text-[color:var(--content-tertiary)]"
+                          }`}
+                        >
+                          {previewText}
                         </span>
                       </span>
                       {n > 0 && (
-                        <span className="t-micro flex-none rounded-full bg-[var(--surface-accent)] px-2 py-0.5 font-bold tabular-nums text-[color:var(--content-on-accent)]">
+                        <span className="t-micro mt-1 flex-none rounded-full bg-[var(--surface-accent)] px-1.5 py-0.5 font-bold tabular-nums text-[color:var(--content-on-accent)]">
                           {n}
                         </span>
                       )}
@@ -256,22 +308,33 @@ export default function ChatPage() {
                 })}
 
                 {startable.length > 0 && (
-                  <div className="border-t border-[var(--border-subtle)]">
-                    <p className="t-eyebrow px-3 py-2 text-[color:var(--content-tertiary)]">ابدأ محادثة</p>
+                  <>
+                    <p className="t-eyebrow sticky top-0 z-[1] flex items-center justify-between border-y border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3 py-2 text-[color:var(--content-tertiary)]">
+                      <span>فريق العمل</span>
+                      <span className="tabular-nums">{startable.length}</span>
+                    </p>
                     {startable.map((p) => (
                       <button
                         key={p.id}
                         onClick={() => startDirect(p.id)}
                         disabled={starting}
-                        className="flex w-full items-center gap-3 px-3 py-3 text-start transition-colors hover:bg-[var(--surface-hover)] disabled:opacity-50"
+                        className="flex w-full items-center gap-3 border-b border-[var(--border-subtle)] px-3 py-2.5 text-start transition-colors duration-[var(--motion-fast)] hover:bg-[var(--surface-hover)] disabled:opacity-50"
                       >
-                        <Avatar name={profileName(p) || p.email || "?"} />
-                        <span className="t-body-sm min-w-0 flex-1 truncate text-[color:var(--content-secondary)]">
-                          {profileName(p) || p.email}
+                        <Avatar name={profileName(p) || p.email || "?"} className="h-8 w-8" />
+                        <span className="min-w-0 flex-1">
+                          <span className="t-body-sm block truncate font-semibold text-[color:var(--content-primary)]">
+                            {profileName(p) || p.email}
+                          </span>
+                          <span className="t-micro block text-[color:var(--content-tertiary)]">
+                            {ROLE_LABEL[p.role] ?? "عضو"}
+                          </span>
+                        </span>
+                        <span className="t-micro flex-none rounded-full border border-[var(--border-subtle)] px-2 py-0.5 font-semibold text-[color:var(--content-tertiary)]">
+                          مراسلة
                         </span>
                       </button>
                     ))}
-                  </div>
+                  </>
                 )}
 
                 {filteredConversations.length === 0 && startable.length === 0 && (
@@ -280,12 +343,20 @@ export default function ChatPage() {
                       variant="no-results"
                       title="ما فيه نتائج"
                       subtitle={`ما لقينا محادثة ولا زميلاً يطابق «${search.trim()}».`}
+                      action={
+                        <button
+                          onClick={() => setSearch("")}
+                          className="t-body-sm rounded-[var(--radius-md)] border border-[var(--border-strong)] px-4 py-2 font-semibold text-[color:var(--content-secondary)] transition-colors hover:bg-[var(--surface-hover)]"
+                        >
+                          مسح البحث
+                        </button>
+                      }
                     />
                   ) : (
                     <EmptyState
                       variant="first-run"
-                      title="ما فيه محادثات بعد"
-                      subtitle="ابحث باسم زميل في الأعلى لبدء أول محادثة."
+                      title="ما فيه زملاء بعد"
+                      subtitle="أضف أعضاء الفريق من صفحة إدارة المستخدمين، وبعدها تقدر تراسلهم من هنا."
                     />
                   )
                 )}
@@ -305,9 +376,17 @@ export default function ChatPage() {
                 >
                   ← رجوع
                 </button>
-                <h2 className="t-title-3 min-w-0 flex-1 truncate text-[color:var(--content-inverse-primary)]">
-                  {titleOf(active)}
-                </h2>
+                <Avatar name={titleOf(active)} className="h-9 w-9" />
+                <span className="min-w-0 flex-1">
+                  <h2 className="t-title-3 truncate text-[color:var(--content-inverse-primary)]">
+                    {titleOf(active)}
+                  </h2>
+                  {activeRole && (
+                    <span className="t-micro block text-[color:var(--content-inverse-tertiary)]">
+                      {activeRole}
+                    </span>
+                  )}
+                </span>
                 {thread.status === "live" && (
                   <span className="t-micro flex flex-none items-center gap-1.5 text-[color:var(--content-inverse-tertiary)]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[var(--status-success-on-inverse)]" />
@@ -336,7 +415,7 @@ export default function ChatPage() {
             <EmptyState
               variant="first-run"
               title="اختر محادثة"
-              subtitle="اختر محادثة من القائمة، أو ابحث باسم زميل لبدء واحدة جديدة."
+              subtitle="اختر محادثة من القائمة، أو اختر زميلاً من فريق العمل لبدء واحدة جديدة."
             />
           )}
         </section>
