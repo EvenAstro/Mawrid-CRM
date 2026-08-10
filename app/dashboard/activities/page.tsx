@@ -128,9 +128,13 @@ export default function ActivitiesPage() {
         {loading ? (
           <div className="p-6">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="mb-3 h-12" />)}</div>
         ) : error ? (
-          <EmptyState icon={<WifiOffIcon className="h-6 w-6" />} title="خطأ في الاتصال" subtitle="تعذّر تحميل النشاطات." action={<Button onClick={() => { setLoading(true); load(); }}>إعادة المحاولة</Button>} />
+          <EmptyState variant="broken" title="تعذّر تحميل النشاطات" subtitle="ما وصلنا للخادم. تحقق من اتصالك وحاول مرة ثانية." action={<Button onClick={() => { setLoading(true); load(); }}>إعادة المحاولة</Button>} />
         ) : filtered.length === 0 ? (
-          <EmptyState icon={<ActivitiesIcon className="h-6 w-6" />} title="لا توجد نشاطات مسجلة" subtitle="سجّل أول تواصل" action={<Button onClick={() => setLogOpen(true)}>+ تسجيل نشاط</Button>} />
+          (chip !== "all" || search.trim()) ? (
+          <EmptyState variant="no-results" title="ما فيه نشاط يطابق التصفية" subtitle="جرّب تصنيف ثاني أو امسح البحث." action={<Button variant="secondary" onClick={() => { setChip("all"); setSearch(""); }}>عرض الكل</Button>} />
+        ) : (
+          <EmptyState variant="first-run" title="ما فيه نشاطات بعد" subtitle="كل مكالمة ورسالة تسجّلها هنا تبني تاريخ العميل — وعليها يعتمد تحليل المساعد." action={<Button onClick={() => setLogOpen(true)}>+ تسجيل نشاط</Button>} />
+        )
         ) : (
           <div className="flex flex-col p-4">
             {groups.map((g) => (

@@ -168,9 +168,13 @@ export default function ContactsPage() {
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-44" />)}
         </div>
       ) : error ? (
-        <EmptyState icon={<WifiOffIcon className="h-6 w-6" />} title="خطأ في الاتصال" subtitle="تعذّر تحميل جهات الاتصال." action={<Button onClick={() => { setLoading(true); load(); }}>إعادة المحاولة</Button>} />
+        <EmptyState variant="broken" title="تعذّر تحميل جهات الاتصال" subtitle="ما وصلنا للخادم. تحقق من اتصالك وحاول مرة ثانية." action={<Button onClick={() => { setLoading(true); load(); }}>إعادة المحاولة</Button>} />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={<UserIcon className="h-6 w-6" />} title="لا توجد جهات اتصال" subtitle="أضف أول جهة اتصال للبدء." action={<Button onClick={() => setAddOpen(true)}>+ جهة اتصال جديدة</Button>} />
+        search.trim() ? (
+        <EmptyState variant="no-results" title="ما فيه جهة اتصال تطابق بحثك" subtitle={`ما لقينا نتائج لـ«${search.trim()}».`} action={<Button variant="secondary" onClick={() => setSearch("")}>مسح البحث</Button>} />
+      ) : (
+        <EmptyState variant="first-run" title="لا توجد جهات اتصال بعد" subtitle="جهات الاتصال هي الأشخاص اللي تتواصل معهم داخل كل منشأة." action={<Button onClick={() => setAddOpen(true)}>+ جهة اتصال جديدة</Button>} />
+      )
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => (

@@ -15,6 +15,7 @@ import NewDealSlideOver from "@/components/NewDealSlideOver";
 import NextBestActionCard from "@/components/NextBestActionCard";
 import { useRole } from "@/components/RoleProvider";
 import { fetchDealsBoard, moveDealStage, type Deal, type StageCol } from "@/lib/models/deals";
+import LedgerSection from "@/components/ui/LedgerSection";
 
 const INPUT_CLS =
   "h-11 w-full rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface-sunken)] pl-11 pr-4 text-[length:var(--text-body-sm)] text-[color:var(--content-primary)] placeholder:text-[color:var(--content-tertiary)] transition-colors duration-[var(--motion-fast)] focus:border-[var(--border-focus)] focus:bg-[var(--surface-raised)] focus:outline-none";
@@ -157,7 +158,7 @@ export default function DealsPage() {
         }
       />
 
-      {/* Toolbar */}
+      <LedgerSection label="اللوحة" meta={`${filtered.length} صفقة`}>
       <Panel className="flex flex-col gap-3 p-3 sm:flex-row">
         <div className="relative flex-1">
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[color:var(--content-tertiary)]">
@@ -184,7 +185,23 @@ export default function DealsPage() {
           {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-72" />)}
         </div>
       ) : error ? (
-        <EmptyState icon={<WifiOffIcon className="h-6 w-6" />} title="خطأ في الاتصال" subtitle="تعذّر تحميل الصفقات" action={<Button onClick={() => { setLoading(true); load(); }}>إعادة المحاولة</Button>} />
+        <EmptyState variant="broken" title="تعذّر تحميل الصفقات" subtitle="ما وصلنا للخادم. تحقق من اتصالك وحاول مرة ثانية." action={<Button onClick={() => { setLoading(true); load(); }}>إعادة المحاولة</Button>} />
+      ) : filtered.length === 0 ? (
+        search.trim() || stageFilter !== "all" ? (
+          <EmptyState
+            variant="no-results"
+            title="ما فيه صفقة تطابق التصفية"
+            subtitle={`${deals.length} صفقة على اللوحة، ولا وحدة منها تطابق البحث الحالي.`}
+            action={<Button variant="secondary" onClick={() => { setSearch(""); setStageFilter("all"); }}>مسح التصفية</Button>}
+          />
+        ) : (
+          <EmptyState
+            variant="first-run"
+            title="ما فيه صفقات بعد"
+            subtitle="الصفقة تتبع عميلاً محتملاً خلال مراحل البيع حتى الإغلاق."
+            action={<Button onClick={() => setAddStage(null)}>+ صفقة جديدة</Button>}
+          />
+        )
       ) : (
         <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
           {columns.map(({ stage, deals: colDeals }) => {
@@ -290,6 +307,8 @@ export default function DealsPage() {
           })}
         </div>
       )}
+
+      </LedgerSection>
 
       <NewDealSlideOver open={addStage !== undefined} onClose={() => setAddStage(undefined)} onCreated={load} stages={stages} defaultStageId={addStage} />
 

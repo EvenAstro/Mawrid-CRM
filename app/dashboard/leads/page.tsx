@@ -10,6 +10,8 @@ import { useRole } from "@/components/RoleProvider";
 import { fetchLeads, softDeleteLeads, type Lead } from "@/lib/models/leads";
 import { initials, formatDate, formatPhone, downloadCSV } from "@/lib/format";
 import { useToast } from "@/components/Toast";
+import EmptyState from "@/components/ui/EmptyState";
+import Button from "@/components/ui/Button";
 
 const PAGE_SIZE = 15;
 
@@ -108,6 +110,18 @@ export default function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "clean" | "junk">("all");
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const [scoreModel, setScoreModel] = useState<LeadScoreModel | null>(null);
+
+  // Whether the user has narrowed the list themselves. Drives which empty
+  // state they get — "clear your filters" vs "add your first lead".
+  const hasActiveFilter =
+    search.trim() !== "" || stageFilter !== "all" || sourceFilter !== "all" || statusFilter !== "all";
+  function clearFilters() {
+    setSearch("");
+    setStageFilter("all");
+    setSourceFilter("all");
+    setStatusFilter("all");
+    setPage(1);
+  }
 
   // Honor ?filter= and ?open= params from dashboard deep-links.
   useEffect(() => {
@@ -456,14 +470,26 @@ export default function LeadsPage() {
                 </tr>
               ) : pageRows.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-20">
-                    <div className="flex flex-col items-center justify-center text-center">
-                      <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--status-success-bg)] text-[var(--status-success-fg)]">
-                        <LeadsIcon />
-                      </div>
-                      <p className="t-body font-semibold text-[var(--content-secondary)]">لا توجد عملاء</p>
-                      <p className="mt-1 t-body-sm text-[var(--content-tertiary)]">جرّب تعديل البحث أو الفلاتر</p>
-                    </div>
+                  <td colSpan={9}>
+                    {/* Two different problems: nothing exists yet, versus the
+                        filter excluded everything. The old copy said "لا توجد
+                        عملاء / جرّب تعديل البحث" for both, which is wrong
+                        advice in the first case and unhelpful in the second. */}
+                    {hasActiveFilter ? (
+                      <EmptyState
+                        variant="no-results"
+                        title="ما فيه عميل يطابق التصفية"
+                        subtitle={`${leads.length} عميل محمّل، ولا واحد منهم يطابق الفلاتر الحالية.`}
+                        action={<Button variant="secondary" onClick={clearFilters}>مسح الفلاتر</Button>}
+                      />
+                    ) : (
+                      <EmptyState
+                        variant="first-run"
+                        title="ما فيه عملاء بعد"
+                        subtitle="العميل المحتمل هو أول خطوة في المسار — أضف واحد وابدأ متابعته."
+                        action={<Button onClick={() => setNewLeadOpen(true)}>+ عميل جديد</Button>}
+                      />
+                    )}
                   </td>
                 </tr>
               ) : (
