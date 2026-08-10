@@ -6,7 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { ToastProvider } from "@/components/Toast";
 import CopilotProvider from "@/components/copilot/CopilotProvider";
-import CopilotWidget from "@/components/copilot/CopilotWidget";
+import Supervisor from "@/components/supervisor/Supervisor";
 import DailyBriefing from "@/components/DailyBriefing";
 import { initials as initialsOf } from "@/lib/format";
 import RoleProvider, { useRole } from "@/components/RoleProvider";
@@ -346,7 +346,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
           )}
         </div>
       </main>
-      <CopilotWidget />
+      <Supervisor />
       <DailyBriefing />
       <CommandPalette />
     </div>
