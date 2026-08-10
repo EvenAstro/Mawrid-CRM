@@ -1,11 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { buildInsights, type InsightsData, type DateRangeKey, type CustomRange } from "@/lib/insights/buildInsights";
 import { money } from "@/lib/format";
-import { supabase } from "@/lib/supabase";
-import RichText from "@/components/copilot/RichText";
 import Skeleton from "@/components/ui/Skeleton";
 import { AlertIcon, ChartBarIcon } from "@/components/icons";
 
@@ -339,43 +337,7 @@ const IconLost = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 const IconClock = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>;
 
 /* ============= AI CHAT ============= */
-interface ChatMsg {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-}
 
-function serializeContext(data: InsightsData): string {
-  return `أنا الآن على صفحة"لوحة الرؤى الشاملة"في نظام Mawrid CRM، وهذي هي البيانات المفلترة الظاهرة أمامي بالضبط (الفترة: ${data.rangeLabel}):
-
-## المؤشرات الرئيسية
-- إجمالي الليدات: ${data.kpis.totalLeads} (نظيف ${data.kpis.cleanLeads} · جانك ${data.kpis.junkLeads})
-- الصفقات النشطة: ${data.kpis.activeDeals}
-- الصفقات المربوحة: ${data.kpis.wonDeals} (بقيمة SAR ${money(data.kpis.wonValueSAR)})
-- الصفقات المخسورة: ${data.kpis.lostDeals}
-- قيمة الـ Pipeline النشطة: SAR ${money(data.kpis.pipelineValueSAR)}
-- نسبة الفوز: ${data.kpis.winRatePct}%
-- متوسط مدة إغلاق الصفقة الرابحة: ${data.kpis.avgCycleDays ?? "—"} يوم
-- إجمالي الأنشطة المسجّلة بالفترة: ${data.kpis.totalActivities}
-
-## قمع المراحل (الصفقات النشطة)
-${data.funnel.length ? data.funnel.map((f) => `- ${f.label}: ${f.count} صفقة (SAR ${money(f.valueSAR)})`).join("\n") : "(لا يوجد)"}
-
-## مصادر الليدات مع الجودة
-${data.sources.length ? data.sources.map((s) => `- ${s.label}: ${s.count} إجمالي (${s.clean} نظيف · ${s.junk} جانك · جودة ${s.cleanPct}%)`).join("\n") : "(لا يوجد)"}
-
-## أسباب الخسارة
-${data.lostReasons.length ? data.lostReasons.map((r) => `- ${r.label}: ${r.count} صفقة (خسارة SAR ${money(r.valueSAR)})`).join("\n") : "(لا يوجد)"}
-
-## أعلى 10 صفقات نشطة بالقيمة
-${data.topActiveDeals.length ? data.topActiveDeals.map((d, i) => `${i + 1}. ${d.name}${d.leadName ? ` — ${d.leadName}` : ""} — ${d.stage} — SAR ${money(d.valueSAR)} — ${d.days} يوم${d.probabilityPct != null ? ` — احتمالية ${d.probabilityPct}%` : ""}`).join("\n") : "(لا يوجد)"}
-
-## آخر 10 صفقات مخسورة
-${data.recentLostDeals.length ? data.recentLostDeals.map((d, i) => `${i + 1}. ${d.name}${d.leadName ? ` — ${d.leadName}` : ""} — ${d.stage} — سبب: ${d.reason} — SAR ${money(d.valueSAR)}`).join("\n") : "(لا يوجد)"}
-
-## اتجاه قيمة الـ Pipeline اليومي (أحدث ${Math.min(10, data.trend.length)} أيام)
-${data.trend.slice(-10).map((t) => `- ${t.label}: SAR ${money(t.pipelineValueSAR)} ·  ${t.won} ·  ${t.lost} · 🆕 ${t.newDeals}`).join("\n")}`;
-}
 
 /** Playful, on-brand chat avatar — a rounded "robot" head in the app's teal
  * gradient with a subtle floating animation. Pure SVG + CSS, no external

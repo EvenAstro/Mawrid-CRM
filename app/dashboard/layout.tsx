@@ -14,6 +14,7 @@ import { FEATURES } from "@/lib/features";
 import { ActivitiesIcon, ContactsIcon, DashboardIcon, DealsIcon, InsightsIcon, LeadsIcon, LogoutIcon, PlaybookIcon, ScoringIcon, TasksIcon, UsersIcon } from "@/components/navIcons";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
 import CommandPalette from "@/components/CommandPalette";
+import EmptyState from "@/components/ui/EmptyState";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   dashboard: DashboardIcon,
@@ -120,12 +121,12 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
     document.title = `${pageName} · مَوْرد CRM`;
   }, [pageName]);
 
-  // Guard: redirect away from a page this user isn't allowed to see —
-  // either by role default or an explicit per-user permission override.
-  useEffect(() => {
-    if (roleLoading || !currentFeature) return;
-    if (!can(currentFeature.key)) router.replace("/dashboard");
-  }, [roleLoading, currentFeature, can, router, permissions]);
+  // A blocked route now explains itself instead of silently redirecting.
+  // The old behaviour replaced the URL with /dashboard, so a rep who followed
+  // a shared link to Insights simply arrived somewhere else and concluded the
+  // link was broken. Nothing about the page is rendered — this is a display
+  // decision, not an access one; the data guard is still RLS.
+  const blocked = !roleLoading && !!currentFeature && !can(currentFeature.key);
 
   // Sliding active-item pill: measures the active link's position within the
   // nav on every route change / collapse toggle and glides the pill there,
@@ -324,7 +325,23 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
         className="min-h-screen bg-[var(--surface-page)] pt-[var(--layout-topbar)] transition-[margin,padding] duration-[var(--motion-slow)] ease-[var(--ease-standard)]"
       >
         <div key={pathname} className="page-content mx-auto max-w-[var(--layout-content-max)] p-[var(--space-gutter-sm)] md:p-[var(--space-gutter)]">
-          {roleLoading ? null : currentFeature && !can(currentFeature.key) ? null : children}
+          {roleLoading ? null : blocked ? (
+            <EmptyState
+              variant="blocked"
+              title={`ما عندك صلاحية لـ${currentFeature?.label ?? "هذه الصفحة"}`}
+              subtitle="مديرك أو مسؤول النظام يقدر يفتح لك الصلاحية من صفحة إدارة المستخدمين."
+              action={
+                <Link
+                  href="/dashboard"
+                  className="t-body-sm rounded-[var(--radius-md)] bg-[var(--surface-accent)] px-5 py-2.5 font-semibold text-[color:var(--content-on-accent)] transition-colors hover:bg-[var(--surface-accent-hover)]"
+                >
+                  الرجوع للرئيسية
+                </Link>
+              }
+            />
+          ) : (
+            children
+          )}
         </div>
       </main>
       <CopilotWidget />

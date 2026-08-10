@@ -5,6 +5,7 @@ import Skeleton from "@/components/ui/Skeleton";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 import { createActivity } from "@/lib/models/activities";
+import AiBlock, { AiCitedFact } from "@/components/ai/AiBlock";
 
 // Module-level: survives panel open/close within a session, resets on full page
 // reload — matching "dismiss for this session only, cleared on next page load".
@@ -36,11 +37,14 @@ const URGENCY_LABEL_AR: Record<Recommendation["urgency"], string> = {
   medium: "متوسط",
   low: "منخفض",
 };
-const CONFIDENCE_LABEL_AR: Record<Recommendation["confidence"], string> = {
-  high: "عالية",
-  medium: "متوسطة",
-  low: "منخفضة",
+/** What the recommendation is actually based on, said plainly. */
+const MATCH_BASIS: Record<Recommendation["matchTier"], string> = {
+  exact: "بناءً على صفقات سابقة مطابقة لهذه الصفقة",
+  stage: "بناءً على صفقات سابقة في نفس المرحلة",
+  tag: "بناءً على تشابه جزئي فقط — العيّنة محدودة",
+  none: "ما فيه صفقات مشابهة كافية — هذا اجتهاد عام",
 };
+
 
 function SparkleIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -221,30 +225,31 @@ export default function NextBestActionCard({
   }
 
   const rec = data.recommendation;
-  const isLooseMatch = rec.matchTier === "tag" || rec.matchTier === "none";
 
   return (
     <Shell>
       <HeaderRow onRefresh={() => load(true)} refreshing={refreshing} />
 
-      <p dir="auto" className="t-body-lg font-extrabold leading-snug tracking-tight text-ink">
-        {rec.action}
-      </p>
-      <p dir="auto" className="mt-1.5 line-clamp-2 t-body-sm leading-relaxed text-muted">
-        {rec.reason}
-      </p>
+      {/* The recommendation is the model talking, so it sets in the display
+          face; the urgency chip below is CRM state and stays in Cairo. The
+          matchTier was previously computed and then thrown away into one
+          conditional string — it is the honest signal of whether this came
+          from an exact match or from nothing, so it now drives the basis line
+          the reader actually sees. */}
+      <AiBlock basis={MATCH_BASIS[rec.matchTier]} confidence={rec.confidence}>
+        <span className="font-semibold">{rec.action}</span>
+        <span className="mt-1.5 block t-body-sm text-[color:var(--content-secondary)]" style={{ fontFamily: "var(--font-display)" }}>
+          {rec.reason}
+        </span>
+      </AiBlock>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="flex items-center gap-1.5 t-caption font-medium text-ink-secondary">
           <span className={`h-1.5 w-1.5 flex-none rounded-full ${URGENCY_DOT[rec.urgency]}`} />
           {URGENCY_LABEL_AR[rec.urgency]}
         </span>
-        <span className="t-micro text-muted/80">الثقة: {CONFIDENCE_LABEL_AR[rec.confidence]}</span>
+        <AiCitedFact label="نشاطات مسجّلة" value={data.activityCount} />
       </div>
-
-      {isLooseMatch && (
-        <p dir="auto" className="mt-2.5 t-micro text-muted/70">بناءً على بيانات محدودة</p>
-      )}
 
       <div className="mt-4 flex items-center gap-2 border-t border-primary/10 pt-3">
         <button

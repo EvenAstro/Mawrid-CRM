@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { LeadsIcon, CheckCircleIcon, RevenueIcon, TrendingUpIcon, ActivitiesIcon } from "@/components/navIcons";
-import { PhoneIcon, ChatBubbleIcon, MailIcon, CalendarIcon, DotIcon, EmptyChartIcon, CelebrationIcon, WifiOffIcon, ChartBarIcon, TargetIcon, ClockIcon } from "@/components/icons";
+import { AlertIcon, CalendarIcon, CelebrationIcon, ChartBarIcon, ChatBubbleIcon, ClockIcon, DotIcon, EmptyChartIcon, MailIcon, PhoneIcon, TargetIcon, WifiOffIcon } from "@/components/icons";
 import { Panel, PanelHead, CommandBand, BandButton } from "@/components/ui/Panel";
 import CountUp from "@/components/ui/CountUp";
 import Sparkline from "@/components/ui/Sparkline";
@@ -278,6 +278,8 @@ export default function DashboardPage() {
   const [now, setNow] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  /** Sources that failed while others succeeded — drives the partial-load notice. */
+  const [partial, setPartial] = useState<string[]>([]);
   const [newLeadOpen, setNewLeadOpen] = useState(false);
   const [logActivityOpen, setLogActivityOpen] = useState(false);
   const [addContactOpen, setAddContactOpen] = useState(false);
@@ -299,12 +301,25 @@ export default function DashboardPage() {
         fetchRecentActivities(5),
         fetchUpcomingTasks(5),
       ]);
-      const firstErr = l.error || d.error || a.error || t.error;
-      if (firstErr) {
-        console.error("[Dashboard] Supabase fetch failed", { leads: l.error, deals: d.error, activities: a.error, tasks: t.error });
+      // Partial failure, not all-or-nothing. Previously any one of these four
+      // rejecting blanked the whole screen — a rep lost the dashboard because
+      // the tasks query timed out. Each source now fails on its own and the
+      // panels that loaded still render.
+      const failedSources = [
+        l.error && "العملاء",
+        d.error && "الصفقات",
+        a.error && "النشاطات",
+        t.error && "المهام",
+      ].filter(Boolean) as string[];
+      if (failedSources.length === 4) {
+        console.error("[Dashboard] every source failed", { leads: l.error, deals: d.error, activities: a.error, tasks: t.error });
         setError(true);
         return;
       }
+      if (failedSources.length) {
+        console.warn("[Dashboard] partial load", failedSources);
+      }
+      setPartial(failedSources);
       const name = (user.user?.user_metadata?.full_name as string) || (user.user?.email ?? "").split("@")[0] || "";
       setFirstName(name.split(" ")[0]);
       setLeads((l.data as unknown as Lead[]) ?? []);
@@ -492,6 +507,24 @@ export default function DashboardPage() {
           </div>
         }
       />
+
+      {partial.length > 0 && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[var(--radius-md)] border border-[var(--status-warning-border)] bg-[var(--status-warning-bg)] px-4 py-3"
+        >
+          <AlertIcon className="h-4 w-4 flex-none text-[color:var(--status-warning-fg)]" />
+          <p className="t-body-sm text-[color:var(--status-warning-fg)]">
+            تعذّر تحميل: {partial.join("، ")} — بقية اللوحة محدّثة.
+          </p>
+          <button
+            onClick={() => { setLoading(true); load(); }}
+            className="t-caption font-bold text-[color:var(--status-warning-fg)] underline underline-offset-2"
+          >
+            إعادة المحاولة
+          </button>
+        </div>
+      )}
 
       <LedgerSection label="النشاط" meta={m.seriesRange}>
       <div className="grid grid-cols-1 gap-[var(--space-card-gap)] lg:grid-cols-3">
