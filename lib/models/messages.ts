@@ -153,3 +153,16 @@ export async function sendAttachmentMessage(
     .select("id, conversation_id, sender_id, body, created_at, deleted_at, attachment_path, attachment_name, attachment_type, attachment_size")
     .single();
 }
+
+/**
+ * How many messages a conversation holds. Uses a head-only count so the rows
+ * are never transferred — this exists to show that nothing was lost, not to
+ * read anything.
+ */
+export async function countMessages(conversationId: string) {
+  return supabase
+    .from("messages")
+    .select("id", { count: "exact", head: true })
+    .eq("conversation_id", conversationId)
+    .is("deleted_at", null);
+}

@@ -19,6 +19,7 @@ import { useConversation } from "@/lib/chat/useConversation";
 import { otherMemberId } from "@/lib/chat/grouping";
 import ChatThread, { Avatar } from "@/components/chat/ChatThread";
 import ChatComposer from "@/components/chat/ChatComposer";
+import ConversationInfo from "@/components/chat/ConversationInfo";
 import { CommandBand } from "@/components/ui/Panel";
 import EmptyState from "@/components/ui/EmptyState";
 import Skeleton from "@/components/ui/Skeleton";
@@ -57,6 +58,7 @@ export default function ChatPage() {
   const [groupOpen, setGroupOpen] = useState(false);
   const [groupTitle, setGroupTitle] = useState("");
   const [groupPicked, setGroupPicked] = useState<Set<string>>(new Set());
+  const [infoOpen, setInfoOpen] = useState(false);
 
   const nameById = useMemo(() => {
     const m = new Map<string, string>();
@@ -481,17 +483,23 @@ export default function ChatPage() {
                 >
                   ← رجوع
                 </button>
-                <Avatar name={titleOf(active)} className="h-9 w-9" />
-                <span className="min-w-0 flex-1">
-                  <h2 className="t-title-3 truncate text-[color:var(--content-inverse-primary)]">
-                    {titleOf(active)}
-                  </h2>
-                  {activeRole && (
-                    <span className="t-micro block text-[color:var(--content-inverse-tertiary)]">
-                      {activeRole}
-                    </span>
-                  )}
-                </span>
+                <button
+                  onClick={() => setInfoOpen((v) => !v)}
+                  aria-expanded={infoOpen}
+                  className="flex min-w-0 flex-1 items-center gap-3 rounded-[var(--radius-sm)] px-1 py-1 text-start transition-colors duration-[var(--motion-fast)] hover:bg-white/[0.06]"
+                >
+                  <Avatar name={titleOf(active)} className="h-9 w-9" />
+                  <span className="min-w-0 flex-1">
+                    <h2 className="t-title-3 truncate text-[color:var(--content-inverse-primary)]">
+                      {titleOf(active)}
+                    </h2>
+                    {activeRole && (
+                      <span className="t-micro block text-[color:var(--content-inverse-tertiary)]">
+                        {activeRole} · اضغط للتفاصيل
+                      </span>
+                    )}
+                  </span>
+                </button>
                 {thread.status === "live" && (
                   <span className="t-micro flex flex-none items-center gap-1.5 text-[color:var(--content-inverse-tertiary)]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[var(--status-success-on-inverse)]" />
@@ -524,6 +532,22 @@ export default function ChatPage() {
             />
           )}
         </section>
+        {active && meId && infoOpen && (
+          <ConversationInfo
+            conversation={active}
+            memberIds={membersByConversation.get(active.id) ?? []}
+            profiles={profiles}
+            meId={meId}
+            roleLabel={(r) => ROLE_LABEL[r] ?? "عضو"}
+            onClose={() => setInfoOpen(false)}
+            onChanged={load}
+            onLeft={() => {
+              setInfoOpen(false);
+              setActiveId(null);
+              load();
+            }}
+          />
+        )}
       </div>
     </div>
   );
