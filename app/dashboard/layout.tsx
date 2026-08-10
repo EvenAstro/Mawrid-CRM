@@ -15,12 +15,14 @@ import { ActivitiesIcon, ContactsIcon, DashboardIcon, DealsIcon, InsightsIcon, L
 import NotificationsDropdown from "@/components/NotificationsDropdown";
 import CommandPalette from "@/components/CommandPalette";
 import EmptyState from "@/components/ui/EmptyState";
+import { ChatBubbleIcon } from "@/components/icons";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   dashboard: DashboardIcon,
   contacts: ContactsIcon,
   leads: LeadsIcon,
   deals: DealsIcon,
+  chat: ChatBubbleIcon,
   activities: ActivitiesIcon,
   tasks: TasksIcon,
   insights: InsightsIcon,
