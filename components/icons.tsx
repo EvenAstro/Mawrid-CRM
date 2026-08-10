@@ -374,3 +374,69 @@ export function ClockIcon({ className = "h-4 w-4" }: { className?: string }) {
     </svg>
   );
 }
+
+/* ── Glyphs added to retire the last 133 emoji used as UI icons. Emoji render
+      differently on Windows, iOS and Android, and a medal emoji carrying rank
+      is invisible to a screen reader. All of these inherit currentColor and
+      carry aria-hidden — the label belongs on the element that owns them. ── */
+
+const S = { fill: "none" as const, stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+
+export function WatchIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (<svg viewBox="0 0 20 20" {...S} className={className} aria-hidden="true"><path d="M1.8 10S4.7 4.6 10 4.6 18.2 10 18.2 10 15.3 15.4 10 15.4 1.8 10 1.8 10Z" /><circle cx="10" cy="10" r="2.3" /></svg>);
+}
+export function MegaphoneIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (<svg viewBox="0 0 20 20" {...S} className={className} aria-hidden="true"><path d="M15.5 4.2v11.6L6.4 13V7l9.1-2.8Z" /><path d="M6.4 7H4.2a1.6 1.6 0 0 0-1.6 1.6v2.8A1.6 1.6 0 0 0 4.2 13h2.2M6.8 13.3l1 3.5" /></svg>);
+}
+export function DocumentIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (<svg viewBox="0 0 20 20" {...S} className={className} aria-hidden="true"><path d="M11.4 2.4H5.8a1.6 1.6 0 0 0-1.6 1.6v12a1.6 1.6 0 0 0 1.6 1.6h8.4a1.6 1.6 0 0 0 1.6-1.6V6.6l-4.4-4.2Z" /><path d="M11.4 2.4v4.2h4.4M7.2 11h5.6M7.2 13.8h4" /></svg>);
+}
+export function GearIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (<svg viewBox="0 0 20 20" {...S} className={className} aria-hidden="true"><circle cx="10" cy="10" r="2.4" /><path d="M15.9 12.2a1.3 1.3 0 0 0 .3 1.5l.1.1a1.6 1.6 0 1 1-2.3 2.3l-.1-.1a1.3 1.3 0 0 0-2.2.9v.2a1.6 1.6 0 1 1-3.2 0v-.1a1.3 1.3 0 0 0-2.2-.9l-.1.1a1.6 1.6 0 1 1-2.3-2.3l.1-.1a1.3 1.3 0 0 0-.9-2.2h-.2a1.6 1.6 0 1 1 0-3.2h.1a1.3 1.3 0 0 0 .9-2.2l-.1-.1a1.6 1.6 0 1 1 2.3-2.3l.1.1a1.3 1.3 0 0 0 1.5.3h.1a1.3 1.3 0 0 0 .8-1.2v-.2a1.6 1.6 0 1 1 3.2 0v.1a1.3 1.3 0 0 0 2.2.9l.1-.1a1.6 1.6 0 1 1 2.3 2.3l-.1.1a1.3 1.3 0 0 0 .9 2.2h.2a1.6 1.6 0 1 1 0 3.2h-.1a1.3 1.3 0 0 0-1.2.8Z" /></svg>);
+}
+export function SortIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (<svg viewBox="0 0 20 20" {...S} className={className} aria-hidden="true"><path d="M6.2 3.6v12.8M6.2 3.6 3.4 6.6M6.2 3.6 9 6.6M13.8 16.4V3.6M13.8 16.4l-2.8-3M13.8 16.4l2.8-3" /></svg>);
+}
+export function SunIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (<svg viewBox="0 0 20 20" {...S} className={className} aria-hidden="true"><circle cx="10" cy="10" r="3.4" /><path d="M10 1.8v1.8M10 16.4v1.8M3.8 3.8l1.3 1.3M14.9 14.9l1.3 1.3M1.8 10h1.8M16.4 10h1.8M3.8 16.2l1.3-1.3M14.9 5.1l1.3-1.3" /></svg>);
+}
+export function MoonIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (<svg viewBox="0 0 20 20" {...S} className={className} aria-hidden="true"><path d="M17 11.4A7.4 7.4 0 0 1 8.6 3 7.4 7.4 0 1 0 17 11.4Z" /></svg>);
+}
+export function CloudSunIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (<svg viewBox="0 0 20 20" {...S} className={className} aria-hidden="true"><path d="M6.4 5.4V4M3.3 6.6 2.3 5.6M9.5 6.6l1-1M3 9.8H1.6" /><circle cx="6.4" cy="9.8" r="2.2" /><path d="M8.6 15.6h6.6a2.6 2.6 0 0 0 .3-5.2 3.6 3.6 0 0 0-6.9-.6 2.9 2.9 0 0 0 0 5.8Z" /></svg>);
+}
+/**
+ * Replaces the three medal emoji in the leaderboard. Rank is data, so it is set as
+ * a tabular numeral inside a ring rather than as three pictograms a screen
+ * reader announces as "1st place medal".
+ */
+export function RankMark({ rank, className = "h-7 w-7" }: { rank: number; className?: string }) {
+  const top = rank <= 3;
+  return (
+    <span
+      className={`inline-flex flex-none items-center justify-center rounded-full border t-figure ${className} ${
+        top
+          ? "border-[var(--border-accent)] text-[color:var(--content-accent)]"
+          : "border-[var(--border-subtle)] text-[color:var(--content-tertiary)]"
+      }`}
+      style={{ fontSize: top ? "0.9375rem" : "0.8125rem" }}
+      aria-hidden="true"
+    >
+      {rank}
+    </span>
+  );
+}
+/**
+ * The one mark every empty state uses, rotated per variant. Derived from the
+ * logo's arc — an open bracket that reads as "nothing here yet" without being
+ * an illustration to commission or an emoji to render differently per OS.
+ */
+export function EmptyMark({ className = "h-16 w-16", rotate = 0 }: { className?: string; rotate?: number }) {
+  return (
+    <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className={className} style={{ transform: `rotate(${rotate}deg)` }} aria-hidden="true">
+      <path d="M40 12H26a14 14 0 0 0 0 28h8v-8h-8a6 6 0 0 1 0-12h14v32" opacity="0.55" />
+      <circle cx="32" cy="32" r="27" strokeDasharray="3 7" opacity="0.35" />
+    </svg>
+  );
+}
