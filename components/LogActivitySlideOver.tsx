@@ -129,9 +129,9 @@ export default function LogActivitySlideOver({
   }
 
   const inputCls =
-    "h-11 w-full rounded-xl border border-[#e8ece9] bg-white px-3.5 text-[15px] text-[#334155] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15";
+    "h-11 w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3.5 t-body text-[var(--content-secondary)] placeholder:text-[var(--content-tertiary)] focus:border-[var(--brand-teal-700)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal-700)]/15";
   const labelCls =
-    "mb-1.5 block text-[13px] font-semibold uppercase tracking-wide text-[#94a3b8]";
+    "mb-1.5 block t-body-sm font-semibold uppercase tracking-wide text-[var(--content-tertiary)]";
 
   return (
     <>
@@ -142,16 +142,16 @@ export default function LogActivitySlideOver({
         }`}
       />
       <aside
-        className={`fixed right-0 top-0 z-50 flex h-screen w-full max-w-[460px] flex-col border-l border-[#e8ece9] bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`fixed right-0 top-0 z-50 flex h-screen w-full max-w-[460px] flex-col border-l border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-2xl transition-transform duration-300 ease-in-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-[#e8ece9] p-6">
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] p-6">
           <div>
-            <h2 className="text-xl font-bold text-[#1e1b4b]">تسجيل نشاط</h2>
-            <p className="mt-0.5 text-[13px] text-[#94a3b8]">Record a touchpoint with a contact</p>
+            <h2 className="text-xl font-bold text-[var(--content-primary)]">تسجيل نشاط</h2>
+            <p className="mt-0.5 t-body-sm text-[var(--content-tertiary)]">Record a touchpoint with a contact</p>
           </div>
-          <button onClick={onClose} aria-label="Close" className="text-[#94a3b8] transition hover:text-[#334155]">
+          <button onClick={onClose} aria-label="Close" className="text-[var(--content-tertiary)] transition hover:text-[var(--content-secondary)]">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-5 w-5">
               <path d="M6 6l12 12M18 6 6 18" />
             </svg>
@@ -163,8 +163,8 @@ export default function LogActivitySlideOver({
           <div className="relative">
             <label className={labelCls} htmlFor="la-contact">العميل *</label>
             {selected ? (
-              <div className="flex items-center justify-between rounded-xl border border-[#1a5c4f]/30 bg-[#f0faf8] px-3.5 py-2.5">
-                <span dir="auto" className="text-[15px] font-medium text-[#1e1b4b]">
+              <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--brand-teal-700)]/30 bg-[var(--surface-accent-subtle)] px-3.5 py-2.5">
+                <span dir="auto" className="t-body font-medium text-[var(--content-primary)]">
                   {selected.full_name || "عميل بدون اسم"}
                 </span>
                 <button
@@ -173,7 +173,7 @@ export default function LogActivitySlideOver({
                     setSelected(null);
                     setQuery("");
                   }}
-                  className="text-[13px] font-semibold text-[#1a5c4f] hover:underline"
+                  className="t-body-sm font-semibold text-[var(--brand-teal-700)] hover:underline"
                 >
                   Change
                 </button>
@@ -190,7 +190,7 @@ export default function LogActivitySlideOver({
               />
             )}
             {!selected && hits.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-[#e8ece9] bg-white shadow-lg">
+              <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-lg">
                 {hits.map((h) => (
                   <button
                     key={h.id}
@@ -200,7 +200,7 @@ export default function LogActivitySlideOver({
                       setHits([]);
                     }}
                     dir="auto"
-                    className="block w-full px-3.5 py-2.5 text-left text-[15px] text-[#334155] transition hover:bg-[#f8fafc]"
+                    className="block w-full px-3.5 py-2.5 text-left t-body text-[var(--content-secondary)] transition hover:bg-[var(--surface-sunken)]"
                   >
                     {h.full_name || "عميل بدون اسم"}
                   </button>
@@ -216,26 +216,22 @@ export default function LogActivitySlideOver({
                 type="button"
                 dir="auto"
                 onClick={() => setDirection("outbound")}
-                className={`h-11 flex-1 rounded-xl border text-[14px] font-semibold transition ${
+                className={`h-11 flex-1 rounded-[var(--radius-md)] border t-body-sm font-semibold transition ${
                   direction === "outbound"
-                    ? "border-[#1a5c4f] bg-[#f0faf8] text-[#1a5c4f]"
-                    : "border-[#e8ece9] text-[#334155] hover:border-[#1a5c4f]/40"
+                    ? "border-[var(--brand-teal-700)] bg-[var(--surface-accent-subtle)] text-[var(--brand-teal-700)]"
+                    : "border-[var(--border-subtle)] text-[var(--content-secondary)] hover:border-[var(--brand-teal-700)]/40"
                 }`}
-              >
-                اتصلت بالعميل
-              </button>
+              >اتصلت بالعميل</button>
               <button
                 type="button"
                 dir="auto"
                 onClick={() => setDirection("inbound")}
-                className={`h-11 flex-1 rounded-xl border text-[14px] font-semibold transition ${
+                className={`h-11 flex-1 rounded-[var(--radius-md)] border t-body-sm font-semibold transition ${
                   direction === "inbound"
-                    ? "border-[#1a5c4f] bg-[#f0faf8] text-[#1a5c4f]"
-                    : "border-[#e8ece9] text-[#334155] hover:border-[#1a5c4f]/40"
+                    ? "border-[var(--brand-teal-700)] bg-[var(--surface-accent-subtle)] text-[var(--brand-teal-700)]"
+                    : "border-[var(--border-subtle)] text-[var(--content-secondary)] hover:border-[var(--brand-teal-700)]/40"
                 }`}
-              >
-                رد العميل
-              </button>
+              >رد العميل</button>
             </div>
           </div>
 
@@ -263,19 +259,17 @@ export default function LogActivitySlideOver({
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
               placeholder="ماذا حصل في هذا التواصل..."
-              className="w-full rounded-xl border border-[#e8ece9] bg-white px-3.5 py-2.5 text-[15px] text-[#334155] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15"
+              className="w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3.5 py-2.5 t-body text-[var(--content-secondary)] placeholder:text-[var(--content-tertiary)] focus:border-[var(--brand-teal-700)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal-700)]/15"
             />
           </div>
         </form>
 
-        <div className="flex gap-3 border-t border-[#e8ece9] p-6">
-          <button onClick={onClose} type="button" className="h-11 flex-1 rounded-xl border border-[#e8ece9] text-[15px] font-semibold text-[#334155] transition hover:bg-[#f8fafc]">
-            إلغاء
-          </button>
+        <div className="flex gap-3 border-t border-[var(--border-subtle)] p-6">
+          <button onClick={onClose} type="button" className="h-11 flex-1 rounded-[var(--radius-md)] border border-[var(--border-subtle)] t-body font-semibold text-[var(--content-secondary)] transition hover:bg-[var(--surface-sunken)]">إلغاء</button>
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="h-11 flex-1 rounded-xl bg-[#1a5c4f] text-[15px] font-semibold text-white shadow-sm shadow-[#1a5c4f]/25 transition hover:bg-[#15503f] disabled:opacity-60"
+            className="h-11 flex-1 rounded-[var(--radius-md)] bg-[var(--brand-teal-700)] t-body font-semibold text-white shadow-sm shadow-[var(--brand-teal-700)]/25 transition hover:bg-[var(--brand-teal-800)] disabled:opacity-60"
           >
             {saving ? "جاري الحفظ..." : "تسجيل نشاط"}
           </button>

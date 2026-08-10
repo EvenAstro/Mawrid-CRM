@@ -3,15 +3,15 @@
 import { forwardRef } from "react";
 
 const labelCls =
-  "mb-1.5 block text-[13px] font-semibold uppercase tracking-wide text-muted";
+  "mb-1.5 block t-body-sm font-semibold uppercase tracking-wide text-muted";
 const baseCls =
-  "w-full rounded-xl border bg-white text-[15px] text-ink-secondary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors";
+  "w-full rounded-[var(--radius-md)] border bg-[var(--surface-raised)] t-body text-ink-secondary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors";
 const okBorder = "border-border-light focus:border-primary";
 const errBorder = "border-danger focus:border-danger focus:ring-danger/20";
 
 function ErrorText({ error }: { error?: string }) {
   if (!error) return null;
-  return <p className="mt-1 text-[13px] font-medium text-danger">{error}</p>;
+  return <p className="mt-1 t-body-sm font-medium text-danger">{error}</p>;
 }
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -100,13 +100,13 @@ export function Toggle({
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative h-6 w-11 flex-none rounded-full transition-colors ${checked ? "bg-primary" : "bg-[#d1d5db]"}`}
+        className={`relative h-6 w-11 flex-none rounded-full transition-colors ${checked ? "bg-primary" : "bg-[var(--border-strong)]"}`}
       >
         <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? "left-[22px]" : "left-0.5"}`}
+          className={`absolute top-0.5 h-5 w-5 rounded-full bg-[var(--surface-raised)] shadow transition-all ${checked ? "left-[22px]" : "left-0.5"}`}
         />
       </button>
-      {label && <span className="text-[15px] text-ink-secondary">{label}</span>}
+      {label && <span className="t-body text-ink-secondary">{label}</span>}
     </label>
   );
 }
@@ -127,7 +127,7 @@ export function Checkbox({
         role="checkbox"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`flex h-5 w-5 flex-none items-center justify-center rounded-md border-2 transition-colors ${checked ? "border-primary bg-primary text-white" : "border-border-light bg-white hover:border-primary"}`}
+        className={`flex h-5 w-5 flex-none items-center justify-center rounded-[var(--radius-xs)] border-2 transition-colors ${checked ? "border-primary bg-primary text-white" : "border-border-light bg-[var(--surface-raised)] hover:border-primary"}`}
       >
         {checked && (
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
@@ -135,7 +135,7 @@ export function Checkbox({
           </svg>
         )}
       </button>
-      {label && <span className="text-[15px] text-ink-secondary">{label}</span>}
+      {label && <span className="t-body text-ink-secondary">{label}</span>}
     </label>
   );
 }

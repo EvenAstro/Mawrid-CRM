@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./tokens.css";
 
 :root {
   --background: #ffffff;
@@ -41,8 +42,10 @@
     transform: translateY(0);
   }
 }
+/* Route-change fade. Kept at 90ms: short enough to read as a cut rather than
+   an entrance, which is what the no-entrance rule is actually protecting. */
 .page-content {
-  animation: premiumFadeIn 0.2s ease;
+  animation: premiumFadeIn var(--motion-instant) var(--ease-standard);
 }
 @media (prefers-reduced-motion: reduce) {
   .page-content {
@@ -50,29 +53,100 @@
   }
 }
 
+/* Bridges tokens.css into Tailwind so the semantic layer is reachable as
+   utilities: bg-surface-raised, text-content-secondary, border-subtle, … */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  /* Cairo everywhere — Arabic + English */
-  --font-sans: var(--font-cairo), system-ui, sans-serif;
-  --font-cairo: var(--font-cairo), system-ui, sans-serif;
+  --color-background: var(--surface-page);
+  --color-foreground: var(--content-primary);
 
-  /* ---- Mawrid brand palette ---- */
-  --color-primary: #1a5c4f; /* teal — buttons, active, links */
-  --color-primary-dark: #15503f; /* deep teal — hover */
-  --color-primary-light: #2d8570; /* gradient end */
-  --color-mint: #f0faf8; /* soft accents, badges, hover */
-  --color-ivory: #ffffff; /* page background is now pure white */
-  --color-ink: #1e1b4b; /* headlines, primary text */
-  --color-ink-secondary: #334155; /* body text */
-  --color-muted: #94a3b8; /* labels, captions */
-  --color-border-light: #e8ece9; /* light borders */
-  --color-navy: #1e1b4b;
+  --font-sans: var(--font-body);
+  --font-body: var(--font-body);
+  --font-display: var(--font-display);
+  --font-cairo: var(--font-body);
 
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --color-info: #6366f1;
+  /* ---- Semantic: surface ---- */
+  --color-surface-page: var(--surface-page);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-active: var(--surface-active);
+  --color-surface-accent: var(--surface-accent);
+  --color-surface-accent-hover: var(--surface-accent-hover);
+  --color-surface-accent-subtle: var(--surface-accent-subtle);
+  --color-surface-inverse: var(--surface-inverse);
+  --color-surface-inverse-raised: var(--surface-inverse-raised);
+  --color-surface-inverse-hover: var(--surface-inverse-hover);
+  --color-surface-inverse-deep: var(--surface-inverse-deep);
+
+  /* ---- Semantic: content ---- */
+  --color-content-primary: var(--content-primary);
+  --color-content-secondary: var(--content-secondary);
+  --color-content-tertiary: var(--content-tertiary);
+  --color-content-disabled: var(--content-disabled);
+  --color-content-accent: var(--content-accent);
+  --color-content-on-accent: var(--content-on-accent);
+  --color-content-inverse-primary: var(--content-inverse-primary);
+  --color-content-inverse-secondary: var(--content-inverse-secondary);
+  --color-content-inverse-tertiary: var(--content-inverse-tertiary);
+  --color-content-inverse-accent: var(--content-inverse-accent);
+
+  /* ---- Semantic: border (border-subtle, border-strong, …) ---- */
+  --color-subtle: var(--border-subtle);
+  --color-default: var(--border-default);
+  --color-strong: var(--border-strong);
+  --color-accent: var(--border-accent);
+  --color-focus: var(--border-focus);
+  --color-inverse: var(--border-inverse);
+  --color-inverse-strong: var(--border-inverse-strong);
+
+  /* ---- Semantic: status ---- */
+  --color-success-fg: var(--status-success-fg);
+  --color-success-bg: var(--status-success-bg);
+  --color-success-border: var(--status-success-border);
+  --color-warning-fg: var(--status-warning-fg);
+  --color-warning-bg: var(--status-warning-bg);
+  --color-warning-border: var(--status-warning-border);
+  --color-danger-fg: var(--status-danger-fg);
+  --color-danger-bg: var(--status-danger-bg);
+  --color-danger-border: var(--status-danger-border);
+  --color-info-fg: var(--status-info-fg);
+  --color-info-bg: var(--status-info-bg);
+  --color-info-border: var(--status-info-border);
+  --color-danger-on-inverse: var(--status-danger-on-inverse);
+  --color-warning-on-inverse: var(--status-warning-on-inverse);
+  --color-success-on-inverse: var(--status-success-on-inverse);
+
+  /* ---- Radius + layout as utilities ---- */
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+
+  /* ------------------------------------------------------------------
+     LEGACY ALIASES — every merged component still uses these names. They
+     now resolve through the semantic layer, so three of them shift value.
+     Those shifts are intentional and are listed in the PR rationale:
+       text-ink / bg-navy  #1e1b4b -> #141c2e  (one navy, not two)
+       text-muted          #94a3b8 -> #5a7069  (2.6:1 failed AA; now 5.3:1)
+       bg-ivory            page bg is now surface-page, not pure white
+     ------------------------------------------------------------------ */
+  --color-primary: var(--brand-teal-700);
+  --color-primary-dark: var(--brand-teal-800);
+  --color-primary-light: var(--brand-teal-500);
+  --color-mint: var(--surface-accent-subtle);
+  --color-ivory: var(--surface-raised);
+  --color-ink: var(--content-primary);
+  --color-ink-secondary: var(--content-secondary);
+  --color-muted: var(--content-tertiary);
+  --color-border-light: var(--border-subtle);
+  --color-navy: var(--surface-inverse);
+
+  --color-success: var(--brand-green-500);
+  --color-warning: var(--brand-amber-500);
+  --color-danger: var(--brand-red-500);
+  --color-info: var(--brand-indigo-500);
 
   /* ---- Premium scales wired as utilities (bg-teal-700, text-gray-400, …) ---- */
   --color-teal-900: #0d3b30;
@@ -95,26 +169,150 @@
   --color-gray-25: #fafcfb;
 }
 
-body {
-  background: #ffffff;
-  color: var(--color-ink);
-  font-family: var(--font-cairo), system-ui, sans-serif;
-  line-height: 1.6;
+/* Layering matters here. Tailwind emits its utilities into `@layer utilities`,
+   and unlayered CSS beats every layer regardless of specificity — so a bare
+   `h1 { color }` rule silently overrides `text-*` on every heading. Base
+   element styles go in `base`; the type and elevation ramps go in
+   `components`, below utilities, so a screen can still override them. */
+@layer base {
+  body {
+    background: var(--surface-page);
+    color: var(--content-primary);
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    line-height: var(--text-body-lh);
+  }
+
+  /* Headings take the display face. Weight is capped at 700 here so no screen
+     can accidentally ask for a synthesised Plex 800 (see tokens.css). */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-title);
+    line-height: var(--text-title-2-lh);
+    color: var(--content-primary);
+  }
+  .font-cairo {
+    font-family: var(--font-body);
+  }
+  /* ---- Focus. One visible ring everywhere, keyboard-only so pointer users
+     don't see it on click. Never remove this without a replacement. ---- */
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: var(--radius-sm);
+  }
+  .on-inverse :focus-visible {
+    box-shadow: var(--focus-ring-inverse);
+  }
 }
 
-/* Bold, tight Cairo headings */
-.font-cairo,
-h1,
-h2,
-h3 {
-  font-family: var(--font-cairo), system-ui, sans-serif;
-}
-h1,
-h2,
-h3 {
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-}
+/* The type and elevation ramps are real Tailwind utilities, not plain
+   classes. @utility registers them in the utilities layer, which means
+   they accept variants — `sm:t-display-2` on the landing hero — and that
+   a later utility in the same class list wins, which is what you expect
+   when you write `t-body-sm text-[color:var(--content-accent)]`. */
+@utility t-display-1 {
+    font-family: var(--font-display);
+    font-size: var(--text-display-1);
+    line-height: var(--text-display-1-lh);
+    letter-spacing: var(--tracking-display);
+    font-weight: var(--weight-bold);
+  }
+@utility t-display-2 {
+    font-family: var(--font-display);
+    font-size: var(--text-display-2);
+    line-height: var(--text-display-2-lh);
+    letter-spacing: var(--tracking-display);
+    font-weight: var(--weight-bold);
+  }
+@utility t-title-1 {
+    font-family: var(--font-display);
+    font-size: var(--text-title-1);
+    line-height: var(--text-title-1-lh);
+    letter-spacing: var(--tracking-title);
+    font-weight: var(--weight-bold);
+  }
+@utility t-title-fluid {
+    font-family: var(--font-display);
+    font-size: clamp(var(--text-title-2), 4.6vw, var(--text-title-1));
+    line-height: var(--text-title-1-lh);
+    letter-spacing: var(--tracking-title);
+    font-weight: var(--weight-bold);
+    text-wrap: balance;
+  }
+@utility t-title-2 {
+    font-family: var(--font-display);
+    font-size: var(--text-title-2);
+    line-height: var(--text-title-2-lh);
+    letter-spacing: var(--tracking-title);
+    font-weight: var(--weight-semibold);
+  }
+@utility t-title-3 {
+    font-family: var(--font-display);
+    font-size: var(--text-title-3);
+    line-height: var(--text-title-3-lh);
+    font-weight: var(--weight-semibold);
+  }
+@utility t-body-lg {
+    font-size: var(--text-body-lg);
+    line-height: var(--text-body-lg-lh);
+  }
+@utility t-body {
+    font-size: var(--text-body);
+    line-height: var(--text-body-lh);
+  }
+@utility t-body-sm {
+    font-size: var(--text-body-sm);
+    line-height: var(--text-body-sm-lh);
+  }
+@utility t-caption {
+    font-size: var(--text-caption);
+    line-height: var(--text-caption-lh);
+  }
+@utility t-micro {
+    font-size: var(--text-micro);
+    line-height: var(--text-micro-lh);
+  }
+@utility t-eyebrow {
+    font-size: var(--text-caption);
+    line-height: var(--text-caption-lh);
+    letter-spacing: var(--tracking-caps);
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+  }
+@utility t-figure-sm {font-size: var(--text-figure-sm); line-height: 1; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; font-weight: var(--weight-extrabold); letter-spacing: -0.01em;}
+@utility t-figure-md {font-size: var(--text-figure-md); line-height: 1; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; font-weight: var(--weight-extrabold); letter-spacing: -0.015em;}
+@utility t-figure-lg {font-size: var(--text-figure-lg); line-height: 1; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; font-weight: var(--weight-black); letter-spacing: -0.02em;}
+@utility t-figure {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    font-weight: var(--weight-extrabold);
+    letter-spacing: -0.01em;
+  }
+@utility e-1 {
+    box-shadow: var(--elevation-1);
+  }
+@utility e-2 {
+    box-shadow: var(--elevation-2);
+  }
+@utility e-overlay {
+    box-shadow: var(--elevation-overlay);
+  }
+@utility e-inverse-1 {
+    box-shadow: var(--elevation-inverse-1);
+  }
+@utility e-inverse-2 {
+    box-shadow: var(--elevation-inverse-2);
+  }
+@utility e-accent {
+    box-shadow: var(--elevation-accent);
+  }
 
 /* Soft teal-tinted card shadow */
 .shadow-brand {
@@ -127,11 +325,11 @@ button,
 input,
 [role="button"] {
   transition:
-    color 0.18s ease,
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease;
+    color var(--motion-base) var(--ease-standard),
+    background-color var(--motion-base) var(--ease-standard),
+    border-color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard),
+    transform var(--motion-base) var(--ease-standard);
 }
 
 /* Input focus ring */
@@ -217,8 +415,9 @@ input[type="checkbox"].ls-toggle:checked + .ls-toggle-label::after {
   }
 }
 
-/* Dashboard data-load fade-in */
-@keyframes dashFade {
+/* Entrance animation, marketing surfaces only (landing hero, auth showcase).
+   Named `mk-` so it reads as marketing at the call site. */
+@keyframes mkEnter {
   from {
     opacity: 0;
     transform: translateY(8px);
@@ -228,11 +427,11 @@ input[type="checkbox"].ls-toggle:checked + .ls-toggle-label::after {
     transform: translateY(0);
   }
 }
-.dash-fade {
-  animation: dashFade 0.45s ease both;
+.mk-enter {
+  animation: mkEnter var(--motion-mk-base) var(--ease-standard) both;
 }
 @media (prefers-reduced-motion: reduce) {
-  .dash-fade {
+  .mk-enter {
     animation: none;
   }
 }
@@ -323,6 +522,150 @@ input[type="checkbox"].ls-toggle:checked + .ls-toggle-label::after {
 .tbl-row-accent:hover {
   background: var(--color-mint);
   box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+/* ===================== Auth pages (login/register) ===================== */
+
+/* Slow ambient drift for the dot-grid mesh on the showcase panel */
+@keyframes authMeshDrift {
+  from { background-position: 0 0; }
+  to { background-position: 52px 52px; }
+}
+.auth-mesh { animation: authMeshDrift 18s linear infinite; }
+
+/* Three independently-timed floating blobs — different durations so the
+   panel never reads as a fixed loop */
+@keyframes authFloatA {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-22px, 26px) scale(1.06); }
+}
+@keyframes authFloatB {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(18px, -20px) scale(1.08); }
+}
+@keyframes authFloatC {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-14px, -18px) scale(0.94); }
+}
+.auth-blob-a { animation: authFloatA 13s ease-in-out infinite; }
+.auth-blob-b { animation: authFloatB 16s ease-in-out infinite; }
+.auth-blob-c { animation: authFloatC 11s ease-in-out infinite; }
+
+/* Staggered entrance for showcase content — delays set inline */
+@keyframes authIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.auth-in {
+  opacity: 0;
+  animation: authIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Form card entrance — slightly delayed so the showcase panel leads */
+@keyframes authCardIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.auth-card-in { animation: authCardIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
+
+/* Individual form fields stagger in after the card — delays set inline */
+@keyframes authFieldIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.auth-field-in {
+  opacity: 0;
+  animation: authFieldIn 0.45s ease both;
+}
+
+/* Submit button: soft breathing glow while a request is in flight */
+@keyframes authGlowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(26, 92, 79, 0.35); }
+  50% { box-shadow: 0 0 0 8px rgba(26, 92, 79, 0); }
+}
+.auth-btn-loading { animation: authGlowPulse 1.6s ease-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-mesh,
+  .auth-blob-a,
+  .auth-blob-b,
+  .auth-blob-c,
+  .auth-in,
+  .auth-card-in,
+  .auth-field-in,
+  .auth-btn-loading {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ===================== Landing page ===================== */
+
+/* Hero background glows */
+@keyframes landFloat1 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-26px, 30px); }
+}
+@keyframes landFloat2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(24px, -22px); }
+}
+.land-glow-1 { animation: landFloat1 15s ease-in-out infinite; }
+.land-glow-2 { animation: landFloat2 19s ease-in-out infinite; }
+
+/* "Live" badge dot */
+@keyframes landBlip {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.75); }
+}
+.land-blip { animation: landBlip 2s ease-in-out infinite; }
+
+/* Hand-drawn underline under the hero accent word */
+.land-underline {
+  stroke-dasharray: 300;
+  stroke-dashoffset: 300;
+  animation: landUnderline 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.85s forwards;
+}
+@keyframes landUnderline {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Deal card traveling between kanban columns in the hero product mock.
+   -100% of own width minus the 10px column gap ≈ one column over (RTL: left). */
+@keyframes landTravel {
+  0%, 14% { transform: translate(0, 0) scale(1); opacity: 1; box-shadow: none; }
+  26% { transform: translate(0, -8px) scale(1.04); box-shadow: 0 10px 24px rgba(20, 28, 46, 0.16); }
+  46%, 72% { transform: translate(calc(-100% - 10px), -8px) scale(1.04); box-shadow: 0 10px 24px rgba(20, 28, 46, 0.16); }
+  84%, 100% { transform: translate(calc(-100% - 10px), 0) scale(1); box-shadow: none; }
+}
+.land-travel { animation: landTravel 7s cubic-bezier(0.65, 0, 0.35, 1) 2.6s infinite; }
+
+/* Scroll-triggered reveal (components/landing/Reveal.tsx toggles .in) */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .land-glow-1,
+  .land-glow-2,
+  .land-blip,
+  .land-underline,
+  .land-travel {
+    animation: none !important;
+  }
+  .land-underline { stroke-dashoffset: 0; }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 
 /* Custom thin teal scrollbar */

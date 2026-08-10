@@ -9,14 +9,14 @@ const VARIANTS: Record<Variant, string> = {
   primary:
     "bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] text-white shadow-[0_4px_12px_rgba(26,92,79,0.25)] hover:scale-[1.02] hover:shadow-[0_6px_18px_rgba(26,92,79,0.32)]",
   secondary:
-    "border-2 border-primary bg-white text-primary hover:bg-mint",
+    "border-2 border-primary bg-[var(--surface-raised)] text-primary hover:bg-mint",
   ghost: "text-ink-secondary hover:bg-mint hover:text-primary",
   danger: "bg-danger text-white shadow-[0_4px_12px_rgba(239,68,68,0.25)] hover:brightness-95",
 };
 
 const SIZES: Record<Size, string> = {
-  sm: "h-9 px-4 text-[13px]",
-  md: "h-11 px-6 text-[15px]",
+  sm: "h-9 px-4 t-body-sm",
+  md: "h-11 px-6 t-body",
   lg: "h-12 px-8 text-base",
 };
 

@@ -135,19 +135,19 @@ export default function NewDealSlideOver({
         <Input id="nd-name" label="اسم الصفقة *" dir="auto" value={name} onChange={(e) => setName(e.target.value)} placeholder="مثلاً: نظام نقاط بيع — الفيحان" error={err.name} autoFocus />
 
         <div className="relative">
-          <label className="mb-1.5 block text-[13px] font-semibold uppercase tracking-wide text-muted">العميل</label>
+          <label className="mb-1.5 block t-body-sm font-semibold uppercase tracking-wide text-muted">العميل</label>
           {customer ? (
-            <div className="flex items-center justify-between rounded-xl border border-primary/30 bg-mint px-3.5 py-2.5">
-              <span dir="auto" className="text-[15px] font-medium text-ink">{customer.full_name || "بدون اسم"}</span>
-              <button type="button" onClick={() => { setCustomer(null); setQuery(""); }} className="text-[13px] font-semibold text-primary hover:underline">تغيير</button>
+            <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-primary/30 bg-mint px-3.5 py-2.5">
+              <span dir="auto" className="t-body font-medium text-ink">{customer.full_name || "بدون اسم"}</span>
+              <button type="button" onClick={() => { setCustomer(null); setQuery(""); }} className="t-body-sm font-semibold text-primary hover:underline">تغيير</button>
             </div>
           ) : (
-            <input dir="auto" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث عن عميل بالاسم..." autoComplete="off" className="h-11 w-full rounded-xl border border-border-light bg-white px-3.5 text-[15px] text-ink-secondary placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            <input dir="auto" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث عن عميل بالاسم..." autoComplete="off" className="h-11 w-full rounded-[var(--radius-md)] border border-border-light bg-[var(--surface-raised)] px-3.5 t-body text-ink-secondary placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
           )}
           {!customer && hits.length > 0 && (
-            <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-border-light bg-white shadow-lg">
+            <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-[var(--radius-md)] border border-border-light bg-[var(--surface-raised)] shadow-lg">
               {hits.map((h) => (
-                <button key={h.id} type="button" dir="auto" onClick={() => { setCustomer(h); setHits([]); }} className="block w-full px-3.5 py-2.5 text-left text-[15px] text-ink-secondary transition hover:bg-mint">
+                <button key={h.id} type="button" dir="auto" onClick={() => { setCustomer(h); setHits([]); }} className="block w-full px-3.5 py-2.5 text-left t-body text-ink-secondary transition hover:bg-mint">
                   {h.full_name || "بدون اسم"}
                 </button>
               ))}

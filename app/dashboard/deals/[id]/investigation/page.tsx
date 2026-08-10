@@ -1,37 +1,62 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { money } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
+import {
+  AlertIcon,
+  CheckIcon,
+  XIcon,
+  ClockIcon,
+  ScaleIcon,
+  BookIcon,
+  MoneyIcon,
+} from "@/components/icons";
 import type {
   InvestigationPayload,
   InvestigationActivity,
   AiReport,
 } from "@/lib/dealInvestigation/analyze";
 
-// ── Theme (this page only — overrides the app's teal identity) ──────────────
-const C = {
-  bg: "#0A0D0C",
-  surface: "#111714",
-  border: "#1E2821",
-  red: "#DC2626",
-  amber: "#D97706",
-  green: "#16A34A",
-  teal: "#0D9488",
-  white: "#F0F4F2",
-  muted: "#4B5E54",
-  stampRed: "#B91C1C",
-};
-const MONO = "'JetBrains Mono', 'Courier New', monospace";
+/**
+ * Deal loss post-mortem.
+ *
+ * This report keeps the gravity of the dossier it replaces — a lost deal
+ * deserves a screen that reads as a finding, not as another dashboard card —
+ * but expresses it in Mawrid's own navy rather than the invented green-black
+ * it used to carry. Three things changed for reasons beyond palette:
+ *
+ *  - It no longer injects JetBrains Mono from the Google Fonts CDN at runtime.
+ *    That was a render-blocking third-party request on a page that already
+ *    waits on an AI route, and it silently fell back to Courier wherever the
+ *    CDN was unreachable. Monospace here is a system stack, and it is used
+ *    only where it earns its place: timestamps, IDs and figures that align.
+ *  - It no longer animates sections in on scroll. Under the Meridian motion
+ *    rule dashboard content does not animate, and this screen in particular
+ *    already made the reader wait on the analysis.
+ *  - It sits inside the dashboard shell instead of covering it with a fixed
+ *    overlay, so the nav rail stays reachable while reading.
+ */
+
+/* Status hues lifted for a navy ground — the light-surface -700 stops are
+   unreadable here. Measured against --surface-inverse: red 9.0:1, amber
+   11.8:1, green 11.2:1. */
+const ON_NAVY = {
+  red: "var(--status-danger-on-inverse)",
+  amber: "var(--status-warning-on-inverse)",
+  green: "var(--status-success-on-inverse)",
+} as const;
+
+const MONO = "var(--font-mono)";
 
 const SEVERITY: Record<
   "critical" | "major" | "minor",
   { label: string; color: string; bg: string }
 > = {
-  critical: { label: "CRITICAL", color: C.red, bg: "rgba(220,38,38,0.12)" },
-  major: { label: "MAJOR", color: C.amber, bg: "rgba(217,119,6,0.12)" },
-  minor: { label: "MINOR", color: C.muted, bg: "rgba(75,94,84,0.15)" },
+  critical: { label: "حرج", color: ON_NAVY.red, bg: "rgba(252,165,165,0.12)" },
+  major: { label: "مؤثر", color: ON_NAVY.amber, bg: "rgba(252,211,77,0.12)" },
+  minor: { label: "طفيف", color: "var(--content-inverse-tertiary)", bg: "rgba(255,255,255,0.06)" },
 };
 
 function fmtStamp(iso: string | null | undefined): string {
@@ -47,56 +72,6 @@ function fmtDay(iso: string | null | undefined): string {
   return d.toLocaleDateString("en-CA");
 }
 
-function useJetBrainsMono() {
-  useEffect(() => {
-    const href = "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap";
-    if (document.querySelector(`link[href="${href}"]`)) return;
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = href;
-    document.head.appendChild(link);
-    return () => {
-      link.remove();
-    };
-  }, []);
-}
-
-const STYLE = `
-@keyframes inv-scan { 0% { transform: translateY(-20vh); } 100% { transform: translateY(120vh); } }
-@keyframes inv-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.6); }
-  50% { box-shadow: 0 0 0 6px rgba(220,38,38,0); }
-}
-@keyframes inv-dots { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
-@keyframes inv-fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
-`;
-
-// ── Scroll-reveal wrapper (IntersectionObserver, CSS-only animation) ─────────
-function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [shown, setShown] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setShown(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.12 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-  return (
-    <div ref={ref} style={{ opacity: shown ? undefined : 0, animation: shown ? `inv-fadeUp 0.6s ${delay}s both` : undefined }}>
-      {children}
-    </div>
-  );
-}
-
 export default function InvestigationPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -105,8 +80,6 @@ export default function InvestigationPage() {
   const [payload, setPayload] = useState<InvestigationPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-
-  useJetBrainsMono();
 
   const load = useCallback(async () => {
     if (!dealId) return;
@@ -141,12 +114,7 @@ export default function InvestigationPage() {
   }, [load]);
 
   return (
-    <div
-      className="fixed inset-0 z-[60] overflow-y-auto"
-      dir="rtl"
-      style={{ background: C.bg, color: C.white, fontFamily: MONO }}
-    >
-      <style>{STYLE}</style>
+    <div className="overflow-hidden rounded-[var(--radius-lg)] bg-[var(--surface-inverse-deep)] text-[color:var(--content-inverse-secondary)]">
       {loading ? (
         <LoadingState />
       ) : notFound || !payload ? (
@@ -160,115 +128,77 @@ export default function InvestigationPage() {
 
 function LoadingState() {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden">
-      <div
-        className="pointer-events-none absolute inset-x-0 h-24"
-        style={{
-          animation: "inv-scan 2.4s linear infinite",
-          background: `linear-gradient(to bottom, transparent, ${C.teal}22 40%, ${C.teal}55 50%, ${C.teal}22 60%, transparent)`,
-        }}
-      />
-      <div className="relative z-10 text-center">
-        <p className="text-[13px] tracking-[0.2em]" style={{ color: C.teal }}>[ SECURE ANALYSIS ]</p>
-        <p className="mt-3 text-[16px]" style={{ color: C.white }}>جاري تحليل ملف الصفقة...</p>
-        <div className="mt-4 flex items-center justify-center gap-1.5">
-          {[0, 1, 2].map((i) => (
-            <span key={i} className="h-2 w-2 rounded-full" style={{ background: C.teal, animation: `inv-dots 1.2s ${i * 0.2}s ease-in-out infinite` }} />
-          ))}
-        </div>
-      </div>
+    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-6 text-center">
+      {/* A determinate-looking spinner would be a lie — the AI route has no
+          progress to report. This says what is happening and stops there. */}
+      <svg className="h-6 w-6 animate-spin text-[color:var(--content-inverse-accent)]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+        <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z" />
+      </svg>
+      <p className="t-body text-[color:var(--content-inverse-primary)]">جارِ تحليل ملف الصفقة…</p>
+      <p className="t-caption text-[color:var(--content-inverse-tertiary)]">قد يستغرق التحليل بضع ثوانٍ</p>
     </div>
   );
 }
 
 function ErrorScreen({ onBack }: { onBack: () => void }) {
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
-        <p className="text-[15px]" style={{ color: C.amber }}>تعذّر تحميل ملف التحقيق</p>
-        <button onClick={onBack} className="mt-4 rounded-md px-4 py-2 text-[13px] font-semibold" style={{ border: `1px solid ${C.border}`, color: C.white }}>
-          ← العودة للصفقات
-        </button>
+    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-6 text-center">
+      <span className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-md)] bg-white/[0.06]" style={{ color: ON_NAVY.amber }}>
+        <AlertIcon className="h-6 w-6" />
+      </span>
+      <div>
+        <p className="t-title-3 text-[color:var(--content-inverse-primary)]">تعذّر تحميل ملف التحقيق</p>
+        <p className="t-body-sm mt-1 text-[color:var(--content-inverse-tertiary)]">قد تكون الصفقة غير موجودة أو غير مُسجَّلة كخسارة.
+        </p>
       </div>
+      <button
+        onClick={onBack}
+        className="t-body-sm rounded-[var(--radius-md)] border border-[var(--border-inverse-strong)] px-4 py-2 font-semibold text-[color:var(--content-inverse-primary)] transition-colors hover:bg-white/[0.08]"
+      >
+        ← العودة للصفقات</button>
     </div>
   );
 }
 
-// ── Hero header ──────────────────────────────────────────────────────────────
+// ── Header ───────────────────────────────────────────────────────────────────
 function Hero({ deal, onBack }: { deal: InvestigationPayload["deal"]; onBack: () => void }) {
   const shortId = deal.id.slice(0, 8).toUpperCase();
   return (
-    <header className="relative overflow-hidden" style={{ minHeight: 200, background: C.bg, borderBottom: `1px solid ${C.border}` }}>
-      {/* Watermark */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute select-none"
-        style={{
-          fontFamily: "Cairo, sans-serif",
-          fontSize: 200,
-          fontWeight: 800,
-          color: C.red,
-          opacity: 0.06,
-          transform: "rotate(-12deg)",
-          right: -20,
-          top: -20,
-          zIndex: 0,
-          lineHeight: 1,
-          whiteSpace: "nowrap",
-        }}
-      >
-        خسارة
-      </span>
+    <header className="border-b border-[var(--border-inverse)] bg-[var(--surface-inverse)] px-6 py-7 sm:px-10">
+      <div className="mx-auto flex max-w-[var(--layout-prose-max)] flex-col gap-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* The old "CLASSIFIED" stamp was theatre — it named nothing true
+              about the record. This says what the document actually is. */}
+          <span
+            className="t-eyebrow rounded-[var(--radius-xs)] px-2 py-1"
+            style={{ color: ON_NAVY.red, background: "rgba(252,165,165,0.1)" }}
+          >تقرير خسارة</span>
+          <button onClick={onBack} className="t-body-sm text-[color:var(--content-inverse-accent)] transition-opacity hover:opacity-75">
+            ← العودة للصفقات</button>
+        </div>
 
-      {/* CLASSIFIED stamp — top-left */}
-      <div
-        className="absolute select-none"
-        style={{
-          left: 24,
-          top: 24,
-          border: `2px solid ${C.stampRed}`,
-          color: C.stampRed,
-          fontFamily: MONO,
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: "0.3em",
-          padding: "4px 12px",
-          transform: "rotate(-8deg)",
-          opacity: 0.7,
-        }}
-      >
-        CLASSIFIED
-      </div>
-
-      {/* Back — top-right */}
-      <button
-        onClick={onBack}
-        className="absolute text-[13px] transition-opacity hover:opacity-70"
-        style={{ right: 24, top: 26, color: C.teal }}
-      >
-        ← العودة للصفقات
-      </button>
-
-      {/* Centered content */}
-      <div className="relative z-[1] flex flex-col items-center justify-center px-6 py-12 text-center" style={{ minHeight: 200 }}>
-        <h1 className="flex items-center gap-2.5 leading-tight" style={{ fontFamily: "Cairo, sans-serif", fontWeight: 800, fontSize: 32, color: C.white }}>
-          <span>🔍</span> تقرير التحقيق
-        </h1>
-        <p className="mt-2" style={{ fontFamily: "Cairo, sans-serif", fontWeight: 700, fontSize: 22, color: C.red }}>
-          {deal.name || "صفقة بدون اسم"}
-        </p>
-        <p className="mt-2" dir="ltr" style={{ fontFamily: MONO, fontSize: 13, color: C.muted }}>
-          {deal.currency} {deal.valueSAR != null ? money(deal.valueSAR) : "——"} · {deal.stageLabel} · {fmtDay(deal.lostAt)}
-        </p>
-        <p className="mt-1.5" dir="ltr" style={{ fontFamily: MONO, fontSize: 11, color: "#33443C" }}>
-          ID: {shortId} · وقت التحليل: {fmtStamp(new Date().toISOString())}
-        </p>
+        <div>
+          <h1 dir="auto" className="t-title-1 text-[color:var(--content-inverse-primary)]">
+            {deal.name || "صفقة بدون اسم"}
+          </h1>
+          <p className="t-body-sm mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[color:var(--content-inverse-secondary)]">
+            <span className="t-figure" dir="ltr">{deal.currency} {deal.valueSAR != null ? money(deal.valueSAR) : "——"}</span>
+            <span className="text-[color:var(--content-inverse-tertiary)]">·</span>
+            <span>{deal.stageLabel}</span>
+            <span className="text-[color:var(--content-inverse-tertiary)]">·</span>
+            <span dir="ltr" style={{ fontFamily: MONO }}>{fmtDay(deal.lostAt)}</span>
+          </p>
+          <p className="t-micro mt-1.5 text-[color:var(--content-inverse-tertiary)]" dir="ltr" style={{ fontFamily: MONO }}>
+            ID {shortId}
+          </p>
+        </div>
       </div>
     </header>
   );
 }
 
-// ── The report ──────────────────────────────────────────────────────────────
+// ── The report ───────────────────────────────────────────────────────────────
 function Report({
   payload,
   onBack,
@@ -279,113 +209,97 @@ function Report({
   onRetry: () => void;
 }) {
   const { deal, activities, turningPoint, breakdown, costAnalysis, report, aiFailed } = payload;
-  let step = 0;
-  const nextDelay = () => 0.05 + step++ * 0.08;
 
   return (
-    <div className="relative min-h-screen">
+    <div>
       <Hero deal={deal} onBack={onBack} />
 
-      <div className="relative z-10 mx-auto max-w-[920px] px-6 py-8 sm:px-10">
+      <div className="mx-auto max-w-[var(--layout-prose-max)] px-6 py-8 sm:px-10">
         {aiFailed && (
-          <Reveal delay={nextDelay()}>
-            <div className="rounded-xl py-4 pr-5 pl-4" style={{ background: C.surface, borderRight: `3px solid ${C.amber}` }}>
-              <p className="flex items-center gap-2 text-[15px] font-bold" style={{ fontFamily: "Cairo, sans-serif", color: C.amber }}>
-                ⚠️ التحليل الآلي غير متاح مؤقتاً
-              </p>
-              <p className="mt-1 text-[13px]" style={{ fontFamily: "Cairo, sans-serif", color: C.muted }}>
-                يمكنك مراجعة التسلسل الزمني أدناه يدوياً.
-              </p>
-              <button
-                onClick={onRetry}
-                className="mt-3 rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors hover:bg-white/5"
-                style={{ border: `1px solid ${C.border}`, color: C.amber }}
-              >
-                إعادة المحاولة
-              </button>
-            </div>
-          </Reveal>
+          <div
+            className="rounded-[var(--radius-md)] py-4 pl-4 pr-5"
+            style={{ background: "var(--surface-inverse)", borderRight: `3px solid ${ON_NAVY.amber}` }}
+          >
+            <p className="t-body-sm flex items-center gap-2 font-bold" style={{ color: ON_NAVY.amber }}>
+              <AlertIcon className="h-4 w-4" />التحليل الآلي غير متاح مؤقتاً</p>
+            <p className="t-body-sm mt-1 text-[color:var(--content-inverse-tertiary)]">يمكنك مراجعة التسلسل الزمني أدناه يدوياً.
+            </p>
+            <button
+              onClick={onRetry}
+              className="t-caption mt-3 rounded-[var(--radius-sm)] border border-[var(--border-inverse-strong)] px-3 py-1.5 font-semibold transition-colors hover:bg-white/[0.08]"
+              style={{ color: ON_NAVY.amber }}
+            >إعادة المحاولة</button>
+          </div>
         )}
 
         {report && (
-          <Reveal delay={nextDelay()}>
-            <Section n="1" title="الملخص التنفيذي">
-              <div
-                className="rounded-lg py-4 pr-5 pl-4 text-[15px] leading-relaxed"
-                style={{ background: C.surface, borderRight: `4px solid ${C.red}`, fontFamily: "Cairo, sans-serif", color: C.white }}
-              >
-                {report.executive_summary}
-              </div>
-            </Section>
-          </Reveal>
+          <Section n="1" title="الملخص التنفيذي">
+            <div
+              className="t-body rounded-[var(--radius-md)] py-4 pl-4 pr-5 text-[color:var(--content-inverse-primary)]"
+              style={{ background: "var(--surface-inverse)", borderRight: `4px solid ${ON_NAVY.red}` }}
+            >
+              {report.executive_summary}
+            </div>
+          </Section>
         )}
 
-        <Reveal delay={nextDelay()}>
-          <Section n="2" title="التسلسل الزمني للأحداث">
-            <Timeline activities={activities} lostAt={deal.lostAt} daysBeforeLoss={turningPoint.daysBeforeLoss} />
-          </Section>
-        </Reveal>
+        <Section n="2" title="التسلسل الزمني للأحداث">
+          <Timeline activities={activities} lostAt={deal.lostAt} daysBeforeLoss={turningPoint.daysBeforeLoss} />
+        </Section>
 
         {report && report.root_causes.length > 0 && (
-          <Reveal delay={nextDelay()}>
-            <Section n="3" title="الأسباب الجذرية">
-              <div className="flex flex-col gap-3">
-                {report.root_causes.map((rc, i) => (
-                  <RootCause key={i} rc={rc} />
-                ))}
-              </div>
-            </Section>
-          </Reveal>
-        )}
-
-        {report && (
-          <Reveal delay={nextDelay()}>
-            <Section n="4" title="المقارنة بالصفقات المشابهة">
-              <Comparison report={report} breakdown={breakdown} />
-            </Section>
-          </Reveal>
-        )}
-
-        {report && (
-          <Reveal delay={nextDelay()}>
-            <Section n="5" title="الدرس المستفاد">
-              <Lesson lesson={report.lesson} />
-            </Section>
-          </Reveal>
-        )}
-
-        <Reveal delay={nextDelay()}>
-          <Section n="6" title="تحليل التكلفة">
-            <CostGrid cost={costAnalysis} />
+          <Section n="3" title="الأسباب الجذرية">
+            <div className="flex flex-col gap-3">
+              {report.root_causes.map((rc, i) => (
+                <RootCause key={i} rc={rc} />
+              ))}
+            </div>
           </Section>
-        </Reveal>
+        )}
 
-        <div className="h-16" />
+        {report && (
+          <Section n="4" title="المقارنة بالصفقات المشابهة">
+            <Comparison report={report} breakdown={breakdown} />
+          </Section>
+        )}
+
+        {report && (
+          <Section n="5" title="الدرس المستفاد">
+            <Lesson lesson={report.lesson} />
+          </Section>
+        )}
+
+        <Section n="6" title="تحليل التكلفة">
+          <CostGrid cost={costAnalysis} />
+        </Section>
       </div>
     </div>
   );
 }
 
+/**
+ * The numbers here are load-bearing, not decorative: this is a six-part
+ * investigation read in order, and a reader who jumps to "الدرس المستفاد"
+ * needs to know what came before it.
+ */
 function Section({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
   return (
-    <section className="mt-9">
+    <section className="mt-9 first:mt-0">
       <div className="mb-4 flex items-center gap-3">
         <span
-          className="flex h-8 w-8 items-center justify-center rounded-full text-[14px] font-bold"
-          style={{ background: "rgba(13,148,136,0.12)", border: `1px solid ${C.teal}`, color: C.teal }}
+          className="t-figure flex h-7 w-7 items-center justify-center rounded-full border border-[var(--border-inverse-strong)] t-body-sm text-[color:var(--content-inverse-accent)]"
+          aria-hidden="true"
         >
           {n}
         </span>
-        <h2 className="text-[19px] font-bold" style={{ fontFamily: "Cairo, sans-serif", color: C.white }}>
-          {title}
-        </h2>
+        <h2 className="t-title-3 text-[color:var(--content-inverse-primary)]">{title}</h2>
       </div>
       {children}
     </section>
   );
 }
 
-// ── Timeline ────────────────────────────────────────────────────────────────
+// ── Timeline ─────────────────────────────────────────────────────────────────
 function Timeline({
   activities,
   lostAt,
@@ -397,124 +311,144 @@ function Timeline({
 }) {
   if (activities.length === 0) {
     return (
-      <p className="rounded-md py-6 text-center text-[13px]" style={{ border: `1px dashed ${C.border}`, color: C.muted }}>
-        لا توجد أحداث مسجّلة
-      </p>
+      <p className="t-body-sm rounded-[var(--radius-md)] border border-dashed border-[var(--border-inverse-strong)] py-6 text-center text-[color:var(--content-inverse-tertiary)]">لا توجد أحداث مسجّلة</p>
     );
   }
 
   return (
-    <div className="rounded-xl p-4" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-      <div className="flex flex-col">
+    <div className="rounded-[var(--radius-lg)] border border-[var(--border-inverse)] bg-[var(--surface-inverse)] p-[var(--space-card-compact)]">
+      <ol className="flex flex-col">
         {activities.map((a) => {
           const inbound = a.direction === "inbound";
-          const accent = a.isTurningPoint ? C.red : inbound ? C.teal : C.border;
+          const accent = a.isTurningPoint
+            ? ON_NAVY.red
+            : inbound
+              ? "var(--content-inverse-accent)"
+              : "var(--border-inverse-strong)";
           return (
-            <div key={a.id}>
+            <li key={a.id}>
               {a.isTurningPoint && (
-                <p className="mb-1 mt-2 px-1 text-[11px] font-bold uppercase tracking-[0.15em]" style={{ fontFamily: MONO, color: C.red }}>
-                  🔴 نقطة التحول
-                </p>
+                <p className="t-eyebrow mb-1 mt-2 px-1" style={{ color: ON_NAVY.red }}>نقطة التحول</p>
               )}
               <div
-                className="flex gap-3"
+                className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:gap-3"
                 style={{
-                  minHeight: 56,
-                  padding: "12px 16px",
                   borderLeft: `3px solid ${accent}`,
-                  background: a.isTurningPoint ? "rgba(220,38,38,0.08)" : "transparent",
+                  background: a.isTurningPoint ? "rgba(252,165,165,0.07)" : "transparent",
                 }}
               >
-                <div className="flex-none" style={{ width: 132 }}>
-                  <div className="flex items-center gap-1.5">
-                    {a.isTurningPoint && (
-                      <span className="h-2 w-2 flex-none rounded-full" style={{ background: C.red, animation: "inv-pulse 2s infinite" }} />
-                    )}
-                    <span dir="ltr" style={{ fontFamily: MONO, fontSize: 12, color: C.muted }}>
-                      {fmtStamp(a.occurred_at)}
-                    </span>
-                  </div>
-                  <div className="mt-1 text-[10px] font-semibold" style={{ color: inbound ? C.teal : C.muted }}>
+                <div className="flex-none sm:w-[132px]">
+                  <span
+                    dir="ltr"
+                    className="t-caption block text-end text-[color:var(--content-inverse-tertiary)] sm:text-start"
+                    style={{ fontFamily: MONO }}
+                  >
+                    {fmtStamp(a.occurred_at)}
+                  </span>
+                  <span
+                    className="t-micro mt-1 block font-semibold"
+                    style={{ color: inbound ? "var(--content-inverse-accent)" : "var(--content-inverse-tertiary)" }}
+                  >
                     {inbound ? "← العميل" : "← المندوب"}
-                  </div>
+                  </span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p dir="auto" className="text-[14px] leading-relaxed" style={{ fontFamily: "Cairo, sans-serif", color: a.isTurningPoint ? C.white : "#C6D2CB" }}>
+                  <p
+                    dir="auto"
+                    className="t-body-sm"
+                    style={{ color: a.isTurningPoint ? "var(--content-inverse-primary)" : "var(--content-inverse-secondary)" }}
+                  >
                     {a.body || "(بدون نص)"}
                   </p>
                   {a.situational_tag && !a.isTurningPoint && (
-                    <span className="mt-1 inline-block rounded px-1.5 py-0.5 text-[10px]" style={{ background: "rgba(13,148,136,0.12)", color: C.teal }}>
+                    <span className="t-micro mt-1.5 inline-block rounded-[var(--radius-xs)] bg-white/[0.07] px-1.5 py-0.5 text-[color:var(--content-inverse-accent)]">
                       {a.situational_tag}
                     </span>
                   )}
                 </div>
               </div>
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ol>
 
-      {/* Loss terminal marker */}
-      <div className="mt-4 pt-3" style={{ borderTop: `1px solid rgba(220,38,38,0.4)` }}>
-        <p className="text-center text-[13px] font-bold" dir="ltr" style={{ fontFamily: MONO, color: C.red }}>
-          ✕ خُسرت الصفقة — {fmtDay(lostAt)}
+      <div className="mt-4 border-t border-[var(--border-inverse-strong)] pt-3">
+        <p className="t-body-sm flex items-center justify-center gap-2 font-bold" style={{ color: ON_NAVY.red }}>
+          <XIcon className="h-3.5 w-3.5" />
+          <span>خُسرت الصفقة</span>
+          <span dir="ltr" style={{ fontFamily: MONO }}>{fmtDay(lostAt)}</span>
         </p>
         {daysBeforeLoss != null && (
-          <p className="mt-1.5 text-center text-[12px]" style={{ color: C.amber }}>
-            ⏱ {daysBeforeLoss} أيام بين نقطة التحول والخسارة
-          </p>
+          <p className="t-caption mt-1.5 flex items-center justify-center gap-1.5" style={{ color: ON_NAVY.amber }}>
+            <ClockIcon className="h-3.5 w-3.5" />
+            {daysBeforeLoss} أيام بين نقطة التحول والخسارة</p>
         )}
       </div>
     </div>
   );
 }
 
-// ── Root cause card ─────────────────────────────────────────────────────────
+// ── Root cause ───────────────────────────────────────────────────────────────
 function RootCause({ rc }: { rc: AiReport["root_causes"][number] }) {
   const sev = SEVERITY[rc.severity] ?? SEVERITY.minor;
   return (
-    <div className="rounded-lg py-4 pr-5 pl-4" style={{ background: C.surface, borderRight: `3px solid ${sev.color}` }}>
-      <div className="flex items-center gap-2.5">
-        <span className="rounded px-2 py-0.5 text-[10px] font-bold tracking-wider" style={{ color: sev.color, background: sev.bg }}>
+    <div
+      className="rounded-[var(--radius-md)] py-4 pl-4 pr-5"
+      style={{ background: "var(--surface-inverse)", borderRight: `3px solid ${sev.color}` }}
+    >
+      <div className="flex flex-wrap items-center gap-2.5">
+        <span
+          className="t-micro rounded-[var(--radius-xs)] px-2 py-0.5 font-bold"
+          style={{ color: sev.color, background: sev.bg }}
+        >
           {sev.label}
         </span>
-        <h3 className="text-[15px] font-bold" style={{ fontFamily: "Cairo, sans-serif", color: C.white }}>
-          {rc.title}
-        </h3>
+        <h3 dir="auto" className="t-title-3 text-[color:var(--content-inverse-primary)]">{rc.title}</h3>
       </div>
-      <p dir="auto" className="mt-2 text-[14px] leading-relaxed" style={{ fontFamily: "Cairo, sans-serif", color: "#C6D2CB" }}>
+      <p dir="auto" className="t-body-sm mt-2 text-[color:var(--content-inverse-secondary)]">
         {rc.description}
       </p>
       {rc.evidence && (
-        <div className="mt-3 rounded px-3 py-2 text-[12px] leading-relaxed" dir="auto" style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.muted, fontFamily: MONO }}>
+        <blockquote
+          dir="auto"
+          className="t-caption mt-3 rounded-[var(--radius-xs)] border border-[var(--border-inverse)] bg-[var(--surface-inverse-deep)] px-3 py-2 text-[color:var(--content-inverse-tertiary)]"
+        >
           {rc.evidence}
-        </div>
+        </blockquote>
       )}
     </div>
   );
 }
 
-// ── Comparison ──────────────────────────────────────────────────────────────
+// ── Comparison ───────────────────────────────────────────────────────────────
 function Comparison({ report, breakdown }: { report: AiReport; breakdown: InvestigationPayload["breakdown"] }) {
   return (
     <div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-lg p-4" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-          <p className="text-[13px] font-bold" style={{ color: C.green }}>✅ الصفقات الرابحة ({breakdown.wonCount})</p>
-          <p dir="auto" className="mt-2 text-[13px] leading-relaxed" style={{ fontFamily: "Cairo, sans-serif", color: "#C6D2CB" }}>
+        <div className="rounded-[var(--radius-md)] border border-[var(--border-inverse)] bg-[var(--surface-inverse)] p-4">
+          <p className="t-body-sm flex items-center gap-2 font-bold" style={{ color: ON_NAVY.green }}>
+            <CheckIcon className="h-4 w-4" />الصفقات الرابحة ({breakdown.wonCount})
+          </p>
+          <p dir="auto" className="t-body-sm mt-2 text-[color:var(--content-inverse-secondary)]">
             {report.comparison.won_pattern}
           </p>
         </div>
-        <div className="rounded-lg p-4" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-          <p className="text-[13px] font-bold" style={{ color: C.red }}>❌ الصفقات المخسورة ({breakdown.lostCount})</p>
-          <p dir="auto" className="mt-2 text-[13px] leading-relaxed" style={{ fontFamily: "Cairo, sans-serif", color: "#C6D2CB" }}>
+        <div className="rounded-[var(--radius-md)] border border-[var(--border-inverse)] bg-[var(--surface-inverse)] p-4">
+          <p className="t-body-sm flex items-center gap-2 font-bold" style={{ color: ON_NAVY.red }}>
+            <XIcon className="h-4 w-4" />الصفقات المخسورة ({breakdown.lostCount})
+          </p>
+          <p dir="auto" className="t-body-sm mt-2 text-[color:var(--content-inverse-secondary)]">
             {report.comparison.lost_pattern}
           </p>
         </div>
       </div>
-      <div className="mt-3 rounded-lg py-4 pr-5 pl-4" style={{ background: "rgba(217,119,6,0.08)", borderRight: `3px solid ${C.amber}` }}>
-        <p className="text-[11px] font-bold tracking-wider" style={{ color: C.amber }}>الفارق الحاسم</p>
-        <p dir="auto" className="mt-1.5 text-[15px] font-semibold leading-relaxed" style={{ fontFamily: "Cairo, sans-serif", color: C.white }}>
+      <div
+        className="mt-3 rounded-[var(--radius-md)] py-4 pl-4 pr-5"
+        style={{ background: "rgba(252,211,77,0.07)", borderRight: `3px solid ${ON_NAVY.amber}` }}
+      >
+        <p className="t-eyebrow flex items-center gap-1.5" style={{ color: ON_NAVY.amber }}>
+          <ScaleIcon className="h-3.5 w-3.5" />الفارق الحاسم</p>
+        <p dir="auto" className="t-body mt-1.5 font-semibold text-[color:var(--content-inverse-primary)]">
           {report.comparison.key_differentiator}
         </p>
       </div>
@@ -522,47 +456,50 @@ function Comparison({ report, breakdown }: { report: AiReport; breakdown: Invest
   );
 }
 
-// ── Lesson ──────────────────────────────────────────────────────────────────
+// ── Lesson ───────────────────────────────────────────────────────────────────
 function Lesson({ lesson }: { lesson: AiReport["lesson"] }) {
   return (
-    <div className="rounded-xl p-6" style={{ background: C.surface, border: `1px solid ${C.border}`, borderTop: `3px solid ${C.amber}` }}>
-      <h3 className="text-[28px] font-bold leading-tight" style={{ fontFamily: "Cairo, sans-serif", color: C.amber }}>
+    <div
+      className="rounded-[var(--radius-lg)] border border-[var(--border-inverse)] bg-[var(--surface-inverse)] p-[var(--space-card-pad)]"
+      style={{ borderTop: `3px solid ${ON_NAVY.amber}` }}
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] bg-white/[0.06]" style={{ color: ON_NAVY.amber }}>
+        <BookIcon className="h-4 w-4" />
+      </span>
+      <h3 dir="auto" className="t-title-2 mt-3" style={{ color: ON_NAVY.amber }}>
         {lesson.title}
       </h3>
-      <p dir="auto" className="mt-3 text-[16px]" style={{ fontFamily: "Cairo, sans-serif", color: C.white, lineHeight: 1.8 }}>
+      <p dir="auto" className="t-body-lg mt-3 text-[color:var(--content-inverse-primary)]">
         {lesson.rule}
       </p>
-      <div className="mt-4">
-        <span className="inline-block rounded px-3 py-1.5 text-[12px]" dir="auto" style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.teal, fontFamily: MONO }}>
-          يُطبق على: {lesson.applies_to}
-        </span>
-      </div>
+      <p dir="auto" className="t-caption mt-4 inline-block rounded-[var(--radius-xs)] border border-[var(--border-inverse)] bg-[var(--surface-inverse-deep)] px-3 py-1.5 text-[color:var(--content-inverse-accent)]">يُطبق على: {lesson.applies_to}
+      </p>
     </div>
   );
 }
 
-// ── Cost grid ───────────────────────────────────────────────────────────────
+// ── Cost ─────────────────────────────────────────────────────────────────────
 function CostGridCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-xl p-5 text-center" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-      <p className="text-[12px]" style={{ fontFamily: "Cairo, sans-serif", color: C.muted }}>{label}</p>
-      <p className="mt-2" dir="ltr" style={{ fontFamily: "Cairo, sans-serif", fontWeight: 800, fontSize: 28, color }}>
+    <div className="rounded-[var(--radius-md)] border border-[var(--border-inverse)] bg-[var(--surface-inverse)] p-5 text-center">
+      <p className="t-caption text-[color:var(--content-inverse-tertiary)]">{label}</p>
+      <p className="t-figure mt-2 t-figure-md leading-none" dir="ltr" style={{ color }}>
         {value}
       </p>
     </div>
   );
 }
+
 function CostGrid({ cost }: { cost: InvestigationPayload["costAnalysis"] }) {
   return (
     <div>
       <div className="grid gap-3 sm:grid-cols-3">
-        <CostGridCard label="هذه الصفقة" value={`${cost.currency} ${money(cost.this_deal)}`} color={C.white} />
-        <CostGridCard label="حالات مشابهة" value={String(cost.similar_losses_count)} color={C.teal} />
-        <CostGridCard label="التكلفة الكلية للنمط" value={`${cost.currency} ${money(cost.total_pattern_cost)}`} color={C.red} />
+        <CostGridCard label="هذه الصفقة" value={`${cost.currency} ${money(cost.this_deal)}`} color="var(--content-inverse-primary)" />
+        <CostGridCard label="حالات مشابهة" value={String(cost.similar_losses_count)} color="var(--content-inverse-accent)" />
+        <CostGridCard label="التكلفة الكلية للنمط" value={`${cost.currency} ${money(cost.total_pattern_cost)}`} color={ON_NAVY.red} />
       </div>
-      <p className="mt-2 text-[12px]" style={{ fontFamily: "Cairo, sans-serif", color: C.muted }}>
-        بناءً على {cost.similar_losses_count} صفقات بنفس النمط
-      </p>
+      <p className="t-caption mt-2 flex items-center gap-1.5 text-[color:var(--content-inverse-tertiary)]">
+        <MoneyIcon className="h-3.5 w-3.5" />بناءً على {cost.similar_losses_count} صفقات بنفس النمط</p>
     </div>
   );
 }
