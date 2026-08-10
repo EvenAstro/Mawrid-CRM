@@ -18,6 +18,7 @@ import {
 } from "@/lib/models/deals";
 import { fetchRepCoachTodayActivities, fetchRepCoachUpcomingMeetings } from "@/lib/models/activities";
 import { fetchRepCoachNewLeads } from "@/lib/models/leads";
+import { money } from "@/lib/format";
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct";
@@ -180,7 +181,7 @@ export async function GET(req: NextRequest) {
     staleDeals.forEach((d) => {
       const days = Math.ceil((now.getTime() - new Date(d.updated_at!).getTime()) / MS_PER_DAY);
       const name = d.leads?.full_name || d.name || "عميل";
-      const val = d.expected_value ? ` (${(d.expected_value / 100).toLocaleString("ar-SA")} ر.س)` : "";
+      const val = d.expected_value ? ` (${money(d.expected_value / 100)} ر.س)` : "";
       directives.push({
         id: `d${idx++}`, type: "warning", icon: "⚠️",
         message: `صفقة "${name}"${val} واقفة من ${days} يوم — اتصل عليه أو أرسل عرض`,
@@ -215,7 +216,7 @@ export async function GET(req: NextRequest) {
     quoteDeals.forEach((d) => {
       const days = Math.ceil((now.getTime() - new Date(d.updated_at!).getTime()) / MS_PER_DAY);
       const name = d.leads?.full_name || d.name || "عميل";
-      const val = d.expected_value ? ` (${(d.expected_value / 100).toLocaleString("ar-SA")} ر.س)` : "";
+      const val = d.expected_value ? ` (${money(d.expected_value / 100)} ر.س)` : "";
       directives.push({
         id: `d${idx++}`, type: "warning", icon: "📄",
         message: `${ya}عرض سعر لـ "${name}"${val} ما تابعته من ${days} يوم — تواصل معه`,
@@ -354,7 +355,7 @@ ${firstName ? `اسم المندوب: ${firstName}. خاطبه باسمه (يا 
 - عروض أسعار تحتاج متابعة: ${quoteDeals.length}
 - عملاء جدد بدون تواصل: ${untouchedLeads.length}
 - مسار الصفقات: ${pipelineStr || "فاضي"}
-- قيمة المسار: ${totalPipelineValue > 0 ? (totalPipelineValue / 100).toLocaleString("ar-SA") + " ر.س" : "—"}
+- قيمة المسار: ${totalPipelineValue > 0 ? money(totalPipelineValue / 100) + " ر.س" : "—"}
 
 ## التوجيهات:
 ${directivesList || "لا توجيهات — كل شيء تمام"}

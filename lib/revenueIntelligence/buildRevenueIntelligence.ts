@@ -1,5 +1,6 @@
 import { fetchDealsForRevenueIntelligence } from "@/lib/models/deals";
 import { fetchDealActivitiesSince } from "@/lib/models/activities";
+import { DATE_LOCALE } from "@/lib/format";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -266,7 +267,7 @@ export async function buildRevenueIntelligence(): Promise<RevenueIntelligenceDat
   for (let i = 11; i >= 0; i--) {
     const ws = weekStart(new Date(now.getTime() - i * 7 * 86_400_000));
     const key = ws.toISOString().slice(0, 10);
-    const label = ws.toLocaleDateString("ar-SA", { month: "short", day: "numeric" });
+    const label = ws.toLocaleDateString(DATE_LOCALE, { month: "short", day: "numeric" });
     weekMap.set(key, { weekLabel: label, weekStart: key, wonSAR: 0, lostSAR: 0, newPipelineSAR: 0, wonCount: 0 });
   }
 
