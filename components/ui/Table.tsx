@@ -1,6 +1,6 @@
 "use client";
 
-import type React from "react";
+import React, { useEffect, useRef } from "react";
 
 /**
  * One table language for every list view — proposal 58.
@@ -29,6 +29,67 @@ import type React from "react";
  * clickable `<tr onClick>` with no keyboard path at all.
  */
 
+/**
+ * Dev-only column alignment check.
+ *
+ * A table whose body cells are offset from their headers renders perfectly:
+ * the values still line up with each other, the numbers are still right, and
+ * every column is labelled with its neighbour's name. TypeScript can't see it,
+ * ESLint can't see it, and a build passes. The only way to catch it is to
+ * measure the rendered geometry, so that's what this does.
+ *
+ * It found a real one: a ::before rail on <tr> generated an anonymous
+ * table-cell, shifting every body cell one column. That shipped through every
+ * gate we have.
+ *
+ * Stripped from production builds — the whole effect body is behind a
+ * NODE_ENV check that bundlers eliminate.
+ */
+function useColumnAlignmentCheck(
+  ref: React.RefObject<HTMLTableElement | null>,
+  ariaLabel: string,
+) {
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    const table = ref.current;
+    if (!table) return;
+
+    // Wait a frame — column widths are not final until layout has run.
+    const id = requestAnimationFrame(() => {
+      const ths = [...table.querySelectorAll<HTMLElement>("thead th")];
+      const firstRow = table.querySelector("tbody tr");
+      if (!ths.length || !firstRow) return;
+      const tds = [...firstRow.querySelectorAll<HTMLElement>("td")];
+      if (!tds.length) return;
+
+      if (ths.length !== tds.length) {
+        console.error(
+          `[Table:"${ariaLabel}"] column count mismatch — ${ths.length} header cells, ${tds.length} body cells. ` +
+            `Every column after the first difference is labelled with the wrong header.`,
+        );
+        return;
+      }
+
+      for (let i = 0; i < ths.length; i++) {
+        const h = Math.round(ths[i].getBoundingClientRect().x);
+        const b = Math.round(tds[i].getBoundingClientRect().x);
+        // 1px of tolerance for sub-pixel layout, no more — a genuine
+        // off-by-one-column is off by the width of a column.
+        if (Math.abs(h - b) > 1) {
+          console.error(
+            `[Table:"${ariaLabel}"] column ${i} is misaligned: header "${ths[i].innerText.trim()}" ` +
+              `at x=${h}, body cell "${tds[i].innerText.trim().split("\n")[0]}" at x=${b}. ` +
+              `The table will look correct while every column carries the wrong header. ` +
+              `Usual cause: a ::before/::after with content on <tr>, which generates an anonymous table-cell.`,
+          );
+          return; // one report is enough; the rest are the same shift
+        }
+      }
+    });
+    return () => cancelAnimationFrame(id);
+  });
+}
+
 export function Table({
   children,
   className = "",
@@ -38,9 +99,11 @@ export function Table({
   className?: string;
   ariaLabel: string;
 }) {
+  const ref = useRef<HTMLTableElement>(null);
+  useColumnAlignmentCheck(ref, ariaLabel);
   return (
     <div className={`overflow-x-auto rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] ${className}`}>
-      <table className="w-full border-collapse" aria-label={ariaLabel}>
+      <table ref={ref} className="w-full border-collapse" aria-label={ariaLabel}>
         {children}
       </table>
     </div>
