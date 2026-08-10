@@ -63,12 +63,52 @@ export async function fetchDealsBoard(
 }
 
 /** Moves a deal to a new pipeline stage. */
-export async function moveDealStage(dealId: string, toStageId: string): Promise<{ error: Error | null }> {
+export async function moveDealStage(
+  dealId: string,
+  toStageId: string,
+  fromStageId?: string | null,
+): Promise<{ error: Error | null }> {
   const { error } = await supabase
     .from("deals")
     .update({ stage_id: toStageId, updated_at: new Date().toISOString() })
     .eq("id", dealId);
-  return { error };
+  if (error) return { error };
+
+  // Log the transition after the move succeeds, never before — a logged
+  // transition that didn't happen is worse than a missing one.
+  await recordStageTransition(dealId, fromStageId ?? null, toStageId);
+  return { error: null };
+}
+
+/**
+ * Appends to deal_stage_history. Deliberately fails soft: this is a log, and
+ * a log must never be the reason a rep can't move a deal. If the table hasn't
+ * been created yet (see supabase/migrations/), or RLS rejects the insert, the
+ * move still stands and we record the reason in the console.
+ *
+ * Nothing reads this table yet — velocity and funnel-conversion are later
+ * work. It ships now because a stage change that was never logged cannot be
+ * reconstructed from the deals table afterwards.
+ */
+async function recordStageTransition(
+  dealId: string,
+  fromStageId: string | null,
+  toStageId: string,
+): Promise<void> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase.from("deal_stage_history").insert({
+      deal_id: dealId,
+      from_stage_id: fromStageId,
+      to_stage_id: toStageId,
+      changed_by: user.id,
+      changed_at: new Date().toISOString(),
+    });
+    if (error) console.warn("[deals] stage transition not logged", error.message);
+  } catch (err) {
+    console.warn("[deals] stage transition not logged", err);
+  }
 }
 
 /** Ids of deals owned by the given user (used to scope the activities page). */
