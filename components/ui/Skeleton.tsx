@@ -5,5 +5,5 @@ export default function Skeleton({
 }: {
   className?: string;
 }) {
-  return <div className={`skeleton-shimmer rounded-xl ${className}`} />;
+  return <div className={`skeleton-shimmer rounded-[var(--radius-md)] ${className}`} />;
 }

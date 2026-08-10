@@ -43,12 +43,12 @@ export default function SlideOver({
         <div className="flex items-start justify-between bg-[#141c2e] px-6 py-6">
           <div className="min-w-0">
             <h2 className="truncate text-xl font-bold text-white">{title}</h2>
-            {subtitle && <p className="mt-0.5 text-[13px] text-white/50">{subtitle}</p>}
+            {subtitle && <p className="mt-0.5 t-body-sm text-white/50">{subtitle}</p>}
           </div>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="flex-none rounded-xl p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white"
+            className="flex-none rounded-[var(--radius-md)] p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-5 w-5">
               <path d="M6 6l12 12M18 6 6 18" />
@@ -59,7 +59,7 @@ export default function SlideOver({
         <div className="flex-1 overflow-y-auto p-6">{children}</div>
 
         {footer && (
-          <div className="border-t border-[#e8f0ec] bg-white p-6">{footer}</div>
+          <div className="border-t border-[var(--border-subtle)] bg-[var(--surface-raised)] p-6">{footer}</div>
         )}
       </aside>
     </>

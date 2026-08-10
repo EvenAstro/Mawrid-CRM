@@ -43,7 +43,7 @@ function AiScoreRing({ score }: { score: number }) {
           />
         </svg>
       </span>
-      <span className="text-[13px] font-bold" style={{ color }}>{score}%</span>
+      <span className="t-body-sm font-bold" style={{ color }}>{score}%</span>
     </span>
   );
 }
@@ -67,7 +67,7 @@ function StatCard({
   return (
     <button
       onClick={onClick}
-      className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border p-5 text-left shadow-[0_2px_8px_rgba(26,92,79,0.05)] transition-all duration-200 hover:-translate-y-0.5"
+      className="group relative flex items-center gap-4 overflow-hidden rounded-[var(--radius-lg)] border p-5 text-left e-1 transition-all duration-200 hover:-translate-y-0.5"
       style={{
         borderColor: active ? color : "#e4ebe7",
         background: active ? `linear-gradient(155deg, ${color}14 0%, #fff 55%)` : "#fff",
@@ -75,12 +75,12 @@ function StatCard({
       }}
     >
       <span className="pointer-events-none absolute -left-8 -top-8 h-24 w-24 rounded-full opacity-[0.08] transition-transform duration-300 group-hover:scale-125" style={{ background: color }} />
-      <span className="relative flex h-12 w-12 flex-none items-center justify-center rounded-xl shadow-sm" style={{ backgroundColor: color, color: "#fff" }}>
+      <span className="relative flex h-12 w-12 flex-none items-center justify-center rounded-[var(--radius-md)] shadow-sm" style={{ backgroundColor: color, color: "#fff" }}>
         {icon}
       </span>
       <div className="relative min-w-0 flex-1">
         <p className="text-[26px] font-bold leading-none text-[#1e1b4b] tabular-nums">{value}</p>
-        <p className="mt-1 text-[13px] font-medium text-[#7c8b86]">{label}</p>
+        <p className="mt-1 t-body-sm font-medium text-[#7c8b86]">{label}</p>
       </div>
       {active && <span className="absolute top-3 left-3 h-2 w-2 rounded-full" style={{ backgroundColor: color }} />}
     </button>
@@ -285,10 +285,10 @@ export default function LeadsPage() {
   return (
     <>
       {/* Hero header */}
-      <div className="mb-6 rounded-3xl bg-[#141c2e] px-7 py-7">
+      <div className="mb-6 rounded-[var(--radius-lg)] bg-[#141c2e] px-7 py-7">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white/10">
+            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-[var(--radius-lg)] bg-white/10">
               <LeadsIcon className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -297,10 +297,10 @@ export default function LeadsPage() {
             </div>
           </div>
           <div className="flex items-center gap-2.5">
-            <button onClick={() => exportRows(filtered)} disabled={!filtered.length} className="rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-white/10 disabled:opacity-40">تصدير CSV</button>
+            <button onClick={() => exportRows(filtered)} disabled={!filtered.length} className="rounded-[var(--radius-md)] border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-white/10 disabled:opacity-40">تصدير CSV</button>
             <button
               onClick={() => setNewLeadOpen(true)}
-              className="flex h-11 items-center gap-2 rounded-xl bg-[#3a9080] px-5 text-[14px] font-bold text-white transition-all hover:bg-[#328173] active:scale-[0.98]"
+              className="flex h-11 items-center gap-2 rounded-[var(--radius-md)] bg-[#3a9080] px-5 text-[14px] font-bold text-white transition-all hover:bg-[#328173] active:scale-[0.98]"
             >
               <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
               إضافة عميل
@@ -338,7 +338,7 @@ export default function LeadsPage() {
       </div>
 
       {/* Search & filter bar */}
-      <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-[#d6ece5] bg-white p-4 shadow-[0_2px_8px_rgba(26,92,79,0.05)] sm:flex-row">
+      <div className="mb-5 flex flex-col gap-3 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4 e-1 sm:flex-row">
         <div className="relative flex-1">
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
             <SearchIcon />
@@ -348,14 +348,14 @@ export default function LeadsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="ابحث بالاسم، الجوال، أو الإيميل…"
-            className="h-11 w-full rounded-xl border border-[#d6ece5] bg-[#f8faf9] pl-11 pr-4 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition"
+            className="h-11 w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[#f8faf9] pl-11 pr-4 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-[#1a5c4f] focus:bg-[var(--surface-raised)] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition"
           />
         </div>
 
         <select
           value={stageFilter}
           onChange={(e) => setStageFilter(e.target.value)}
-          className="h-11 rounded-xl border border-[#d6ece5] bg-[#f8faf9] px-4 text-[14px] font-medium text-slate-700 focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition"
+          className="h-11 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[#f8faf9] px-4 text-[14px] font-medium text-slate-700 focus:border-[#1a5c4f] focus:bg-[var(--surface-raised)] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition"
         >
           <option value="all">جميع المراحل</option>
           {stageOptions.map((s) => (
@@ -366,7 +366,7 @@ export default function LeadsPage() {
         <select
           value={sourceFilter}
           onChange={(e) => setSourceFilter(e.target.value)}
-          className="h-11 rounded-xl border border-[#d6ece5] bg-[#f8faf9] px-4 text-[14px] font-medium text-slate-700 focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition"
+          className="h-11 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[#f8faf9] px-4 text-[14px] font-medium text-slate-700 focus:border-[#1a5c4f] focus:bg-[var(--surface-raised)] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition"
         >
           <option value="all">جميع المصادر</option>
           {sourceOptions.map((s) => (
@@ -377,18 +377,18 @@ export default function LeadsPage() {
 
       {/* Bulk actions bar */}
       {checked.size > 0 && (
-        <div className="mb-3 flex items-center justify-between rounded-2xl border border-[#1a5c4f]/25 bg-[#f0faf8] px-5 py-3">
-          <span className="text-[13px] font-semibold text-[#1a5c4f]">{checked.size} محدد</span>
+        <div className="mb-3 flex items-center justify-between rounded-[var(--radius-lg)] border border-[#1a5c4f]/25 bg-[#f0faf8] px-5 py-3">
+          <span className="t-body-sm font-semibold text-[#1a5c4f]">{checked.size} محدد</span>
           <div className="flex items-center gap-2">
-            <button onClick={() => exportRows(leads.filter((l) => checked.has(l.id)))} className="rounded-lg border border-[#1a5c4f]/30 bg-white px-4 py-1.5 text-[13px] font-semibold text-[#1a5c4f] transition hover:bg-[#e4f5f0]">تصدير المحدد</button>
-            <button onClick={() => deleteLeads(Array.from(checked))} disabled={deleting} className="rounded-lg border border-red-200 bg-white px-4 py-1.5 text-[13px] font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50">{deleting ? "جارِ الحذف…" : "حذف المحدد"}</button>
-            <button onClick={() => setChecked(new Set())} className="rounded-lg px-3 py-1.5 text-[13px] font-semibold text-slate-500 hover:text-slate-700">إلغاء</button>
+            <button onClick={() => exportRows(leads.filter((l) => checked.has(l.id)))} className="rounded-[var(--radius-sm)] border border-[#1a5c4f]/30 bg-[var(--surface-raised)] px-4 py-1.5 t-body-sm font-semibold text-[#1a5c4f] transition hover:bg-[#e4f5f0]">تصدير المحدد</button>
+            <button onClick={() => deleteLeads(Array.from(checked))} disabled={deleting} className="rounded-[var(--radius-sm)] border border-red-200 bg-[var(--surface-raised)] px-4 py-1.5 t-body-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50">{deleting ? "جارِ الحذف…" : "حذف المحدد"}</button>
+            <button onClick={() => setChecked(new Set())} className="rounded-[var(--radius-sm)] px-3 py-1.5 t-body-sm font-semibold text-slate-500 hover:text-slate-700">إلغاء</button>
           </div>
         </div>
       )}
 
       {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-[#d6ece5] bg-white shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
+      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] e-1">
         <div className="w-full overflow-hidden">
           <table className="w-full table-fixed border-collapse text-left">
             <colgroup>
@@ -403,7 +403,7 @@ export default function LeadsPage() {
               <col className="w-[11%]" />
             </colgroup>
             <thead>
-              <tr className="border-b border-[#e8f0ec] bg-[#f8faf9] text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-[var(--border-subtle)] bg-[#f8faf9] t-micro font-semibold uppercase tracking-wider text-slate-500">
                 <th className="px-3 py-3.5">
                   <input
                     type="checkbox"
@@ -447,12 +447,12 @@ export default function LeadsPage() {
                 <tr>
                   <td colSpan={9} className="px-6 py-16">
                     <div className="flex flex-col items-center justify-center gap-3 text-center">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-500"><WifiOffIcon className="h-6 w-6" /></div>
-                      <p className="text-[15px] font-semibold text-slate-700">تعذّر الاتصال</p>
-                      <p className="text-[13px] text-slate-400">لم نستطع تحميل بيانات العملاء</p>
+                      <div className="flex h-14 w-14 items-center justify-center rounded-[var(--radius-lg)] bg-red-50 text-red-500"><WifiOffIcon className="h-6 w-6" /></div>
+                      <p className="t-body font-semibold text-slate-700">تعذّر الاتصال</p>
+                      <p className="t-body-sm text-slate-400">لم نستطع تحميل بيانات العملاء</p>
                       <button
                         onClick={() => { setLoading(true); load(); }}
-                        className="mt-1 rounded-lg bg-emerald-600 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-emerald-700"
+                        className="mt-1 rounded-[var(--radius-sm)] bg-emerald-600 px-4 py-2 t-body-sm font-semibold text-white transition hover:bg-emerald-700"
                       >
                         إعادة المحاولة
                       </button>
@@ -463,13 +463,13 @@ export default function LeadsPage() {
                 <tr>
                   <td colSpan={9} className="px-6 py-20">
                     <div className="flex flex-col items-center justify-center text-center">
-                      <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                      <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-[var(--radius-lg)] bg-emerald-50 text-emerald-600">
                         <LeadsIcon />
                       </div>
-                      <p className="text-[15px] font-semibold text-slate-700">
+                      <p className="t-body font-semibold text-slate-700">
                         لا توجد عملاء
                       </p>
-                      <p className="mt-1 text-[13px] text-slate-400">
+                      <p className="mt-1 t-body-sm text-slate-400">
                         جرّب تعديل البحث أو الفلاتر
                       </p>
                     </div>
@@ -484,7 +484,7 @@ export default function LeadsPage() {
                     <tr
                       key={lead.id}
                       onClick={() => setSelectedLead(lead)}
-                      className={`tbl-row-accent dash-fade group cursor-pointer border-b border-[#e8f0ec] last:border-0 ${isJunk ? "opacity-60" : ""}`}
+                      className={`tbl-row-accent dash-fade group cursor-pointer border-b border-[var(--border-subtle)] last:border-0 ${isJunk ? "opacity-60" : ""}`}
                       style={{ animationDelay: rowIndex < 14 ? `${rowIndex * 28}ms` : "0ms" }}
                     >
                       <td className="px-3 py-4" onClick={(e) => e.stopPropagation()}>
@@ -499,14 +499,14 @@ export default function LeadsPage() {
                       {/* Name */}
                       <td className="px-3 py-4">
                         <div className="flex items-center gap-3">
-                          <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-gradient-to-br from-[#1a5c4f] to-[#0f3a30] text-[13px] font-bold text-white shadow-sm">
+                          <span className="flex h-10 w-10 flex-none items-center justify-center rounded-[var(--radius-md)] bg-gradient-to-br from-[#1a5c4f] to-[#0f3a30] t-body-sm font-bold text-white shadow-sm">
                             {initials(lead.full_name)}
                           </span>
                           <div className="min-w-0">
                             <p dir="auto" className="truncate text-[14px] font-semibold text-slate-900">
                               {lead.full_name || "Unnamed lead"}
                             </p>
-                            <p dir={lead.phone ? "ltr" : "auto"} className="truncate text-end text-[12px] text-slate-400">
+                            <p dir={lead.phone ? "ltr" : "auto"} className="truncate text-end t-caption text-slate-400">
                               {lead.phone ? formatPhone(lead.phone) : (lead.email || "—")}
                             </p>
                           </div>
@@ -516,11 +516,11 @@ export default function LeadsPage() {
                       {/* Source */}
                       <td className="px-3 py-4">
                         {lead.sources?.label ? (
-                          <span className="inline-flex rounded-lg bg-slate-100 px-2.5 py-1 text-[12px] font-semibold text-slate-600">
+                          <span className="inline-flex rounded-[var(--radius-sm)] bg-slate-100 px-2.5 py-1 t-caption font-semibold text-slate-600">
                             {lead.sources.label}
                           </span>
                         ) : (
-                          <span className="text-[13px] text-slate-300">—</span>
+                          <span className="t-body-sm text-slate-300">—</span>
                         )}
                       </td>
 
@@ -528,7 +528,7 @@ export default function LeadsPage() {
                       <td className="px-3 py-4">
                         {lead.pipeline_stages?.label ? (
                           <span
-                            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-semibold"
+                            className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1 t-caption font-semibold"
                             style={{
                               backgroundColor: `${stageColor}15`,
                               color: stageColor,
@@ -538,26 +538,26 @@ export default function LeadsPage() {
                             {lead.pipeline_stages.label}
                           </span>
                         ) : (
-                          <span className="text-[13px] text-slate-300">—</span>
+                          <span className="t-body-sm text-slate-300">—</span>
                         )}
                       </td>
 
                       {/* Status */}
                       <td className="px-3 py-4">
                         {isJunk ? (
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-[12px] font-semibold text-red-600 ring-1 ring-red-100">
+                          <span className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] bg-red-50 px-2.5 py-1 t-caption font-semibold text-red-600 ring-1 ring-red-100">
                             🚫 جنك
                           </span>
                         ) : outcome === "responded" ? (
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-600 ring-1 ring-emerald-100">
+                          <span className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] bg-emerald-50 px-2.5 py-1 t-caption font-semibold text-emerald-600 ring-1 ring-emerald-100">
                             ✅ رد
                           </span>
                         ) : outcome === "no_response" ? (
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2.5 py-1 text-[12px] font-semibold text-amber-600 ring-1 ring-amber-100">
+                          <span className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] bg-amber-50 px-2.5 py-1 t-caption font-semibold text-amber-600 ring-1 ring-amber-100">
                             ⏳ لم يرد
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-slate-50 px-2.5 py-1 text-[12px] font-semibold text-slate-500 ring-1 ring-slate-100">
+                          <span className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] bg-slate-50 px-2.5 py-1 t-caption font-semibold text-slate-500 ring-1 ring-slate-100">
                             جديد
                           </span>
                         )}
@@ -569,18 +569,18 @@ export default function LeadsPage() {
                       </td>
 
                       {/* Owner */}
-                      <td className="px-3 py-4 text-[13px] font-medium text-slate-600">
+                      <td className="px-3 py-4 t-body-sm font-medium text-slate-600">
                         {lead.owner || <span className="text-slate-300">—</span>}
                       </td>
 
                       {/* Created */}
-                      <td className="px-3 py-4 text-[12px] text-slate-400">
+                      <td className="px-3 py-4 t-caption text-slate-400">
                         {formatDate(lead.created_at)}
                       </td>
 
                       {/* Actions */}
                       <td className="px-3 py-4 text-right">
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-[12px] font-semibold text-slate-500 opacity-0 transition group-hover:bg-[#1a5c4f] group-hover:text-white group-hover:opacity-100">
+                        <span className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] bg-slate-100 px-3 py-1.5 t-caption font-semibold text-slate-500 opacity-0 transition group-hover:bg-[#1a5c4f] group-hover:text-white group-hover:opacity-100">
                           فتح ←
                         </span>
                       </td>
@@ -594,8 +594,8 @@ export default function LeadsPage() {
 
         {/* Pagination */}
         {!loading && filtered.length > 0 && (
-          <div className="flex items-center justify-between border-t border-[#e8f0ec] bg-[#f8faf9] px-6 py-3.5">
-            <p className="text-[13px] text-slate-500">
+          <div className="flex items-center justify-between border-t border-[var(--border-subtle)] bg-[#f8faf9] px-6 py-3.5">
+            <p className="t-body-sm text-slate-500">
               عرض{" "}
               <span className="font-bold text-slate-700 tabular-nums">
                 {(currentPage - 1) * PAGE_SIZE + 1}–
@@ -610,17 +610,17 @@ export default function LeadsPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#d6ece5] bg-white text-slate-500 transition hover:border-[#1a5c4f] hover:text-[#1a5c4f] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#d6ece5] disabled:hover:text-slate-500"
+                className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] text-slate-500 transition hover:border-[#1a5c4f] hover:text-[#1a5c4f] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[var(--border-subtle)] disabled:hover:text-slate-500"
               >
                 <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06L11.19 8 7.72 4.53a.75.75 0 011.06-1.06l4 4a.75.75 0 010 1.06l-4 4a.75.75 0 01-1.06 0z" clipRule="evenodd" /></svg>
               </button>
-              <span className="min-w-[80px] text-center text-[13px] font-semibold text-slate-600 tabular-nums">
+              <span className="min-w-[80px] text-center t-body-sm font-semibold text-slate-600 tabular-nums">
                 {currentPage} / {totalPages}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#d6ece5] bg-white text-slate-500 transition hover:border-[#1a5c4f] hover:text-[#1a5c4f] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#d6ece5] disabled:hover:text-slate-500"
+                className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] text-slate-500 transition hover:border-[#1a5c4f] hover:text-[#1a5c4f] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[var(--border-subtle)] disabled:hover:text-slate-500"
               >
                 <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M12.28 7.47a.75.75 0 010 1.06L8.81 12l3.47 3.47a.75.75 0 11-1.06 1.06l-4-4a.75.75 0 010-1.06l4-4a.75.75 0 011.06 0z" clipRule="evenodd" /></svg>
               </button>

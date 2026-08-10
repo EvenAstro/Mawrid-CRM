@@ -41,7 +41,7 @@ export default function CopilotWidget() {
 
       {/* Sliding panel */}
       <div
-        className={`fixed left-0 top-0 z-[56] flex h-screen w-full max-w-[480px] flex-col border-r border-gray-100 bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`fixed left-0 top-0 z-[56] flex h-screen w-full max-w-[480px] flex-col border-r border-gray-100 bg-[var(--surface-raised)] shadow-2xl transition-transform duration-300 ease-in-out ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -52,7 +52,7 @@ export default function CopilotWidget() {
         >
           <style>{`@keyframes copilotStatus { 0%,100% { opacity:1; transform:scale(1) } 50% { opacity:.4; transform:scale(.85) } }`}</style>
           <div className="flex items-center gap-2.5">
-            <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white">
+            <span className="relative flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] bg-white/10 text-white">
               <SparkleRobot className="h-5 w-5" />
             </span>
             <div>
@@ -60,14 +60,14 @@ export default function CopilotWidget() {
                 <span className="h-2 w-2 rounded-full bg-green-400" style={{ animation: "copilotStatus 2.4s ease-in-out infinite" }} />
                 مساعد مورد
               </p>
-              <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.6)" }}>متصل ويعرف كل شيء عن صفقاتك</p>
+              <p className="t-micro" style={{ color: "rgba(255,255,255,0.6)" }}>متصل ويعرف كل شيء عن صفقاتك</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setOpen(false)}
               aria-label="إغلاق"
-              className="rounded-lg p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
+              className="rounded-[var(--radius-sm)] p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-5 w-5">
                 <path d="M6 6l12 12M18 6 6 18" />

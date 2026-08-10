@@ -30,7 +30,7 @@ export default function LoginPage() {
   }
 
   const inputCls =
-    "h-12 w-full rounded-xl border border-[#e8ece9] bg-white pr-11 pl-4 text-[15px] text-[#1e1b4b] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/10 transition-all duration-200";
+    "h-12 w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] pr-11 pl-4 t-body text-[#1e1b4b] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/10 transition-all duration-200";
 
   return (
     <div dir="rtl" className="flex min-h-screen bg-ivory" style={{ fontFamily: "var(--font-cairo), system-ui, sans-serif" }}>
@@ -48,7 +48,7 @@ export default function LoginPage() {
 
       {/* Form */}
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
-        <div className="auth-card-in w-full max-w-sm rounded-2xl border border-border-light bg-white p-8 shadow-[0_16px_50px_rgba(20,28,46,0.07)]">
+        <div className="auth-card-in w-full max-w-sm rounded-[var(--radius-lg)] border border-border-light bg-[var(--surface-raised)] p-8 shadow-[0_16px_50px_rgba(20,28,46,0.07)]">
           <div className="mb-6 flex items-center gap-2.5 lg:hidden">
             <svg viewBox="0 0 36 36" className="h-9 w-9 flex-none" fill="none">
               <rect width="36" height="36" rx="9" fill="#3a9080" />
@@ -82,7 +82,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {error && <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
+            {error && <div className="rounded-[var(--radius-md)] border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
 
             <button
               type="submit"

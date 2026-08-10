@@ -216,7 +216,7 @@ function Skeleton() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-pad)]">
             <div className="flex items-center justify-between">
-              <div className="skeleton-shimmer h-11 w-11 rounded-2xl" />
+              <div className="skeleton-shimmer h-11 w-11 rounded-[var(--radius-lg)]" />
               <div className="skeleton-shimmer h-5 w-20 rounded-full" />
             </div>
             <div className="skeleton-shimmer mt-4 h-3.5 w-24 rounded" />
@@ -227,14 +227,14 @@ function Skeleton() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-pad)] lg:col-span-2">
           <div className="mb-4 flex items-center gap-3">
-            <div className="skeleton-shimmer h-10 w-10 rounded-xl" />
+            <div className="skeleton-shimmer h-10 w-10 rounded-[var(--radius-md)]" />
             <div className="skeleton-shimmer h-4 w-32 rounded" />
           </div>
-          <div className="skeleton-shimmer h-40 rounded-xl" />
+          <div className="skeleton-shimmer h-40 rounded-[var(--radius-md)]" />
         </div>
         <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-pad)]">
           <div className="mb-4 flex items-center gap-3">
-            <div className="skeleton-shimmer h-10 w-10 rounded-xl" />
+            <div className="skeleton-shimmer h-10 w-10 rounded-[var(--radius-md)]" />
             <div className="skeleton-shimmer h-4 w-20 rounded" />
           </div>
           {Array.from({ length: 3 }).map((_, i) => (
@@ -249,7 +249,7 @@ function Skeleton() {
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-pad)]">
             <div className="mb-4 flex items-center gap-3">
-              <div className="skeleton-shimmer h-10 w-10 rounded-xl" />
+              <div className="skeleton-shimmer h-10 w-10 rounded-[var(--radius-md)]" />
               <div className="skeleton-shimmer h-4 w-24 rounded" />
             </div>
             {Array.from({ length: 3 }).map((_, j) => (
@@ -519,7 +519,7 @@ export default function DashboardPage() {
             title="اليوم"
             subtitle={longDate(now)}
             action={
-              <p className="t-figure rounded-[var(--radius-sm)] bg-[var(--surface-accent-subtle)] px-3 py-1.5 text-[17px] text-[color:var(--content-accent)]">
+              <p className="t-figure rounded-[var(--radius-sm)] bg-[var(--surface-accent-subtle)] px-3 py-1.5 t-body-lg text-[color:var(--content-accent)]">
                 {now.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}
               </p>
             }
@@ -592,11 +592,11 @@ export default function DashboardPage() {
             <div className="flex-1 space-y-2">
               <div className="flex items-center justify-between rounded-[var(--radius-sm)] bg-[var(--status-success-bg)] px-3 py-2">
                 <span className="t-caption flex items-center gap-1.5 font-semibold text-[color:var(--status-success-fg)]"><span className="h-2 w-2 rounded-full bg-current" />مكسوبة</span>
-                <span className="t-figure text-[15px] text-[color:var(--status-success-fg)]">{m.won}</span>
+                <span className="t-figure t-body text-[color:var(--status-success-fg)]">{m.won}</span>
               </div>
               <div className="flex items-center justify-between rounded-[var(--radius-sm)] bg-[var(--status-danger-bg)] px-3 py-2">
                 <span className="t-caption flex items-center gap-1.5 font-semibold text-[color:var(--status-danger-fg)]"><span className="h-2 w-2 rounded-full bg-current" />خاسرة</span>
-                <span className="t-figure text-[15px] text-[color:var(--status-danger-fg)]">{m.lost}</span>
+                <span className="t-figure t-body text-[color:var(--status-danger-fg)]">{m.lost}</span>
               </div>
             </div>
           </div>
@@ -608,7 +608,7 @@ export default function DashboardPage() {
                   <div className={`h-2 w-2 flex-none rounded-full ${OVERVIEW_DOT[o.tone]}`} />
                   <span className="t-body-sm text-[color:var(--content-secondary)]">{o.label}</span>
                 </div>
-                <span className={`t-figure rounded-[var(--radius-xs)] px-2 py-0.5 text-[13.5px] ${OVERVIEW_BADGE[o.tone]}`}>{o.value}</span>
+                <span className={`t-figure rounded-[var(--radius-xs)] px-2 py-0.5 t-body-sm ${OVERVIEW_BADGE[o.tone]}`}>{o.value}</span>
               </div>
             ))}
           </div>
@@ -683,7 +683,7 @@ export default function DashboardPage() {
                     <p dir="auto" className="t-body-sm truncate font-semibold text-[color:var(--content-primary)]">{l.full_name || "عميل بدون اسم"}</p>
                     <p className="t-caption text-[color:var(--content-tertiary)]">{l.sources?.label || "—"}</p>
                   </div>
-                  <span className={`t-figure rounded-full px-2 py-0.5 text-[12px] ${aiPill(score)}`}>{score}%</span>
+                  <span className={`t-figure rounded-full px-2 py-0.5 t-caption ${aiPill(score)}`}>{score}%</span>
                 </Link>
               );
             })

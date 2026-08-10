@@ -63,7 +63,7 @@ function RefreshIcon({ className = "h-4 w-4" }: { className?: string }) {
 /** Shared shell for the AI-insight visual treatment — a soft teal-tinted gradient card, distinct from plain white info cards. */
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-mint/60 via-white to-white p-5 shadow-brand">
+    <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-primary/15 bg-gradient-to-br from-mint/60 via-white to-white p-5 shadow-brand">
       {children}
     </div>
   );
@@ -72,7 +72,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 function HeaderRow({ onRefresh, refreshing }: { onRefresh?: () => void; refreshing?: boolean }) {
   return (
     <div className="mb-3 flex items-center justify-between">
-      <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-primary/70">
+      <span className="flex items-center gap-1.5 t-micro font-semibold uppercase tracking-[0.1em] text-primary/70">
         <SparkleIcon className="h-3.5 w-3.5" />
         أفضل إجراء تالٍ
       </span>
@@ -81,7 +81,7 @@ function HeaderRow({ onRefresh, refreshing }: { onRefresh?: () => void; refreshi
           onClick={onRefresh}
           disabled={refreshing}
           aria-label="تحديث التوصية"
-          className="rounded-full p-1.5 text-muted/50 opacity-60 transition hover:bg-white hover:text-primary hover:opacity-100 disabled:opacity-40"
+          className="rounded-full p-1.5 text-muted/50 opacity-60 transition hover:bg-[var(--surface-raised)] hover:text-primary hover:opacity-100 disabled:opacity-40"
         >
           <RefreshIcon className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
         </button>
@@ -177,7 +177,7 @@ export default function NextBestActionCard({
   if (dismissed) {
     return (
       <Shell>
-        <p dir="auto" className="text-[13px] text-muted">
+        <p dir="auto" className="t-body-sm text-muted">
           يمكنك إعادة التحميل لاحقاً
         </p>
       </Shell>
@@ -208,7 +208,7 @@ export default function NextBestActionCard({
         <p dir="auto" className="text-[14px] font-medium text-ink-secondary">
           التوصية غير متاحة حالياً
         </p>
-        <button onClick={() => load(false)} className="mt-2 text-[12px] font-semibold text-primary hover:underline">
+        <button onClick={() => load(false)} className="mt-2 t-caption font-semibold text-primary hover:underline">
           إعادة المحاولة
         </button>
       </Shell>
@@ -237,23 +237,23 @@ export default function NextBestActionCard({
     <Shell>
       <HeaderRow onRefresh={() => load(true)} refreshing={refreshing} />
 
-      <p dir="auto" className="text-[17px] font-extrabold leading-snug tracking-tight text-ink">
+      <p dir="auto" className="t-body-lg font-extrabold leading-snug tracking-tight text-ink">
         {rec.action}
       </p>
-      <p dir="auto" className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-muted">
+      <p dir="auto" className="mt-1.5 line-clamp-2 t-body-sm leading-relaxed text-muted">
         {rec.reason}
       </p>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="flex items-center gap-1.5 text-[12px] font-medium text-ink-secondary">
+        <span className="flex items-center gap-1.5 t-caption font-medium text-ink-secondary">
           <span className={`h-1.5 w-1.5 flex-none rounded-full ${URGENCY_DOT[rec.urgency]}`} />
           {URGENCY_LABEL_AR[rec.urgency]}
         </span>
-        <span className="text-[11px] text-muted/80">الثقة: {CONFIDENCE_LABEL_AR[rec.confidence]}</span>
+        <span className="t-micro text-muted/80">الثقة: {CONFIDENCE_LABEL_AR[rec.confidence]}</span>
       </div>
 
       {isLooseMatch && (
-        <p dir="auto" className="mt-2.5 text-[11px] text-muted/70">
+        <p dir="auto" className="mt-2.5 t-micro text-muted/70">
           بناءً على بيانات محدودة
         </p>
       )}
@@ -262,13 +262,13 @@ export default function NextBestActionCard({
         <button
           onClick={markDone}
           disabled={executing}
-          className="rounded-full px-3 py-1.5 text-[12px] font-semibold text-primary transition hover:bg-mint disabled:opacity-50"
+          className="rounded-full px-3 py-1.5 t-caption font-semibold text-primary transition hover:bg-mint disabled:opacity-50"
         >
           {executing ? "…" : "✓ تم التنفيذ"}
         </button>
         <button
           onClick={dismiss}
-          className="rounded-full px-3 py-1.5 text-[12px] font-semibold text-muted transition hover:bg-black/[0.03] hover:text-ink-secondary"
+          className="rounded-full px-3 py-1.5 t-caption font-semibold text-muted transition hover:bg-black/[0.03] hover:text-ink-secondary"
         >
           تجاهل
         </button>

@@ -40,7 +40,7 @@ function MessageActions({ msg }: { msg: ChatMessage }) {
       {isDraft && (
         <button
           onClick={copy}
-          className="rounded-full bg-teal-700 px-3 py-1 text-[12px] font-semibold text-white transition hover:bg-teal-800"
+          className="rounded-full bg-teal-700 px-3 py-1 t-caption font-semibold text-white transition hover:bg-teal-800"
         >
           {copied ? "تم النسخ ✓" : "نسخ الرسالة 📋"}
         </button>
@@ -48,7 +48,7 @@ function MessageActions({ msg }: { msg: ChatMessage }) {
       {isStuck && (
         <button
           onClick={() => router.push("/dashboard/deals")}
-          className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-[12px] font-semibold text-teal-700 transition hover:bg-teal-100"
+          className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 t-caption font-semibold text-teal-700 transition hover:bg-teal-100"
         >
           عرض الصفقات
         </button>
@@ -57,7 +57,7 @@ function MessageActions({ msg }: { msg: ChatMessage }) {
         <button
           disabled
           title="قريباً"
-          className="cursor-not-allowed rounded-full border border-gray-200 px-3 py-1 text-[12px] font-semibold text-gray-300"
+          className="cursor-not-allowed rounded-full border border-gray-200 px-3 py-1 t-caption font-semibold text-gray-300"
         >
           تصدير كتقرير
         </button>
@@ -92,13 +92,13 @@ export default function ChatThread({ emptyHint }: { emptyHint?: React.ReactNode 
   if (messages.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] text-2xl shadow-lg shadow-teal-900/20">
+        <div className="flex h-14 w-14 items-center justify-center rounded-[var(--radius-lg)] bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] text-2xl shadow-lg shadow-teal-900/20">
           ✨
         </div>
-        <p className="mt-4 text-[15px] font-semibold text-gray-900" dir="auto">
+        <p className="mt-4 t-body font-semibold text-gray-900" dir="auto">
           مرحباً! أنا مساعد مورد
         </p>
-        <p className="mt-1 text-[13px] text-gray-400" dir="auto">
+        <p className="mt-1 t-body-sm text-gray-400" dir="auto">
           {emptyHint ?? "اسألني أي شيء عن صفقاتك وعملائك"}
         </p>
       </div>
@@ -115,7 +115,7 @@ export default function ChatThread({ emptyHint }: { emptyHint?: React.ReactNode 
           <div key={m.id} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[85%] ${isUser ? "" : "w-full"}`}>
               <div
-                className="px-4 py-3 text-[15px]"
+                className="px-4 py-3 t-body"
                 style={
                   isUser
                     ? {
@@ -147,7 +147,7 @@ export default function ChatThread({ emptyHint }: { emptyHint?: React.ReactNode 
                 )}
               </div>
               {!isUser && !showDots && m.content && <MessageActions msg={m} />}
-              <p className={`mt-1 text-[11px] text-gray-300 ${isUser ? "text-right" : "text-left"}`}>{timeLabel(m.at)}</p>
+              <p className={`mt-1 t-micro text-gray-300 ${isUser ? "text-right" : "text-left"}`}>{timeLabel(m.at)}</p>
             </div>
           </div>
         );

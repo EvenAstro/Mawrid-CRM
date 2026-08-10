@@ -26,7 +26,7 @@ function monthStart(): string {
 }
 
 const MEDALS = ["🥇", "🥈", "🥉"];
-const CARD = "rounded-2xl border border-[#d6ece5] bg-white shadow-[0_2px_8px_rgba(26,92,79,0.04)]";
+const CARD = "rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] e-1";
 
 export default function LeaderboardTab() {
   const [loading, setLoading] = useState(true);
@@ -116,10 +116,10 @@ export default function LeaderboardTab() {
 
   return (
     <div className="flex flex-col gap-5">
-      <section className="relative overflow-hidden rounded-3xl bg-[#141c2e] p-8 text-white">
+      <section className="relative overflow-hidden rounded-[var(--radius-lg)] bg-[#141c2e] p-8 text-white">
         <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1">
           <span className="h-1.5 w-1.5 rounded-full bg-[#7ee7cd]" />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#7ee7cd]">أداء الفريق</span>
+          <span className="t-micro font-bold uppercase tracking-wider text-[#7ee7cd]">أداء الفريق</span>
         </div>
         <h1 dir="auto" className="text-[26px] font-extrabold leading-tight">لوحة أداء المندوبين — هذا الشهر</h1>
         <p dir="auto" className="mt-2 max-w-xl text-[14px] leading-relaxed text-white/70">
@@ -137,17 +137,17 @@ export default function LeaderboardTab() {
           {rows.map((r, i) => (
             <div key={r.userId} className="flex items-center gap-4 p-5">
               <span className="flex h-9 w-9 flex-none items-center justify-center text-[20px]">
-                {i < 3 ? MEDALS[i] : <span className="text-[13px] font-bold text-muted">{i + 1}</span>}
+                {i < 3 ? MEDALS[i] : <span className="t-body-sm font-bold text-muted">{i + 1}</span>}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <p dir="auto" className="truncate text-[14px] font-bold text-ink">{r.name}</p>
-                  <span dir="ltr" className="flex-none text-[13px] font-bold text-[#1a5c4f]">SAR {money(r.wonValueSAR)}</span>
+                  <span dir="ltr" className="flex-none t-body-sm font-bold text-[#1a5c4f]">SAR {money(r.wonValueSAR)}</span>
                 </div>
                 <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
                   <div className="h-full rounded-full bg-[#1a5c4f]" style={{ width: `${(r.score / maxScore) * 100}%` }} />
                 </div>
-                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] text-muted">
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 t-caption text-muted">
                   <span>🏆 {r.wonDeals} صفقة مربوحة</span>
                   <span>✅ {r.tasksCompleted} مهمة منجزة</span>
                   <span>📞 {r.outboundActivities} تواصل صادر</span>

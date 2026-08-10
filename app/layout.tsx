@@ -33,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" className={`${cairo.variable} ${plexArabic.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col bg-white font-sans">{children}</body>
+      <body className="flex min-h-full flex-col bg-[var(--surface-raised)] font-sans">{children}</body>
     </html>
   );
 }

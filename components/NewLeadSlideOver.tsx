@@ -81,9 +81,9 @@ export default function NewLeadSlideOver({
   }
 
   const inputCls =
-    "h-11 w-full rounded-xl border border-[#e8ece9] bg-white px-3.5 text-[15px] text-[#334155] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15";
+    "h-11 w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3.5 t-body text-[#334155] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15";
   const labelCls =
-    "mb-1.5 block text-[13px] font-semibold uppercase tracking-wide text-[#94a3b8]";
+    "mb-1.5 block t-body-sm font-semibold uppercase tracking-wide text-[#94a3b8]";
 
   return (
     <>
@@ -94,14 +94,14 @@ export default function NewLeadSlideOver({
         }`}
       />
       <aside
-        className={`fixed right-0 top-0 z-50 flex h-screen w-full max-w-[460px] flex-col border-l border-[#e8ece9] bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`fixed right-0 top-0 z-50 flex h-screen w-full max-w-[460px] flex-col border-l border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-2xl transition-transform duration-300 ease-in-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-[#e8ece9] p-6">
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] p-6">
           <div>
             <h2 className="text-xl font-bold text-[#1e1b4b]">عميل جديد</h2>
-            <p className="mt-0.5 text-[13px] text-[#94a3b8]">أضف عميل لمسار المبيعات</p>
+            <p className="mt-0.5 t-body-sm text-[#94a3b8]">أضف عميل لمسار المبيعات</p>
           </div>
           <button
             onClick={onClose}
@@ -161,23 +161,23 @@ export default function NewLeadSlideOver({
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
               placeholder="أي ملاحظات عن هذا العميل..."
-              className="w-full rounded-xl border border-[#e8ece9] bg-white px-3.5 py-2.5 text-[15px] text-[#334155] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15"
+              className="w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3.5 py-2.5 t-body text-[#334155] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15"
             />
           </div>
         </form>
 
-        <div className="flex gap-3 border-t border-[#e8ece9] p-6">
+        <div className="flex gap-3 border-t border-[var(--border-subtle)] p-6">
           <button
             onClick={onClose}
             type="button"
-            className="h-11 flex-1 rounded-xl border border-[#e8ece9] text-[15px] font-semibold text-[#334155] transition hover:bg-[#f8fafc]"
+            className="h-11 flex-1 rounded-[var(--radius-md)] border border-[var(--border-subtle)] t-body font-semibold text-[#334155] transition hover:bg-[#f8fafc]"
           >
             إلغاء
           </button>
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="h-11 flex-1 rounded-xl bg-[#1a5c4f] text-[15px] font-semibold text-white shadow-sm shadow-[#1a5c4f]/25 transition hover:bg-[#15503f] disabled:opacity-60"
+            className="h-11 flex-1 rounded-[var(--radius-md)] bg-[#1a5c4f] t-body font-semibold text-white shadow-sm shadow-[#1a5c4f]/25 transition hover:bg-[#15503f] disabled:opacity-60"
           >
             {saving ? "جاري الحفظ..." : "حفظ العميل"}
           </button>

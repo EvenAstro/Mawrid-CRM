@@ -296,7 +296,7 @@ function Section({ n, title, children }: { n: string; title: string; children: R
     <section className="mt-9 first:mt-0">
       <div className="mb-4 flex items-center gap-3">
         <span
-          className="t-figure flex h-7 w-7 items-center justify-center rounded-full border border-[var(--border-inverse-strong)] text-[13px] text-[color:var(--content-inverse-accent)]"
+          className="t-figure flex h-7 w-7 items-center justify-center rounded-full border border-[var(--border-inverse-strong)] t-body-sm text-[color:var(--content-inverse-accent)]"
           aria-hidden="true"
         >
           {n}

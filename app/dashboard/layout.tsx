@@ -272,7 +272,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
 
         {/* User */}
         <div className="border-t border-[var(--border-inverse)] px-3 pb-4 pt-4">
-          <div className={`flex items-center gap-3 rounded-xl px-2 py-2 ${effectiveCollapsed ? "justify-center" : ""}`}>
+          <div className={`flex items-center gap-3 rounded-[var(--radius-md)] px-2 py-2 ${effectiveCollapsed ? "justify-center" : ""}`}>
             <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[var(--brand-teal-400)]">
               <span className="text-sm font-bold text-white">{userInitials}</span>
             </div>

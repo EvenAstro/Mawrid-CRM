@@ -80,7 +80,7 @@ export default function RichText({ content }: { content: string }) {
     if (heading) {
       flushList();
       blocks.push(
-        <p key={`h${key++}`} dir="auto" className="mb-1 mt-2.5 text-[13px] font-bold text-teal-800 first:mt-0">
+        <p key={`h${key++}`} dir="auto" className="mb-1 mt-2.5 t-body-sm font-bold text-teal-800 first:mt-0">
           {inline(heading[1], `h${key}`)}
         </p>,
       );
@@ -113,5 +113,5 @@ export default function RichText({ content }: { content: string }) {
   }
   flushList();
 
-  return <div className="text-[15px]">{blocks}</div>;
+  return <div className="t-body">{blocks}</div>;
 }

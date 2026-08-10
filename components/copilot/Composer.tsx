@@ -28,8 +28,8 @@ export default function Composer({ chips = DEFAULT_CHIPS }: { chips?: string[] }
   }
 
   return (
-    <div className="border-t border-gray-100 bg-white p-3">
-      <div className="flex items-end gap-2 rounded-2xl border border-gray-200 bg-white px-2 py-1.5 transition-colors focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-600/10">
+    <div className="border-t border-gray-100 bg-[var(--surface-raised)] p-3">
+      <div className="flex items-end gap-2 rounded-[var(--radius-lg)] border border-gray-200 bg-[var(--surface-raised)] px-2 py-1.5 transition-colors focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-600/10">
         <textarea
           ref={taRef}
           value={value}
@@ -46,7 +46,7 @@ export default function Composer({ chips = DEFAULT_CHIPS }: { chips?: string[] }
           dir="auto"
           rows={1}
           placeholder="اسألني أي شيء..."
-          className="max-h-28 flex-1 resize-none border-0 bg-transparent px-2 py-1.5 text-[15px] text-gray-800 placeholder:text-gray-400 focus:outline-none"
+          className="max-h-28 flex-1 resize-none border-0 bg-transparent px-2 py-1.5 t-body text-gray-800 placeholder:text-gray-400 focus:outline-none"
           style={{ fontFamily: "Cairo, sans-serif" }}
         />
         <button
@@ -67,7 +67,7 @@ export default function Composer({ chips = DEFAULT_CHIPS }: { chips?: string[] }
             key={c}
             onClick={() => submit(c)}
             disabled={streaming}
-            className="rounded-full border border-gray-100 bg-white px-3 py-1 text-[12px] font-medium text-gray-500 transition-all duration-150 hover:border-teal-200 hover:bg-teal-50 hover:text-teal-700 disabled:opacity-50"
+            className="rounded-full border border-gray-100 bg-[var(--surface-raised)] px-3 py-1 t-caption font-medium text-gray-500 transition-all duration-150 hover:border-teal-200 hover:bg-teal-50 hover:text-teal-700 disabled:opacity-50"
           >
             {c}
           </button>

@@ -173,18 +173,18 @@ function HealthCard({data,ctx}:{data:RevenueIntelligenceData;ctx:string}) {
 
   return (
     <div className="ri-card h-full flex flex-col" style={{animationDelay:".04s"}}>
-      <div className="relative rounded-2xl border border-[#d6ece5] bg-white ri-lift cursor-pointer group flex-1 flex flex-col shadow-[0_2px_8px_rgba(26,92,79,0.05)]"
+      <div className="relative rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] ri-lift cursor-pointer group flex-1 flex flex-col e-1"
         onClick={explain}>
         <div className="relative p-5 flex flex-col flex-1">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded-lg flex items-center justify-center" style={{backgroundColor:`${h.color}17`,color:h.color}}>
+              <div className="h-6 w-6 rounded-[var(--radius-sm)] flex items-center justify-center" style={{backgroundColor:`${h.color}17`,color:h.color}}>
                 <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 8h3l2-5 2 10 2-5h3"/></svg>
               </div>
               <div>
-                <p className="text-[9px] font-black uppercase tracking-[.16em]" style={{color:C.tx3}}>نبضة الخط</p>
-                <p className="text-[11px] font-bold" style={{color:h.color}}>{h.label}</p>
+                <p className="t-micro font-black uppercase tracking-[.16em]" style={{color:C.tx3}}>نبضة الخط</p>
+                <p className="t-micro font-bold" style={{color:h.color}}>{h.label}</p>
               </div>
             </div>
             <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke={C.tx3} strokeWidth="1.5"><path d="M6 4l4 4-4 4"/></svg>
@@ -209,7 +209,7 @@ function HealthCard({data,ctx}:{data:RevenueIntelligenceData;ctx:string}) {
                 <span className="text-[28px] font-black tabular-nums leading-none" style={{color:h.color}}>
                   <AnimNum value={h.score} fmt={n=>`${n}`}/>
                 </span>
-                <span className="text-[9px] font-bold mt-0.5" style={{color:C.tx3}}>/ 100</span>
+                <span className="t-micro font-bold mt-0.5" style={{color:C.tx3}}>/ 100</span>
               </div>
             </div>
           </div>
@@ -221,15 +221,15 @@ function HealthCard({data,ctx}:{data:RevenueIntelligenceData;ctx:string}) {
               {v:`${Math.max(0,data.deals.length-data.atRiskCount)}`, l:"آمنة", c:C.i4},
               {v:`${data.totalPipelineSAR>0?Math.round((data.weightedPipelineSAR/data.totalPipelineSAR)*100):0}%`, l:"كثافة", c:C.a4},
             ].map(m=>(
-              <div key={m.l} className="text-center py-1.5 rounded-lg" style={{background:`${m.c}0a`}}>
-                <p className="text-[13px] font-black tabular-nums leading-none" style={{color:m.c}}>{m.v}</p>
-                <p className="text-[9px] mt-1" style={{color:C.tx3}}>{m.l}</p>
+              <div key={m.l} className="text-center py-1.5 rounded-[var(--radius-sm)]" style={{background:`${m.c}0a`}}>
+                <p className="t-body-sm font-black tabular-nums leading-none" style={{color:m.c}}>{m.v}</p>
+                <p className="t-micro mt-1" style={{color:C.tx3}}>{m.l}</p>
               </div>
             ))}
           </div>
 
           {/* CTA */}
-          <div className="mt-3 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed group-hover:border-solid transition-all text-[10px] font-bold"
+          <div className="mt-3 flex items-center justify-center gap-1.5 py-2 rounded-[var(--radius-sm)] border border-dashed group-hover:border-solid transition-all t-micro font-bold"
             style={{borderColor:`${h.color}30`,color:h.color}}>
             <svg viewBox="0 0 14 14" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="7" cy="7" r="5.5"/><path d="M7 5v2.5M7 9.5h.01"/></svg>
             فسّر لي بالذكاء الاصطناعي
@@ -239,22 +239,22 @@ function HealthCard({data,ctx}:{data:RevenueIntelligenceData;ctx:string}) {
 
       {/* AI panel */}
       {open&&(
-        <div className="ri-in mt-2.5 rounded-2xl border overflow-hidden" style={{background:"linear-gradient(145deg,#0f1729,#141c2e)",borderColor:`${h.color}20`,boxShadow:"0 12px 28px rgba(0,0,0,.18)"}}>
+        <div className="ri-in mt-2.5 rounded-[var(--radius-lg)] border overflow-hidden" style={{background:"linear-gradient(145deg,#0f1729,#141c2e)",borderColor:`${h.color}20`,boxShadow:"0 12px 28px rgba(0,0,0,.18)"}}>
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]">
             <div className="flex items-center gap-2">
-              <div className="h-5 w-5 rounded-md flex items-center justify-center" style={{background:h.grad}}>
+              <div className="h-5 w-5 rounded-[var(--radius-xs)] flex items-center justify-center" style={{background:h.grad}}>
                 <svg viewBox="0 0 12 12" className="h-2.5 w-2.5"><circle cx="6" cy="4.5" r="1.8" fill="none" stroke="white" strokeWidth="1"/><circle cx="3.5" cy="7.5" r="1.2" fill="none" stroke="white" strokeWidth="1"/><circle cx="8.5" cy="7.5" r="1.2" fill="none" stroke="white" strokeWidth="1"/></svg>
               </div>
-              <span className="text-[11px] font-bold text-white/85">تحليل النبضة</span>
-              <span className="text-[8px] font-black text-emerald-400/70 bg-emerald-400/10 px-1.5 py-0.5 rounded">AI</span>
+              <span className="t-micro font-bold text-white/85">تحليل النبضة</span>
+              <span className="t-micro font-black text-emerald-400/70 bg-emerald-400/10 px-1.5 py-0.5 rounded">AI</span>
             </div>
             <button onClick={e=>{e.stopPropagation();setOpen(false);}} className="text-white/25 hover:text-white/60 transition text-xs">✕</button>
           </div>
-          <div className="px-4 py-3.5 text-[12px] text-white/70 leading-[1.8] min-h-[52px]">
+          <div className="px-4 py-3.5 t-caption text-white/70 leading-[1.8] min-h-[52px]">
             {loading?(
               <div className="flex items-center gap-2 text-white/30">
                 {[0,1,2].map(i=><span key={i} className="h-1.5 w-1.5 rounded-full bg-emerald-400/50 animate-bounce" style={{animationDelay:`${i*.15}s`}}/>)}
-                <span className="text-[10px]">يحلل…</span>
+                <span className="t-micro">يحلل…</span>
               </div>
             ):insight}
           </div>
@@ -323,7 +323,7 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-2xl"/>
-      <div className="ri-in relative w-full max-w-lg overflow-hidden rounded-2xl" onClick={e=>e.stopPropagation()}
+      <div className="ri-in relative w-full max-w-lg overflow-hidden rounded-[var(--radius-lg)]" onClick={e=>e.stopPropagation()}
         style={{background:"#141c2e",border:"1px solid rgba(255,255,255,.08)",boxShadow:"0 32px 80px rgba(0,0,0,.4)"}}>
         <div className="absolute top-[-40px] right-[-20px] h-48 w-48 pointer-events-none" style={{background:"radial-gradient(circle,rgba(16,185,129,.18),transparent 70%)"}}/>
         <div className="absolute bottom-[-30px] left-[-20px] h-40 w-40 pointer-events-none" style={{background:"radial-gradient(circle,rgba(52,211,153,.1),transparent 70%)"}}/>
@@ -333,16 +333,16 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-2.5">
-                <div className="h-7 w-7 rounded-lg flex items-center justify-center ri-shine-wrap" style={{background:"linear-gradient(135deg,#059669,#34d399)",boxShadow:"0 4px 12px rgba(16,185,129,.3)"}}>
+                <div className="h-7 w-7 rounded-[var(--radius-sm)] flex items-center justify-center ri-shine-wrap" style={{background:"linear-gradient(135deg,#059669,#34d399)",boxShadow:"0 4px 12px rgba(16,185,129,.3)"}}>
                   <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M7 2l5 9H2z"/><path d="M7 6v2M7 10h.01"/></svg>
                 </div>
-                <span className="text-[9px] font-black text-white/30 uppercase tracking-[.18em]">مدرب الصفقات</span>
-                <span className="text-[8px] font-black text-emerald-400/70 bg-emerald-400/10 px-1.5 py-0.5 rounded">AI</span>
+                <span className="t-micro font-black text-white/30 uppercase tracking-[.18em]">مدرب الصفقات</span>
+                <span className="t-micro font-black text-emerald-400/70 bg-emerald-400/10 px-1.5 py-0.5 rounded">AI</span>
               </div>
               <h2 className="text-[18px] font-black text-white leading-snug">{deal.name}</h2>
-              {deal.leadName&&<p className="text-[11px] text-white/30 mt-0.5">{deal.leadName}</p>}
+              {deal.leadName&&<p className="t-micro text-white/30 mt-0.5">{deal.leadName}</p>}
             </div>
-            <button onClick={onClose} className="h-8 w-8 rounded-lg flex items-center justify-center text-white/20 hover:text-white/50 hover:bg-white/5 transition flex-none">
+            <button onClick={onClose} className="h-8 w-8 rounded-[var(--radius-sm)] flex items-center justify-center text-white/20 hover:text-white/50 hover:bg-white/5 transition flex-none">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-3.5 w-3.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           </div>
@@ -352,7 +352,7 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
               {t:`${deal.probabilityPct}% احتمالية`,bg:`${cat.hex}22`,c:cat.ring},
               {t:risk.label,bg:`${risk.dot}18`,c:risk.dot},
             ].map(b=>(
-              <span key={b.t} className="text-[10px] font-bold px-2.5 py-1 rounded-md" style={{background:b.bg,color:b.c}}>{b.t}</span>
+              <span key={b.t} className="t-micro font-bold px-2.5 py-1 rounded-[var(--radius-xs)]" style={{background:b.bg,color:b.c}}>{b.t}</span>
             ))}
           </div>
         </div>
@@ -361,12 +361,12 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
         <div className="relative px-6 py-5 space-y-3">
           {loading&&(
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-white/30 text-[11px]">
+              <div className="flex items-center gap-2 text-white/30 t-micro">
                 <div className="h-4 w-4 rounded-full border-2 border-transparent border-t-emerald-400" style={{animation:"ri-spin .7s linear infinite"}}/>
                 يحلل الصفقة ويضع خطة عمل…
               </div>
               {[0,1,2].map(i=>(
-                <div key={i} className="rounded-xl p-4 border border-white/[0.04]" style={{background:"rgba(255,255,255,.02)"}}>
+                <div key={i} className="rounded-[var(--radius-md)] p-4 border border-white/[0.04]" style={{background:"rgba(255,255,255,.02)"}}>
                   <div className="h-2.5 rounded w-1/3 mb-2" style={{background:"rgba(255,255,255,.06)"}}/>
                   <div className="h-2 rounded w-full mb-1.5" style={{background:"rgba(255,255,255,.04)"}}/>
                   <div className="h-2 rounded w-4/5" style={{background:"rgba(255,255,255,.03)"}}/>
@@ -375,13 +375,13 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
             </div>
           )}
           {done&&steps.map((step,i)=>(
-            <div key={i} className="ri-up rounded-xl p-4 border" style={{animationDelay:`${i*.1}s`,background:`${stepC[i]??C.e4}0d`,borderColor:`${stepC[i]??C.e4}20`}}>
+            <div key={i} className="ri-up rounded-[var(--radius-md)] p-4 border" style={{animationDelay:`${i*.1}s`,background:`${stepC[i]??C.e4}0d`,borderColor:`${stepC[i]??C.e4}20`}}>
               <div className="flex items-start gap-3">
-                <div className="h-7 w-7 rounded-lg flex items-center justify-center text-[12px] font-black text-white flex-none ri-shine-wrap"
+                <div className="h-7 w-7 rounded-[var(--radius-sm)] flex items-center justify-center t-caption font-black text-white flex-none ri-shine-wrap"
                   style={{background:stepG[i]??stepG[0],boxShadow:`0 3px 10px ${stepC[i]??C.e4}40`}}>{step.num}</div>
                 <div className="flex-1 min-w-0 pt-0.5">
-                  <p className="text-[12px] font-bold mb-1.5" style={{color:stepC[i]??C.e4}}>{step.title}</p>
-                  <p className="text-[11px] text-white/55 leading-[1.75]">{step.body}</p>
+                  <p className="t-caption font-bold mb-1.5" style={{color:stepC[i]??C.e4}}>{step.title}</p>
+                  <p className="t-micro text-white/55 leading-[1.75]">{step.body}</p>
                 </div>
               </div>
             </div>
@@ -390,11 +390,11 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
 
         {done&&(
           <div className="px-6 pb-6 flex gap-2">
-            <a href="/dashboard/deals" className="flex-1 ri-shine-wrap flex items-center justify-center gap-2 py-3 rounded-xl text-white text-[12px] font-bold hover:opacity-90 transition"
+            <a href="/dashboard/deals" className="flex-1 ri-shine-wrap flex items-center justify-center gap-2 py-3 rounded-[var(--radius-md)] text-white t-caption font-bold hover:opacity-90 transition"
               style={{background:"linear-gradient(135deg,#059669,#34d399)",boxShadow:"0 6px 18px rgba(16,185,129,.3)"}}>
               افتح الصفقة <svg viewBox="0 0 12 12" fill="white" className="h-3 w-3 rotate-180"><path d="M4.5 3l3 3-3 3V3z"/></svg>
             </a>
-            <button onClick={onClose} className="px-5 py-3 rounded-xl text-white/40 hover:text-white/70 border border-white/[0.08] text-[12px] font-medium transition">إغلاق</button>
+            <button onClick={onClose} className="px-5 py-3 rounded-[var(--radius-md)] text-white/40 hover:text-white/70 border border-white/[0.08] t-caption font-medium transition">إغلاق</button>
           </div>
         )}
       </div>
@@ -406,21 +406,21 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
 function KpiCard({label,note,value,fmt,unit,accent,icon,spark,ring,trend}:
   {label:string;note:string;value:number;fmt?:(n:number)=>string;unit?:string;accent:string;icon:React.ReactNode;spark?:number[];ring?:{pct:number};trend?:{val:number;up:boolean}}) {
   return (
-    <div className="ri-card ri-lift relative rounded-2xl border border-[#d6ece5] bg-white shadow-[0_2px_8px_rgba(26,92,79,0.05)] h-full flex flex-col">
+    <div className="ri-card ri-lift relative rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] e-1 h-full flex flex-col">
       <div className="relative p-5 flex flex-col flex-1">
         {/* Header row */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{backgroundColor:`${accent}17`,color:accent}}>
+            <div className="h-9 w-9 rounded-[var(--radius-md)] flex items-center justify-center" style={{backgroundColor:`${accent}17`,color:accent}}>
               {icon}
             </div>
             <div>
-              <p className="text-[9px] font-black uppercase tracking-[.16em]" style={{color:C.tx3}}>{label}</p>
-              <p className="text-[10px] mt-0.5" style={{color:C.tx3}}>{note}</p>
+              <p className="t-micro font-black uppercase tracking-[.16em]" style={{color:C.tx3}}>{label}</p>
+              <p className="t-micro mt-0.5" style={{color:C.tx3}}>{note}</p>
             </div>
           </div>
           {trend && (
-            <div className="flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{background:trend.up?"#ecfdf5":"#fef2f2",color:trend.up?C.e4:C.r5}}>
+            <div className="flex items-center gap-0.5 t-micro font-bold px-1.5 py-0.5 rounded-[var(--radius-xs)]" style={{background:trend.up?"#ecfdf5":"#fef2f2",color:trend.up?C.e4:C.r5}}>
               <svg viewBox="0 0 12 12" className={`h-2.5 w-2.5 ${trend.up?"":"rotate-180"}`} fill="currentColor"><path d="M6 2l4 6H2z"/></svg>
               {trend.val}%
             </div>
@@ -434,14 +434,14 @@ function KpiCard({label,note,value,fmt,unit,accent,icon,spark,ring,trend}:
               <span className="text-[34px] font-black tabular-nums tracking-tight" style={{color:accent}}>
                 <AnimNum value={value} fmt={fmt??sarK}/>
               </span>
-              {unit&&<span className="text-[11px] font-semibold" style={{color:C.tx3}}>{unit}</span>}
+              {unit&&<span className="t-micro font-semibold" style={{color:C.tx3}}>{unit}</span>}
             </div>
           </div>
           <div className="flex-none">
             {ring?(
               <div className="relative">
                 <Ring pct={ring.pct} color={accent} size={54} sw={6}/>
-                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black" style={{color:accent}}>
+                <span className="absolute inset-0 flex items-center justify-center t-micro font-black" style={{color:accent}}>
                   <AnimNum value={ring.pct} fmt={n=>`${n}%`}/>
                 </span>
               </div>
@@ -469,14 +469,14 @@ function ForecastBars({scenarios}:{scenarios:RevenueIntelligenceData["forecast"]
           <div key={s.label}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2.5">
-                <div className="h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-black text-white ri-shine-wrap" style={{background:p.grad,boxShadow:`0 2px 8px ${p.c}30`}}>{i+1}</div>
+                <div className="h-6 w-6 rounded-[var(--radius-sm)] flex items-center justify-center t-micro font-black text-white ri-shine-wrap" style={{background:p.grad,boxShadow:`0 2px 8px ${p.c}30`}}>{i+1}</div>
                 <div>
-                  <p className="text-[12px] font-bold" style={{color:C.tx}}>{s.label}</p>
-                  <p className="text-[9px]" style={{color:C.tx3}}>{p.note}</p>
+                  <p className="t-caption font-bold" style={{color:C.tx}}>{s.label}</p>
+                  <p className="t-micro" style={{color:C.tx3}}>{p.note}</p>
                 </div>
               </div>
-              <p className="text-[13px] font-black tabular-nums" style={{color:p.c}}>
-                {sarK(s.valueSAR)} <span className="text-[9px] font-medium" style={{color:C.tx3}}>ر.س</span>
+              <p className="t-body-sm font-black tabular-nums" style={{color:p.c}}>
+                {sarK(s.valueSAR)} <span className="t-micro font-medium" style={{color:C.tx3}}>ر.س</span>
               </p>
             </div>
             <div className="h-2 w-full rounded-full overflow-hidden bg-slate-100">
@@ -517,8 +517,8 @@ function DistPills({categories}:{categories:RevenueIntelligenceData["categories"
             ))}
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <p className="text-[8px] font-bold uppercase tracking-wider" style={{color:C.tx3}}>الكل</p>
-            <p className="text-[13px] font-black" style={{color:C.tx}}>{sarK(total)}</p>
+            <p className="t-micro font-bold uppercase tracking-wider" style={{color:C.tx3}}>الكل</p>
+            <p className="t-body-sm font-black" style={{color:C.tx}}>{sarK(total)}</p>
           </div>
         </div>
         <div className="flex-1 space-y-2">
@@ -527,10 +527,10 @@ function DistPills({categories}:{categories:RevenueIntelligenceData["categories"
             const pct=total?Math.round((c.totalSAR/total)*100):0;
             return (
               <div key={c.category} className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-md flex-none" style={{background:grads[i]}}/>
-                <span className="text-[11px] font-semibold flex-1" style={{color:C.tx}}>{cfg.label}</span>
-                <span className="text-[10px]" style={{color:C.tx3}}>{c.count}</span>
-                <span className="text-[12px] font-black w-9 text-left tabular-nums" style={{color:colors[i]}}>{pct}%</span>
+                <span className="h-3 w-3 rounded-[var(--radius-xs)] flex-none" style={{background:grads[i]}}/>
+                <span className="t-micro font-semibold flex-1" style={{color:C.tx}}>{cfg.label}</span>
+                <span className="t-micro" style={{color:C.tx3}}>{c.count}</span>
+                <span className="t-caption font-black w-9 text-left tabular-nums" style={{color:colors[i]}}>{pct}%</span>
               </div>
             );
           })}
@@ -548,16 +548,16 @@ function DistPills({categories}:{categories:RevenueIntelligenceData["categories"
           const cfg=CAT[cats[i]]; if(!cfg) return null;
           const pct=total?Math.round((c.totalSAR/total)*100):0;
           return (
-            <div key={c.category} className="rounded-xl p-3 border ri-lift" style={{background:cfg.bg,borderColor:`${cfg.ring}55`}}>
+            <div key={c.category} className="rounded-[var(--radius-md)] p-3 border ri-lift" style={{background:cfg.bg,borderColor:`${cfg.ring}55`}}>
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-md" style={{background:grads[i]}}/>
-                  <span className="text-[11px] font-bold" style={{color:cfg.hex}}>{cfg.label}</span>
-                  <span className="text-[9px]" style={{color:C.tx3}}>{cfg.sub}</span>
+                  <span className="h-2.5 w-2.5 rounded-[var(--radius-xs)]" style={{background:grads[i]}}/>
+                  <span className="t-micro font-bold" style={{color:cfg.hex}}>{cfg.label}</span>
+                  <span className="t-micro" style={{color:C.tx3}}>{cfg.sub}</span>
                 </div>
-                <span className="text-[13px] font-black tabular-nums" style={{color:cfg.hex}}>{sarK(c.totalSAR)}</span>
+                <span className="t-body-sm font-black tabular-nums" style={{color:cfg.hex}}>{sarK(c.totalSAR)}</span>
               </div>
-              <div className="flex items-center justify-between text-[9px]" style={{color:C.tx3}}>
+              <div className="flex items-center justify-between t-micro" style={{color:C.tx3}}>
                 <span>{c.count} صفقة · {pct}%</span>
                 <span>مرجّح: <strong style={{color:cfg.hex}}>{sarK(c.weightedSAR)} ر.س</strong></span>
               </div>
@@ -581,11 +581,11 @@ function WeeklyChart({data}:{data:RevenueIntelligenceData["weeklyHistory"]}) {
           {grad:"linear-gradient(180deg,#fca5a5,#ef4444)",l:"خاسرة"},
         ].map(({grad,l})=>(
           <div key={l} className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm" style={{background:grad}}/>
-            <span className="text-[10px] font-medium" style={{color:C.tx2}}>صفقات {l}</span>
+            <span className="h-2.5 w-2.5 rounded-[var(--radius-xs)]" style={{background:grad}}/>
+            <span className="t-micro font-medium" style={{color:C.tx2}}>صفقات {l}</span>
           </div>
         ))}
-        <span className="mr-auto text-[9px]" style={{color:C.tx3}}>حوّم للتفاصيل</span>
+        <span className="mr-auto t-micro" style={{color:C.tx3}}>حوّم للتفاصيل</span>
       </div>
       <div className="flex items-end gap-[3px] h-32 pt-2">
         {data.map((w,i)=>{
@@ -594,9 +594,9 @@ function WeeklyChart({data}:{data:RevenueIntelligenceData["weeklyHistory"]}) {
             <div key={i} className="relative flex-1 flex flex-col items-center cursor-pointer"
               onMouseEnter={()=>setHov(i)} onMouseLeave={()=>setHov(null)}>
               {isH&&(
-                <div className="absolute z-20 rounded-lg px-3 py-2 text-[10px] text-center whitespace-nowrap pointer-events-none"
+                <div className="absolute z-20 rounded-[var(--radius-sm)] px-3 py-2 t-micro text-center whitespace-nowrap pointer-events-none"
                   style={{bottom:"calc(100% + 6px)",left:"50%",transform:"translateX(-50%)",background:C.e1,color:"white",boxShadow:"0 8px 20px rgba(0,0,0,.25)",border:"1px solid rgba(255,255,255,.06)"}}>
-                  <p className="text-white/40 text-[8px] font-bold tracking-wider uppercase mb-1">{w.weekLabel}</p>
+                  <p className="text-white/40 t-micro font-bold tracking-wider uppercase mb-1">{w.weekLabel}</p>
                   {w.wonSAR>0&&<p className="text-emerald-300 font-bold">↑ {sarK(w.wonSAR)}</p>}
                   {w.lostSAR>0&&<p className="text-red-300 font-bold">↓ {sarK(w.lostSAR)}</p>}
                   {w.wonSAR===0&&w.lostSAR===0&&<p className="text-white/30">—</p>}
@@ -609,7 +609,7 @@ function WeeklyChart({data}:{data:RevenueIntelligenceData["weeklyHistory"]}) {
                 <div className="flex-1 rounded-t-[3px] transition-all duration-200"
                   style={{height:`${lostH}%`,background:isH?"linear-gradient(180deg,#fca5a5,#ef4444)":"linear-gradient(180deg,#fecaca,#f87171)",minHeight:w.lostSAR>0?3:0,boxShadow:isH?"0 -4px 12px rgba(239,68,68,.3)":"none"}}/>
               </div>
-              {i%3===0&&<span className="text-[8px] mt-1.5 whitespace-nowrap" style={{color:C.tx3}}>{w.weekLabel}</span>}
+              {i%3===0&&<span className="t-micro mt-1.5 whitespace-nowrap" style={{color:C.tx3}}>{w.weekLabel}</span>}
             </div>
           );
         })}
@@ -648,7 +648,7 @@ function AiPanel({ctx}:{ctx:string}) {
       {/* header */}
       <div className="relative px-5 pt-5 pb-4 border-b border-white/[0.06] flex items-center gap-3">
         <div className="relative flex-none">
-          <div className="h-10 w-10 rounded-xl flex items-center justify-center ri-shine-wrap"
+          <div className="h-10 w-10 rounded-[var(--radius-md)] flex items-center justify-center ri-shine-wrap"
             style={{background:"linear-gradient(135deg,#059669,#34d399)",boxShadow:"0 4px 16px rgba(16,185,129,.35)"}}>
             <svg viewBox="0 0 24 24" className="h-5 w-5">
               <rect x="4" y="7" width="16" height="12" rx="3" fill="none" stroke="white" strokeWidth="1.5"/>
@@ -662,12 +662,12 @@ function AiPanel({ctx}:{ctx:string}) {
           </span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold text-white">محلل الإيرادات</p>
-          <p className="text-[9px] text-white/25 mt-0.5">اسأله عن خط المبيعات</p>
+          <p className="t-body-sm font-bold text-white">محلل الإيرادات</p>
+          <p className="t-micro text-white/25 mt-0.5">اسأله عن خط المبيعات</p>
         </div>
         <div className="flex items-center gap-1 rounded-full px-2 py-1 border" style={{background:"rgba(16,185,129,.08)",borderColor:"rgba(16,185,129,.15)"}}>
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"/>
-          <span className="text-[8px] font-black text-emerald-400/70 uppercase tracking-widest">مباشر</span>
+          <span className="t-micro font-black text-emerald-400/70 uppercase tracking-widest">مباشر</span>
         </div>
       </div>
 
@@ -677,14 +677,14 @@ function AiPanel({ctx}:{ctx:string}) {
           <div className="pt-1 space-y-2">
             <div className="flex items-center gap-2 mb-3">
               <div className="h-px flex-1" style={{background:"linear-gradient(90deg,transparent,rgba(255,255,255,.08))"}}/>
-              <p className="text-[8px] text-white/20 text-center uppercase tracking-[.25em] font-black">أسئلة مقترحة</p>
+              <p className="t-micro text-white/20 text-center uppercase tracking-[.25em] font-black">أسئلة مقترحة</p>
               <div className="h-px flex-1" style={{background:"linear-gradient(90deg,rgba(255,255,255,.08),transparent)"}}/>
             </div>
             {QUICK.map((q,idx)=>(
               <button key={q} onClick={()=>send(q)}
-                className="w-full text-right text-[11.5px] text-white/50 hover:text-white/90 border border-white/[0.06] hover:border-emerald-500/25 rounded-xl px-4 py-3 transition-all group flex items-center gap-2.5"
+                className="w-full text-right t-caption text-white/50 hover:text-white/90 border border-white/[0.06] hover:border-emerald-500/25 rounded-[var(--radius-md)] px-4 py-3 transition-all group flex items-center gap-2.5"
                 style={{background:"rgba(255,255,255,.025)",animation:`ri-up .5s cubic-bezier(.22,1,.36,1) ${idx*.06+.1}s both`}}>
-                <span className="h-5 w-5 rounded-md flex items-center justify-center text-[10px] font-bold flex-none group-hover:bg-emerald-500/20 transition-colors" style={{background:"rgba(16,185,129,.1)",color:"#6ee7b7"}}>{idx+1}</span>
+                <span className="h-5 w-5 rounded-[var(--radius-xs)] flex items-center justify-center t-micro font-bold flex-none group-hover:bg-emerald-500/20 transition-colors" style={{background:"rgba(16,185,129,.1)",color:"#6ee7b7"}}>{idx+1}</span>
                 <span className="flex-1">{q}</span>
                 <svg viewBox="0 0 12 12" className="h-3 w-3 flex-none opacity-40 group-hover:opacity-70 transition" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 3l3 3-3 3"/></svg>
               </button>
@@ -694,12 +694,12 @@ function AiPanel({ctx}:{ctx:string}) {
         {msgs.map((m,i)=>(
           <div key={i} className={`flex gap-2 ${m.role==="user"?"flex-row-reverse":""}`}>
             {m.role==="assistant"&&(
-              <div className="h-6 w-6 rounded-lg flex-none flex items-center justify-center mt-0.5"
+              <div className="h-6 w-6 rounded-[var(--radius-sm)] flex-none flex items-center justify-center mt-0.5"
                 style={{background:"linear-gradient(135deg,#059669,#34d399)",boxShadow:"0 2px 8px rgba(16,185,129,.25)"}}>
                 <svg viewBox="0 0 14 14" className="h-3 w-3"><rect x="1.5" y="3" width="11" height="8" rx="2" fill="none" stroke="white" strokeWidth="1.2"/><circle cx="5" cy="6.5" r="1" fill="#6ee7b7"/><circle cx="9" cy="6.5" r="1" fill="#6ee7b7"/></svg>
               </div>
             )}
-            <div className={`max-w-[85%] px-3.5 py-2.5 text-[11.5px] leading-[1.75] whitespace-pre-wrap rounded-xl ${m.role==="user"?"text-white rounded-tl-sm":"text-white/75 rounded-tr-sm border border-white/[0.06]"}`}
+            <div className={`max-w-[85%] px-3.5 py-2.5 t-caption leading-[1.75] whitespace-pre-wrap rounded-[var(--radius-md)] ${m.role==="user"?"text-white rounded-tl-sm":"text-white/75 rounded-tr-sm border border-white/[0.06]"}`}
               style={m.role==="user"?{background:"linear-gradient(135deg,#059669,#10b981)",boxShadow:"0 4px 12px rgba(16,185,129,.22)"}:{background:"rgba(255,255,255,.035)"}}>
               {m.content}
             </div>
@@ -707,10 +707,10 @@ function AiPanel({ctx}:{ctx:string}) {
         ))}
         {busy&&(
           <div className="flex gap-2">
-            <div className="h-6 w-6 rounded-lg flex-none flex items-center justify-center mt-0.5" style={{background:"linear-gradient(135deg,#059669,#34d399)"}}>
+            <div className="h-6 w-6 rounded-[var(--radius-sm)] flex-none flex items-center justify-center mt-0.5" style={{background:"linear-gradient(135deg,#059669,#34d399)"}}>
               <svg viewBox="0 0 14 14" className="h-3 w-3"><rect x="1.5" y="3" width="11" height="8" rx="2" fill="none" stroke="white" strokeWidth="1.2"/><circle cx="5" cy="6.5" r="1" fill="#6ee7b7"/><circle cx="9" cy="6.5" r="1" fill="#6ee7b7"/></svg>
             </div>
-            <div className="rounded-xl rounded-tr-sm px-3.5 py-2.5 flex items-center gap-1.5 border border-white/[0.06]" style={{background:"rgba(255,255,255,.03)"}}>
+            <div className="rounded-[var(--radius-md)] rounded-tr-sm px-3.5 py-2.5 flex items-center gap-1.5 border border-white/[0.06]" style={{background:"rgba(255,255,255,.03)"}}>
               {[0,1,2].map(i=><span key={i} className="h-1.5 w-1.5 rounded-full bg-emerald-400/60 animate-bounce" style={{animationDelay:`${i*.15}s`}}/>)}
             </div>
           </div>
@@ -720,14 +720,14 @@ function AiPanel({ctx}:{ctx:string}) {
 
       {/* input */}
       <div className="relative px-4 pb-4 pt-2 border-t border-white/[0.06]">
-        <div className="flex items-end gap-2 rounded-xl px-3 py-2 border transition-all focus-within:border-emerald-500/30"
+        <div className="flex items-end gap-2 rounded-[var(--radius-md)] px-3 py-2 border transition-all focus-within:border-emerald-500/30"
           style={{background:"rgba(255,255,255,.03)",borderColor:"rgba(255,255,255,.07)"}}>
           <textarea value={val} onChange={e=>setVal(e.target.value)}
             onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send(val);}}}
             placeholder="اسأل عن خط مبيعاتك…" rows={1} style={{maxHeight:72}}
-            className="flex-1 bg-transparent text-[11.5px] text-white/70 placeholder-white/20 resize-none focus:outline-none leading-relaxed"/>
+            className="flex-1 bg-transparent t-caption text-white/70 placeholder-white/20 resize-none focus:outline-none leading-relaxed"/>
           <button onClick={()=>send(val)} disabled={!val.trim()||busy}
-            className="h-7 w-7 rounded-lg flex items-center justify-center flex-none transition-all disabled:opacity-15 hover:scale-105 active:scale-95"
+            className="h-7 w-7 rounded-[var(--radius-sm)] flex items-center justify-center flex-none transition-all disabled:opacity-15 hover:scale-105 active:scale-95"
             style={{background:"linear-gradient(135deg,#059669,#34d399)",boxShadow:"0 3px 10px rgba(16,185,129,.35)"}}>
             <svg viewBox="0 0 16 16" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 -rotate-90"><path d="M8 12V4M4 8l4-4 4 4"/></svg>
           </button>
@@ -751,25 +751,25 @@ function DealModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void})
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
         <div className="absolute inset-0 bg-slate-950/55 backdrop-blur-2xl"/>
-        <div className="ri-in relative bg-white rounded-2xl w-full max-w-[420px] overflow-hidden" onClick={e=>e.stopPropagation()}
+        <div className="ri-in relative bg-[var(--surface-raised)] rounded-[var(--radius-lg)] w-full max-w-[420px] overflow-hidden" onClick={e=>e.stopPropagation()}
           style={{boxShadow:"0 24px 60px rgba(0,0,0,.18)"}}>
           <div className="h-1" style={{background:cat.grad}}/>
           <div className="px-6 pt-5 pb-4 flex items-start justify-between gap-3">
             <div>
-              <p className="text-[8px] font-black uppercase tracking-[.2em] mb-2" style={{color:C.tx3}}>تفاصيل الصفقة</p>
+              <p className="t-micro font-black uppercase tracking-[.2em] mb-2" style={{color:C.tx3}}>تفاصيل الصفقة</p>
               <h2 className="text-lg font-black leading-tight" style={{color:C.tx}}>{deal.name}</h2>
-              {deal.leadName&&<p className="text-[12px] mt-0.5" style={{color:C.tx3}}>{deal.leadName}</p>}
+              {deal.leadName&&<p className="t-caption mt-0.5" style={{color:C.tx3}}>{deal.leadName}</p>}
             </div>
-            <button onClick={onClose} className="h-8 w-8 rounded-xl bg-slate-50 hover:bg-slate-100 flex items-center justify-center transition flex-none mt-0.5" style={{color:C.tx2}}>
+            <button onClick={onClose} className="h-8 w-8 rounded-[var(--radius-md)] bg-slate-50 hover:bg-slate-100 flex items-center justify-center transition flex-none mt-0.5" style={{color:C.tx2}}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-3.5 w-3.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           </div>
           <div className="px-6 pb-4 flex flex-wrap gap-1.5">
-            <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg text-white" style={{background:cat.grad}}>{cat.label}</span>
-            <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg border flex items-center gap-1" style={{color:risk.dot,borderColor:`${risk.dot}25`,background:risk.bg}}>
+            <span className="t-micro font-bold px-2.5 py-1 rounded-[var(--radius-sm)] text-white" style={{background:cat.grad}}>{cat.label}</span>
+            <span className="t-micro font-bold px-2.5 py-1 rounded-[var(--radius-sm)] border flex items-center gap-1" style={{color:risk.dot,borderColor:`${risk.dot}25`,background:risk.bg}}>
               <span className="h-1.5 w-1.5 rounded-full" style={{background:risk.dot}}/>{risk.label}
             </span>
-            <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-50 border" style={{color:C.tx2,borderColor:C.borderL}}>{deal.stage}</span>
+            <span className="t-micro font-bold px-2.5 py-1 rounded-[var(--radius-sm)] bg-slate-50 border" style={{color:C.tx2,borderColor:C.borderL}}>{deal.stage}</span>
           </div>
           <div className="mx-6 mb-4 grid grid-cols-3 gap-2">
             {[
@@ -777,42 +777,42 @@ function DealModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void})
               {label:"الاحتمالية",val:`${deal.probabilityPct}%`,unit:"",grad:"linear-gradient(135deg,#eef2ff,#e0e7ff)",bc:"#c7d2fe",c:C.i3},
               {label:"المرجّحة",val:sarFull(w),unit:"ر.س",grad:"linear-gradient(135deg,#ecfdf5,#d1fae5)",bc:"#a7f3d0",c:C.e3},
             ].map(x=>(
-              <div key={x.label} className="rounded-xl p-3 text-center border" style={{background:x.grad,borderColor:x.bc}}>
-                <p className="text-[8px] font-bold uppercase tracking-wider mb-1.5" style={{color:C.tx3}}>{x.label}</p>
-                <p className="text-[13px] font-black tabular-nums" style={{color:x.c}}>{x.val}</p>
-                {x.unit&&<p className="text-[8px] mt-0.5" style={{color:C.tx3}}>{x.unit}</p>}
+              <div key={x.label} className="rounded-[var(--radius-md)] p-3 text-center border" style={{background:x.grad,borderColor:x.bc}}>
+                <p className="t-micro font-bold uppercase tracking-wider mb-1.5" style={{color:C.tx3}}>{x.label}</p>
+                <p className="t-body-sm font-black tabular-nums" style={{color:x.c}}>{x.val}</p>
+                {x.unit&&<p className="t-micro mt-0.5" style={{color:C.tx3}}>{x.unit}</p>}
               </div>
             ))}
           </div>
-          <div className="mx-6 mb-4 rounded-xl overflow-hidden border" style={{borderColor:C.borderL}}>
+          <div className="mx-6 mb-4 rounded-[var(--radius-md)] overflow-hidden border" style={{borderColor:C.borderL}}>
             {[
               {label:"في المرحلة منذ",val:`${deal.daysInStage} يوم`,warn:deal.daysInStage>30},
               {label:"آخر تواصل",val:deal.daysSinceActivity!=null?`منذ ${deal.daysSinceActivity} يوم`:"لا يوجد",warn:(deal.daysSinceActivity??0)>14},
             ].map(({label,val,warn},idx)=>(
-              <div key={label} className={`flex items-center justify-between px-4 py-3 bg-white ${idx>0?"border-t":""}`} style={{borderColor:C.borderL}}>
-                <span className="text-[11px]" style={{color:C.tx2}}>{label}</span>
-                <span className="text-[11px] font-bold" style={{color:warn?C.r4:C.tx}}>{val}</span>
+              <div key={label} className={`flex items-center justify-between px-4 py-3 bg-[var(--surface-raised)] ${idx>0?"border-t":""}`} style={{borderColor:C.borderL}}>
+                <span className="t-micro" style={{color:C.tx2}}>{label}</span>
+                <span className="t-micro font-bold" style={{color:warn?C.r4:C.tx}}>{val}</span>
               </div>
             ))}
           </div>
           {deal.riskReasons.length>0&&(
-            <div className="mx-6 mb-4 rounded-xl border p-4" style={{background:"linear-gradient(135deg,#fef2f2,#fee2e2)",borderColor:"#fecaca"}}>
-              <p className="text-[8px] font-black text-red-600 uppercase tracking-[.2em] mb-2">إشارات الخطر</p>
+            <div className="mx-6 mb-4 rounded-[var(--radius-md)] border p-4" style={{background:"linear-gradient(135deg,#fef2f2,#fee2e2)",borderColor:"#fecaca"}}>
+              <p className="t-micro font-black text-red-600 uppercase tracking-[.2em] mb-2">إشارات الخطر</p>
               <div className="space-y-1.5">
                 {deal.riskReasons.map(r=>(
-                  <div key={r} className="flex items-start gap-2"><span className="h-1.5 w-1.5 rounded-full bg-red-400 flex-none mt-1.5"/><p className="text-[11px] text-red-700 leading-snug">{r}</p></div>
+                  <div key={r} className="flex items-start gap-2"><span className="h-1.5 w-1.5 rounded-full bg-red-400 flex-none mt-1.5"/><p className="t-micro text-red-700 leading-snug">{r}</p></div>
                 ))}
               </div>
             </div>
           )}
           <div className="px-6 pb-6 flex gap-2">
             <button onClick={()=>setShowCoach(true)}
-              className="flex-1 ri-shine-wrap flex items-center justify-center gap-2 py-3 rounded-xl text-white text-[12px] font-bold transition hover:opacity-90"
+              className="flex-1 ri-shine-wrap flex items-center justify-center gap-2 py-3 rounded-[var(--radius-md)] text-white t-caption font-bold transition hover:opacity-90"
               style={{background:"linear-gradient(135deg,#059669,#34d399)",boxShadow:"0 6px 18px rgba(16,185,129,.25)"}}>
               <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round"><path d="M7 2l5 9H2z"/><path d="M7 6v2M7 10h.01"/></svg>
               خطة إغلاق AI
             </button>
-            <a href="/dashboard/deals" className="px-4 flex items-center justify-center rounded-xl border text-[12px] font-semibold hover:bg-slate-50 transition" style={{color:C.tx2,borderColor:C.border}}>فتح</a>
+            <a href="/dashboard/deals" className="px-4 flex items-center justify-center rounded-[var(--radius-md)] border t-caption font-semibold hover:bg-slate-50 transition" style={{color:C.tx2,borderColor:C.border}}>فتح</a>
           </div>
         </div>
       </div>
@@ -833,36 +833,36 @@ function Row({deal,onClick}:{deal:RIDeal;onClick:()=>void}) {
             {risk.dot===C.r5&&<span className="absolute inset-0 rounded-full animate-ping opacity-30" style={{background:risk.dot}}/>}
           </div>
           <div>
-            <p className="text-[12.5px] font-semibold group-hover:text-emerald-700 transition-colors" style={{color:C.tx}}>{deal.name}</p>
-            {deal.leadName&&<p className="text-[10px] mt-0.5" style={{color:C.tx3}}>{deal.leadName}</p>}
+            <p className="t-caption font-semibold group-hover:text-emerald-700 transition-colors" style={{color:C.tx}}>{deal.name}</p>
+            {deal.leadName&&<p className="t-micro mt-0.5" style={{color:C.tx3}}>{deal.leadName}</p>}
           </div>
         </div>
       </td>
       <td className="px-4 py-3.5 hidden sm:table-cell">
         <div className="flex items-center gap-1.5">
           {deal.stageColor&&<span className="h-1.5 w-1.5 rounded-full" style={{background:deal.stageColor}}/>}
-          <span className="text-[10px]" style={{color:C.tx2}}>{deal.stage}</span>
+          <span className="t-micro" style={{color:C.tx2}}>{deal.stage}</span>
         </div>
       </td>
       <td className="px-4 py-3.5 hidden md:table-cell">
-        <span className="text-[9px] font-bold px-2 py-0.5 rounded-md text-white" style={{background:cat.grad}}>{cat.label}</span>
+        <span className="t-micro font-bold px-2 py-0.5 rounded-[var(--radius-xs)] text-white" style={{background:cat.grad}}>{cat.label}</span>
       </td>
       <td className="px-4 py-3.5 hidden lg:table-cell">
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-14 rounded-full bg-slate-100 overflow-hidden">
             <div className="h-full rounded-full" style={{width:`${deal.probabilityPct}%`,background:cat.grad}}/>
           </div>
-          <span className="text-[10px] font-bold w-7 tabular-nums" style={{color:C.tx2}}>{deal.probabilityPct}%</span>
+          <span className="t-micro font-bold w-7 tabular-nums" style={{color:C.tx2}}>{deal.probabilityPct}%</span>
         </div>
       </td>
       <td className="px-4 py-3.5 hidden xl:table-cell">
         {deal.daysSinceActivity!=null
-          ?<span className="text-[10px] font-semibold" style={{color:deal.daysSinceActivity>14?C.r5:C.tx3}}>{deal.daysSinceActivity} يوم</span>
-          :<span className="text-[10px]" style={{color:C.borderL}}>—</span>}
+          ?<span className="t-micro font-semibold" style={{color:deal.daysSinceActivity>14?C.r5:C.tx3}}>{deal.daysSinceActivity} يوم</span>
+          :<span className="t-micro" style={{color:C.borderL}}>—</span>}
       </td>
       <td className="px-5 py-3.5 text-left">
-        <p className="text-[12.5px] font-black tabular-nums" style={{color:C.tx}}>{sarFull(deal.valueSAR)}</p>
-        <p className="text-[8px] mt-0.5 uppercase tracking-wider" style={{color:C.tx3}}>ريال</p>
+        <p className="t-caption font-black tabular-nums" style={{color:C.tx}}>{sarFull(deal.valueSAR)}</p>
+        <p className="t-micro mt-0.5 uppercase tracking-wider" style={{color:C.tx3}}>ريال</p>
       </td>
     </tr>
   );
@@ -872,12 +872,12 @@ function Row({deal,onClick}:{deal:RIDeal;onClick:()=>void}) {
 function SectionHead({icon,title,sub,accent}:{icon:React.ReactNode;title:string;sub:string;grad?:string;accent:string}) {
   return (
     <div className="flex items-center gap-3 mb-5">
-      <div className="h-9 w-9 rounded-xl flex items-center justify-center flex-none" style={{backgroundColor:`${accent}17`,color:accent}}>
+      <div className="h-9 w-9 rounded-[var(--radius-md)] flex items-center justify-center flex-none" style={{backgroundColor:`${accent}17`,color:accent}}>
         {icon}
       </div>
       <div>
-        <h3 className="text-[13px] font-bold" style={{color:C.tx}}>{title}</h3>
-        <p className="text-[9px] mt-0.5" style={{color:C.tx3}}>{sub}</p>
+        <h3 className="t-body-sm font-bold" style={{color:C.tx}}>{title}</h3>
+        <p className="t-micro mt-0.5" style={{color:C.tx3}}>{sub}</p>
       </div>
     </div>
   );
@@ -911,8 +911,8 @@ export default function RevenueTab() {
         </div>
       </div>
       <div className="text-center space-y-1">
-        <p className="text-[13px] font-semibold" style={{color:C.tx}}>جارٍ تحليل بيانات المبيعات</p>
-        <p className="text-[10px]" style={{color:C.tx3}}>نحسب الاحتماليات ومؤشرات الخطر…</p>
+        <p className="t-body-sm font-semibold" style={{color:C.tx}}>جارٍ تحليل بيانات المبيعات</p>
+        <p className="t-micro" style={{color:C.tx3}}>نحسب الاحتماليات ومؤشرات الخطر…</p>
       </div>
     </div>
   );
@@ -942,7 +942,7 @@ export default function RevenueTab() {
       <div dir="rtl" className="flex flex-col gap-5 pb-12">
 
         {/* ─── HERO ─────────────────────────────────────────── */}
-        <div className="ri-up relative overflow-hidden rounded-3xl text-white"
+        <div className="ri-up relative overflow-hidden rounded-[var(--radius-lg)] text-white"
           style={{background:"#141c2e"}}>
           <div className="absolute top-[-50px] right-[-30px] h-72 w-72 pointer-events-none"
             style={{background:"radial-gradient(circle,rgba(52,211,153,.2),transparent 65%)",animation:"ri-orb 8s ease-in-out infinite"}}/>
@@ -959,12 +959,12 @@ export default function RevenueTab() {
                     <span className="animate-ping absolute inset-0 rounded-full bg-emerald-400 opacity-55"/>
                     <span className="relative rounded-full h-2 w-2 bg-emerald-400"/>
                   </span>
-                  <span className="text-[9px] font-bold text-white/50 tracking-[.2em] uppercase">لوحة مبيعات مباشرة</span>
+                  <span className="t-micro font-bold text-white/50 tracking-[.2em] uppercase">لوحة مبيعات مباشرة</span>
                 </div>
                 <h1 className="text-[42px] lg:text-[52px] font-black leading-[.9] tracking-tight text-white">
                   ذكاء الإيرادات
                 </h1>
-                <p className="text-white/30 text-[11px] mt-4 font-medium flex items-center gap-2">
+                <p className="text-white/30 t-micro mt-4 font-medium flex items-center gap-2">
                   <svg viewBox="0 0 14 14" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="7" cy="7" r="5.5"/><path d="M7 4v3l2 1"/></svg>
                   {new Date(data.asOf).toLocaleString("ar-SA",{weekday:"long",day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}
                 </p>
@@ -975,11 +975,11 @@ export default function RevenueTab() {
                   {label:"الإيراد المرجّح",val:sarK(data.weightedPipelineSAR),sub:"بعد الاحتماليات",hi:false,icon:"⚖️"},
                   {label:"مُغلق الشهر",val:sarK(data.wonThisMonthSAR),sub:`${data.wonThisMonthCount} صفقة`,hi:false,icon:"✓"},
                 ].map(({label,val,sub,hi})=>(
-                  <div key={label} className="ri-lift rounded-2xl px-5 py-4 min-w-[150px] backdrop-blur-md border ri-shine-wrap"
+                  <div key={label} className="ri-lift rounded-[var(--radius-lg)] px-5 py-4 min-w-[150px] backdrop-blur-md border ri-shine-wrap"
                     style={{background:hi?"rgba(255,255,255,.11)":"rgba(255,255,255,.05)",borderColor:hi?"rgba(255,255,255,.2)":"rgba(255,255,255,.08)",boxShadow:hi?"inset 0 1px 0 rgba(255,255,255,.12), 0 6px 16px rgba(0,0,0,.15)":"0 4px 12px rgba(0,0,0,.1)"}}>
-                    <p className="text-[9px] text-white/35 mb-2 font-bold tracking-wider uppercase">{label}</p>
-                    <p className="text-[22px] font-black text-white leading-none tabular-nums">{val} <span className="text-[10px] font-medium text-white/35">ر.س</span></p>
-                    <p className="text-[9px] text-white/25 mt-2">{sub}</p>
+                    <p className="t-micro text-white/35 mb-2 font-bold tracking-wider uppercase">{label}</p>
+                    <p className="text-[22px] font-black text-white leading-none tabular-nums">{val} <span className="t-micro font-medium text-white/35">ر.س</span></p>
+                    <p className="t-micro text-white/25 mt-2">{sub}</p>
                   </div>
                 ))}
               </div>
@@ -1020,8 +1020,8 @@ export default function RevenueTab() {
                   <span className="animate-ping absolute inset-0 rounded-full bg-red-400 opacity-40"/>
                   <span className="relative rounded-full h-2.5 w-2.5 bg-red-500"/>
                 </div>
-                <span className="text-[11px] font-bold text-red-700">{atRisk.length} صفقة تحتاج تدخلاً فورياً</span>
-                <span className="text-[11px] font-black text-red-500 tabular-nums">{sarFull(data.atRiskSAR)} ر.س</span>
+                <span className="t-micro font-bold text-red-700">{atRisk.length} صفقة تحتاج تدخلاً فورياً</span>
+                <span className="t-micro font-black text-red-500 tabular-nums">{sarFull(data.atRiskSAR)} ر.س</span>
               </div>
               <div className="h-px flex-1 rounded-full" style={{background:"linear-gradient(90deg,#fecaca,transparent)"}}/>
             </div>
@@ -1029,13 +1029,13 @@ export default function RevenueTab() {
               {atRisk.slice(0,6).map(deal=>{
                 const w=Math.round(deal.valueSAR*deal.probabilityPct/100);
                 return (
-                  <div key={deal.id} className="ri-lift group bg-white rounded-2xl border overflow-hidden" style={{borderColor:"#fecaca",boxShadow:"0 1px 3px rgba(239,68,68,.06)"}}>
+                  <div key={deal.id} className="ri-lift group bg-[var(--surface-raised)] rounded-[var(--radius-lg)] border overflow-hidden" style={{borderColor:"#fecaca",boxShadow:"0 1px 3px rgba(239,68,68,.06)"}}>
                     <div className="h-1 bg-gradient-to-l from-red-400 to-red-500"/>
                     <button className="w-full text-right p-5 space-y-3" onClick={()=>setSel(deal)}>
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                          <p className="text-[12.5px] font-bold truncate group-hover:text-red-700 transition-colors" style={{color:C.tx}}>{deal.name}</p>
-                          {deal.leadName&&<p className="text-[10px] mt-0.5 truncate" style={{color:C.tx3}}>{deal.leadName}</p>}
+                          <p className="t-caption font-bold truncate group-hover:text-red-700 transition-colors" style={{color:C.tx}}>{deal.name}</p>
+                          {deal.leadName&&<p className="t-micro mt-0.5 truncate" style={{color:C.tx3}}>{deal.leadName}</p>}
                         </div>
                         <div className="relative flex-none">
                           <span className="h-2.5 w-2.5 rounded-full bg-red-500 block"/>
@@ -1046,12 +1046,12 @@ export default function RevenueTab() {
                         {deal.riskReasons.map(r=>(
                           <div key={r} className="flex items-start gap-1.5 flex-row-reverse">
                             <span className="h-1.5 w-1.5 rounded-full bg-red-300 flex-none mt-1.5"/>
-                            <span className="text-[10px] text-red-600 leading-snug">{r}</span>
+                            <span className="t-micro text-red-600 leading-snug">{r}</span>
                           </div>
                         ))}
                       </div>
                       <div>
-                        <div className="flex items-center justify-between text-[9px] mb-1.5">
+                        <div className="flex items-center justify-between t-micro mb-1.5">
                           <span className="font-black text-red-600 tabular-nums">{deal.probabilityPct}%</span>
                           <span style={{color:C.tx3}}>الاحتمالية</span>
                         </div>
@@ -1061,17 +1061,17 @@ export default function RevenueTab() {
                       </div>
                       <div className="flex items-end justify-between pt-3 border-t" style={{borderColor:"#fee2e2"}}>
                         <div>
-                          <p className="text-[8px] uppercase tracking-wider font-bold" style={{color:C.tx3}}>المرجّحة</p>
-                          <p className="text-[12px] font-black tabular-nums" style={{color:C.e3}}>{sarFull(w)}</p>
+                          <p className="t-micro uppercase tracking-wider font-bold" style={{color:C.tx3}}>المرجّحة</p>
+                          <p className="t-caption font-black tabular-nums" style={{color:C.e3}}>{sarFull(w)}</p>
                         </div>
                         <div className="text-left">
-                          <p className="text-[8px] uppercase tracking-wider font-bold" style={{color:C.tx3}}>القيمة الكاملة</p>
-                          <p className="text-[12px] font-bold tabular-nums" style={{color:C.tx}}>{sarFull(deal.valueSAR)}</p>
+                          <p className="t-micro uppercase tracking-wider font-bold" style={{color:C.tx3}}>القيمة الكاملة</p>
+                          <p className="t-caption font-bold tabular-nums" style={{color:C.tx}}>{sarFull(deal.valueSAR)}</p>
                         </div>
                       </div>
                     </button>
                     <button onClick={()=>setCoachDeal(deal)}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 text-[10.5px] font-bold border-t transition hover:opacity-90 text-white"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 t-micro font-bold border-t transition hover:opacity-90 text-white"
                       style={{backgroundColor:"#1a5c4f",borderColor:"#fecaca"}}>
                       <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round"><path d="M6 1.5l4.5 8H1.5z"/><path d="M6 5v2M6 9h.01"/></svg>
                       خطة إغلاق AI
@@ -1088,20 +1088,20 @@ export default function RevenueTab() {
           <div className="xl:col-span-2 flex flex-col gap-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Forecast */}
-              <div className="ri-up bg-white rounded-2xl border p-5" style={{animationDelay:".08s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
+              <div className="ri-up bg-[var(--surface-raised)] rounded-[var(--radius-lg)] border p-5" style={{animationDelay:".08s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
                 <SectionHead grad="linear-gradient(135deg,#065f46,#10b981)" accent={C.e4}
                   icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M2 2v16h16"/><path d="m6 13 3-3 3 3 4-4"/></svg>}
                   title="توقعات الإيرادات" sub="3 سيناريوهات لنهاية الشهر"/>
                 <ForecastBars scenarios={data.forecast}/>
-                <div className="mt-4 rounded-lg px-3 py-2 border flex items-center gap-2.5" style={{background:"linear-gradient(135deg,#ecfdf5,#d1fae5)",borderColor:"#a7f3d0"}}>
-                  <div className="h-5 w-5 rounded-md flex items-center justify-center flex-none" style={{background:C.e4,boxShadow:"0 2px 6px rgba(5,150,105,.3)"}}>
+                <div className="mt-4 rounded-[var(--radius-sm)] px-3 py-2 border flex items-center gap-2.5" style={{background:"linear-gradient(135deg,#ecfdf5,#d1fae5)",borderColor:"#a7f3d0"}}>
+                  <div className="h-5 w-5 rounded-[var(--radius-xs)] flex items-center justify-center flex-none" style={{background:C.e4,boxShadow:"0 2px 6px rgba(5,150,105,.3)"}}>
                     <svg viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" className="h-2.5 w-2.5"><path d="M2 6l3 3 5-5"/></svg>
                   </div>
-                  <p className="text-[10px] font-semibold text-emerald-800">يشمل <strong>{sarFull(data.wonThisMonthSAR)} ر.س</strong> مُغلق بالفعل</p>
+                  <p className="t-micro font-semibold text-emerald-800">يشمل <strong>{sarFull(data.wonThisMonthSAR)} ر.س</strong> مُغلق بالفعل</p>
                 </div>
               </div>
               {/* Distribution */}
-              <div className="ri-up bg-white rounded-2xl border p-5" style={{animationDelay:".14s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
+              <div className="ri-up bg-[var(--surface-raised)] rounded-[var(--radius-lg)] border p-5" style={{animationDelay:".14s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
                 <SectionHead grad="linear-gradient(135deg,#4338ca,#818cf8)" accent={C.i4}
                   icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M17.7 13.4A8 8 0 1 1 6.6 2.3"/><path d="M18 10A8 8 0 0 0 10 2v8z"/></svg>}
                   title="توزيع خط المبيعات" sub="حسب احتمالية الإغلاق"/>
@@ -1109,14 +1109,14 @@ export default function RevenueTab() {
               </div>
             </div>
             {/* Weekly */}
-            <div className="ri-up bg-white rounded-2xl border p-5" style={{animationDelay:".2s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
+            <div className="ri-up bg-[var(--surface-raised)] rounded-[var(--radius-lg)] border p-5" style={{animationDelay:".2s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
               <div className="flex items-center justify-between mb-5">
                 <SectionHead grad="linear-gradient(135deg,#92400e,#f59e0b)" accent={C.a4}
                   icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M15 17V8M10 17V3M5 17v-5"/></svg>}
                   title="الأداء الأسبوعي" sub="آخر 12 أسبوع"/>
                 <div className="text-left mr-3">
-                  <p className="text-[8px] uppercase tracking-widest font-bold" style={{color:C.tx3}}>مُغلق الشهر</p>
-                  <p className="text-[15px] font-black tabular-nums mt-1" style={{color:C.e4}}>{sarK(data.wonThisMonthSAR)} <span className="text-[10px] font-medium" style={{color:C.tx3}}>ر.س</span></p>
+                  <p className="t-micro uppercase tracking-widest font-bold" style={{color:C.tx3}}>مُغلق الشهر</p>
+                  <p className="t-body font-black tabular-nums mt-1" style={{color:C.e4}}>{sarK(data.wonThisMonthSAR)} <span className="t-micro font-medium" style={{color:C.tx3}}>ر.س</span></p>
                 </div>
               </div>
               <WeeklyChart data={data.weeklyHistory}/>
@@ -1124,23 +1124,23 @@ export default function RevenueTab() {
           </div>
           {/* AI Panel */}
           <div className="xl:col-span-1">
-            <div className="relative rounded-2xl overflow-hidden sticky top-20" style={{height:560,boxShadow:"0 16px 40px rgba(4,45,32,.18),0 0 0 1px rgba(0,0,0,.05)"}}>
+            <div className="relative rounded-[var(--radius-lg)] overflow-hidden sticky top-20" style={{height:560,boxShadow:"0 16px 40px rgba(4,45,32,.18),0 0 0 1px rgba(0,0,0,.05)"}}>
               <AiPanel ctx={ctx}/>
             </div>
           </div>
         </div>
 
         {/* ─── DEALS TABLE ──────────────────────────────────── */}
-        <div className="ri-up bg-white rounded-2xl border overflow-hidden" style={{animationDelay:".3s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
+        <div className="ri-up bg-[var(--surface-raised)] rounded-[var(--radius-lg)] border overflow-hidden" style={{animationDelay:".3s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
           <div className="px-6 py-5 border-b" style={{borderColor:C.borderL}}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl flex items-center justify-center flex-none" style={{backgroundColor:"#1a5c4f17",color:"#1a5c4f"}}>
+                <div className="h-9 w-9 rounded-[var(--radius-md)] flex items-center justify-center flex-none" style={{backgroundColor:"#1a5c4f17",color:"#1a5c4f"}}>
                   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M3 6h14M3 10h14M3 14h14"/></svg>
                 </div>
                 <div>
                   <h2 className="text-[14px] font-bold" style={{color:C.tx}}>جميع الصفقات النشطة</h2>
-                  <p className="text-[10px] mt-0.5" style={{color:C.tx3}}>انقر لعرض التفاصيل أو طلب خطة إغلاق من AI</p>
+                  <p className="t-micro mt-0.5" style={{color:C.tx3}}>انقر لعرض التفاصيل أو طلب خطة إغلاق من AI</p>
                 </div>
               </div>
               <div className="relative">
@@ -1150,7 +1150,7 @@ export default function RevenueTab() {
                 </svg>
                 <input value={search} onChange={e=>setSearch(e.target.value)}
                   placeholder="بحث عن صفقة أو عميل…"
-                  className="rounded-xl pr-9 pl-4 py-2 text-[11px] w-52 border bg-[#f8faf9] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 focus:border-[#1a5c4f]/40 transition"
+                  className="rounded-[var(--radius-md)] pr-9 pl-4 py-2 t-micro w-52 border bg-[#f8faf9] focus:bg-[var(--surface-raised)] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 focus:border-[#1a5c4f]/40 transition"
                   style={{borderColor:C.border}}/>
               </div>
             </div>
@@ -1159,7 +1159,7 @@ export default function RevenueTab() {
                 const active=filter===key, isRisk=key==="high_risk";
                 return (
                   <button key={key} onClick={()=>setFilter(key)}
-                    className="px-3.5 py-1.5 rounded-lg text-[10.5px] font-bold border transition-all"
+                    className="px-3.5 py-1.5 rounded-[var(--radius-sm)] t-micro font-bold border transition-all"
                     style={{backgroundColor:active?(isRisk?"#dc2626":"#1a5c4f"):"white",color:active?"white":C.tx2,borderColor:active?"transparent":C.border}}>
                     {label}{count!==undefined&&<span className="mr-1 opacity-65">({count})</span>}
                   </button>
@@ -1170,7 +1170,7 @@ export default function RevenueTab() {
               {Object.entries(RISK).map(([,r])=>(
                 <div key={r.label} className="flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full" style={{background:r.dot}}/>
-                  <span className="text-[9px] font-medium" style={{color:C.tx3}}>{r.label}</span>
+                  <span className="t-micro font-medium" style={{color:C.tx3}}>{r.label}</span>
                 </div>
               ))}
             </div>
@@ -1180,7 +1180,7 @@ export default function RevenueTab() {
               <thead>
                 <tr className="border-b" style={{background:C.bg2,borderColor:C.borderL}}>
                   {[{t:"الصفقة",c:"px-5 py-3 text-right"},{t:"المرحلة",c:"px-4 py-3 text-right hidden sm:table-cell"},{t:"التصنيف",c:"px-4 py-3 text-right hidden md:table-cell"},{t:"الاحتمالية",c:"px-4 py-3 text-right hidden lg:table-cell"},{t:"آخر تواصل",c:"px-4 py-3 text-right hidden xl:table-cell"},{t:"القيمة",c:"px-5 py-3 text-left"}].map(h=>(
-                    <th key={h.t} className={`${h.c} text-[9px] font-black uppercase tracking-[.18em]`} style={{color:C.tx3}}>{h.t}</th>
+                    <th key={h.t} className={`${h.c} t-micro font-black uppercase tracking-[.18em]`} style={{color:C.tx3}}>{h.t}</th>
                   ))}
                 </tr>
               </thead>
@@ -1193,10 +1193,10 @@ export default function RevenueTab() {
           </div>
           {filtered.length>0&&(
             <div className="px-6 py-3.5 border-t flex flex-wrap items-center justify-between gap-2" style={{background:C.bg2,borderColor:C.borderL}}>
-              <p className="text-[10.5px]" style={{color:C.tx3}}>
+              <p className="t-micro" style={{color:C.tx3}}>
                 <strong style={{color:C.tx}}>{filtered.length}</strong> صفقة · إجمالي: <strong className="tabular-nums" style={{color:C.tx}}>{sarFull(filtered.reduce((s,d)=>s+d.valueSAR,0))} ر.س</strong>
               </p>
-              <p className="text-[10.5px]" style={{color:C.tx3}}>
+              <p className="t-micro" style={{color:C.tx3}}>
                 مرجّح: <strong className="font-black tabular-nums" style={{color:C.e4}}>{sarFull(filtered.reduce((s,d)=>s+Math.round(d.valueSAR*d.probabilityPct/100),0))} ر.س</strong>
               </p>
             </div>

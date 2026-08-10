@@ -115,23 +115,23 @@ interface Suggestion {
 function SuggestionPopover({ suggestion, onClose }: { suggestion: Suggestion; onClose: () => void }) {
   return (
     <div
-      className="absolute top-0 z-50 w-64 rounded-xl border border-border-light bg-white p-3 shadow-[0_12px_32px_rgba(15,23,20,0.18)]"
+      className="absolute top-0 z-50 w-64 rounded-[var(--radius-md)] border border-border-light bg-[var(--surface-raised)] p-3 shadow-[0_12px_32px_rgba(15,23,20,0.18)]"
       style={{ right: -272 }}
     >
       <div className="mb-1.5 flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-[11px] font-bold text-primary">
+        <span className="flex items-center gap-1.5 t-micro font-bold text-primary">
           <SparkleIcon className="h-3 w-3" /> اقتراح الذكاء الاصطناعي
         </span>
         <button onClick={onClose} aria-label="إغلاق" className="text-muted hover:text-ink-secondary">✕</button>
       </div>
       {suggestion.status === "loading" && (
-        <p className="flex items-center gap-1.5 py-1 text-[12px] text-muted">
+        <p className="flex items-center gap-1.5 py-1 t-caption text-muted">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gray-300" /> جارِ التفكير…
         </p>
       )}
-      {suggestion.status === "error" && <p className="py-1 text-[12px] text-danger">تعذّر جلب الاقتراح</p>}
-      {suggestion.status === "empty" && <p className="py-1 text-[12px] text-muted">لا يوجد نشاط كافٍ بعد لاقتراح إجراء</p>}
-      {suggestion.status === "done" && <p dir="auto" className="text-[12.5px] leading-relaxed text-ink-secondary">{suggestion.action}</p>}
+      {suggestion.status === "error" && <p className="py-1 t-caption text-danger">تعذّر جلب الاقتراح</p>}
+      {suggestion.status === "empty" && <p className="py-1 t-caption text-muted">لا يوجد نشاط كافٍ بعد لاقتراح إجراء</p>}
+      {suggestion.status === "done" && <p dir="auto" className="t-caption leading-relaxed text-ink-secondary">{suggestion.action}</p>}
     </div>
   );
 }
@@ -139,8 +139,8 @@ function SuggestionPopover({ suggestion, onClose }: { suggestion: Suggestion; on
 function SectionLabel({ icon, tone, children }: { icon: React.ReactNode; tone: string; children: React.ReactNode }) {
   return (
     <div className="mb-2.5 mt-4 flex items-center gap-2 first:mt-0">
-      <span className={`flex h-6 w-6 flex-none items-center justify-center rounded-lg ${tone}`}>{icon}</span>
-      <span dir="auto" className="text-[11px] font-bold uppercase tracking-wide text-muted">{children}</span>
+      <span className={`flex h-6 w-6 flex-none items-center justify-center rounded-[var(--radius-sm)] ${tone}`}>{icon}</span>
+      <span dir="auto" className="t-micro font-bold uppercase tracking-wide text-muted">{children}</span>
     </div>
   );
 }
@@ -345,20 +345,20 @@ export default function DailyBriefing() {
           style={{ animation: "briefingBackdropIn 0.2s ease-out" }}
         >
           <div
-            className="w-full max-w-[460px] rounded-2xl border border-border-light bg-white p-7 shadow-[0_20px_60px_rgba(0,0,0,0.15)]"
+            className="w-full max-w-[460px] rounded-[var(--radius-lg)] border border-border-light bg-[var(--surface-raised)] p-7 shadow-[0_20px_60px_rgba(0,0,0,0.15)]"
             style={{ animation: modalLeaving ? "briefingModalOut 0.4s ease-in forwards" : "briefingModalIn 0.3s ease-out" }}
           >
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-mint text-lg">
+              <span className="flex h-11 w-11 flex-none items-center justify-center rounded-[var(--radius-md)] bg-mint text-lg">
                 {greetingEmoji(now.getHours())}
               </span>
               <div className="min-w-0">
-                <p dir="auto" className="truncate text-[19px] font-extrabold text-ink">{greetingForHour(now.getHours())}، {firstName || "بك"}</p>
-                <p className="text-[13px] text-muted">{arabicDate(now)}</p>
+                <p dir="auto" className="truncate t-title-3 font-extrabold text-ink">{greetingForHour(now.getHours())}، {firstName || "بك"}</p>
+                <p className="t-body-sm text-muted">{arabicDate(now)}</p>
               </div>
             </div>
 
-            <div className="mt-4 rounded-xl border border-border-light bg-mint/60 px-4 py-3">
+            <div className="mt-4 rounded-[var(--radius-md)] border border-border-light bg-mint/60 px-4 py-3">
               <p dir="auto" className="text-[14px] font-semibold text-primary">{summaryLine}</p>
             </div>
 
@@ -367,18 +367,18 @@ export default function DailyBriefing() {
                 <SectionLabel icon={<ChecklistIcon className="h-3.5 w-3.5" />} tone="bg-mint text-primary">مهامك اليوم</SectionLabel>
                 <div className="flex flex-col gap-1.5">
                   {data.overdueTasks.map((t) => (
-                    <div key={t.id} className="relative overflow-hidden rounded-lg border border-border-light bg-white py-2.5 pl-3 pr-3">
+                    <div key={t.id} className="relative overflow-hidden rounded-[var(--radius-sm)] border border-border-light bg-[var(--surface-raised)] py-2.5 pl-3 pr-3">
                       <span className="absolute bottom-1.5 left-0 top-1.5 w-1 rounded-full bg-danger" />
                       <div className="flex items-center justify-between gap-2 pl-2">
                         <span dir="auto" className="truncate text-[14px] font-medium text-ink">{t.title || "مهمة بدون عنوان"}</span>
-                        <span className="flex-none text-[12px] font-semibold text-danger">متأخرة</span>
+                        <span className="flex-none t-caption font-semibold text-danger">متأخرة</span>
                       </div>
                     </div>
                   ))}
                   {data.todayTasks.map((t) => (
-                    <div key={t.id} className="flex items-center justify-between gap-2 rounded-lg border border-border-light bg-white px-3 py-2.5">
+                    <div key={t.id} className="flex items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-border-light bg-[var(--surface-raised)] px-3 py-2.5">
                       <span dir="auto" className="truncate text-[14px] font-medium text-ink">{t.title || "مهمة بدون عنوان"}</span>
-                      <span className="flex-none font-mono text-[13px] text-muted">{timeAr(t.due_at)}</span>
+                      <span className="flex-none font-mono t-body-sm text-muted">{timeAr(t.due_at)}</span>
                     </div>
                   ))}
                 </div>
@@ -390,11 +390,11 @@ export default function DailyBriefing() {
                 <SectionLabel icon={<TargetIcon className="h-3.5 w-3.5" />} tone="bg-amber-50 text-warning">صفقات تحتاج تواصل</SectionLabel>
                 <div className="flex flex-col gap-1.5">
                   {data.stuckDeals.slice(0, 5).map((d) => (
-                    <div key={d.id} className="relative overflow-hidden rounded-lg border border-border-light bg-white py-2.5 pl-3 pr-3">
+                    <div key={d.id} className="relative overflow-hidden rounded-[var(--radius-sm)] border border-border-light bg-[var(--surface-raised)] py-2.5 pl-3 pr-3">
                       <span className="absolute bottom-1.5 left-0 top-1.5 w-1 rounded-full bg-warning" />
                       <div className="flex items-center justify-between gap-2 pl-2">
                         <span dir="auto" className="truncate text-[14px] font-medium text-ink">{d.leadName || d.name || "صفقة"}</span>
-                        <span className="flex-none rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-warning">{d.daysSinceContact} يوم</span>
+                        <span className="flex-none rounded-full bg-amber-50 px-2 py-0.5 t-micro font-bold text-warning">{d.daysSinceContact} يوم</span>
                       </div>
                     </div>
                   ))}
@@ -417,7 +417,7 @@ export default function DailyBriefing() {
           --briefing-rail-width custom property set above, so it still pushes <main>
           instead of overlaying it. */}
       <div
-        className="fixed left-0 top-20 z-30 hidden overflow-hidden rounded-r-2xl border border-s-0 border-border-light bg-white shadow-[0_8px_28px_rgba(15,23,20,0.12)] transition-[width] duration-300 ease-in-out md:flex"
+        className="fixed left-0 top-20 z-30 hidden overflow-hidden rounded-r-2xl border border-s-0 border-border-light bg-[var(--surface-raised)] shadow-[0_8px_28px_rgba(15,23,20,0.12)] transition-[width] duration-300 ease-in-out md:flex"
         style={{ width: collapsed ? RAIL_COLLAPSED : RAIL_EXPANDED, maxHeight: collapsed ? undefined : "min(72vh, 560px)" }}
       >
         {/* Always-visible tab — the permanent, unmistakable "you have things to do" affordance. */}
@@ -427,12 +427,12 @@ export default function DailyBriefing() {
           aria-label={collapsed ? "فتح المساعد اليومي" : "طي المساعد اليومي"}
           title="المساعد اليومي"
         >
-          <span className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${collapsed ? "bg-white text-primary shadow-sm" : "text-muted"}`}>
+          <span className={`flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] transition-colors ${collapsed ? "bg-[var(--surface-raised)] text-primary shadow-sm" : "text-muted"}`}>
             <CompassIcon className="h-4 w-4" />
           </span>
-          {collapsed && <span className="text-[9px] font-bold text-primary">مهامك</span>}
+          {collapsed && <span className="t-micro font-bold text-primary">مهامك</span>}
           {collapsed && totalPending > 0 && (
-            <span className="absolute right-1 top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white ring-2 ring-mint">
+            <span className="absolute right-1 top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger px-1 t-micro font-bold text-white ring-2 ring-mint">
               {totalPending}
             </span>
           )}
@@ -454,16 +454,16 @@ export default function DailyBriefing() {
               <>
                 <div className="flex items-center justify-between border-b border-border-light px-3.5 py-3">
                   <div className="flex items-center gap-2">
-                    <span dir="auto" className="text-[13px] font-bold text-ink">المساعد اليومي</span>
+                    <span dir="auto" className="t-body-sm font-bold text-ink">المساعد اليومي</span>
                     <span className="h-1.5 w-1.5 flex-none rounded-full" style={{ background: statusColor }} />
                     {totalPending > 0 && (
-                      <span className="rounded-full bg-gray-50 px-1.5 py-0.5 text-[10px] font-bold text-ink-secondary">{totalPending}</span>
+                      <span className="rounded-full bg-gray-50 px-1.5 py-0.5 t-micro font-bold text-ink-secondary">{totalPending}</span>
                     )}
                   </div>
                   <button
                     onClick={() => toggleCollapsed(true)}
                     aria-label="طي اللوحة"
-                    className="rounded-lg p-1.5 text-muted transition hover:bg-gray-25 hover:text-primary"
+                    className="rounded-[var(--radius-sm)] p-1.5 text-muted transition hover:bg-gray-25 hover:text-primary"
                   >
                     <ChevronIcon className="h-4 w-4" />
                   </button>
@@ -481,7 +481,7 @@ export default function DailyBriefing() {
                           return (
                             <div
                               key={t.id}
-                              className={`relative flex items-center gap-2.5 overflow-hidden rounded-lg border border-border-light px-2.5 py-2 transition-opacity ${blocked ? "bg-gray-50 opacity-60" : "bg-white"} ${done ? "opacity-40" : ""}`}
+                              className={`relative flex items-center gap-2.5 overflow-hidden rounded-[var(--radius-sm)] border border-border-light px-2.5 py-2 transition-opacity ${blocked ? "bg-gray-50 opacity-60" : "bg-[var(--surface-raised)]"} ${done ? "opacity-40" : ""}`}
                             >
                               {overdue && !blocked && <span className="absolute bottom-1 left-0 top-1 w-1 rounded-full bg-danger" />}
                               {blocked && <span className="absolute bottom-1 left-0 top-1 w-1 rounded-full bg-amber-400" />}
@@ -504,10 +504,10 @@ export default function DailyBriefing() {
                                   )}
                                 </button>
                               )}
-                              <span dir="auto" className={`min-w-0 flex-1 truncate text-[13px] ${blocked ? "text-muted" : "text-ink-secondary"} ${done ? "line-through" : ""}`}>
+                              <span dir="auto" className={`min-w-0 flex-1 truncate t-body-sm ${blocked ? "text-muted" : "text-ink-secondary"} ${done ? "line-through" : ""}`}>
                                 {t.title || "مهمة"}
                               </span>
-                              <span className={`flex-none font-mono text-[11px] ${blocked ? "text-amber-500" : overdue ? "font-semibold text-danger" : "text-muted"}`}>
+                              <span className={`flex-none font-mono t-micro ${blocked ? "text-amber-500" : overdue ? "font-semibold text-danger" : "text-muted"}`}>
                                 {blocked ? "معلّقة" : overdue ? "متأخرة" : timeAr(t.due_at)}
                               </span>
                             </div>
@@ -524,7 +524,7 @@ export default function DailyBriefing() {
                         {priorityDeals.map((d) => (
                           <div
                             key={d.id}
-                            className="relative overflow-visible rounded-lg border border-border-light bg-white p-2.5 pl-3.5 transition hover:border-warning/30 hover:shadow-sm"
+                            className="relative overflow-visible rounded-[var(--radius-sm)] border border-border-light bg-[var(--surface-raised)] p-2.5 pl-3.5 transition hover:border-warning/30 hover:shadow-sm"
                           >
                             <span className="absolute bottom-1.5 left-0 top-1.5 w-1 rounded-full bg-warning" />
                             <button
@@ -532,22 +532,22 @@ export default function DailyBriefing() {
                               className="block w-full text-left"
                             >
                               <div className="flex items-center justify-between gap-2">
-                                <p dir="auto" className="min-w-0 flex-1 truncate text-[13px] font-semibold text-ink">
+                                <p dir="auto" className="min-w-0 flex-1 truncate t-body-sm font-semibold text-ink">
                                   {d.leadName || d.name || "صفقة"}
                                 </p>
-                                <span className="flex-none rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-warning">{d.daysSinceContact} يوم</span>
+                                <span className="flex-none rounded-full bg-amber-50 px-2 py-0.5 t-micro font-bold text-warning">{d.daysSinceContact} يوم</span>
                               </div>
                             </button>
                             <div className="mt-1.5 flex items-center gap-1.5">
                               <button
                                 onClick={(e) => askCopilotAboutDeal(e, d)}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-border-light bg-white px-2.5 py-1 text-[11px] font-semibold text-primary transition hover:border-primary/30 hover:bg-mint"
+                                className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border-light bg-[var(--surface-raised)] px-2.5 py-1 t-micro font-semibold text-primary transition hover:border-primary/30 hover:bg-mint"
                               >
                                 <ChatIcon className="h-3 w-3" /> اسأل الكوبايلوت
                               </button>
                               <button
                                 onClick={(e) => toggleSuggestion(e, d)}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-border-light bg-white px-2.5 py-1 text-[11px] font-semibold text-primary transition hover:border-primary/30 hover:bg-mint"
+                                className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border-light bg-[var(--surface-raised)] px-2.5 py-1 t-micro font-semibold text-primary transition hover:border-primary/30 hover:bg-mint"
                               >
                                 <SparkleIcon className="h-3 w-3" /> اقترح إجراء
                               </button>
@@ -562,7 +562,7 @@ export default function DailyBriefing() {
                   )}
 
                   {totalToday === 0 && priorityDeals.length === 0 && (
-                    <p className="py-8 text-center text-[13px] text-muted">كل شيء تحت السيطرة</p>
+                    <p className="py-8 text-center t-body-sm text-muted">كل شيء تحت السيطرة</p>
                   )}
                 </div>
 
@@ -587,7 +587,7 @@ export default function DailyBriefing() {
                         localStorage.removeItem(BRIEFING_KEY);
                         location.reload();
                       }}
-                      className="w-full rounded-lg border border-dashed border-gray-200 py-1.5 text-[11px] font-medium text-muted transition hover:border-gray-300"
+                      className="w-full rounded-[var(--radius-sm)] border border-dashed border-gray-200 py-1.5 t-micro font-medium text-muted transition hover:border-gray-300"
                     >
                       إعادة تعيين (dev)
                     </button>

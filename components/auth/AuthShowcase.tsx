@@ -92,7 +92,7 @@ export default function AuthShowcase({
       </div>
 
       <div className="relative">
-        <p className="auth-in mb-3 text-[13px] font-bold uppercase tracking-[0.18em] text-[#7ee7cd]" style={{ animationDelay: "110ms" }}>
+        <p className="auth-in mb-3 t-body-sm font-bold uppercase tracking-[0.18em] text-[#7ee7cd]" style={{ animationDelay: "110ms" }}>
           {eyebrow}
         </p>
         <h2 className="auth-in mb-3 text-5xl font-black leading-tight tracking-tight text-white" style={{ animationDelay: "170ms" }}>
@@ -107,17 +107,17 @@ export default function AuthShowcase({
           {minis.map((m, i) => (
             <div
               key={m.title}
-              className="auth-in flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.07] px-3.5 py-2.5 backdrop-blur-sm"
+              className="auth-in flex items-center gap-3 rounded-[var(--radius-md)] border border-white/10 bg-white/[0.07] px-3.5 py-2.5 backdrop-blur-sm"
               style={{ animationDelay: `${310 + i * 100}ms` }}
             >
-              <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-[#7ee7cd]/15 text-[#7ee7cd]">
+              <span className="flex h-8 w-8 flex-none items-center justify-center rounded-[var(--radius-sm)] bg-[#7ee7cd]/15 text-[#7ee7cd]">
                 {m.icon}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-bold text-white">{m.title}</span>
-                <span className="block truncate text-[11px] text-white/45">{m.sub}</span>
+                <span className="block truncate t-body-sm font-bold text-white">{m.title}</span>
+                <span className="block truncate t-micro text-white/45">{m.sub}</span>
               </span>
-              <span className="text-[12px] font-black tabular-nums text-[#7ee7cd]">{m.value}</span>
+              <span className="t-caption font-black tabular-nums text-[#7ee7cd]">{m.value}</span>
             </div>
           ))}
         </div>

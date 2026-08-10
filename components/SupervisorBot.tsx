@@ -350,7 +350,7 @@ export default function SupervisorBot() {
             style={{ animation: "sv-bubble-in 0.5s ease-out both" }}
           >
             <div
-              className="relative rounded-2xl bg-[#141c2e] px-4 py-2.5 text-[12px] font-bold text-white shadow-[0_8px_24px_rgba(20,28,46,0.3)]"
+              className="relative rounded-[var(--radius-lg)] bg-[#141c2e] px-4 py-2.5 t-caption font-bold text-white shadow-[0_8px_24px_rgba(20,28,46,0.3)]"
               style={{ animation: "sv-bubble-float 3s ease-in-out infinite" }}
             >
               <span>{bubbleText}</span>
@@ -370,7 +370,7 @@ export default function SupervisorBot() {
           title="المشرف الذكي"
         >
           <span className="pointer-events-none absolute -left-3 -top-3 h-14 w-14 rounded-full bg-[#38d39f] opacity-20 blur-xl" />
-          <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/10">
+          <span className="relative flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] bg-white/10 ring-1 ring-white/10">
             <svg viewBox="0 0 200 200" className="h-5 w-5">
               <rect x="48" y="30" width="104" height="85" rx="36" fill="#e8f2ed" />
               <rect x="56" y="46" width="88" height="50" rx="22" fill="#1a2e3a" />
@@ -380,9 +380,9 @@ export default function SupervisorBot() {
               <rect x="58" y="120" width="84" height="50" rx="22" fill="#e0eee6" />
             </svg>
           </span>
-          <span className="relative text-[9px] font-bold text-white/80">المشرف</span>
+          <span className="relative t-micro font-bold text-white/80">المشرف</span>
           {urgentCount > 0 && (
-            <span className="absolute right-0.5 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-[#141c2e]">
+            <span className="absolute right-0.5 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 t-micro font-bold text-white ring-2 ring-[#141c2e]">
               {urgentCount}
             </span>
           )}
@@ -418,30 +418,30 @@ export default function SupervisorBot() {
               </div>
               <div>
                 <h2 className="text-[18px] font-black text-white tracking-tight">المشرف الذكي</h2>
-                <p className="text-[11px] text-white/40 mt-0.5">مشرفك الشخصي من مَوْرد</p>
-                <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-2 py-0.5 text-[9px] font-bold text-emerald-300 border border-emerald-400/15">
+                <p className="t-micro text-white/40 mt-0.5">مشرفك الشخصي من مَوْرد</p>
+                <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-2 py-0.5 t-micro font-bold text-emerald-300 border border-emerald-400/15">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   يراقب بياناتك
                 </span>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} className="rounded-xl p-2 text-white/25 transition hover:bg-white/10 hover:text-white">
+            <button onClick={() => setOpen(false)} className="rounded-[var(--radius-md)] p-2 text-white/25 transition hover:bg-white/10 hover:text-white">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-5 w-5"><path d="M6 6l12 12M18 6 6 18" /></svg>
             </button>
           </div>
 
           {/* Greeting message in header */}
           {showIntro && data && introStep >= 1 && (
-            <div className="relative mt-4 rounded-2xl bg-white/[0.07] backdrop-blur-sm border border-white/[0.08] px-4 py-3" style={{ animation: "sv-entry 0.5s ease-out both" }}>
+            <div className="relative mt-4 rounded-[var(--radius-lg)] bg-white/[0.07] backdrop-blur-sm border border-white/[0.08] px-4 py-3" style={{ animation: "sv-entry 0.5s ease-out both" }}>
               {introStep < 3 ? (
                 <div className="flex items-center gap-3">
                   <TypingDots />
-                  <span className="text-[12px] text-white/40">
+                  <span className="t-caption text-white/40">
                     {introStep === 1 ? `${greeting}${nameGreet}! أشيّك على بياناتك...` : "جاري التحليل..."}
                   </span>
                 </div>
               ) : (
-                <p className="text-[13px] font-medium text-white/80">خلصت تحليل بياناتك ✅ — شف التقرير تحت</p>
+                <p className="t-body-sm font-medium text-white/80">خلصت تحليل بياناتك ✅ — شف التقرير تحت</p>
               )}
             </div>
           )}
@@ -455,9 +455,9 @@ export default function SupervisorBot() {
             {loading && !data && (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
                 <div className="relative h-12 w-12">
-                  <div className="absolute inset-0 animate-spin rounded-full border-[3px] border-[#e8ece9] border-t-[#38d39f]" />
+                  <div className="absolute inset-0 animate-spin rounded-full border-[3px] border-[var(--border-subtle)] border-t-[#38d39f]" />
                 </div>
-                <p className="text-[13px] font-medium text-[#94a3b8]">أجمع بياناتك...</p>
+                <p className="t-body-sm font-medium text-[#94a3b8]">أجمع بياناتك...</p>
               </div>
             )}
 
@@ -465,13 +465,13 @@ export default function SupervisorBot() {
             {!showIntro && data && (
               <>
                 {/* AI Message — hero card */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#141c2e] to-[#1a3a4a] p-5 shadow-[0_8px_32px_rgba(20,28,46,0.2)]" style={{ animation: "sv-entry 0.5s ease-out both" }}>
+                <div className="relative overflow-hidden rounded-[var(--radius-lg)] bg-gradient-to-br from-[#141c2e] to-[#1a3a4a] p-5 shadow-[0_8px_32px_rgba(20,28,46,0.2)]" style={{ animation: "sv-entry 0.5s ease-out both" }}>
                   <div className="pointer-events-none absolute -left-6 -top-6 h-28 w-28 rounded-full bg-[#38d39f] opacity-[0.08] blur-[40px]" />
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="h-6 w-6 rounded-lg bg-[#38d39f]/20 flex items-center justify-center">
+                    <div className="h-6 w-6 rounded-[var(--radius-sm)] bg-[#38d39f]/20 flex items-center justify-center">
                       <span className="text-xs">💬</span>
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/30">كلمة المشرف</span>
+                    <span className="t-micro font-bold uppercase tracking-widest text-white/30">كلمة المشرف</span>
                   </div>
                   <p className="text-[14px] font-medium leading-[1.9] text-white/90 whitespace-pre-line">{data.aiSummary}</p>
                 </div>
@@ -487,17 +487,17 @@ export default function SupervisorBot() {
                       { icon: "🗓️", v: data.stats.meetingsCount, l: "اجتماعات", alert: data.stats.meetingsCount > 0 },
                       { icon: "📄", v: data.stats.quoteDealsCount, l: "عروض", alert: data.stats.quoteDealsCount > 0 },
                     ].map((s, i) => (
-                      <div key={i} className={`flex flex-col items-center gap-1 rounded-2xl border px-2 py-3 text-center transition-shadow ${s.alert ? "border-red-200 bg-red-50/80" : "border-[#e4ebe7] bg-white hover:shadow-[0_2px_10px_rgba(0,0,0,0.04)]"}`}>
+                      <div key={i} className={`flex flex-col items-center gap-1 rounded-[var(--radius-lg)] border px-2 py-3 text-center transition-shadow ${s.alert ? "border-red-200 bg-red-50/80" : "border-[var(--border-subtle)] bg-[var(--surface-raised)] hover:shadow-[0_2px_10px_rgba(0,0,0,0.04)]"}`}>
                         <span className="text-base leading-none">{s.icon}</span>
                         <span className={`text-[18px] font-black tabular-nums leading-none ${s.alert ? "text-red-600" : "text-[#1e1b4b]"}`}>{s.v}</span>
-                        <span className="text-[10px] text-[#94a3b8] font-semibold">{s.l}</span>
+                        <span className="t-micro text-[#94a3b8] font-semibold">{s.l}</span>
                       </div>
                     ))}
                   </div>
                   {data.stats.pipelineValue > 0 && (
-                    <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-gradient-to-l from-[#f0faf8] to-white border border-[#d6ece5] px-4 py-3">
-                      <span className="flex h-8 w-8 flex-none items-center justify-center rounded-xl bg-[#1a5c4f]/10 text-sm">💰</span>
-                      <span className="text-[13px] font-bold text-[#1a5c4f]">
+                    <div className="mt-2.5 flex items-center gap-2.5 rounded-[var(--radius-lg)] bg-gradient-to-l from-[#f0faf8] to-white border border-[var(--border-subtle)] px-4 py-3">
+                      <span className="flex h-8 w-8 flex-none items-center justify-center rounded-[var(--radius-md)] bg-[#1a5c4f]/10 text-sm">💰</span>
+                      <span className="t-body-sm font-bold text-[#1a5c4f]">
                         قيمة المسار: {(data.stats.pipelineValue / 100).toLocaleString("ar-SA")} ر.س
                       </span>
                     </div>
@@ -508,10 +508,10 @@ export default function SupervisorBot() {
                 {visible.length > 0 && (
                   <div style={{ animation: "sv-entry 0.4s ease-out 250ms both" }}>
                     <div className="flex items-center gap-2 mb-3">
-                      <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${urgentCount > 0 ? "bg-red-100" : "bg-[#e8f2ed]"}`}>
+                      <div className={`h-7 w-7 rounded-[var(--radius-sm)] flex items-center justify-center ${urgentCount > 0 ? "bg-red-100" : "bg-[#e8f2ed]"}`}>
                         <span className="text-sm">{urgentCount > 0 ? "🚨" : "📝"}</span>
                       </div>
-                      <span className="text-[13px] font-black text-[#1e1b4b]">
+                      <span className="t-body-sm font-black text-[#1e1b4b]">
                         {urgentCount > 0 ? `${urgentCount} شيء يحتاج انتباهك` : "توجيهات اليوم"}
                       </span>
                     </div>
@@ -522,22 +522,22 @@ export default function SupervisorBot() {
                         return (
                           <div
                             key={d.id}
-                            className={`group relative rounded-2xl border border-[#e8ece9] border-r-[3px] ${s.border} bg-white p-4 transition-all duration-200 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)]`}
+                            className={`group relative rounded-[var(--radius-lg)] border border-[var(--border-subtle)] border-r-[3px] ${s.border} bg-[var(--surface-raised)] p-4 transition-all duration-200 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)]`}
                             style={{ animation: `sv-entry 0.35s ease-out ${350 + i * 70}ms both` }}
                           >
                             <div className="flex items-start gap-3">
-                              <div className={`flex-shrink-0 mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl ${s.bg}`}>
+                              <div className={`flex-shrink-0 mt-0.5 flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] ${s.bg}`}>
                                 <span className="text-lg">{d.icon}</span>
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1.5">
-                                  <span className={`rounded-lg px-2 py-[3px] text-[9px] font-black tracking-wider ${s.badge}`}>{s.label}</span>
+                                  <span className={`rounded-[var(--radius-sm)] px-2 py-[3px] t-micro font-black tracking-wider ${s.badge}`}>{s.label}</span>
                                 </div>
-                                <p className="text-[13px] font-medium leading-[1.8] text-[#2d2b46]">{d.message}</p>
+                                <p className="t-body-sm font-medium leading-[1.8] text-[#2d2b46]">{d.message}</p>
                                 {d.action && d.actionHref && (
                                   <button
                                     onClick={() => { router.push(d.actionHref!); setOpen(false); }}
-                                    className="mt-2.5 inline-flex items-center gap-1.5 rounded-xl bg-[#1a5c4f] px-4 py-2 text-[11px] font-bold text-white transition-all hover:bg-[#145043] hover:shadow-md active:scale-[0.97]"
+                                    className="mt-2.5 inline-flex items-center gap-1.5 rounded-[var(--radius-md)] bg-[#1a5c4f] px-4 py-2 t-micro font-bold text-white transition-all hover:bg-[#145043] hover:shadow-md active:scale-[0.97]"
                                   >
                                     {d.action}
                                     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} className="h-3 w-3 rtl:rotate-180"><path d="M3 8h10M8 3l5 5-5 5" /></svg>
@@ -546,7 +546,7 @@ export default function SupervisorBot() {
                               </div>
                               <button
                                 onClick={() => setDismissed((prev) => new Set(prev).add(d.id))}
-                                className="flex-shrink-0 flex h-8 w-8 items-center justify-center rounded-xl text-[#c8d0cc] opacity-0 transition group-hover:opacity-100 hover:bg-emerald-50 hover:text-emerald-600"
+                                className="flex-shrink-0 flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-[#c8d0cc] opacity-0 transition group-hover:opacity-100 hover:bg-emerald-50 hover:text-emerald-600"
                                 title="تم"
                               >
                                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-3.5 w-3.5"><path d="M2 8l4.5 5L14 3" /></svg>
@@ -560,10 +560,10 @@ export default function SupervisorBot() {
                 )}
 
                 {visible.length === 0 && (
-                  <div className="rounded-2xl bg-white border border-[#e8ece9] py-10 text-center shadow-sm" style={{ animation: "sv-entry 0.4s ease-out 250ms both" }}>
+                  <div className="rounded-[var(--radius-lg)] bg-[var(--surface-raised)] border border-[var(--border-subtle)] py-10 text-center shadow-sm" style={{ animation: "sv-entry 0.4s ease-out 250ms both" }}>
                     <span className="text-4xl">🎉</span>
                     <p className="text-[16px] font-black text-[#1e1b4b] mt-3">ما عندك شيء عالق!</p>
-                    <p className="text-[12px] text-[#94a3b8] mt-1">خلّصت كل شيء — أنا فخور فيك!</p>
+                    <p className="t-caption text-[#94a3b8] mt-1">خلّصت كل شيء — أنا فخور فيك!</p>
                   </div>
                 )}
               </>
@@ -572,20 +572,20 @@ export default function SupervisorBot() {
             {/* Intro waiting state — show nothing in content during intro */}
             {showIntro && data && introStep >= 3 && (
               <div className="flex items-center justify-center py-8" style={{ animation: "sv-entry 0.4s ease-out both" }}>
-                <div className="flex items-center gap-3 rounded-2xl bg-white border border-[#e8ece9] px-5 py-3 shadow-sm">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#e8ece9] border-t-[#38d39f]" />
-                  <span className="text-[13px] font-medium text-[#94a3b8]">أجهّز التقرير...</span>
+                <div className="flex items-center gap-3 rounded-[var(--radius-lg)] bg-[var(--surface-raised)] border border-[var(--border-subtle)] px-5 py-3 shadow-sm">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--border-subtle)] border-t-[#38d39f]" />
+                  <span className="t-body-sm font-medium text-[#94a3b8]">أجهّز التقرير...</span>
                 </div>
               </div>
             )}
           </div>
 
           {/* Footer */}
-          <div className="flex-none border-t border-[#e8ece9] bg-white/80 backdrop-blur-sm p-4">
+          <div className="flex-none border-t border-[var(--border-subtle)] bg-white/80 backdrop-blur-sm p-4">
             <button
               onClick={load}
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#141c2e] to-[#1a3a4a] py-3.5 text-[13px] font-bold text-white transition-all hover:shadow-[0_4px_20px_rgba(20,28,46,0.3)] disabled:opacity-50 active:scale-[0.98]"
+              className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-gradient-to-l from-[#141c2e] to-[#1a3a4a] py-3.5 t-body-sm font-bold text-white transition-all hover:shadow-[0_4px_20px_rgba(20,28,46,0.3)] disabled:opacity-50 active:scale-[0.98]"
             >
               {loading ? (
                 <>

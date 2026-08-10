@@ -37,14 +37,14 @@ function DealCard({
 }) {
   return (
     <div
-      className={`mb-1.5 rounded-lg border px-2.5 py-2 ${
-        won ? "border-[#3a9080]/45 bg-[#f2fbf8] shadow-[0_3px_12px_rgba(58,144,128,0.14)]" : "border-[#e4ebe7] bg-[#f8faf9]"
+      className={`mb-1.5 rounded-[var(--radius-sm)] border px-2.5 py-2 ${
+        won ? "border-[#3a9080]/45 bg-[#f2fbf8] shadow-[0_3px_12px_rgba(58,144,128,0.14)]" : "border-[var(--border-subtle)] bg-[#f8faf9]"
       } ${traveling ? "land-travel" : ""}`}
     >
-      <p dir="auto" className="mb-1 truncate text-[11.5px] font-bold text-[#141c2e]">{name}</p>
+      <p dir="auto" className="mb-1 truncate t-caption font-bold text-[#141c2e]">{name}</p>
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-extrabold tabular-nums text-[#1a5c4f]">{amount}</span>
-        <span className="flex h-[17px] w-[17px] items-center justify-center rounded-full bg-[#3a9080] text-[8.5px] font-bold text-white">{who}</span>
+        <span className="t-micro font-extrabold tabular-nums text-[#1a5c4f]">{amount}</span>
+        <span className="flex h-[17px] w-[17px] items-center justify-center rounded-full bg-[#3a9080] t-micro font-bold text-white">{who}</span>
       </div>
     </div>
   );
@@ -52,8 +52,8 @@ function DealCard({
 
 function Kpi({ label, value, format, spark, delay }: { label: string; value: number; format?: (n: number) => string; spark: number[]; delay: number }) {
   return (
-    <div className="rounded-xl border border-[#e4ebe7] bg-white px-3 py-2.5">
-      <p className="mb-1 text-[10.5px] font-bold text-[#94a3b8]">{label}</p>
+    <div className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-2.5">
+      <p className="mb-1 t-micro font-bold text-[#94a3b8]">{label}</p>
       <p className="text-[20px] font-black leading-none tabular-nums text-[#141c2e]">
         <CountUp value={value} format={format} duration={1200} />
       </p>
@@ -69,14 +69,14 @@ export default function ProductMock() {
     <div className="relative mx-auto mt-14 max-w-[1000px] px-2">
       <div
         dir="rtl"
-        className="flex min-h-[352px] overflow-hidden rounded-t-2xl border border-b-0 border-[#e4ebe7] bg-white shadow-[0_26px_70px_rgba(20,28,46,0.16)]"
+        className="flex min-h-[352px] overflow-hidden rounded-t-2xl border border-b-0 border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-[0_26px_70px_rgba(20,28,46,0.16)]"
       >
         {/* Sidebar rail */}
         <div className="flex w-[60px] flex-none flex-col items-center gap-2.5 bg-[#141c2e] py-4">
-          <div className="mb-2 h-[26px] w-[26px] rounded-lg bg-[#3a9080]" />
-          <div className="h-[26px] w-[26px] rounded-lg bg-[#7ee7cd]/30" />
+          <div className="mb-2 h-[26px] w-[26px] rounded-[var(--radius-sm)] bg-[#3a9080]" />
+          <div className="h-[26px] w-[26px] rounded-[var(--radius-sm)] bg-[#7ee7cd]/30" />
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-[26px] w-[26px] rounded-lg bg-white/[0.09]" />
+            <div key={i} className="h-[26px] w-[26px] rounded-[var(--radius-sm)] bg-white/[0.09]" />
           ))}
         </div>
 
@@ -84,7 +84,7 @@ export default function ProductMock() {
         <div className="min-w-0 flex-1 bg-[#f8faf9] px-4 py-4">
           <div className="mb-3 flex items-center justify-between">
             <b className="text-[14px] font-extrabold text-[#141c2e]">لوحة الصفقات</b>
-            <span className="flex items-center gap-1.5 rounded-full border border-[#3a9080]/20 bg-[#f0faf8] px-2.5 py-1 text-[10.5px] font-bold text-[#1a5c4f]">
+            <span className="flex items-center gap-1.5 rounded-full border border-[#3a9080]/20 bg-[#f0faf8] px-2.5 py-1 t-micro font-bold text-[#1a5c4f]">
               <span className="land-blip h-1.5 w-1.5 rounded-full bg-[#3a9080]" />
               مباشر
             </span>
@@ -97,17 +97,17 @@ export default function ProductMock() {
           </div>
 
           <div className="grid grid-cols-3 gap-2.5">
-            <div className="min-h-[132px] rounded-xl border border-[#e4ebe7] bg-white p-2.5">
-              <h5 className="mb-2 flex justify-between text-[11px] font-extrabold text-[#5a7069]">تواصل أولي <span className="font-bold text-[#b6c4bf]">٣</span></h5>
+            <div className="min-h-[132px] rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-2.5">
+              <h5 className="mb-2 flex justify-between t-micro font-extrabold text-[#5a7069]">تواصل أولي <span className="font-bold text-[#b6c4bf]">٣</span></h5>
               {COL_A.map((d) => <DealCard key={d.name} {...d} />)}
             </div>
-            <div className="min-h-[132px] rounded-xl border border-[#e4ebe7] bg-white p-2.5">
-              <h5 className="mb-2 flex justify-between text-[11px] font-extrabold text-[#5a7069]">قيد التفاوض <span className="font-bold text-[#b6c4bf]">٢</span></h5>
+            <div className="min-h-[132px] rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-2.5">
+              <h5 className="mb-2 flex justify-between t-micro font-extrabold text-[#5a7069]">قيد التفاوض <span className="font-bold text-[#b6c4bf]">٢</span></h5>
               <DealCard name="مجموعة الأفق" amount="١٢٠٬٠٠٠" who="س" traveling />
               <DealCard name="تقنية الخليج" amount="٦٧٬٠٠٠" who="م" />
             </div>
-            <div className="min-h-[132px] rounded-xl border border-[#e4ebe7] bg-white p-2.5">
-              <h5 className="mb-2 flex justify-between text-[11px] font-extrabold text-[#5a7069]">ربح <span className="font-bold text-[#b6c4bf]">٤</span></h5>
+            <div className="min-h-[132px] rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-2.5">
+              <h5 className="mb-2 flex justify-between t-micro font-extrabold text-[#5a7069]">ربح <span className="font-bold text-[#b6c4bf]">٤</span></h5>
               {COL_C.map((d) => <DealCard key={d.name} {...d} won />)}
             </div>
           </div>

@@ -164,9 +164,9 @@ export default function CommandPalette() {
       <div
         dir="rtl"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[560px] overflow-hidden rounded-2xl border border-[#e8ece9] bg-white shadow-2xl"
+        className="w-full max-w-[560px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-2xl"
       >
-        <div className="flex items-center gap-3 border-b border-[#eef4f1] px-4 py-3.5">
+        <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] px-4 py-3.5">
           <span className="text-[#94a3b8]">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" className="h-4.5 w-4.5"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></svg>
           </span>
@@ -177,18 +177,18 @@ export default function CommandPalette() {
             onKeyDown={handleKeyDown}
             dir="auto"
             placeholder="ابحث عن عميل، صفقة، جهة اتصال، أو صفحة..."
-            className="w-full border-0 bg-transparent text-[15px] text-ink placeholder:text-[#94a3b8] focus:outline-none"
+            className="w-full border-0 bg-transparent t-body text-ink placeholder:text-[#94a3b8] focus:outline-none"
           />
-          <kbd className="flex-none rounded-md border border-[#e8ece9] bg-[#f8faf9] px-1.5 py-0.5 text-[11px] font-semibold text-[#94a3b8]">Esc</kbd>
+          <kbd className="flex-none rounded-[var(--radius-xs)] border border-[var(--border-subtle)] bg-[#f8faf9] px-1.5 py-0.5 t-micro font-semibold text-[#94a3b8]">Esc</kbd>
         </div>
 
         <div className="max-h-[360px] overflow-y-auto py-2">
           {!query.trim() ? (
-            <p className="px-4 py-8 text-center text-[13px] text-muted">اكتب للبحث، أو استخدم ↑↓ للتنقل و Enter للفتح</p>
+            <p className="px-4 py-8 text-center t-body-sm text-muted">اكتب للبحث، أو استخدم ↑↓ للتنقل و Enter للفتح</p>
           ) : loading && results.length === 0 ? (
-            <p className="px-4 py-8 text-center text-[13px] text-muted">جارِ البحث…</p>
+            <p className="px-4 py-8 text-center t-body-sm text-muted">جارِ البحث…</p>
           ) : results.length === 0 ? (
-            <p className="px-4 py-8 text-center text-[13px] text-muted">ما فيه نتائج لـ &quot;{query}&quot;</p>
+            <p className="px-4 py-8 text-center t-body-sm text-muted">ما فيه نتائج لـ &quot;{query}&quot;</p>
           ) : (
             results.map((r, i) => (
               <button
@@ -197,12 +197,12 @@ export default function CommandPalette() {
                 onMouseEnter={() => setActiveIndex(i)}
                 className={`flex w-full items-center gap-3 px-4 py-2.5 text-right transition-colors ${i === activeIndexClamped ? "bg-[#f0faf8]" : "hover:bg-[#f8faf9]"}`}
               >
-                <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-[#f0faf8] text-[15px]">{r.icon}</span>
+                <span className="flex h-8 w-8 flex-none items-center justify-center rounded-[var(--radius-sm)] bg-[#f0faf8] t-body">{r.icon}</span>
                 <div className="min-w-0 flex-1">
-                  <p dir="auto" className="truncate text-[13.5px] font-semibold text-ink">{r.title}</p>
-                  {r.subtitle && <p dir="auto" className="truncate text-[11.5px] text-muted">{r.subtitle}</p>}
+                  <p dir="auto" className="truncate t-body-sm font-semibold text-ink">{r.title}</p>
+                  {r.subtitle && <p dir="auto" className="truncate t-caption text-muted">{r.subtitle}</p>}
                 </div>
-                <span className="flex-none rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-[#94a3b8]">{KIND_LABEL[r.kind]}</span>
+                <span className="flex-none rounded-full bg-gray-100 px-2 py-0.5 t-micro font-semibold text-[#94a3b8]">{KIND_LABEL[r.kind]}</span>
               </button>
             ))
           )}

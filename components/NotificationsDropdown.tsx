@@ -175,24 +175,24 @@ export default function NotificationsDropdown() {
       <button
         onClick={handleOpen}
         aria-label="الإشعارات"
-        className="relative rounded-lg p-2 text-[#94a3b8] transition-colors hover:bg-[#f0faf8] hover:text-[#3a9080]"
+        className="relative rounded-[var(--radius-sm)] p-2 text-[#94a3b8] transition-colors hover:bg-[#f0faf8] hover:text-[#3a9080]"
       >
         <BellIcon className="h-[18px] w-[18px]" />
         {unreadCount > 0 && (
-          <span className="absolute right-1 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">
+          <span className="absolute right-1 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 t-micro font-bold text-white ring-2 ring-white">
             {unreadCount > 9 ? "٩+" : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-[360px] overflow-hidden rounded-2xl border border-[#e8ece9] bg-white shadow-xl">
-          <div className="flex items-center justify-between border-b border-[#f0f0f0] px-4 py-3">
+        <div className="absolute left-0 top-full z-50 mt-2 w-[360px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-xl">
+          <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3">
             <h3 className="text-[14px] font-bold text-[#1e1b4b]">الإشعارات</h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-[12px] font-medium text-[#3a9080] hover:text-[#1a5c4f]"
+                className="t-caption font-medium text-[#3a9080] hover:text-[#1a5c4f]"
               >
                 تحديد الكل كمقروء
               </button>
@@ -201,13 +201,13 @@ export default function NotificationsDropdown() {
 
           <div className="max-h-[400px] overflow-y-auto">
             {loading && items.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-[13px] text-[#94a3b8]">
+              <div className="flex items-center justify-center py-8 t-body-sm text-[#94a3b8]">
                 جاري التحميل...
               </div>
             ) : items.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-8 text-[#94a3b8]">
                 <span className="text-2xl">🔔</span>
-                <span className="text-[13px]">لا توجد إشعارات</span>
+                <span className="t-body-sm">لا توجد إشعارات</span>
               </div>
             ) : (
               items.map((n) => {
@@ -222,10 +222,10 @@ export default function NotificationsDropdown() {
                   >
                     <span className="mt-0.5 text-base">{n.icon}</span>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-[13px] leading-snug ${!isRead ? "font-semibold text-[#1e1b4b]" : "text-[#475569]"}`}>
+                      <p className={`t-body-sm leading-snug ${!isRead ? "font-semibold text-[#1e1b4b]" : "text-[#475569]"}`}>
                         {n.title}
                       </p>
-                      <p className="text-[12px] text-[#94a3b8] mt-0.5">{n.subtitle}</p>
+                      <p className="t-caption text-[#94a3b8] mt-0.5">{n.subtitle}</p>
                     </div>
                     {!isRead && (
                       <span className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-[#3a9080]" />
