@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import type { DealHealth, HealthFactor } from "@/lib/dealHealth/computeHealth";
 import { CheckIcon } from "@/components/icons";
 
@@ -23,6 +24,48 @@ import { CheckIcon } from "@/components/icons";
  *   that visibly admits what the product doesn't know, and it is treated as a
  *   feature of the panel, not an apology at the bottom of it.
  */
+
+/**
+ * Dev-only: does the panel's arithmetic actually hold on screen?
+ *
+ * The score and the rows come from the same array, so they "cannot" disagree
+ * — right up until a row fails to render, a number is formatted wrong, or the
+ * score is clamped and the footer prints an equation that is simply false.
+ * None of that is visible to tsc, ESLint or the build, which is how the table
+ * rail, the Arabic-Indic numerals and the RTL minus sign all shipped.
+ *
+ * So this reads the numbers back out of the DOM — the text a user actually
+ * sees, not the props that produced it — and checks they add up. Same shape as
+ * the column-alignment guard in components/ui/Table.tsx: assert the rendered
+ * result, because rendering is the step nothing else checks.
+ */
+function useEquationCheck(ref: React.RefObject<HTMLDivElement | null>, dealName: string) {
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    const root = ref.current;
+    if (!root) return;
+    const id = requestAnimationFrame(() => {
+      const rows = [...root.querySelectorAll<HTMLElement>("[data-health-contribution]")];
+      const scoreEl = root.querySelector<HTMLElement>("[data-health-score]");
+      if (!scoreEl) return;
+
+      const parse = (el: HTMLElement) => Number((el.textContent ?? "").replace(/[^\d.-]/g, ""));
+      const sum = rows.reduce((s, el) => s + parse(el), 0);
+      const shown = parse(scoreEl);
+      const expected = 100 + sum;
+
+      if (shown !== expected) {
+        console.error(
+          `[HealthPanel:"${dealName}"] the panel does not add up: ` +
+            `rendered factors sum to ${sum}, so the score should read ${expected}, but it reads ${shown}. ` +
+            `A reader who checks the arithmetic will find the panel wrong — which is worse than no panel, ` +
+            `because the panel is the only reason to trust the score.`,
+        );
+      }
+    });
+    return () => cancelAnimationFrame(id);
+  });
+}
 
 function scoreTone(score: number): { fg: string; bg: string; label: string } {
   if (score >= 70) return { fg: "var(--status-success-fg)", bg: "var(--status-success-bg)", label: "سليمة" };
@@ -67,9 +110,16 @@ export default function HealthPanel({
   const tone = scoreTone(health.score);
   const total = health.factors.reduce((s, f) => s + f.contribution, 0);
   const fallbacks = health.factors.filter((f) => f.basis.kind === "fallback");
+  const ref = useRef<HTMLDivElement>(null);
+  useEquationCheck(ref, dealName);
+
+  // The score is clamped to 0-100, so a deal carrying more than 100 points of
+  // problems would otherwise render "100 − 118 = 0", which is false arithmetic
+  // printed in the one place whose whole job is being checkable.
+  const clamped = 100 + total !== health.score;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div ref={ref} className="flex flex-col gap-4">
       <div className="flex items-center gap-4">
         <span
           className="flex h-16 w-16 flex-none items-center justify-center rounded-[var(--radius-lg)]"
@@ -112,6 +162,7 @@ export default function HealthPanel({
                   than a negative number. */}
               <span
                 dir="ltr"
+                data-health-contribution
                 className="t-figure flex-none tabular-nums font-bold text-[color:var(--status-danger-fg)]"
               >
                 {f.contribution}
@@ -128,11 +179,21 @@ export default function HealthPanel({
             hardcoded the Arabic-Indic form here. */}
         <span dir="ltr" className="t-caption tabular-nums text-[color:var(--content-tertiary)]">
           {total === 0 ? "100" : `100 − ${Math.abs(total)}`}
+          {clamped ? " →" : ""}
         </span>
-        <span className="t-figure font-bold tabular-nums text-[color:var(--content-primary)]">
+        <span
+          data-health-score
+          className="t-figure font-bold tabular-nums text-[color:var(--content-primary)]"
+        >
           = {health.score}
         </span>
       </div>
+
+      {clamped && (
+        <p className="t-caption text-[color:var(--content-tertiary)]">
+          المجموع تجاوز الحد، والنتيجة موقوفة عند {health.score}.
+        </p>
+      )}
 
       {fallbacks.length > 0 && (
         /* Repeated from the rows on purpose. A manager scanning the panel
