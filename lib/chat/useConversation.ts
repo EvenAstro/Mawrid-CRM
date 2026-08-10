@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase";
 import {
   fetchMessages,
   sendMessage as sendMessageRow,
+  sendAttachmentMessage,
+  uploadAttachment,
   MESSAGE_PAGE,
   type MessageRow,
 } from "@/lib/models/messages";
@@ -27,6 +29,7 @@ export function useConversation(conversationId: string | null, meId: string | nu
   const [status, setStatus] = useState<LiveStatus>("connecting");
   const [hasMore, setHasMore] = useState(false);
   const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
+  const [uploading, setUploading] = useState(false);
 
   // Read inside event handlers without making them depend on the list.
   // Synced in an effect rather than during render — writing a ref while
@@ -144,6 +147,33 @@ export function useConversation(conversationId: string | null, meId: string | nu
     [conversationId, meId],
   );
 
+  /**
+   * Uploads then sends. No optimistic row here — an upload takes real time and
+   * a placeholder that might never resolve is worse than a visible spinner on
+   * the send button.
+   */
+  const sendFile = useCallback(
+    async (file: File, caption: string) => {
+      if (!conversationId || !meId) return;
+      setUploading(true);
+      const { data: att, error: upErr } = await uploadAttachment(conversationId, file);
+      if (upErr || !att) {
+        console.error("[chat] upload failed", upErr);
+        setUploading(false);
+        return upErr?.message ?? "تعذّر رفع الملف";
+      }
+      const { data, error: err } = await sendAttachmentMessage(conversationId, meId, att, caption);
+      setUploading(false);
+      if (err || !data) {
+        console.error("[chat] attachment message failed", err);
+        return err?.message ?? "تعذّر إرسال المرفق";
+      }
+      setMessages((cur) => mergeMessage(cur, data as MessageRow));
+      return null;
+    },
+    [conversationId, meId],
+  );
+
   const retry = useCallback(
     async (tempId: string) => {
       const msg = messagesRef.current.find((m) => m.id === tempId);
@@ -159,5 +189,5 @@ export function useConversation(conversationId: string | null, meId: string | nu
     [send],
   );
 
-  return { messages, loading, error, status, hasMore, failedIds, send, retry, loadOlder, reload: load };
+  return { messages, loading, error, status, hasMore, failedIds, uploading, send, sendFile, retry, loadOlder, reload: load };
 }

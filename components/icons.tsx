@@ -440,3 +440,11 @@ export function EmptyMark({ className = "h-16 w-16", rotate = 0 }: { className?:
     </svg>
   );
 }
+
+export function PaperclipIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M16.1 9.4 10 15.5a3.9 3.9 0 0 1-5.5-5.5l6.1-6.1a2.6 2.6 0 0 1 3.7 3.7l-6.1 6.1a1.3 1.3 0 0 1-1.9-1.9l5.7-5.6" />
+    </svg>
+  );
+}

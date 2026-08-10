@@ -9,6 +9,7 @@ import {
   fetchMembersFor,
   fetchUnreadCounts,
   openDirectConversation,
+  createGroup,
   markConversationRead,
   type ConversationRow,
   type MemberRow,
@@ -53,6 +54,9 @@ export default function ChatPage() {
   const [error, setError] = useState(false);
   const [starting, setStarting] = useState(false);
   const [previews, setPreviews] = useState<Record<string, MessageRow>>({});
+  const [groupOpen, setGroupOpen] = useState(false);
+  const [groupTitle, setGroupTitle] = useState("");
+  const [groupPicked, setGroupPicked] = useState<Set<string>>(new Set());
 
   const nameById = useMemo(() => {
     const m = new Map<string, string>();
@@ -78,6 +82,7 @@ export default function ChatPage() {
   /** A conversation's display name: the other person, or the attached record. */
   const titleOf = useCallback(
     (c: ConversationRow) => {
+      if (c.kind === "group") return c.title ?? "مجموعة";
       if (c.kind !== "dm") return c.subject_type === "deal" ? "نقاش صفقة" : "نقاش عميل";
       const ids = membersByConversation.get(c.id) ?? [];
       const other = meId ? otherMemberId(ids, meId) : null;
@@ -151,6 +156,29 @@ export default function ChatPage() {
     load();
   }
 
+  async function submitGroup() {
+    const title = groupTitle.trim();
+    if (!title || groupPicked.size === 0 || starting) return;
+    setStarting(true);
+    const { data, error: err } = await createGroup(title, [...groupPicked]);
+    setStarting(false);
+    if (err || !data) {
+      console.error("[chat] create group failed", err);
+      toast(err?.message ? `تعذّر إنشاء المجموعة: ${err.message}` : "تعذّر إنشاء المجموعة", "error");
+      return;
+    }
+    setGroupOpen(false);
+    setGroupTitle("");
+    setGroupPicked(new Set());
+    setActiveId(data as string);
+    load();
+  }
+
+  async function handleSendFile(file: File, caption: string) {
+    const problem = await thread.sendFile(file, caption);
+    if (problem) toast(problem, "error");
+  }
+
   const q = search.trim().toLowerCase();
 
   const filteredConversations = useMemo(
@@ -177,7 +205,12 @@ export default function ChatPage() {
 
   const active = conversations.find((c) => c.id === activeId) ?? null;
   const activeRole = useMemo(() => {
-    if (!active || active.kind !== "dm" || !meId) return null;
+    if (!active || !meId) return null;
+    if (active.kind === "group") {
+      const n = (membersByConversation.get(active.id) ?? []).length;
+      return `${n} أعضاء`;
+    }
+    if (active.kind !== "dm") return null;
     const other = otherMemberId(membersByConversation.get(active.id) ?? [], meId);
     const p = other ? profiles.find((x) => x.id === other) : null;
     return p ? (ROLE_LABEL[p.role] ?? "عضو") : null;
@@ -205,7 +238,13 @@ export default function ChatPage() {
             activeId ? "hidden lg:flex" : "flex"
           }`}
         >
-          <div className="border-b border-[var(--border-subtle)] p-3">
+          <div className="flex flex-col gap-2 border-b border-[var(--border-subtle)] p-3">
+            <button
+              onClick={() => setGroupOpen((v) => !v)}
+              className="t-body-sm flex h-10 items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-dashed border-[var(--border-accent)] font-semibold text-[color:var(--content-accent)] transition-colors duration-[var(--motion-fast)] hover:bg-[var(--surface-accent-subtle)]"
+            >
+              {groupOpen ? "إلغاء" : "+ مجموعة جديدة"}
+            </button>
             <div className="relative">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[color:var(--content-tertiary)]">
                 <SearchIcon className="h-4 w-4" />
@@ -219,6 +258,55 @@ export default function ChatPage() {
               />
             </div>
           </div>
+
+          {groupOpen && (
+            <div className="border-b border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-3">
+              <input
+                value={groupTitle}
+                onChange={(e) => setGroupTitle(e.target.value)}
+                placeholder="اسم المجموعة"
+                aria-label="اسم المجموعة"
+                dir="auto"
+                className="t-body-sm mb-2 h-10 w-full rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface-raised)] px-3 text-[color:var(--content-primary)] placeholder:text-[color:var(--content-tertiary)] focus:border-[var(--border-focus)] focus:outline-none"
+              />
+              <p className="t-eyebrow mb-1 text-[color:var(--content-tertiary)]">الأعضاء</p>
+              <div className="max-h-44 overflow-y-auto rounded-[var(--radius-sm)] border border-[var(--border-subtle)] bg-[var(--surface-raised)]">
+                {profiles.filter((p) => p.id !== meId).map((p) => (
+                  <label
+                    key={p.id}
+                    className="flex cursor-pointer items-center gap-2.5 border-b border-[var(--border-subtle)] px-3 py-2 last:border-0 hover:bg-[var(--surface-hover)]"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={groupPicked.has(p.id)}
+                      onChange={() =>
+                        setGroupPicked((cur) => {
+                          const next = new Set(cur);
+                          if (next.has(p.id)) next.delete(p.id);
+                          else next.add(p.id);
+                          return next;
+                        })
+                      }
+                      className="h-4 w-4 accent-[var(--content-accent)]"
+                    />
+                    <span className="t-body-sm min-w-0 flex-1 truncate text-[color:var(--content-secondary)]">
+                      {profileName(p) || p.email}
+                    </span>
+                    <span className="t-micro flex-none text-[color:var(--content-tertiary)]">
+                      {ROLE_LABEL[p.role] ?? "عضو"}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <button
+                onClick={submitGroup}
+                disabled={starting || !groupTitle.trim() || groupPicked.size === 0}
+                className="t-body-sm mt-2 h-10 w-full rounded-[var(--radius-md)] bg-[var(--surface-accent)] font-bold text-[color:var(--content-on-accent)] transition-colors hover:bg-[var(--surface-accent-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                إنشاء المجموعة{groupPicked.size > 0 ? ` (${groupPicked.size})` : ""}
+              </button>
+            </div>
+          )}
 
           <div className="min-h-0 flex-1 overflow-y-auto">
             {loading ? (
@@ -409,7 +497,7 @@ export default function ChatPage() {
                 onReload={thread.reload}
               />
 
-              <ChatComposer onSend={thread.send} />
+              <ChatComposer onSend={thread.send} onSendFile={handleSendFile} uploading={thread.uploading} />
             </>
           ) : (
             <EmptyState

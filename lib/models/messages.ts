@@ -9,6 +9,10 @@ export interface MessageRow {
   body: string;
   created_at: string;
   deleted_at: string | null;
+  attachment_path?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
+  attachment_size?: number | null;
 }
 
 export const MESSAGE_PAGE = 40;
@@ -26,7 +30,7 @@ export async function fetchMessages(
 ) {
   let q = supabase
     .from("messages")
-    .select("id, conversation_id, sender_id, body, created_at, deleted_at")
+    .select("id, conversation_id, sender_id, body, created_at, deleted_at, attachment_path, attachment_name, attachment_type, attachment_size")
     .eq("conversation_id", conversationId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -50,7 +54,7 @@ export async function sendMessage(
   return supabase
     .from("messages")
     .insert({ conversation_id: conversationId, sender_id: senderId, body: body.trim() })
-    .select("id, conversation_id, sender_id, body, created_at, deleted_at")
+    .select("id, conversation_id, sender_id, body, created_at, deleted_at, attachment_path, attachment_name, attachment_type, attachment_size")
     .single();
 }
 
@@ -66,7 +70,7 @@ export async function softDeleteMessage(messageId: string) {
 export async function searchMessages(term: string, limit = 30) {
   return supabase
     .from("messages")
-    .select("id, conversation_id, sender_id, body, created_at, deleted_at")
+    .select("id, conversation_id, sender_id, body, created_at, deleted_at, attachment_path, attachment_name, attachment_type, attachment_size")
     .is("deleted_at", null)
     .ilike("body", `%${term}%`)
     .order("created_at", { ascending: false })
@@ -87,8 +91,65 @@ export async function fetchLastMessages(
   if (conversationIds.length === 0) return { data: [], error: null };
   return supabase
     .from("messages")
-    .select("id, conversation_id, sender_id, body, created_at, deleted_at")
+    .select("id, conversation_id, sender_id, body, created_at, deleted_at, attachment_path, attachment_name, attachment_type, attachment_size")
     .in("conversation_id", conversationIds)
     .in("created_at", lastMessageAts)
     .is("deleted_at", null);
+}
+
+export interface AttachmentInput {
+  path: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
+/**
+ * Uploads a file to the private chat bucket. The path starts with the
+ * conversation id because the storage policies read membership out of that
+ * first path segment — see the migration.
+ */
+export async function uploadAttachment(conversationId: string, file: File) {
+  const safeName = file.name.replace(/[^\w.\-؀-ۿ]/g, "_").slice(0, 80);
+  const path = `${conversationId}/${crypto.randomUUID()}-${safeName}`;
+  const { error } = await supabase.storage
+    .from("chat-attachments")
+    .upload(path, file, { cacheControl: "3600", upsert: false });
+  if (error) return { data: null, error };
+  return {
+    data: { path, name: file.name, type: file.type, size: file.size } as AttachmentInput,
+    error: null,
+  };
+}
+
+/**
+ * A short-lived signed URL. The bucket is private, so there is no permanent
+ * link — anyone holding a public URL would otherwise be able to read an
+ * internal attachment.
+ */
+export async function signedAttachmentUrl(path: string, expiresInSec = 3600) {
+  return supabase.storage.from("chat-attachments").createSignedUrl(path, expiresInSec);
+}
+
+/** Sends a message carrying a file. `body` holds the file name so search,
+ *  previews and the not-null constraint all keep working. */
+export async function sendAttachmentMessage(
+  conversationId: string,
+  senderId: string,
+  attachment: AttachmentInput,
+  caption?: string,
+) {
+  return supabase
+    .from("messages")
+    .insert({
+      conversation_id: conversationId,
+      sender_id: senderId,
+      body: caption?.trim() || attachment.name,
+      attachment_path: attachment.path,
+      attachment_name: attachment.name,
+      attachment_type: attachment.type,
+      attachment_size: attachment.size,
+    })
+    .select("id, conversation_id, sender_id, body, created_at, deleted_at, attachment_path, attachment_name, attachment_type, attachment_size")
+    .single();
 }

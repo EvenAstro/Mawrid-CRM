@@ -7,6 +7,7 @@ import type { MessageRow } from "@/lib/models/messages";
 import type { LiveStatus } from "@/lib/chat/useConversation";
 import EmptyState from "@/components/ui/EmptyState";
 import { AlertIcon } from "@/components/icons";
+import Attachment from "@/components/chat/Attachment";
 
 /**
  * The message thread.
@@ -181,7 +182,12 @@ export default function ChatThread({
                     const failed = failedIds.has(m.id);
                     const sending = isPending(m) && !failed;
                     return (
-                      <div key={m.id} className="flex flex-col gap-1">
+                      <div key={m.id} className="flex flex-col gap-1.5">
+                        {m.attachment_path && <Attachment message={m} />}
+                        {/* An attachment-only message stores the filename as
+                            its body so the not-null constraint and search keep
+                            working — but repeating it under the file is noise. */}
+                        {!(m.attachment_path && m.body === m.attachment_name) && (
                         <p
                           dir="auto"
                           className={`t-body-sm whitespace-pre-wrap break-words rounded-[var(--radius-sm)] px-3 py-2 ${
@@ -192,6 +198,7 @@ export default function ChatThread({
                         >
                           {m.body}
                         </p>
+                        )}
                         {failed && (
                           <span className="t-micro flex items-center gap-2 px-3 text-[color:var(--status-danger-fg)]">
                             فشل الإرسال
