@@ -105,7 +105,7 @@ export function AiCitedFact({
   return (
     <span className="inline-flex items-baseline gap-2 rounded-[var(--radius-xs)] bg-[var(--surface-sunken)] px-2.5 py-1">
       <span className="t-micro text-[color:var(--content-tertiary)]">{label}</span>
-      <span className="t-figure text-[13px] text-[color:var(--content-primary)]">{value}</span>
+      <span className="t-figure t-body-sm text-[color:var(--content-primary)]">{value}</span>
     </span>
   );
 }
