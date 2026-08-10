@@ -16,6 +16,7 @@ export const FEATURES: FeatureDef[] = [
   { key: "contacts", label: "جهات الاتصال", description: "قائمة جهات الاتصال والشركات", group: "مساحة العمل", href: "/dashboard/contacts" },
   { key: "leads", label: "العملاء المحتملون", description: "إدارة ومتابعة العملاء المحتملين", group: "مساحة العمل", href: "/dashboard/leads" },
   { key: "deals", label: "الصفقات", description: "مسار الصفقات ولوحة المبيعات", group: "مساحة العمل", href: "/dashboard/deals" },
+  { key: "team", label: "لوحة الفريق", description: "توزيع الصفقات على المندوبين وأين تسكت", group: "الإدارة", href: "/dashboard/team" },
   { key: "chat", label: "المحادثات", description: "محادثات داخلية بين أعضاء الفريق", group: "التفاعل", href: "/dashboard/chat" },
   { key: "activities", label: "النشاطات", description: "سجل كل النشاطات المسجّلة", group: "التفاعل", href: "/dashboard/activities" },
   { key: "tasks", label: "المهام", description: "قائمة المهام والتقويم", group: "التفاعل", href: "/dashboard/tasks" },
@@ -40,7 +41,7 @@ export function getFeature(key: string): FeatureDef | undefined {
 }
 
 /** Baseline access before any per-user override is applied. */
-const SALES_DEFAULT_DENY = new Set(["insights", "users"]);
+const SALES_DEFAULT_DENY = new Set(["insights", "users", "team"]);
 
 export function defaultFeatureAccess(role: Role | null, key: string): boolean {
   if (role === "admin" || role === "manager") return true;

@@ -41,6 +41,35 @@ function parseLimit(): number | null {
   return n;
 }
 
+/**
+ * Picks a trial batch spread across message lengths instead of taking the
+ * newest N.
+ *
+ * Newest-N is a biased sample: whatever the team happened to log last week.
+ * The interesting failures are at the short end — "تمام"، "ok"، "ابشر" — where
+ * there is almost no signal and the classifier has to choose between
+ * acknowledgment_only and a real category. Those one-liners are also most of
+ * what a rep actually types, so a trial that only shows well-written
+ * paragraphs will read as higher quality than the full run turns out to be.
+ *
+ * Thirds: shortest, longest, and a spread through the middle.
+ */
+function stratify(rows: ActivityRow[], n: number): ActivityRow[] {
+  if (rows.length <= n) return rows;
+  const byLength = [...rows].sort((a, b) => a.body.length - b.body.length);
+  const third = Math.floor(n / 3);
+  const shortest = byLength.slice(0, third);
+  const longest = byLength.slice(-third);
+  const middlePool = byLength.slice(third, byLength.length - third);
+  const need = n - shortest.length - longest.length;
+  const step = Math.max(1, Math.floor(middlePool.length / Math.max(1, need)));
+  const middle: ActivityRow[] = [];
+  for (let i = 0; i < middlePool.length && middle.length < need; i += step) {
+    middle.push(middlePool[i]);
+  }
+  return [...shortest, ...middle, ...longest];
+}
+
 async function main() {
   const limit = parseLimit();
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -53,6 +82,8 @@ async function main() {
   }
   const supabase = createClient(SUPABASE_URL, serviceKey || SUPABASE_ANON_KEY);
 
+  // On a trial run, over-fetch so the batch can be chosen rather than just
+  // truncated — see stratify() below.
   let query = supabase
     .from("activities")
     .select("id, body")
@@ -61,7 +92,7 @@ async function main() {
     .neq("body", "")
     .is("situational_tag", null)
     .order("occurred_at", { ascending: false });
-  if (limit) query = query.limit(limit);
+  if (limit) query = query.limit(limit * 4);
 
   const { data, error } = await query;
 
@@ -70,7 +101,8 @@ async function main() {
     process.exit(1);
   }
 
-  const activities = (data ?? []) as ActivityRow[];
+  const candidates = (data ?? []) as ActivityRow[];
+  const activities = limit ? stratify(candidates, limit) : candidates;
   const total = activities.length;
 
   if (total === 0) {
@@ -84,10 +116,10 @@ async function main() {
   }
   console.log(`Found ${total} inbound activities to classify${limit ? ` (--limit ${limit})` : ""}.\n`);
 
-  /** Body + assigned tag, kept so the run ends with a reviewable sample
-   * rather than only counts. Reading 10 of these is the whole point of a
+  /** Every body + assigned tag, so the run can end with a reviewable sample
+   * spanning short and long messages. Reading these is the whole point of a
    * trial run — the counts can look reasonable while the tags are wrong. */
-  const sample: { body: string; tag: SituationalTag }[] = [];
+  const decisions: { body: string; tag: SituationalTag }[] = [];
 
   const counts: Record<SituationalTag, number> = {
     price_objection: 0,
@@ -131,7 +163,7 @@ async function main() {
 
     classified++;
     counts[tag]++;
-    if (sample.length < 15) sample.push({ body: activity.body, tag });
+    decisions.push({ body: activity.body, tag });
     console.log(`Processed ${i + 1}/${total} — id=${activity.id} — ${tag}`);
   }
 
@@ -144,9 +176,15 @@ async function main() {
     if (count > 0) console.log(`  ${tag}: ${count}`);
   }
 
-  if (sample.length) {
+  if (decisions.length) {
+    // Print across the length range, not the first 15 — the batch is ordered
+    // shortest-first, so a head slice would be all one-liners.
+    const sorted = [...decisions].sort((a, b) => a.body.length - b.body.length);
+    const step = Math.max(1, Math.floor(sorted.length / 15));
+    const shown = sorted.filter((_, i) => i % step === 0).slice(0, 15);
     console.log("\n=== Sample — read these before running the rest ===");
-    for (const s of sample) {
+    console.log("(ordered shortest to longest; the short ones are where it breaks)");
+    for (const s of shown) {
       const oneLine = s.body.replace(/\s+/g, " ").trim();
       const text = oneLine.length > 120 ? `${oneLine.slice(0, 120)}…` : oneLine;
       console.log(`\n  [${s.tag}]\n  ${text}`);

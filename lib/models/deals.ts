@@ -8,6 +8,9 @@ import type { Role } from "@/lib/profiles";
 export interface Deal {
   id: string;
   name: string | null;
+  /** Who carries this deal. Selected by `*` all along; typed only once the
+   * team board and the deals owner filter needed to read it. */
+  owner_id: string | null;
   stage_id: string | null;
   expected_value_minor: number | null;
   won_value_minor: number | null;
@@ -284,4 +287,15 @@ export async function fetchNotifStuckDeals(staleBeforeIso: string) {
   return supabase.from("deals").select("id, name, updated_at, expected_value")
     .is("closed_at", null).lt("updated_at", staleBeforeIso)
     .order("updated_at", { ascending: true }).limit(5);
+}
+
+/** Deals with their owner and stage — feeds the team view (proposal 67).
+ * Scoped by RLS to what the caller may see, so a rep opening this screen
+ * sees only their own row rather than an empty table. */
+export async function fetchDealsForTeam() {
+  return supabase
+    .from("deals")
+    .select("id, name, owner_id, expected_value_minor, won_value_minor, pipeline_stages(label, terminal_type)")
+    .is("deleted_at", null)
+    .limit(2000);
 }

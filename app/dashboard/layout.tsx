@@ -26,6 +26,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   activities: ActivitiesIcon,
   tasks: TasksIcon,
   insights: InsightsIcon,
+  team: UsersIcon,
   users: UsersIcon,
 };
 

@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { SearchIcon, DealsIcon } from "@/components/navIcons";
 import { WifiOffIcon, SignalIcon, TargetIcon, CalendarIcon, CurrencyIcon, NoteIcon, CheckIcon, AlertIcon } from "@/components/icons";
 import { Panel, CommandBand, BandButton } from "@/components/ui/Panel";
-import { money, formatDate, downloadCSV } from "@/lib/format";
+import { money, formatDate, downloadCSV, profileName } from "@/lib/format";
 import Button from "@/components/ui/Button";
 import SlideOver from "@/components/ui/SlideOver";
 import Skeleton from "@/components/ui/Skeleton";
@@ -15,6 +15,7 @@ import NewDealSlideOver from "@/components/NewDealSlideOver";
 import NextBestActionCard from "@/components/NextBestActionCard";
 import { useRole } from "@/components/RoleProvider";
 import { fetchDealsBoard, moveDealStage, type Deal, type StageCol } from "@/lib/models/deals";
+import { fetchProfiles } from "@/lib/profiles";
 import LedgerSection from "@/components/ui/LedgerSection";
 
 const INPUT_CLS =
@@ -30,6 +31,7 @@ function dealValue(d: Deal): string {
 export default function DealsPage() {
   const toast = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { role, userId, loading: roleLoading } = useRole();
   const [lostDeal, setLostDeal] = useState<Deal | null>(null);
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -78,10 +80,39 @@ export default function DealsPage() {
     }
   }, [openDealId, deals]);
 
+  // ?owner=<uuid> — how the team board drills into one rep's board. Held in
+  // the URL rather than in state so the filtered view is linkable: a manager
+  // can send "your stalled deals" to the person who owns them.
+  const [ownerFilter, setOwnerFilter] = useState<string | null>(null);
+  useEffect(() => {
+    setOwnerFilter(searchParams.get("owner"));
+  }, [searchParams]);
+
+  const [ownerName, setOwnerName] = useState<string | null>(null);
+  useEffect(() => {
+    if (!ownerFilter) {
+      setOwnerName(null);
+      return;
+    }
+    let alive = true;
+    fetchProfiles().then((ps) => {
+      if (!alive) return;
+      const p = ps.find((x) => x.id === ownerFilter);
+      setOwnerName(p ? profileName(p) || p.email : "مستخدم غير معروف");
+    });
+    return () => {
+      alive = false;
+    };
+  }, [ownerFilter]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return deals.filter((d) => !q || (d.name ?? "").toLowerCase().includes(q));
-  }, [deals, search]);
+    return deals.filter(
+      (d) =>
+        (!q || (d.name ?? "").toLowerCase().includes(q)) &&
+        (!ownerFilter || String(d.owner_id ?? "") === ownerFilter),
+    );
+  }, [deals, search, ownerFilter]);
 
   // The one number that describes the whole board — shown in the band so the
   // columns do not each have to be summed by eye.
@@ -159,6 +190,21 @@ export default function DealsPage() {
       />
 
       <LedgerSection label="اللوحة" meta={`${filtered.length} صفقة`}>
+      {ownerFilter && (
+        /* A filter applied from another screen has to announce itself. Without
+           this the board silently shows a subset and reads as missing data. */
+        <div className="flex flex-wrap items-center gap-3 rounded-[var(--radius-sm)] border border-[var(--border-accent)] bg-[var(--surface-accent-subtle)] px-3 py-2">
+          <span className="t-body-sm text-[color:var(--content-secondary)]">
+            صفقات <span className="font-bold text-[color:var(--content-accent)]">{ownerName ?? "…"}</span> فقط
+          </span>
+          <button
+            onClick={() => router.push("/dashboard/deals")}
+            className="t-caption rounded-[var(--radius-xs)] border border-[var(--border-strong)] px-2.5 py-1 font-semibold text-[color:var(--content-secondary)] transition-colors hover:bg-[var(--surface-raised)]"
+          >
+            عرض الكل
+          </button>
+        </div>
+      )}
       <Panel className="flex flex-col gap-3 p-3 sm:flex-row">
         <div className="relative flex-1">
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[color:var(--content-tertiary)]">

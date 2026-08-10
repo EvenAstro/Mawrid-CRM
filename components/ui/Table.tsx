@@ -118,16 +118,30 @@ export function TR({
   /** Accessible name for the row action. Required when onRowClick is set. */
   label?: string;
 }) {
-  const rail =
+  /**
+   * The rail is painted as an inset box-shadow, not a ::before.
+   *
+   * A ::before with `content: ''` on a <tr> generates an anonymous table-cell
+   * even when it is absolutely positioned. That silently shifted every body
+   * cell one column away from its header — the values still lined up with each
+   * other, so the table looked plausible while every column was mislabelled.
+   * A box-shadow paints over the row without entering the column grid.
+   *
+   * The offset is negative because the app is RTL throughout: in RTL the
+   * inline start is the right edge. box-shadow has no logical equivalent, so
+   * this is one of the few places a physical direction is correct rather than
+   * lazy.
+   */
+  const railColor =
     tone === "success"
-      ? "before:bg-[var(--status-success-fg)]"
+      ? "var(--status-success-fg)"
       : tone === "warning"
-        ? "before:bg-[var(--status-warning-fg)]"
+        ? "var(--status-warning-fg)"
         : tone === "danger"
-          ? "before:bg-[var(--status-danger-fg)]"
+          ? "var(--status-danger-fg)"
           : selected
-            ? "before:bg-[var(--content-accent)]"
-            : "before:bg-transparent";
+            ? "var(--content-accent)"
+            : "transparent";
   return (
     <tr
       onClick={onRowClick}
@@ -144,7 +158,8 @@ export function TR({
       tabIndex={onRowClick ? 0 : undefined}
       role={onRowClick ? "button" : undefined}
       aria-label={onRowClick ? label : undefined}
-      className={`relative border-b border-[var(--border-subtle)] last:border-0 before:absolute before:inset-y-0 before:start-0 before:w-0.5 before:content-[''] ${rail} ${
+      style={{ boxShadow: `inset -2px 0 0 0 ${railColor}` }}
+      className={`border-b border-[var(--border-subtle)] last:border-0 ${
         muted ? "opacity-55" : ""
       } ${
         onRowClick
