@@ -207,6 +207,20 @@ export default function HealthPanel({
         </p>
       )}
 
+      {health.unmeasured.length > 0 && (
+        /* Deliberately above "سليم". A factor we could not evaluate must never
+           sit below a list of things that are fine, where it reads as one of
+           them. */
+        <div className="flex flex-col gap-1.5">
+          <p className="t-eyebrow text-[color:var(--content-tertiary)]">ما قدرنا نتحقق منه</p>
+          {health.unmeasured.map((u) => (
+            <p key={u} className="t-caption text-[color:var(--content-secondary)]">
+              {u}
+            </p>
+          ))}
+        </div>
+      )}
+
       {health.clear.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <p className="t-eyebrow text-[color:var(--content-tertiary)]">سليم</p>

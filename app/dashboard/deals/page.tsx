@@ -17,6 +17,7 @@ import { useRole } from "@/components/RoleProvider";
 import { fetchDealsBoard, moveDealStage, type Deal, type StageCol } from "@/lib/models/deals";
 import { fetchProfiles } from "@/lib/profiles";
 import LedgerSection from "@/components/ui/LedgerSection";
+import AtRiskSection from "@/components/deals/AtRiskSection";
 
 const INPUT_CLS =
   "h-11 w-full rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface-sunken)] pl-11 pr-4 text-[length:var(--text-body-sm)] text-[color:var(--content-primary)] placeholder:text-[color:var(--content-tertiary)] transition-colors duration-[var(--motion-fast)] focus:border-[var(--border-focus)] focus:bg-[var(--surface-raised)] focus:outline-none";
@@ -188,6 +189,8 @@ export default function DealsPage() {
           </>
         }
       />
+
+      {!loading && !error && deals.length > 0 && <AtRiskSection deals={deals} />}
 
       <LedgerSection label="اللوحة" meta={`${filtered.length} صفقة`}>
       {ownerFilter && (

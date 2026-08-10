@@ -58,6 +58,16 @@ export interface DealHealth {
   factors: HealthFactor[];
   /** Factors that did not fire — shown greyed so the score reads as complete. */
   clear: string[];
+  /**
+   * Factors that could not be evaluated at all, because the data dimension
+   * they read does not exist in this account yet.
+   *
+   * Distinct from `clear`, which means "checked, and fine". Putting an
+   * unevaluable factor in `clear` would be a lie of exactly the kind this
+   * whole feature is built to avoid — and it is a lie that flatters the
+   * score, which is the worst direction for it to lean.
+   */
+  unmeasured: string[];
 }
 
 /** Hand-set weights. Named, exported and overridable rather than inline
@@ -198,6 +208,17 @@ export function computeHealth(
   hasOpenTask: boolean,
   baselines: Baselines,
   now: number,
+  /**
+   * Whether ANY deal in the account has a linked task.
+   *
+   * Tasks link to leads by lead_id and to anything by entity_type/entity_id,
+   * and nothing in the product currently creates a deal-linked task. If none
+   * exist, "no next step" is true of every deal and carries no information —
+   * firing it on all of them would be the stalled-deal mistake again: a
+   * uniform penalty read as a signal. When the dimension is absent the factor
+   * is suppressed and reported as unmeasured rather than scored.
+   */
+  taskLinkageExists: boolean,
 ): DealHealth {
   const mine = activities
     .filter((a) => a.entity_id === deal.id && a.occurred_at)
@@ -207,6 +228,7 @@ export function computeHealth(
 
   const factors: HealthFactor[] = [];
   const clear: string[] = [];
+  const unmeasured: string[] = [];
 
   // ── 1. Turning point on the most recent customer reply ──────────────────
   const latestInbound = mine.find((a) => a.direction === "inbound");
@@ -259,7 +281,9 @@ export function computeHealth(
   }
 
   // ── 3. No next step ─────────────────────────────────────────────────────
-  if (!hasOpenTask) {
+  if (!taskLinkageExists) {
+    unmeasured.push("الخطوة التالية — ما فيه مهام مرتبطة بصفقات في حسابكم بعد");
+  } else if (!hasOpenTask) {
     factors.push({
       key: "no_next_step",
       label: "بدون خطوة تالية",
@@ -322,5 +346,5 @@ export function computeHealth(
     Math.min(100, 100 + factors.reduce((s, f) => s + f.contribution, 0)),
   );
 
-  return { dealId: deal.id, score, factors, clear };
+  return { dealId: deal.id, score, factors, clear, unmeasured };
 }

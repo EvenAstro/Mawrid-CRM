@@ -246,3 +246,15 @@ export async function fetchNotifTodayTasks(userId: string, dayStartIso: string, 
     .gte("due_at", dayStartIso).lt("due_at", dayEndIso).is("completed_at", null).eq("assignee_uid", userId)
     .order("due_at", { ascending: true }).limit(5);
 }
+
+/** Open tasks linked to any of these deals, by either deal_id or the generic
+ * entity_type/entity_id pair. Returns the deal ids that have one — the health
+ * score only needs existence, not the tasks themselves. */
+export async function fetchOpenTaskDealIds(dealIds: string[]) {
+  return supabase
+    .from("tasks")
+    .select("entity_id")
+    .eq("entity_type", "deal")
+    .in("entity_id", dealIds)
+    .is("completed_at", null);
+}

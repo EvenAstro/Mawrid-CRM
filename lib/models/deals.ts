@@ -11,6 +11,8 @@ export interface Deal {
   /** Who carries this deal. Selected by `*` all along; typed only once the
    * team board and the deals owner filter needed to read it. */
   owner_id: string | null;
+  created_at: string | null;
+  updated_at: string | null;
   stage_id: string | null;
   expected_value_minor: number | null;
   won_value_minor: number | null;

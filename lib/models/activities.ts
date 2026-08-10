@@ -214,3 +214,15 @@ export async function setActivitySituationalTag(client: SupabaseClient, activity
 export async function fetchOutboundActivitiesSince(sinceIso: string) {
   return supabase.from("activities").select("user_id, direction, occurred_at").eq("direction", "outbound").gte("occurred_at", sinceIso);
 }
+
+/** Direction + tag + timestamp for a batch of deals — feeds the health score.
+ * Uses the caller's own client, unlike the AI context builders which need
+ * admin visibility, because this renders on a screen the caller is looking at
+ * and should show exactly what they are allowed to see. */
+export async function fetchDealActivitiesForHealth(dealIds: string[]) {
+  return supabase
+    .from("activities")
+    .select("entity_id, occurred_at, direction, situational_tag")
+    .eq("entity_type", "deal")
+    .in("entity_id", dealIds);
+}
