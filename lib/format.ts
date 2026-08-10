@@ -150,6 +150,20 @@ export function todayInput(): string {
   return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10);
 }
 
+/**
+ * Now, formatted for a `datetime-local` input (YYYY-MM-DDTHH:mm) in the
+ * user's own timezone.
+ *
+ * Distinct from todayInput() because an activity needs a time. Recording
+ * every call at midnight makes a day's touchpoints unorderable against each
+ * other and rounds every "days since contact" figure.
+ */
+export function nowLocalInput(): string {
+  const d = new Date();
+  const off = d.getTimezoneOffset();
+  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 16);
+}
+
 /** Build a display name from a Profile record. */
 export function profileName(p: { full_name?: string | null; first_name?: string | null; last_name?: string | null } | undefined | null): string {
   if (!p) return "";

@@ -21,6 +21,7 @@ import {
   fetchAllSources,
   fetchTaskTypes,
 } from "@/lib/models/refData";
+import { triggerClassification } from "@/lib/classifyTrigger";
 import { createActivity } from "@/lib/models/activities";
 import { BanIcon, CheckIcon } from "@/components/icons";
 
@@ -267,7 +268,7 @@ export default function LeadSlideOver({
     setSavingActivity(true);
     const { data: userData } = await supabase.auth.getUser();
     const occurred = new Date(`${actDate}T${actTime || "00:00"}:00`).toISOString();
-    const { error } = await createActivity({
+    const { error, id: activityId } = await createActivity({
       entityType: "lead",
       entityId: data.id,
       activityTypeId: actTypeId,
@@ -278,6 +279,10 @@ export default function LeadSlideOver({
     });
     setSavingActivity(false);
     if (error) { toast("تعذّر تسجيل النشاط", "error"); return; }
+    // Inbound replies logged here were never classified — only the global
+    // form triggered it. Every untagged inbound reply is one the turning-point
+    // detector and the health score cannot see.
+    triggerClassification(activityId, actNotes.trim(), actDirection);
     toast("تم تسجيل النشاط");
     setActTypeId(""); setActNotes(""); setActDirection("outbound");
     setActDate(todayInput()); setActTime(nowTimeInput()); setAddingActivity(false);

@@ -3,19 +3,33 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
-import { todayInput } from "@/lib/format";
+import { nowLocalInput } from "@/lib/format";
 import { createActivity } from "@/lib/models/activities";
+import { triggerClassification } from "@/lib/classifyTrigger";
 import { fetchActiveActivityTypes } from "@/lib/models/refData";
 import { searchLeadsByName } from "@/lib/models/leads";
+import { searchDealsForPalette } from "@/lib/models/deals";
 
 interface ActivityType {
   id: string;
   label: string;
 }
-interface LeadHit {
+interface Hit {
   id: string;
-  full_name: string | null;
+  name: string | null;
 }
+
+/**
+ * What the activity is about.
+ *
+ * Until now every activity in the product was written with
+ * entity_type = "lead" — all three call sites hardcoded it. Meanwhile the
+ * stalled-deal detection, the investigation report and the deal health score
+ * all read entity_type = "deal". Imported history had deal-linked rows, so
+ * the gap was invisible: the signals worked on seeded data and would have
+ * decayed as real usage added lead-only activity.
+ */
+type TargetType = "lead" | "deal";
 
 export default function LogActivitySlideOver({
   open,
@@ -28,12 +42,13 @@ export default function LogActivitySlideOver({
 }) {
   const toast = useToast();
   const [types, setTypes] = useState<ActivityType[]>([]);
+  const [targetType, setTargetType] = useState<TargetType>("lead");
   const [query, setQuery] = useState("");
-  const [hits, setHits] = useState<LeadHit[]>([]);
-  const [selected, setSelected] = useState<LeadHit | null>(null);
+  const [hits, setHits] = useState<Hit[]>([]);
+  const [selected, setSelected] = useState<Hit | null>(null);
   const [typeId, setTypeId] = useState("");
   const [notes, setNotes] = useState("");
-  const [date, setDate] = useState(todayInput());
+  const [when, setWhen] = useState(nowLocalInput());
   const [saving, setSaving] = useState(false);
   // Default to outbound — this form is framed as the rep recording their own
   // touchpoint ("Record a touchpoint with a contact"); inbound is the explicit choice.
@@ -44,7 +59,7 @@ export default function LogActivitySlideOver({
     fetchActiveActivityTypes().then(setTypes).catch((err) => console.error("[LogActivity] fetchActiveActivityTypes failed", err));
   }, [open, types.length]);
 
-  // Live lead search
+  // Live search over whichever target type is selected.
   useEffect(() => {
     if (selected || query.trim().length < 2) {
       setHits([]);
@@ -52,14 +67,23 @@ export default function LogActivitySlideOver({
     }
     let active = true;
     const t = setTimeout(async () => {
-      const data = await searchLeadsByName(query.trim());
-      if (active) setHits(data.map((l) => ({ id: String(l.id), full_name: l.full_name })));
+      const q = query.trim();
+      if (targetType === "lead") {
+        const data = await searchLeadsByName(q);
+        if (active) setHits(data.map((l) => ({ id: String(l.id), name: l.full_name })));
+      } else {
+        const { data, error } = await searchDealsForPalette(`%${q}%`, 8);
+        if (error) console.error("[LogActivity] deal search failed", error);
+        if (active) {
+          setHits(((data as { id: string; name: string | null }[]) ?? []).map((d) => ({ id: String(d.id), name: d.name })));
+        }
+      }
     }, 250);
     return () => {
       active = false;
       clearTimeout(t);
     };
-  }, [query, selected]);
+  }, [query, selected, targetType]);
 
   useEffect(() => {
     if (!open) return;
@@ -74,54 +98,46 @@ export default function LogActivitySlideOver({
     setHits([]);
     setTypeId("");
     setNotes("");
-    setDate(todayInput());
+    setWhen(nowLocalInput());
     setDirection("outbound");
+    setTargetType("lead");
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selected) {
-      toast("Please select a contact", "error");
+      toast(targetType === "lead" ? "اختر العميل أولاً" : "اختر الصفقة أولاً", "error");
       return;
     }
     if (!typeId) {
-      toast("Please choose an activity type", "error");
+      toast("اختر نوع النشاط", "error");
       return;
     }
     setSaving(true);
     const { data: userData } = await supabase.auth.getUser();
     const trimmedNotes = notes.trim();
     const { error, id: activityId } = await createActivity({
-      entityType: "lead",
+      entityType: targetType,
       entityId: selected.id,
       activityTypeId: typeId,
       body: trimmedNotes || null,
       direction,
-      occurredAt: new Date(date + "T00:00:00").toISOString(),
+      // `when` carries a time, not just a date. The previous version parsed
+      // "<date>T00:00:00", so every activity logged here landed at midnight —
+      // which loses the ordering of a day's calls against each other and makes
+      // every "days silent" figure coarse by up to a day.
+      occurredAt: new Date(when).toISOString(),
       userId: userData.user?.id ?? null,
     });
     setSaving(false);
     if (error) {
       console.error("[LogActivity] insert failed", error);
-      toast("Could not log activity — please try again", "error");
+      toast("تعذّر تسجيل النشاط — حاول مرة ثانية", "error");
       return;
     }
-    toast("Activity logged");
+    toast("تم تسجيل النشاط");
 
-    // Fire-and-forget: classify inbound replies in the background. The form
-    // closes immediately regardless of how long — or whether — this succeeds.
-    if (direction === "inbound" && trimmedNotes) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        fetch("/api/classify-activity", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
-          },
-          body: JSON.stringify({ activityId, body: trimmedNotes }),
-        }).catch((err) => console.error("[LogActivity] classify trigger failed", err));
-      });
-    }
+    triggerClassification(activityId, trimmedNotes, direction);
 
     reset();
     onCreated?.();
@@ -149,9 +165,9 @@ export default function LogActivitySlideOver({
         <div className="flex items-center justify-between border-b border-[var(--border-subtle)] p-6">
           <div>
             <h2 className="text-xl font-bold text-[var(--content-primary)]">تسجيل نشاط</h2>
-            <p className="mt-0.5 t-body-sm text-[var(--content-tertiary)]">Record a touchpoint with a contact</p>
+            <p className="mt-0.5 t-body-sm text-[var(--content-tertiary)]">سجّل تواصلاً مع عميل أو على صفقة</p>
           </div>
-          <button onClick={onClose} aria-label="Close" className="text-[var(--content-tertiary)] transition hover:text-[var(--content-secondary)]">
+          <button onClick={onClose} aria-label="إغلاق" className="text-[var(--content-tertiary)] transition hover:text-[var(--content-secondary)]">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-5 w-5">
               <path d="M6 6l12 12M18 6 6 18" />
             </svg>
@@ -159,13 +175,40 @@ export default function LogActivitySlideOver({
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5 overflow-y-auto p-6">
-          {/* Contact search */}
+          {/* What is this activity about — a person, or a deal? */}
+          <div>
+            <label className={labelCls}>النشاط يخص *</label>
+            <div className="flex gap-2">
+              {(["lead", "deal"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => {
+                    setTargetType(t);
+                    setSelected(null);
+                    setQuery("");
+                    setHits([]);
+                  }}
+                  className={`h-11 flex-1 rounded-[var(--radius-md)] border t-body-sm font-semibold transition ${
+                    targetType === t
+                      ? "border-[var(--brand-teal-700)] bg-[var(--surface-accent-subtle)] text-[var(--brand-teal-700)]"
+                      : "border-[var(--border-subtle)] text-[var(--content-secondary)] hover:border-[var(--brand-teal-700)]/40"
+                  }`}
+                >
+                  {t === "lead" ? "عميل" : "صفقة"}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="relative">
-            <label className={labelCls} htmlFor="la-contact">العميل *</label>
+            <label className={labelCls} htmlFor="la-contact">
+              {targetType === "lead" ? "العميل *" : "الصفقة *"}
+            </label>
             {selected ? (
               <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--brand-teal-700)]/30 bg-[var(--surface-accent-subtle)] px-3.5 py-2.5">
                 <span dir="auto" className="t-body font-medium text-[var(--content-primary)]">
-                  {selected.full_name || "عميل بدون اسم"}
+                  {selected.name || (targetType === "lead" ? "عميل بدون اسم" : "صفقة بدون اسم")}
                 </span>
                 <button
                   type="button"
@@ -184,7 +227,7 @@ export default function LogActivitySlideOver({
                 dir="auto"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="ابحث عن عميل بالاسم..."
+                placeholder={targetType === "lead" ? "ابحث عن عميل بالاسم..." : "ابحث عن صفقة بالاسم..."}
                 className={inputCls}
                 autoComplete="off"
               />
@@ -202,7 +245,7 @@ export default function LogActivitySlideOver({
                     dir="auto"
                     className="block w-full px-3.5 py-2.5 text-left t-body text-[var(--content-secondary)] transition hover:bg-[var(--surface-sunken)]"
                   >
-                    {h.full_name || "عميل بدون اسم"}
+                    {h.name || (targetType === "lead" ? "عميل بدون اسم" : "صفقة بدون اسم")}
                   </button>
                 ))}
               </div>
@@ -246,8 +289,14 @@ export default function LogActivitySlideOver({
           </div>
 
           <div>
-            <label className={labelCls} htmlFor="la-date">التاريخ *</label>
-            <input id="la-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls} />
+            <label className={labelCls} htmlFor="la-date">وقت النشاط *</label>
+            <input
+              id="la-date"
+              type="datetime-local"
+              value={when}
+              onChange={(e) => setWhen(e.target.value)}
+              className={inputCls}
+            />
           </div>
 
           <div>
