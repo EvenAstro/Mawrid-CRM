@@ -111,12 +111,14 @@ ranked as (
   from open_deals
 ),
 targets as (
+  -- ::int is load-bearing. row_number() is bigint, so `rn % 7` is bigint, and
+  -- `date - bigint` has no operator in PostgreSQL — only `date - integer`.
   select id, last_act,
-         case
-           when rn <= 22 then (rn % 7)              -- 0-6  days silent
-           when rn <= 27 then 7 + (rn % 8)          -- 7-14 days
-           else               15 + (rn % 21)        -- 15-35 days
-         end as target_days
+         (case
+            when rn <= 22 then (rn % 7)             -- 0-6  days silent
+            when rn <= 27 then 7 + (rn % 8)         -- 7-14 days
+            else               15 + (rn % 21)       -- 15-35 days
+          end)::int as target_days
   from ranked
 ),
 shifts as (
