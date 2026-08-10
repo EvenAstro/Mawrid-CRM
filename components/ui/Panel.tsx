@@ -149,3 +149,41 @@ export function BandButton({
     </button>
   );
 }
+
+/**
+ * A sunken group inside a panel — proposal 39. Previously these were built as
+ * a fourth card, which is how panels ended up nesting three deep on Insights.
+ * No border and no shadow: a well is a recess, not a raised thing.
+ */
+export function Well({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`rounded-[var(--radius-sm)] bg-[var(--surface-sunken)] p-[var(--space-card-compact)] ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * The navy counterpart to Panel — for dense figures that should read as
+ * instrumentation rather than as content. Used sparingly: at most one per
+ * screen below the command band, or navy stops meaning anything.
+ */
+export function DataPanel({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`rounded-[var(--radius-lg)] bg-[var(--surface-inverse)] p-[var(--space-card-pad)] e-inverse-1 ${className}`}>
+      {children}
+    </div>
+  );
+}
