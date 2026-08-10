@@ -18,6 +18,7 @@ import { fetchLeadsSummary } from "@/lib/models/leads";
 import { fetchDealsSummary } from "@/lib/models/deals";
 import { fetchRecentActivities } from "@/lib/models/activities";
 import { fetchUpcomingTasks, completeTaskQuick } from "@/lib/models/tasks";
+import LedgerSection from "@/components/ui/LedgerSection";
 
 /* ---------- Types ---------- */
 type Stage = { label: string; terminal_type: string | null } | null;
@@ -114,8 +115,8 @@ function trendText(cur: number, prev: number): { text: string; dir: "up" | "down
 /* Status hues on navy need their light-surface values lifted, or they fail
    contrast against the band. These are the -500 stops, which clear AA there. */
 const TREND_ON_NAVY: Record<"up" | "down" | "flat", string> = {
-  up: "text-[#6ee7b7]",
-  down: "text-[#fca5a5]",
+  up: "text-[var(--status-success-on-inverse)]",
+  down: "text-[var(--status-danger-on-inverse)]",
   flat: "text-[color:var(--content-inverse-tertiary)]",
 };
 const OVERVIEW_DOT = {
@@ -412,16 +413,13 @@ export default function DashboardPage() {
         <div className="flex h-16 w-16 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--status-danger-bg)] text-[color:var(--status-danger-fg)]"><WifiOffIcon className="h-7 w-7" /></div>
         <div>
           <h2 className="t-title-2 text-[color:var(--content-primary)]">خطأ في الاتصال</h2>
-          <p className="t-body-sm mt-1 max-w-sm text-[color:var(--content-tertiary)]">
-            لم نتمكن من الوصول للخادم. تحقق من اتصالك وحاول مرة أخرى.
+          <p className="t-body-sm mt-1 max-w-sm text-[color:var(--content-tertiary)]">لم نتمكن من الوصول للخادم. تحقق من اتصالك وحاول مرة أخرى.
           </p>
         </div>
         <button
           onClick={() => { setLoading(true); load(); }}
           className="t-body-sm rounded-[var(--radius-md)] bg-[var(--surface-accent)] px-5 py-2.5 font-semibold text-[color:var(--content-on-accent)] transition-colors hover:bg-[var(--surface-accent-hover)]"
-        >
-          إعادة المحاولة
-        </button>
+        >إعادة المحاولة</button>
       </div>
     );
   }
@@ -478,7 +476,7 @@ export default function DashboardPage() {
                   <Icon className="h-4 w-4" />
                   <span className="t-caption font-semibold">{label}</span>
                 </span>
-                <span className="t-figure text-[28px] leading-none text-[color:var(--content-inverse-primary)]">
+                <span className="t-figure t-figure-md leading-none text-[color:var(--content-inverse-primary)]">
                   <CountUp value={n} format={format} />
                 </span>
                 <span className="flex items-center justify-between gap-2">
@@ -487,7 +485,7 @@ export default function DashboardPage() {
                     {trend.dir === "down" && <svg viewBox="0 0 12 12" fill="currentColor" className="h-2.5 w-2.5"><path d="M6 10 2 5h3V2h2v3h3z" /></svg>}
                     {trend.text}
                   </span>
-                  {spark.length >= 2 && <Sparkline values={spark} color="#7ec8b5" width={64} height={20} />}
+                  {spark.length >= 2 && <Sparkline values={spark} color="var(--brand-teal-300)" width={64} height={20} />}
                 </span>
               </Link>
             ))}
@@ -495,7 +493,7 @@ export default function DashboardPage() {
         }
       />
 
-      {/* Middle row */}
+      <LedgerSection label="النشاط" meta={m.seriesRange}>
       <div className="grid grid-cols-1 gap-[var(--space-card-gap)] lg:grid-cols-3">
         <Panel className="p-[var(--space-card-pad)] lg:col-span-2">
           <PanelHead
@@ -507,9 +505,9 @@ export default function DashboardPage() {
           />
           <PipelineChart points={m.series} />
           <div className="mt-4 flex gap-8 border-t border-[var(--border-subtle)] pt-4">
-            <div><p className="t-figure text-[18px] text-[color:var(--content-primary)]">{m.total_deals}</p><p className="t-caption text-[color:var(--content-tertiary)]">إجمالي الصفقات</p></div>
-            <div><p className="t-figure text-[18px] text-[color:var(--status-success-fg)]">{m.won}</p><p className="t-caption text-[color:var(--content-tertiary)]">مكسوبة</p></div>
-            <div><p className="t-figure text-[18px] text-[color:var(--status-danger-fg)]">{m.lost}</p><p className="t-caption text-[color:var(--content-tertiary)]">خاسرة</p></div>
+            <div><p className="t-figure t-title-3 text-[color:var(--content-primary)]">{m.total_deals}</p><p className="t-caption text-[color:var(--content-tertiary)]">إجمالي الصفقات</p></div>
+            <div><p className="t-figure t-title-3 text-[color:var(--status-success-fg)]">{m.won}</p><p className="t-caption text-[color:var(--content-tertiary)]">مكسوبة</p></div>
+            <div><p className="t-figure t-title-3 text-[color:var(--status-danger-fg)]">{m.lost}</p><p className="t-caption text-[color:var(--content-tertiary)]">خاسرة</p></div>
           </div>
         </Panel>
 
@@ -529,7 +527,7 @@ export default function DashboardPage() {
             <p className="t-eyebrow mb-3 text-[color:var(--content-tertiary)]">المهام القادمة</p>
             {tasks.length === 0 ? (
               <p className="t-body-sm flex items-center justify-center gap-2 py-6 text-center text-[color:var(--content-tertiary)]">
-                <CelebrationIcon className="h-4 w-4 text-[color:var(--content-accent)]" /> لا مهام لليوم!
+                <CelebrationIcon className="h-4 w-4 text-[color:var(--content-accent)]" />لا مهام لليوم!
               </p>
             ) : (
               tasks.map((t) => {
@@ -564,7 +562,9 @@ export default function DashboardPage() {
         </Panel>
       </div>
 
-      {/* Bottom row */}
+      </LedgerSection>
+
+      <LedgerSection label="التفاصيل" meta={`${m.total_deals} صفقة`}>
       <div className="grid grid-cols-1 gap-[var(--space-card-gap)] lg:grid-cols-3">
         {/* Sales overview */}
         <Panel className="p-[var(--space-card-pad)]">
@@ -585,7 +585,7 @@ export default function DashboardPage() {
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="t-figure text-[22px] leading-none text-[color:var(--content-primary)]">{m.win_rate.toFixed(0)}%</span>
+                <span className="t-figure t-figure-sm leading-none text-[color:var(--content-primary)]">{m.win_rate.toFixed(0)}%</span>
                 <span className="t-micro mt-1 font-semibold text-[color:var(--content-tertiary)]">نسبة الفوز</span>
               </div>
             </div>
@@ -690,6 +690,8 @@ export default function DashboardPage() {
           )}
         </Panel>
       </div>
+
+      </LedgerSection>
 
       <NewLeadSlideOver open={newLeadOpen} onClose={() => setNewLeadOpen(false)} onCreated={load} />
       <LogActivitySlideOver open={logActivityOpen} onClose={() => setLogActivityOpen(false)} onCreated={load} />

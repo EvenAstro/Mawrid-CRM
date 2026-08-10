@@ -28,8 +28,8 @@ export default function Composer({ chips = DEFAULT_CHIPS }: { chips?: string[] }
   }
 
   return (
-    <div className="border-t border-gray-100 bg-[var(--surface-raised)] p-3">
-      <div className="flex items-end gap-2 rounded-[var(--radius-lg)] border border-gray-200 bg-[var(--surface-raised)] px-2 py-1.5 transition-colors focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-600/10">
+    <div className="border-t border-[var(--border-subtle)] bg-[var(--surface-raised)] p-3">
+      <div className="flex items-end gap-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-raised)] px-2 py-1.5 transition-colors focus-within:border-[var(--brand-green-500)] focus-within:ring-2 focus-within:ring-[color-mix(in_srgb,var(--status-success-fg)_10%,transparent)]">
         <textarea
           ref={taRef}
           value={value}
@@ -46,7 +46,7 @@ export default function Composer({ chips = DEFAULT_CHIPS }: { chips?: string[] }
           dir="auto"
           rows={1}
           placeholder="اسألني أي شيء..."
-          className="max-h-28 flex-1 resize-none border-0 bg-transparent px-2 py-1.5 t-body text-gray-800 placeholder:text-gray-400 focus:outline-none"
+          className="max-h-28 flex-1 resize-none border-0 bg-transparent px-2 py-1.5 t-body text-[var(--content-primary)] placeholder:text-[var(--content-tertiary)] focus:outline-none"
           style={{ fontFamily: "Cairo, sans-serif" }}
         />
         <button
@@ -54,7 +54,7 @@ export default function Composer({ chips = DEFAULT_CHIPS }: { chips?: string[] }
           disabled={streaming || !value.trim()}
           aria-label="إرسال"
           className="flex h-10 w-10 flex-none items-center justify-center rounded-full text-white shadow-md transition-all duration-150 hover:scale-105 hover:shadow-lg disabled:scale-100 disabled:opacity-40"
-          style={{ background: "linear-gradient(135deg, #1A5C4F 0%, #2D8570 100%)" }}
+          style={{ background: "linear-gradient(135deg, var(--brand-teal-700) 0%, var(--brand-teal-500) 100%)" }}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 -rotate-90">
             <path d="M12 19V5M5 12l7-7 7 7" />
@@ -67,7 +67,7 @@ export default function Composer({ chips = DEFAULT_CHIPS }: { chips?: string[] }
             key={c}
             onClick={() => submit(c)}
             disabled={streaming}
-            className="rounded-full border border-gray-100 bg-[var(--surface-raised)] px-3 py-1 t-caption font-medium text-gray-500 transition-all duration-150 hover:border-teal-200 hover:bg-teal-50 hover:text-teal-700 disabled:opacity-50"
+            className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-1 t-caption font-medium text-[var(--content-tertiary)] transition-all duration-150 hover:border-[var(--status-success-border)] hover:bg-[var(--status-success-bg)] hover:text-[var(--status-success-fg)] disabled:opacity-50"
           >
             {c}
           </button>

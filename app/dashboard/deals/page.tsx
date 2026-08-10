@@ -150,8 +150,7 @@ export default function DealsPage() {
                 "الاحتمالية": d.probability_pct != null ? `${d.probability_pct}%` : "",
                 "تاريخ الإغلاق المتوقع": formatDate(d.target_close_date),
               })))}
-            >
-              تصدير CSV
+            >تصدير CSV
             </BandButton>
             <BandButton onClick={() => setAddStage(null)}>+ صفقة جديدة</BandButton>
           </>
@@ -191,7 +190,7 @@ export default function DealsPage() {
           {columns.map(({ stage, deals: colDeals }) => {
             // Stage dot uses the DB color, but the column chrome itself always
             // stays on-brand (teal/navy) so six stages don't read as a rainbow.
-            const dot = stage.color || "#1a5c4f";
+            const dot = stage.color || "var(--brand-teal-700)";
             const isWon = stage.terminal_type === "won";
             const isLost = stage.terminal_type === "lost" || stage.terminal_type === "junk";
             const isOver = overStage === stage.id;
@@ -230,8 +229,7 @@ export default function DealsPage() {
                   onClick={() => setAddStage(stage.id)}
                   className="t-caption mb-2 rounded-[var(--radius-sm)] border border-dashed border-[var(--border-accent)] py-1.5 font-semibold text-[color:var(--content-accent)] opacity-0 transition-opacity duration-[var(--motion-fast)] hover:bg-[var(--surface-raised)] focus-visible:opacity-100 group-hover/col:opacity-100"
                 >
-                  + صفقة جديدة
-                </button>
+                  + صفقة جديدة</button>
 
                 <div className="flex max-h-[65vh] flex-col gap-2 overflow-y-auto pr-0.5">
                   {colDeals.length === 0 ? (
@@ -253,7 +251,7 @@ export default function DealsPage() {
                         {isWon && <span className="absolute inset-y-2 end-0 w-0.5 rounded-full bg-[var(--status-success-fg)]" />}
                         <p dir="auto" className="t-body-sm truncate font-semibold text-[color:var(--content-primary)]">{d.name || "صفقة بدون اسم"}</p>
 
-                        <span className="t-figure truncate text-[14px] text-[color:var(--content-primary)]">{dealValue(d)}</span>
+                        <span className="t-figure truncate t-body-sm text-[color:var(--content-primary)]">{dealValue(d)}</span>
 
                         {d.probability_pct != null && d.probability_pct > 0 && (
                           <div className="flex items-center gap-2">
@@ -302,7 +300,7 @@ export default function DealsPage() {
             {selected.id && <NextBestActionCard dealId={selected.id} />}
             <Panel className="p-[var(--space-card-pad)]">
               <p className="t-caption text-[color:var(--content-tertiary)]">قيمة الصفقة</p>
-              <p className="t-figure mt-1 text-[32px] leading-none text-[color:var(--content-accent)]">{dealValue(selected)}</p>
+              <p className="t-figure mt-1 t-figure-lg leading-none text-[color:var(--content-accent)]">{dealValue(selected)}</p>
             </Panel>
 
             <Panel className="overflow-hidden">
@@ -313,7 +311,7 @@ export default function DealsPage() {
             </Panel>
 
             <Panel className="p-[var(--space-card-pad)]">
-              <p className="t-eyebrow flex items-center gap-1.5 text-[color:var(--content-tertiary)]"><NoteIcon className="h-3.5 w-3.5" /> الملاحظات</p>
+              <p className="t-eyebrow flex items-center gap-1.5 text-[color:var(--content-tertiary)]"><NoteIcon className="h-3.5 w-3.5" />الملاحظات</p>
               <p dir="auto" className="t-body-sm mt-2 text-[color:var(--content-secondary)]">{selected.notes || "لا توجد ملاحظات"}</p>
             </Panel>
           </div>
@@ -334,24 +332,18 @@ export default function DealsPage() {
               <AlertIcon className="h-5 w-5" />
             </span>
             <h3 id="lost-deal-title" className="t-title-3 mt-3 text-[color:var(--content-primary)]">تم تسجيل الخسارة</h3>
-            <p dir="auto" className="t-body-sm mt-2 text-[color:var(--content-secondary)]">
-              هل تريد فتح تقرير التحقيق لـ{lostDeal.name || "هذه الصفقة"}؟
-            </p>
+            <p dir="auto" className="t-body-sm mt-2 text-[color:var(--content-secondary)]">هل تريد فتح تقرير التحقيق لـ{lostDeal.name || "هذه الصفقة"}؟</p>
             <p className="t-caption mt-1 text-[color:var(--content-tertiary)]">يستغرق التحليل بضع ثوانٍ</p>
             <div className="mt-6 flex gap-3">
               <button
                 autoFocus
                 onClick={() => { const id = lostDeal.id; setLostDeal(null); router.push(`/dashboard/deals/${id}/investigation`); }}
                 className="t-body-sm h-11 flex-1 rounded-[var(--radius-md)] bg-[var(--surface-accent)] font-bold text-[color:var(--content-on-accent)] transition-colors hover:bg-[var(--surface-accent-hover)]"
-              >
-                فتح التحقيق
-              </button>
+              >فتح التحقيق</button>
               <button
                 onClick={() => setLostDeal(null)}
                 className="t-body-sm h-11 flex-1 rounded-[var(--radius-md)] border border-[var(--border-strong)] font-semibold text-[color:var(--content-secondary)] transition-colors hover:bg-[var(--surface-hover)]"
-              >
-                لاحقاً
-              </button>
+              >لاحقاً</button>
             </div>
           </div>
         </div>

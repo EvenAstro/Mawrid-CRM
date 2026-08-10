@@ -81,9 +81,9 @@ export default function NewLeadSlideOver({
   }
 
   const inputCls =
-    "h-11 w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3.5 t-body text-[#334155] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15";
+    "h-11 w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3.5 t-body text-[var(--content-secondary)] placeholder:text-[var(--content-tertiary)] focus:border-[var(--brand-teal-700)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal-700)]/15";
   const labelCls =
-    "mb-1.5 block t-body-sm font-semibold uppercase tracking-wide text-[#94a3b8]";
+    "mb-1.5 block t-body-sm font-semibold uppercase tracking-wide text-[var(--content-tertiary)]";
 
   return (
     <>
@@ -100,13 +100,13 @@ export default function NewLeadSlideOver({
       >
         <div className="flex items-center justify-between border-b border-[var(--border-subtle)] p-6">
           <div>
-            <h2 className="text-xl font-bold text-[#1e1b4b]">عميل جديد</h2>
-            <p className="mt-0.5 t-body-sm text-[#94a3b8]">أضف عميل لمسار المبيعات</p>
+            <h2 className="text-xl font-bold text-[var(--content-primary)]">عميل جديد</h2>
+            <p className="mt-0.5 t-body-sm text-[var(--content-tertiary)]">أضف عميل لمسار المبيعات</p>
           </div>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="text-[#94a3b8] transition hover:text-[#334155]"
+            className="text-[var(--content-tertiary)] transition hover:text-[var(--content-secondary)]"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-5 w-5">
               <path d="M6 6l12 12M18 6 6 18" />
@@ -161,7 +161,7 @@ export default function NewLeadSlideOver({
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
               placeholder="أي ملاحظات عن هذا العميل..."
-              className="w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3.5 py-2.5 t-body text-[#334155] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15"
+              className="w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3.5 py-2.5 t-body text-[var(--content-secondary)] placeholder:text-[var(--content-tertiary)] focus:border-[var(--brand-teal-700)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal-700)]/15"
             />
           </div>
         </form>
@@ -170,14 +170,12 @@ export default function NewLeadSlideOver({
           <button
             onClick={onClose}
             type="button"
-            className="h-11 flex-1 rounded-[var(--radius-md)] border border-[var(--border-subtle)] t-body font-semibold text-[#334155] transition hover:bg-[#f8fafc]"
-          >
-            إلغاء
-          </button>
+            className="h-11 flex-1 rounded-[var(--radius-md)] border border-[var(--border-subtle)] t-body font-semibold text-[var(--content-secondary)] transition hover:bg-[var(--surface-sunken)]"
+          >إلغاء</button>
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="h-11 flex-1 rounded-[var(--radius-md)] bg-[#1a5c4f] t-body font-semibold text-white shadow-sm shadow-[#1a5c4f]/25 transition hover:bg-[#15503f] disabled:opacity-60"
+            className="h-11 flex-1 rounded-[var(--radius-md)] bg-[var(--brand-teal-700)] t-body font-semibold text-white shadow-sm shadow-[var(--brand-teal-700)]/25 transition hover:bg-[var(--brand-teal-800)] disabled:opacity-60"
           >
             {saving ? "جاري الحفظ..." : "حفظ العميل"}
           </button>

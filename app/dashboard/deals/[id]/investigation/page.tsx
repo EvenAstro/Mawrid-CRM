@@ -43,9 +43,9 @@ import type {
    unreadable here. Measured against --surface-inverse: red 9.0:1, amber
    11.8:1, green 11.2:1. */
 const ON_NAVY = {
-  red: "#fca5a5",
-  amber: "#fcd34d",
-  green: "#6ee7b7",
+  red: "var(--status-danger-on-inverse)",
+  amber: "var(--status-warning-on-inverse)",
+  green: "var(--status-success-on-inverse)",
 } as const;
 
 const MONO = "var(--font-mono)";
@@ -149,16 +149,14 @@ function ErrorScreen({ onBack }: { onBack: () => void }) {
       </span>
       <div>
         <p className="t-title-3 text-[color:var(--content-inverse-primary)]">تعذّر تحميل ملف التحقيق</p>
-        <p className="t-body-sm mt-1 text-[color:var(--content-inverse-tertiary)]">
-          قد تكون الصفقة غير موجودة أو غير مُسجَّلة كخسارة.
+        <p className="t-body-sm mt-1 text-[color:var(--content-inverse-tertiary)]">قد تكون الصفقة غير موجودة أو غير مُسجَّلة كخسارة.
         </p>
       </div>
       <button
         onClick={onBack}
         className="t-body-sm rounded-[var(--radius-md)] border border-[var(--border-inverse-strong)] px-4 py-2 font-semibold text-[color:var(--content-inverse-primary)] transition-colors hover:bg-white/[0.08]"
       >
-        ← العودة للصفقات
-      </button>
+        ← العودة للصفقات</button>
     </div>
   );
 }
@@ -175,12 +173,9 @@ function Hero({ deal, onBack }: { deal: InvestigationPayload["deal"]; onBack: ()
           <span
             className="t-eyebrow rounded-[var(--radius-xs)] px-2 py-1"
             style={{ color: ON_NAVY.red, background: "rgba(252,165,165,0.1)" }}
-          >
-            تقرير خسارة
-          </span>
+          >تقرير خسارة</span>
           <button onClick={onBack} className="t-body-sm text-[color:var(--content-inverse-accent)] transition-opacity hover:opacity-75">
-            ← العودة للصفقات
-          </button>
+            ← العودة للصفقات</button>
         </div>
 
         <div>
@@ -226,18 +221,14 @@ function Report({
             style={{ background: "var(--surface-inverse)", borderRight: `3px solid ${ON_NAVY.amber}` }}
           >
             <p className="t-body-sm flex items-center gap-2 font-bold" style={{ color: ON_NAVY.amber }}>
-              <AlertIcon className="h-4 w-4" /> التحليل الآلي غير متاح مؤقتاً
-            </p>
-            <p className="t-body-sm mt-1 text-[color:var(--content-inverse-tertiary)]">
-              يمكنك مراجعة التسلسل الزمني أدناه يدوياً.
+              <AlertIcon className="h-4 w-4" />التحليل الآلي غير متاح مؤقتاً</p>
+            <p className="t-body-sm mt-1 text-[color:var(--content-inverse-tertiary)]">يمكنك مراجعة التسلسل الزمني أدناه يدوياً.
             </p>
             <button
               onClick={onRetry}
               className="t-caption mt-3 rounded-[var(--radius-sm)] border border-[var(--border-inverse-strong)] px-3 py-1.5 font-semibold transition-colors hover:bg-white/[0.08]"
               style={{ color: ON_NAVY.amber }}
-            >
-              إعادة المحاولة
-            </button>
+            >إعادة المحاولة</button>
           </div>
         )}
 
@@ -320,14 +311,12 @@ function Timeline({
 }) {
   if (activities.length === 0) {
     return (
-      <p className="t-body-sm rounded-[var(--radius-md)] border border-dashed border-[var(--border-inverse-strong)] py-6 text-center text-[color:var(--content-inverse-tertiary)]">
-        لا توجد أحداث مسجّلة
-      </p>
+      <p className="t-body-sm rounded-[var(--radius-md)] border border-dashed border-[var(--border-inverse-strong)] py-6 text-center text-[color:var(--content-inverse-tertiary)]">لا توجد أحداث مسجّلة</p>
     );
   }
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-[var(--border-inverse)] bg-[var(--surface-inverse)] p-4">
+    <div className="rounded-[var(--radius-lg)] border border-[var(--border-inverse)] bg-[var(--surface-inverse)] p-[var(--space-card-compact)]">
       <ol className="flex flex-col">
         {activities.map((a) => {
           const inbound = a.direction === "inbound";
@@ -339,9 +328,7 @@ function Timeline({
           return (
             <li key={a.id}>
               {a.isTurningPoint && (
-                <p className="t-eyebrow mb-1 mt-2 px-1" style={{ color: ON_NAVY.red }}>
-                  نقطة التحول
-                </p>
+                <p className="t-eyebrow mb-1 mt-2 px-1" style={{ color: ON_NAVY.red }}>نقطة التحول</p>
               )}
               <div
                 className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:gap-3"
@@ -394,8 +381,7 @@ function Timeline({
         {daysBeforeLoss != null && (
           <p className="t-caption mt-1.5 flex items-center justify-center gap-1.5" style={{ color: ON_NAVY.amber }}>
             <ClockIcon className="h-3.5 w-3.5" />
-            {daysBeforeLoss} أيام بين نقطة التحول والخسارة
-          </p>
+            {daysBeforeLoss} أيام بين نقطة التحول والخسارة</p>
         )}
       </div>
     </div>
@@ -441,7 +427,7 @@ function Comparison({ report, breakdown }: { report: AiReport; breakdown: Invest
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-[var(--radius-md)] border border-[var(--border-inverse)] bg-[var(--surface-inverse)] p-4">
           <p className="t-body-sm flex items-center gap-2 font-bold" style={{ color: ON_NAVY.green }}>
-            <CheckIcon className="h-4 w-4" /> الصفقات الرابحة ({breakdown.wonCount})
+            <CheckIcon className="h-4 w-4" />الصفقات الرابحة ({breakdown.wonCount})
           </p>
           <p dir="auto" className="t-body-sm mt-2 text-[color:var(--content-inverse-secondary)]">
             {report.comparison.won_pattern}
@@ -449,7 +435,7 @@ function Comparison({ report, breakdown }: { report: AiReport; breakdown: Invest
         </div>
         <div className="rounded-[var(--radius-md)] border border-[var(--border-inverse)] bg-[var(--surface-inverse)] p-4">
           <p className="t-body-sm flex items-center gap-2 font-bold" style={{ color: ON_NAVY.red }}>
-            <XIcon className="h-4 w-4" /> الصفقات المخسورة ({breakdown.lostCount})
+            <XIcon className="h-4 w-4" />الصفقات المخسورة ({breakdown.lostCount})
           </p>
           <p dir="auto" className="t-body-sm mt-2 text-[color:var(--content-inverse-secondary)]">
             {report.comparison.lost_pattern}
@@ -461,8 +447,7 @@ function Comparison({ report, breakdown }: { report: AiReport; breakdown: Invest
         style={{ background: "rgba(252,211,77,0.07)", borderRight: `3px solid ${ON_NAVY.amber}` }}
       >
         <p className="t-eyebrow flex items-center gap-1.5" style={{ color: ON_NAVY.amber }}>
-          <ScaleIcon className="h-3.5 w-3.5" /> الفارق الحاسم
-        </p>
+          <ScaleIcon className="h-3.5 w-3.5" />الفارق الحاسم</p>
         <p dir="auto" className="t-body mt-1.5 font-semibold text-[color:var(--content-inverse-primary)]">
           {report.comparison.key_differentiator}
         </p>
@@ -475,7 +460,7 @@ function Comparison({ report, breakdown }: { report: AiReport; breakdown: Invest
 function Lesson({ lesson }: { lesson: AiReport["lesson"] }) {
   return (
     <div
-      className="rounded-[var(--radius-lg)] border border-[var(--border-inverse)] bg-[var(--surface-inverse)] p-6"
+      className="rounded-[var(--radius-lg)] border border-[var(--border-inverse)] bg-[var(--surface-inverse)] p-[var(--space-card-pad)]"
       style={{ borderTop: `3px solid ${ON_NAVY.amber}` }}
     >
       <span className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] bg-white/[0.06]" style={{ color: ON_NAVY.amber }}>
@@ -487,8 +472,7 @@ function Lesson({ lesson }: { lesson: AiReport["lesson"] }) {
       <p dir="auto" className="t-body-lg mt-3 text-[color:var(--content-inverse-primary)]">
         {lesson.rule}
       </p>
-      <p dir="auto" className="t-caption mt-4 inline-block rounded-[var(--radius-xs)] border border-[var(--border-inverse)] bg-[var(--surface-inverse-deep)] px-3 py-1.5 text-[color:var(--content-inverse-accent)]">
-        يُطبق على: {lesson.applies_to}
+      <p dir="auto" className="t-caption mt-4 inline-block rounded-[var(--radius-xs)] border border-[var(--border-inverse)] bg-[var(--surface-inverse-deep)] px-3 py-1.5 text-[color:var(--content-inverse-accent)]">يُطبق على: {lesson.applies_to}
       </p>
     </div>
   );
@@ -499,7 +483,7 @@ function CostGridCard({ label, value, color }: { label: string; value: string; c
   return (
     <div className="rounded-[var(--radius-md)] border border-[var(--border-inverse)] bg-[var(--surface-inverse)] p-5 text-center">
       <p className="t-caption text-[color:var(--content-inverse-tertiary)]">{label}</p>
-      <p className="t-figure mt-2 text-[26px] leading-none" dir="ltr" style={{ color }}>
+      <p className="t-figure mt-2 t-figure-md leading-none" dir="ltr" style={{ color }}>
         {value}
       </p>
     </div>
@@ -515,9 +499,7 @@ function CostGrid({ cost }: { cost: InvestigationPayload["costAnalysis"] }) {
         <CostGridCard label="التكلفة الكلية للنمط" value={`${cost.currency} ${money(cost.total_pattern_cost)}`} color={ON_NAVY.red} />
       </div>
       <p className="t-caption mt-2 flex items-center gap-1.5 text-[color:var(--content-inverse-tertiary)]">
-        <MoneyIcon className="h-3.5 w-3.5" />
-        بناءً على {cost.similar_losses_count} صفقات بنفس النمط
-      </p>
+        <MoneyIcon className="h-3.5 w-3.5" />بناءً على {cost.similar_losses_count} صفقات بنفس النمط</p>
     </div>
   );
 }

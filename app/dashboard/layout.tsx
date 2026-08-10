@@ -11,22 +11,9 @@ import DailyBriefing from "@/components/DailyBriefing";
 import { initials as initialsOf } from "@/lib/format";
 import RoleProvider, { useRole } from "@/components/RoleProvider";
 import { FEATURES } from "@/lib/features";
-import { UsersIcon } from "@/components/navIcons";
+import { ActivitiesIcon, ContactsIcon, DashboardIcon, DealsIcon, InsightsIcon, LeadsIcon, LogoutIcon, PlaybookIcon, ScoringIcon, TasksIcon, UsersIcon } from "@/components/navIcons";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
-import SupervisorBot from "@/components/SupervisorBot";
 import CommandPalette from "@/components/CommandPalette";
-import {
-  DashboardIcon,
-  ContactsIcon,
-  LeadsIcon,
-  DealsIcon,
-  ActivitiesIcon,
-  TasksIcon,
-  ScoringIcon,
-  PlaybookIcon,
-  InsightsIcon,
-  LogoutIcon,
-} from "@/components/navIcons";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   dashboard: DashboardIcon,
@@ -205,11 +192,11 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
         <div className="flex h-[var(--layout-topbar)] flex-none items-center justify-between px-4">
           <div className="flex min-w-0 items-center gap-3">
             <svg viewBox="0 0 36 36" className="h-9 w-9 flex-none" fill="none">
-              <rect width="36" height="36" rx="9" fill="#3a9080" />
+              <rect width="36" height="36" rx="9" fill="var(--brand-teal-400)" />
               <path d="M18 5C11.37 5 6 10.37 6 17c0 6.63 5.37 12 12 12h7v-7h-7a5 5 0 1 1 0-10c2.76 0 5 2.24 5 5v12h7V17C30 10.37 24.63 5 18 5z" fill="white" />
             </svg>
             {(!collapsed || isMobile) && (
-              <span className="block truncate text-[26px] font-bold tracking-wide text-white" style={{ fontFamily: "var(--font-display)" }}>مَــوْرد</span>
+              <span className="block truncate t-title-1 font-bold tracking-wide text-white" style={{ fontFamily: "var(--font-display)" }}>مَــوْرد</span>
             )}
           </div>
           {isMobile ? (
@@ -282,7 +269,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
                   <p className="truncate text-[length:var(--text-body-sm)] font-semibold text-[color:var(--content-inverse-primary)]">{displayName}</p>
                   <p dir="ltr" className="t-micro truncate text-end text-[color:var(--content-inverse-tertiary)]">{email}</p>
                 </div>
-                <button onClick={handleLogout} aria-label="تسجيل الخروج" className="flex-none rounded-[var(--radius-sm)] p-1.5 text-[color:var(--content-inverse-tertiary)] transition-colors hover:bg-white/10 hover:text-[#fca5a5]">
+                <button onClick={handleLogout} aria-label="تسجيل الخروج" className="flex-none rounded-[var(--radius-sm)] p-1.5 text-[color:var(--content-inverse-tertiary)] transition-colors hover:bg-white/10 hover:text-[var(--status-danger-on-inverse)]">
                   <LogoutIcon className="h-4 w-4" />
                 </button>
               </>
@@ -308,7 +295,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
               </svg>
             </button>
           )}
-          <div className="flex min-w-0 items-center gap-2 text-[14px]">
+          <div className="flex min-w-0 items-center gap-2 t-body-sm">
             <span className="hidden text-[color:var(--content-tertiary)] sm:inline">مساحة العمل</span>
             <span className="hidden text-[color:var(--border-strong)] sm:inline">/</span>
             <span className="truncate font-semibold text-[color:var(--content-primary)]">{pageName}</span>
@@ -341,7 +328,6 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
         </div>
       </main>
       <CopilotWidget />
-      <SupervisorBot />
       <DailyBriefing />
       <CommandPalette />
     </div>

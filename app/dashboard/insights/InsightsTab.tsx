@@ -7,8 +7,9 @@ import { money } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
 import RichText from "@/components/copilot/RichText";
 import Skeleton from "@/components/ui/Skeleton";
+import { AlertIcon, ChartBarIcon } from "@/components/icons";
 
-const CARD = "rounded-[var(--radius-lg)] border border-gray-100 bg-[var(--surface-raised)] shadow-[0_1px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.02)]";
+const CARD = "rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-[0_1px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.02)]";
 const RANGES: { key: DateRangeKey; label: string }[] = [
   { key: "7d", label: "7 أيام" },
   { key: "30d", label: "30 يوم" },
@@ -17,7 +18,7 @@ const RANGES: { key: DateRangeKey; label: string }[] = [
   { key: "all", label: "الكل" },
 ];
 
-const PALETTE = ["#1a5c4f", "#2d8570", "#f59e0b", "#6366f1", "#ef4444", "#0ea5e9", "#a855f7", "#10b981", "#ec4899", "#14b8a6"];
+const PALETTE = ["var(--brand-teal-700)", "var(--brand-teal-500)", "var(--brand-amber-500)", "var(--brand-indigo-500)", "var(--brand-red-500)", "var(--content-accent)", "var(--content-accent)", "var(--brand-green-500)", "var(--content-accent)", "var(--brand-teal-500)"];
 
 function sar(n: number) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
@@ -32,16 +33,16 @@ function toISODate(d: Date): string {
 /* ---------- KPI card ---------- */
 function Kpi({ label, value, sub, color, icon }: { label: string; value: string; sub?: string; color: string; icon: React.ReactNode }) {
   return (
-    <div className="group relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.02)] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(0,0,0,0.05),0_12px_32px_rgba(0,0,0,0.03)]">
+    <div className="group relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-pad)] shadow-[0_1px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.02)] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(0,0,0,0.05),0_12px_32px_rgba(0,0,0,0.03)]">
       <span className="absolute bottom-3 left-0 top-3 w-1 rounded-full" style={{ background: color }} />
       <div className="flex items-start justify-between gap-3">
-        <p dir="auto" className="t-micro font-semibold uppercase tracking-wider text-[#94a3b8]">{label}</p>
+        <p dir="auto" className="t-micro font-semibold uppercase tracking-wider text-[var(--content-tertiary)]">{label}</p>
         <span className="flex h-9 w-9 flex-none items-center justify-center rounded-[var(--radius-md)] transition-transform group-hover:scale-105" style={{ background: `${color}1a`, color }}>
           {icon}
         </span>
       </div>
-      <p className="mt-3 text-[26px] font-black leading-none tabular-nums text-[#1e1b4b]">{value}</p>
-      {sub && <p dir="auto" className="mt-1.5 t-caption font-medium text-[#94a3b8]">{sub}</p>}
+      <p className="mt-3 t-figure-md font-black leading-none tabular-nums text-[var(--content-primary)]">{value}</p>
+      {sub && <p dir="auto" className="mt-1.5 t-caption font-medium text-[var(--content-tertiary)]">{sub}</p>}
     </div>
   );
 }
@@ -68,8 +69,8 @@ function TrendChart({ trend }: { trend: InsightsData["trend"] }) {
   if (allZero) {
     return (
       <div className="flex h-56 flex-col items-center justify-center gap-3 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f0faf8] text-2xl">📊</div>
-        <p dir="auto" className="text-[14px] text-[#94a3b8]">لا توجد بيانات لعرضها بهذي الفترة</p>
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--surface-accent-subtle)] text-2xl"><ChartBarIcon className="h-4 w-4" /></div>
+        <p dir="auto" className="t-body-sm text-[var(--content-tertiary)]">لا توجد بيانات لعرضها بهذي الفترة</p>
       </div>
     );
   }
@@ -78,37 +79,37 @@ function TrendChart({ trend }: { trend: InsightsData["trend"] }) {
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} onMouseLeave={() => setHover(null)}>
       <defs>
         <linearGradient id="insightsAreaGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1a5c4f" stopOpacity="0.22" />
-          <stop offset="100%" stopColor="#1a5c4f" stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--brand-teal-700)" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="var(--brand-teal-700)" stopOpacity="0" />
         </linearGradient>
       </defs>
       {[0, 0.25, 0.5, 0.75, 1].map((g) => (
-        <line key={g} x1={padL} x2={W - padR} y1={y(maxVal * g)} y2={y(maxVal * g)} stroke="#f1f5f9" strokeWidth="1" />
+        <line key={g} x1={padL} x2={W - padR} y1={y(maxVal * g)} y2={y(maxVal * g)} stroke="var(--surface-sunken)" strokeWidth="1" />
       ))}
       {[0, 0.5, 1].map((g) => (
-        <text key={`y${g}`} x={4} y={y(maxVal * g) + 3} fontSize="9" fill="#cbd5e1">
+        <text key={`y${g}`} x={4} y={y(maxVal * g) + 3} fontSize="9" fill="var(--border-strong)">
           {sar(maxVal * g)}
         </text>
       ))}
       {area && <path d={area} fill="url(#insightsAreaGrad)" />}
-      {line && <path d={line} fill="none" stroke="#1a5c4f" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
+      {line && <path d={line} fill="none" stroke="var(--brand-teal-700)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
       {trend.map((p, i) => (
         <g key={p.date}>
           {i % everyN === 0 && (
-            <text x={x(i)} y={H - 8} textAnchor="middle" fontSize="9" fill="#94a3b8">{p.label}</text>
+            <text x={x(i)} y={H - 8} textAnchor="middle" fontSize="9" fill="var(--content-tertiary)">{p.label}</text>
           )}
           <circle cx={x(i)} cy={y(p.pipelineValueSAR)} r="14" fill="transparent" onMouseEnter={() => setHover(i)} />
         </g>
       ))}
       {hover != null && (
         <g>
-          <line x1={x(hover)} x2={x(hover)} y1={padT} y2={H - padB} stroke="#1a5c4f" strokeWidth="1" strokeDasharray="3 3" />
-          <circle cx={x(hover)} cy={y(trend[hover].pipelineValueSAR)} r="5" fill="white" stroke="#1a5c4f" strokeWidth="2.5" />
+          <line x1={x(hover)} x2={x(hover)} y1={padT} y2={H - padB} stroke="var(--brand-teal-700)" strokeWidth="1" strokeDasharray="3 3" />
+          <circle cx={x(hover)} cy={y(trend[hover].pipelineValueSAR)} r="5" fill="white" stroke="var(--brand-teal-700)" strokeWidth="2.5" />
           <g transform={`translate(${Math.min(Math.max(x(hover) - 70, 4), W - 144)}, 6)`}>
-            <rect width="140" height="50" rx="8" fill="#1e1b4b" />
-            <text x="70" y="18" textAnchor="middle" fontSize="10" fill="#a5b4c9">{trend[hover].label}</text>
+            <rect width="140" height="50" rx="8" fill="var(--content-primary)" />
+            <text x="70" y="18" textAnchor="middle" fontSize="10" fill="var(--content-inverse-tertiary)">{trend[hover].label}</text>
             <text x="70" y="34" textAnchor="middle" fontSize="12" fontWeight="700" fill="white">SAR {money(trend[hover].pipelineValueSAR)}</text>
-            <text x="70" y="46" textAnchor="middle" fontSize="9" fill="#7ee7cd">✓ {trend[hover].won}   ✕ {trend[hover].lost}   ● {trend[hover].newDeals}</text>
+            <text x="70" y="46" textAnchor="middle" fontSize="9" fill="var(--brand-teal-300)"> {trend[hover].won}    {trend[hover].lost}   ● {trend[hover].newDeals}</text>
           </g>
         </g>
       )}
@@ -120,7 +121,7 @@ function TrendChart({ trend }: { trend: InsightsData["trend"] }) {
 function Donut({ rows }: { rows: { label: string; count: number }[] }) {
   const total = rows.reduce((s, r) => s + r.count, 0);
   if (!total) {
-    return <p className="py-8 text-center t-body-sm text-[#94a3b8]">لا توجد بيانات</p>;
+    return <p className="py-8 text-center t-body-sm text-[var(--content-tertiary)]">لا توجد بيانات</p>;
   }
   const R = 68, r = 42, cx = 90, cy = 90;
   const { slices } = rows.reduce<{ acc: number; slices: { path: string; color: string; row: { label: string; count: number }; pct: number }[] }>(
@@ -147,16 +148,16 @@ function Donut({ rows }: { rows: { label: string; count: number }[] }) {
         {slices.map((s, i) => (
           <path key={i} d={s.path} fill={s.color} stroke="white" strokeWidth="1.5" />
         ))}
-        <text x="90" y="86" textAnchor="middle" fontSize="12" fill="#94a3b8">إجمالي</text>
-        <text x="90" y="106" textAnchor="middle" fontSize="24" fontWeight="800" fill="#1e1b4b">{total}</text>
+        <text x="90" y="86" textAnchor="middle" fontSize="12" fill="var(--content-tertiary)">إجمالي</text>
+        <text x="90" y="106" textAnchor="middle" fontSize="24" fontWeight="800" fill="var(--content-primary)">{total}</text>
       </svg>
       <div className="flex flex-1 flex-col gap-2">
         {slices.map((s, i) => (
           <div key={i} className="flex items-center gap-2 t-caption">
             <span className="h-2.5 w-2.5 flex-none rounded-[var(--radius-xs)]" style={{ background: s.color }} />
-            <span dir="auto" className="min-w-0 flex-1 truncate text-[#334155]">{s.row.label}</span>
-            <span className="flex-none font-bold tabular-nums text-[#1e1b4b]">{s.row.count}</span>
-            <span className="w-8 flex-none text-right text-[#94a3b8]">{s.pct}%</span>
+            <span dir="auto" className="min-w-0 flex-1 truncate text-[var(--content-secondary)]">{s.row.label}</span>
+            <span className="flex-none font-bold tabular-nums text-[var(--content-primary)]">{s.row.count}</span>
+            <span className="w-8 flex-none text-right text-[var(--content-tertiary)]">{s.pct}%</span>
           </div>
         ))}
       </div>
@@ -175,7 +176,7 @@ function BarBreakdown({
   valueMode?: "count" | "value";
 }) {
   if (rows.length === 0) {
-    return <p className="py-8 text-center t-body-sm text-[#94a3b8]">لا توجد بيانات لهذي الفترة</p>;
+    return <p className="py-8 text-center t-body-sm text-[var(--content-tertiary)]">لا توجد بيانات لهذي الفترة</p>;
   }
   const max = Math.max(1, ...rows.map((r) => (valueMode === "value" ? r.valueSAR : r.count)));
   return (
@@ -186,12 +187,12 @@ function BarBreakdown({
         return (
           <div key={r.label}>
             <div className="mb-1 flex items-center justify-between t-body-sm">
-              <span dir="auto" className="font-medium text-[#334155]">{r.label}</span>
-              <span className="font-bold tabular-nums text-[#1e1b4b]">
+              <span dir="auto" className="font-medium text-[var(--content-secondary)]">{r.label}</span>
+              <span className="font-bold tabular-nums text-[var(--content-primary)]">
                 {valueMode === "value" ? `SAR ${sar(r.valueSAR)}` : r.count}
               </span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+            <div className="h-2 overflow-hidden rounded-full bg-[var(--surface-sunken)]">
               <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: colorFor(i, r.color) }} />
             </div>
           </div>
@@ -203,12 +204,12 @@ function BarBreakdown({
 
 /* ---------- Sources table with junk-quality bars ---------- */
 function SourcesTable({ rows }: { rows: InsightsData["sources"] }) {
-  if (!rows.length) return <p className="py-8 text-center t-body-sm text-[#94a3b8]">لا توجد بيانات</p>;
+  if (!rows.length) return <p className="py-8 text-center t-body-sm text-[var(--content-tertiary)]">لا توجد بيانات</p>;
   return (
     <div className="overflow-x-auto">
       <table className="w-full t-body-sm">
         <thead>
-          <tr className="border-b border-gray-100 t-micro font-semibold uppercase tracking-wider text-[#94a3b8]">
+          <tr className="border-b border-[var(--border-subtle)] t-micro font-semibold uppercase tracking-wider text-[var(--content-tertiary)]">
             <th className="py-2 text-right font-semibold">المصدر</th>
             <th className="py-2 text-right font-semibold">الإجمالي</th>
             <th className="py-2 text-right font-semibold">نظيف</th>
@@ -218,22 +219,22 @@ function SourcesTable({ rows }: { rows: InsightsData["sources"] }) {
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={r.label} className="border-b border-gray-50 last:border-0">
+            <tr key={r.label} className="border-b border-[var(--border-subtle)] last:border-0">
               <td className="py-2.5" dir="auto">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 flex-none rounded-full" style={{ background: PALETTE[i % PALETTE.length] }} />
-                  <span className="truncate text-[#1e1b4b]">{r.label}</span>
+                  <span className="truncate text-[var(--content-primary)]">{r.label}</span>
                 </div>
               </td>
-              <td className="py-2.5 font-semibold tabular-nums text-[#1e1b4b]">{r.count}</td>
-              <td className="py-2.5 tabular-nums text-[#10b981]">{r.clean}</td>
-              <td className="py-2.5 tabular-nums text-[#ef4444]">{r.junk}</td>
+              <td className="py-2.5 font-semibold tabular-nums text-[var(--content-primary)]">{r.count}</td>
+              <td className="py-2.5 tabular-nums text-[var(--brand-green-500)]">{r.clean}</td>
+              <td className="py-2.5 tabular-nums text-[var(--brand-red-500)]">{r.junk}</td>
               <td className="py-2.5">
                 <div className="flex items-center gap-2">
-                  <div className="h-1.5 w-20 overflow-hidden rounded-full bg-gray-100">
-                    <div className="h-full rounded-full" style={{ width: `${r.cleanPct}%`, background: r.cleanPct >= 70 ? "#10b981" : r.cleanPct >= 40 ? "#f59e0b" : "#ef4444" }} />
+                  <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[var(--surface-sunken)]">
+                    <div className="h-full rounded-full" style={{ width: `${r.cleanPct}%`, background: r.cleanPct >= 70 ? "var(--brand-green-500)" : r.cleanPct >= 40 ? "var(--brand-amber-500)" : "var(--brand-red-500)" }} />
                   </div>
-                  <span className="w-9 text-right font-bold tabular-nums text-[#1e1b4b]">{r.cleanPct}%</span>
+                  <span className="w-9 text-right font-bold tabular-nums text-[var(--content-primary)]">{r.cleanPct}%</span>
                 </div>
               </td>
             </tr>
@@ -246,12 +247,12 @@ function SourcesTable({ rows }: { rows: InsightsData["sources"] }) {
 
 /* ---------- Top-value active deals table ---------- */
 function TopDealsTable({ rows }: { rows: InsightsData["topActiveDeals"] }) {
-  if (!rows.length) return <p className="py-8 text-center t-body-sm text-[#94a3b8]">لا توجد صفقات نشطة بهذي الفترة</p>;
+  if (!rows.length) return <p className="py-8 text-center t-body-sm text-[var(--content-tertiary)]">لا توجد صفقات نشطة بهذي الفترة</p>;
   return (
     <div className="overflow-x-auto">
       <table className="w-full t-body-sm">
         <thead>
-          <tr className="border-b border-gray-100 t-micro font-semibold uppercase tracking-wider text-[#94a3b8]">
+          <tr className="border-b border-[var(--border-subtle)] t-micro font-semibold uppercase tracking-wider text-[var(--content-tertiary)]">
             <th className="py-2 text-right font-semibold">الصفقة</th>
             <th className="py-2 text-right font-semibold">المرحلة</th>
             <th className="py-2 text-right font-semibold">القيمة</th>
@@ -261,28 +262,28 @@ function TopDealsTable({ rows }: { rows: InsightsData["topActiveDeals"] }) {
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.id} className="border-b border-gray-50 last:border-0 hover:bg-[#f0faf8]/50">
+            <tr key={r.id} className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-[var(--surface-accent-subtle)]/50">
               <td className="py-2.5" dir="auto">
                 <Link href={`/dashboard/deals/${r.id}/investigation`} className="block">
-                  <p className="truncate font-semibold text-[#1e1b4b] hover:text-primary">{r.name}</p>
-                  {r.leadName && <p className="truncate t-micro text-[#94a3b8]">{r.leadName}</p>}
+                  <p className="truncate font-semibold text-[var(--content-primary)] hover:text-primary">{r.name}</p>
+                  {r.leadName && <p className="truncate t-micro text-[var(--content-tertiary)]">{r.leadName}</p>}
                 </Link>
               </td>
               <td className="py-2.5">
-                <span className="rounded-full bg-[#f0faf8] px-2 py-0.5 t-micro font-semibold text-primary">{r.stage}</span>
+                <span className="rounded-full bg-[var(--surface-accent-subtle)] px-2 py-0.5 t-micro font-semibold text-primary">{r.stage}</span>
               </td>
-              <td className="py-2.5 font-bold tabular-nums text-[#1e1b4b]">SAR {sar(r.valueSAR)}</td>
-              <td className="py-2.5 tabular-nums text-[#475569]">{r.days} يوم</td>
+              <td className="py-2.5 font-bold tabular-nums text-[var(--content-primary)]">SAR {sar(r.valueSAR)}</td>
+              <td className="py-2.5 tabular-nums text-[var(--content-secondary)]">{r.days} يوم</td>
               <td className="py-2.5">
                 {r.probabilityPct != null ? (
                   <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-16 overflow-hidden rounded-full bg-gray-100">
+                    <div className="h-1.5 w-16 overflow-hidden rounded-full bg-[var(--surface-sunken)]">
                       <div className="h-full rounded-full bg-primary" style={{ width: `${r.probabilityPct}%` }} />
                     </div>
                     <span className="w-8 text-right font-bold tabular-nums text-primary">{r.probabilityPct}%</span>
                   </div>
                 ) : (
-                  <span className="text-[#cbd5e1]">—</span>
+                  <span className="text-[var(--border-strong)]">—</span>
                 )}
               </td>
             </tr>
@@ -295,12 +296,12 @@ function TopDealsTable({ rows }: { rows: InsightsData["topActiveDeals"] }) {
 
 /* ---------- Recent lost deals table ---------- */
 function LostDealsTable({ rows }: { rows: InsightsData["recentLostDeals"] }) {
-  if (!rows.length) return <p className="py-8 text-center t-body-sm text-[#94a3b8]">لا توجد صفقات مخسورة بهذي الفترة 🎉</p>;
+  if (!rows.length) return <p className="py-8 text-center t-body-sm text-[var(--content-tertiary)]">لا توجد صفقات مخسورة بهذي الفترة</p>;
   return (
     <div className="overflow-x-auto">
       <table className="w-full t-body-sm">
         <thead>
-          <tr className="border-b border-gray-100 t-micro font-semibold uppercase tracking-wider text-[#94a3b8]">
+          <tr className="border-b border-[var(--border-subtle)] t-micro font-semibold uppercase tracking-wider text-[var(--content-tertiary)]">
             <th className="py-2 text-right font-semibold">الصفقة</th>
             <th className="py-2 text-right font-semibold">المرحلة</th>
             <th className="py-2 text-right font-semibold">السبب</th>
@@ -309,18 +310,18 @@ function LostDealsTable({ rows }: { rows: InsightsData["recentLostDeals"] }) {
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.id} className="border-b border-gray-50 last:border-0 hover:bg-red-50/50">
+            <tr key={r.id} className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-[color-mix(in_srgb,var(--status-danger-bg)_50%,transparent)]">
               <td className="py-2.5" dir="auto">
                 <Link href={`/dashboard/deals/${r.id}/investigation`} className="block">
-                  <p className="truncate font-semibold text-[#1e1b4b] hover:text-primary">{r.name}</p>
-                  {r.leadName && <p className="truncate t-micro text-[#94a3b8]">{r.leadName}</p>}
+                  <p className="truncate font-semibold text-[var(--content-primary)] hover:text-primary">{r.name}</p>
+                  {r.leadName && <p className="truncate t-micro text-[var(--content-tertiary)]">{r.leadName}</p>}
                 </Link>
               </td>
-              <td className="py-2.5 text-[#475569]">{r.stage}</td>
+              <td className="py-2.5 text-[var(--content-secondary)]">{r.stage}</td>
               <td className="py-2.5">
-                <span className="rounded-full bg-red-50 px-2 py-0.5 t-micro font-semibold text-red-600">{r.reason}</span>
+                <span className="rounded-full bg-[var(--status-danger-bg)] px-2 py-0.5 t-micro font-semibold text-[var(--status-danger-fg)]">{r.reason}</span>
               </td>
-              <td className="py-2.5 font-bold tabular-nums text-red-600">SAR {sar(r.valueSAR)}</td>
+              <td className="py-2.5 font-bold tabular-nums text-[var(--status-danger-fg)]">SAR {sar(r.valueSAR)}</td>
             </tr>
           ))}
         </tbody>
@@ -345,7 +346,7 @@ interface ChatMsg {
 }
 
 function serializeContext(data: InsightsData): string {
-  return `أنا الآن على صفحة "لوحة الرؤى الشاملة" في نظام Mawrid CRM، وهذي هي البيانات المفلترة الظاهرة أمامي بالضبط (الفترة: ${data.rangeLabel}):
+  return `أنا الآن على صفحة"لوحة الرؤى الشاملة"في نظام Mawrid CRM، وهذي هي البيانات المفلترة الظاهرة أمامي بالضبط (الفترة: ${data.rangeLabel}):
 
 ## المؤشرات الرئيسية
 - إجمالي الليدات: ${data.kpis.totalLeads} (نظيف ${data.kpis.cleanLeads} · جانك ${data.kpis.junkLeads})
@@ -373,221 +374,13 @@ ${data.topActiveDeals.length ? data.topActiveDeals.map((d, i) => `${i + 1}. ${d.
 ${data.recentLostDeals.length ? data.recentLostDeals.map((d, i) => `${i + 1}. ${d.name}${d.leadName ? ` — ${d.leadName}` : ""} — ${d.stage} — سبب: ${d.reason} — SAR ${money(d.valueSAR)}`).join("\n") : "(لا يوجد)"}
 
 ## اتجاه قيمة الـ Pipeline اليومي (أحدث ${Math.min(10, data.trend.length)} أيام)
-${data.trend.slice(-10).map((t) => `- ${t.label}: SAR ${money(t.pipelineValueSAR)} · ✓ ${t.won} · ✕ ${t.lost} · 🆕 ${t.newDeals}`).join("\n")}`;
+${data.trend.slice(-10).map((t) => `- ${t.label}: SAR ${money(t.pipelineValueSAR)} ·  ${t.won} ·  ${t.lost} · 🆕 ${t.newDeals}`).join("\n")}`;
 }
 
 /** Playful, on-brand chat avatar — a rounded "robot" head in the app's teal
  * gradient with a subtle floating animation. Pure SVG + CSS, no external
  * asset. */
-function RobotAvatar({ size = 44 }: { size?: number }) {
-  return (
-    <div className="relative flex-none" style={{ width: size, height: size }}>
-      <div
-        className="absolute inset-0 rounded-[var(--radius-lg)]"
-        style={{
-          background: "linear-gradient(135deg, #1a5c4f 0%, #2d8570 100%)",
-          boxShadow: "0 6px 18px rgba(26,92,79,0.35), inset 0 -3px 0 rgba(0,0,0,0.12), inset 0 3px 0 rgba(255,255,255,0.15)",
-          animation: "insightsBotFloat 3.6s ease-in-out infinite",
-        }}
-      />
-      <svg viewBox="0 0 44 44" className="absolute inset-0" width={size} height={size}>
-        {/* antenna */}
-        <line x1="22" y1="6" x2="22" y2="10" stroke="#7ee7cd" strokeWidth="1.5" strokeLinecap="round" />
-        <circle cx="22" cy="5" r="1.6" fill="#7ee7cd" />
-        {/* face plate */}
-        <rect x="10" y="14" width="24" height="18" rx="5" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.35)" strokeWidth="0.8" />
-        {/* eyes */}
-        <circle cx="17" cy="23" r="2.2" fill="#7ee7cd">
-          <animate attributeName="r" values="2.2;0.4;2.2" keyTimes="0;0.05;0.1" dur="4s" repeatCount="indefinite" />
-        </circle>
-        <circle cx="27" cy="23" r="2.2" fill="#7ee7cd">
-          <animate attributeName="r" values="2.2;0.4;2.2" keyTimes="0;0.05;0.1" dur="4s" repeatCount="indefinite" />
-        </circle>
-        {/* smile */}
-        <path d="M18 28 Q22 30.5 26 28" stroke="#7ee7cd" strokeWidth="1.4" strokeLinecap="round" fill="none" />
-        {/* side ears */}
-        <rect x="7" y="19" width="3" height="8" rx="1.5" fill="rgba(255,255,255,0.15)" />
-        <rect x="34" y="19" width="3" height="8" rx="1.5" fill="rgba(255,255,255,0.15)" />
-      </svg>
-      <style jsx>{`
-        @keyframes insightsBotFloat {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-3px); }
-        }
-      `}</style>
-    </div>
-  );
-}
 
-function InsightsChat({ data }: { data: InsightsData }) {
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
-  const [value, setValue] = useState("");
-  const [streaming, setStreaming] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages]);
-
-  const send = useCallback(async (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed || streaming) return;
-    const userMsg: ChatMsg = { id: crypto.randomUUID(), role: "user", content: trimmed };
-    const assistantMsg: ChatMsg = { id: crypto.randomUUID(), role: "assistant", content: "" };
-    const history = [...messages, userMsg];
-    setMessages([...history, assistantMsg]);
-    setValue("");
-    setStreaming(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch("/api/copilot", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
-        },
-        body: JSON.stringify({
-          messages: history.map((m) => ({ role: m.role, content: m.content })),
-          context: serializeContext(data),
-        }),
-      });
-      if (!res.ok || !res.body) {
-        let msg = "تعذّر الحصول على رد الآن. حاول مرة أخرى.";
-        try {
-          const j = await res.json();
-          if (typeof j?.message === "string") msg = j.message;
-        } catch {
-          /* body may be empty */
-        }
-        setMessages((prev) => prev.map((m) => (m.id === assistantMsg.id ? { ...m, content: msg } : m)));
-        return;
-      }
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let acc = "";
-      for (;;) {
-        const { done, value: chunk } = await reader.read();
-        if (done) break;
-        acc += decoder.decode(chunk, { stream: true });
-        setMessages((prev) => prev.map((m) => (m.id === assistantMsg.id ? { ...m, content: acc } : m)));
-      }
-    } catch (err) {
-      console.error("[InsightsChat] send failed", err);
-      setMessages((prev) => prev.map((m) => (m.id === assistantMsg.id ? { ...m, content: "تعذّر الاتصال. تأكّد من الشبكة وحاول مجدداً." } : m)));
-    } finally {
-      setStreaming(false);
-    }
-  }, [messages, streaming, data]);
-
-  const chips = [
-    "لخّص لي أداء هذي الفترة",
-    "ليش بدأنا نخسر صفقات أكثر؟",
-    "أي مصدر عملاء أعلى جودة؟",
-    "أي صفقة نشطة الأولوية؟",
-    "وش أكبر سبب خسارة بالقيمة؟",
-  ];
-
-  return (
-    <div className={`${CARD} flex flex-col overflow-hidden`}>
-      {/* Header — meet-the-assistant band */}
-      <div
-        className="flex items-center gap-4 px-6 py-4 text-white"
-        style={{ background: "linear-gradient(135deg, #0d3b30 0%, #1a5c4f 55%, #2d8570 100%)" }}
-      >
-        <RobotAvatar size={52} />
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <p dir="auto" className="t-body-lg font-extrabold">أهلاً 👋 أنا مساعدك مورد</p>
-            <span className="rounded-full bg-white/20 px-2 py-0.5 t-micro font-bold uppercase tracking-wider text-[#7ee7cd]">مباشر</span>
-          </div>
-          <p dir="auto" className="mt-0.5 t-caption text-white/70">
-            عندي اطلاع كامل على كل الأرقام الظاهرة فوق ({data.rangeLabel}) — اسألني أي شيء
-          </p>
-        </div>
-        <div className="hidden flex-none rounded-[var(--radius-md)] bg-white/10 px-3 py-1.5 text-center sm:block">
-          <p className="t-micro font-semibold uppercase tracking-wider text-white/60">صفقات نشطة</p>
-          <p className="t-body font-bold tabular-nums">{data.kpis.activeDeals}</p>
-        </div>
-        <div className="hidden flex-none rounded-[var(--radius-md)] bg-white/10 px-3 py-1.5 text-center sm:block">
-          <p className="t-micro font-semibold uppercase tracking-wider text-white/60">المسار</p>
-          <p className="t-body font-bold tabular-nums">SAR {sar(data.kpis.pipelineValueSAR)}</p>
-        </div>
-      </div>
-
-      {/* Messages */}
-      <div className="max-h-[440px] min-h-[220px] overflow-y-auto bg-gradient-to-b from-[#fafcfb] to-white px-6 py-5">
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-8 text-center">
-            <p dir="auto" className="text-[14px] font-semibold text-[#1e1b4b]">جرّب اسألني:</p>
-            <div className="flex max-w-lg flex-wrap justify-center gap-2">
-              {chips.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => send(c)}
-                  className="rounded-full border border-gray-100 bg-[var(--surface-raised)] px-3.5 py-1.5 t-caption font-medium text-[#475569] shadow-sm transition-all hover:-translate-y-px hover:border-primary/30 hover:bg-mint hover:text-primary"
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {messages.map((m) => (
-              <div key={m.id} className={`flex items-end gap-2 ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                {m.role === "assistant" && (
-                  <div className="mb-1 flex-none">
-                    <RobotAvatar size={32} />
-                  </div>
-                )}
-                <div
-                  className={`max-w-[80%] px-4 py-2.5 text-[14px] leading-relaxed ${m.role === "user" ? "" : "shadow-[0_2px_8px_rgba(0,0,0,0.04)]"}`}
-                  style={
-                    m.role === "user"
-                      ? { background: "linear-gradient(135deg, #1A5C4F 0%, #2D8570 100%)", borderRadius: "18px 18px 4px 18px", color: "#fff" }
-                      : { background: "#fff", border: "1px solid #E8EFED", borderRadius: "4px 18px 18px 18px", color: "#1C2B26" }
-                  }
-                >
-                  {m.role === "user" ? <p dir="auto" className="whitespace-pre-wrap">{m.content}</p> : <RichText content={m.content || "…"} />}
-                </div>
-              </div>
-            ))}
-            <div ref={bottomRef} />
-          </div>
-        )}
-      </div>
-
-      {/* Composer */}
-      <div className="border-t border-gray-100 bg-[var(--surface-raised)] p-3">
-        <div className="flex items-center gap-2 rounded-[var(--radius-lg)] border border-gray-200 bg-[var(--surface-raised)] px-2 py-1.5 shadow-sm transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10">
-          <input
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                send(value);
-              }
-            }}
-            dir="auto"
-            placeholder="اسأل مساعدك مورد عن أي رقم أو نمط بالصفحة..."
-            className="flex-1 border-0 bg-transparent px-2 py-1.5 text-[14px] text-[#334155] placeholder:text-[#94a3b8] focus:outline-none"
-          />
-          <button
-            onClick={() => send(value)}
-            disabled={streaming || !value.trim()}
-            className="flex h-10 w-10 flex-none items-center justify-center rounded-full text-white shadow-md transition-all hover:scale-105 hover:shadow-lg disabled:scale-100 disabled:opacity-40"
-            style={{ background: "linear-gradient(135deg, #1A5C4F 0%, #2D8570 100%)" }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 -rotate-90">
-              <path d="M12 19V5M5 12l7-7 7 7" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ============= PAGE ============= */
 export default function InsightsTab() {
@@ -645,8 +438,8 @@ export default function InsightsTab() {
   if (error || !data) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-[var(--radius-lg)] bg-red-50 text-2xl">⚠️</div>
-        <p className="t-body text-[#94a3b8]">تعذّر تحميل لوحة الرؤى.</p>
+        <div className="flex h-14 w-14 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--status-danger-bg)] text-2xl"><AlertIcon className="h-4 w-4" /></div>
+        <p className="t-body text-[var(--content-tertiary)]">تعذّر تحميل لوحة الرؤى.</p>
       </div>
     );
   }
@@ -654,17 +447,17 @@ export default function InsightsTab() {
   return (
     <div className="flex flex-col gap-6">
       {/* ── Hero header ───────────────────────────────────────────── */}
-      <div className="rounded-[var(--radius-lg)] bg-[#141c2e] px-7 py-7">
+      <div className="rounded-[var(--radius-lg)] bg-[var(--surface-inverse)] px-7 py-7">
         <div className="flex flex-wrap items-center justify-between gap-5">
           <div className="flex items-center gap-4">
             <div className="flex h-14 w-14 flex-none items-center justify-center rounded-[var(--radius-lg)] bg-white/10">
-              <svg viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth={1.8} className="h-6 w-6"><path d="M3 17V9M9 17V4M15 17v-6M3 3v14h14" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <svg viewBox="0 0 20 20" fill="none" stroke="var(--surface-raised)" strokeWidth={1.8} className="h-6 w-6"><path d="M3 17V9M9 17V4M15 17v-6M3 3v14h14" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">لوحة الرؤى</h1>
-                <span className="rounded-full bg-[#3a9080]/20 px-2 py-0.5 t-micro font-bold uppercase tracking-wider text-[#5ec4b0]">مباشر</span>
-                {refreshing && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3a9080]" />}
+                <h1 dir="auto" className="t-title-1 font-bold tracking-[-0.02em] text-white">لوحة الرؤى</h1>
+                <span className="rounded-full bg-[var(--brand-teal-400)]/20 px-2 py-0.5 t-micro font-bold uppercase tracking-wider text-[var(--brand-teal-300)]">مباشر</span>
+                {refreshing && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--brand-teal-400)]" />}
               </div>
               <p dir="auto" className="mt-1 text-sm text-white/50">كل الأرقام مفلترة على: <span className="font-semibold text-white/80">{data.rangeLabel}</span></p>
             </div>
@@ -673,14 +466,14 @@ export default function InsightsTab() {
       </div>
 
       {/* ── Filter bar ────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-2 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-3 e-1">
-        <div className="flex gap-1 rounded-[var(--radius-md)] bg-[#f8faf9] p-1">
+      <div className="flex flex-wrap items-center gap-2 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-compact)] e-1">
+        <div className="flex gap-1 rounded-[var(--radius-md)] bg-[var(--surface-sunken)] p-1">
           {RANGES.map((r) => (
             <button
               key={r.key}
               onClick={() => setRange(r.key)}
               className={`rounded-[var(--radius-sm)] px-3.5 py-1.5 t-caption font-semibold transition ${
-                range === r.key ? "bg-[#1a5c4f] text-white shadow-sm" : "text-[#475569] hover:bg-[#f0faf8]"
+                range === r.key ? "bg-[var(--brand-teal-700)] text-white shadow-sm" : "text-[var(--content-secondary)] hover:bg-[var(--surface-accent-subtle)]"
               }`}
             >
               {r.label}
@@ -692,28 +485,26 @@ export default function InsightsTab() {
               if (!customFrom) setCustomFrom(toISODate(new Date(Date.now() - 30 * 86_400_000)));
             }}
             className={`rounded-[var(--radius-sm)] px-3.5 py-1.5 t-caption font-semibold transition ${
-              range === "custom" ? "bg-[#1a5c4f] text-white shadow-sm" : "text-[#475569] hover:bg-[#f0faf8]"
+              range === "custom" ? "bg-[var(--brand-teal-700)] text-white shadow-sm" : "text-[var(--content-secondary)] hover:bg-[var(--surface-accent-subtle)]"
             }`}
-          >
-            مخصص
-          </button>
+          >مخصص</button>
         </div>
         {range === "custom" && (
-          <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[#f8faf9] px-3 py-1.5 t-caption">
-            <label className="text-[#94a3b8]">من</label>
+          <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3 py-1.5 t-caption">
+            <label className="text-[var(--content-tertiary)]">من</label>
             <input
               type="date"
               value={customFrom}
               onChange={(e) => setCustomFrom(e.target.value)}
-              className="border-0 bg-transparent t-caption text-[#334155] focus:outline-none"
+              className="border-0 bg-transparent t-caption text-[var(--content-secondary)] focus:outline-none"
             />
-            <span className="text-[#cbd5e1]">—</span>
-            <label className="text-[#94a3b8]">إلى</label>
+            <span className="text-[var(--border-strong)]">—</span>
+            <label className="text-[var(--content-tertiary)]">إلى</label>
             <input
               type="date"
               value={customTo}
               onChange={(e) => setCustomTo(e.target.value)}
-              className="border-0 bg-transparent t-caption text-[#334155] focus:outline-none"
+              className="border-0 bg-transparent t-caption text-[var(--content-secondary)] focus:outline-none"
             />
           </div>
         )}
@@ -721,23 +512,23 @@ export default function InsightsTab() {
 
       {/* ── KPI grid ──────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        <Kpi label="الليدات" value={String(data.kpis.totalLeads)} sub={`نظيف ${data.kpis.cleanLeads} · جانك ${data.kpis.junkLeads}`} color="#1a5c4f" icon={<IconLead />} />
-        <Kpi label="صفقات نشطة" value={String(data.kpis.activeDeals)} sub={`${data.kpis.totalActivities} نشاط`} color="#6366f1" icon={<IconDeal />} />
-        <Kpi label="قيمة Pipeline" value={`SAR ${sar(data.kpis.pipelineValueSAR)}`} sub={`مربوح SAR ${sar(data.kpis.wonValueSAR)}`} color="#f59e0b" icon={<IconMoney />} />
-        <Kpi label="نسبة الفوز" value={`${data.kpis.winRatePct}%`} sub={`${data.kpis.wonDeals} مربوحة`} color="#10b981" icon={<IconWin />} />
-        <Kpi label="مخسورة" value={String(data.kpis.lostDeals)} sub={`من أصل ${data.kpis.wonDeals + data.kpis.lostDeals}`} color="#ef4444" icon={<IconLost />} />
-        <Kpi label="متوسط الإغلاق" value={data.kpis.avgCycleDays != null ? `${data.kpis.avgCycleDays} يوم` : "—"} color="#0ea5e9" icon={<IconClock />} />
+        <Kpi label="الليدات" value={String(data.kpis.totalLeads)} sub={`نظيف ${data.kpis.cleanLeads} · جانك ${data.kpis.junkLeads}`} color="var(--brand-teal-700)" icon={<IconLead />} />
+        <Kpi label="صفقات نشطة" value={String(data.kpis.activeDeals)} sub={`${data.kpis.totalActivities} نشاط`} color="var(--brand-indigo-500)" icon={<IconDeal />} />
+        <Kpi label="قيمة Pipeline" value={`SAR ${sar(data.kpis.pipelineValueSAR)}`} sub={`مربوح SAR ${sar(data.kpis.wonValueSAR)}`} color="var(--brand-amber-500)" icon={<IconMoney />} />
+        <Kpi label="نسبة الفوز" value={`${data.kpis.winRatePct}%`} sub={`${data.kpis.wonDeals} مربوحة`} color="var(--brand-green-500)" icon={<IconWin />} />
+        <Kpi label="مخسورة" value={String(data.kpis.lostDeals)} sub={`من أصل ${data.kpis.wonDeals + data.kpis.lostDeals}`} color="var(--brand-red-500)" icon={<IconLost />} />
+        <Kpi label="متوسط الإغلاق" value={data.kpis.avgCycleDays != null ? `${data.kpis.avgCycleDays} يوم` : "—"} color="var(--content-accent)" icon={<IconClock />} />
       </div>
 
       {/* ── Trend ─────────────────────────────────────────────────── */}
       <div className={`${CARD} p-6`}>
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="text-[16px] font-bold text-[#1e1b4b]">اتجاه قيمة الـ Pipeline</h3>
-            <p dir="auto" className="t-caption text-[#94a3b8]">مرّر فوق أي يوم لعرض تفاصيل: القيمة · المربوح · المخسور · الجديد</p>
+            <h3 className="t-body-lg font-bold text-[var(--content-primary)]">اتجاه قيمة الـ Pipeline</h3>
+            <p dir="auto" className="t-caption text-[var(--content-tertiary)]">مرّر فوق أي يوم لعرض تفاصيل: القيمة · المربوح · المخسور · الجديد</p>
           </div>
           <div className="hidden gap-4 sm:flex">
-            <span className="flex items-center gap-1.5 t-micro text-[#475569]"><span className="h-2 w-2 rounded-full bg-primary" /> Pipeline</span>
+            <span className="flex items-center gap-1.5 t-micro text-[var(--content-secondary)]"><span className="h-2 w-2 rounded-full bg-primary" /> Pipeline</span>
           </div>
         </div>
         <TrendChart trend={data.trend} />
@@ -747,22 +538,22 @@ export default function InsightsTab() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <div className={`${CARD} p-6`}>
           <div className="mb-4">
-            <h3 className="t-body font-bold text-[#1e1b4b]">قمع المراحل</h3>
-            <p className="t-caption text-[#94a3b8]">الصفقات النشطة حسب المرحلة</p>
+            <h3 className="t-body font-bold text-[var(--content-primary)]">قمع المراحل</h3>
+            <p className="t-caption text-[var(--content-tertiary)]">الصفقات النشطة حسب المرحلة</p>
           </div>
           <BarBreakdown rows={data.funnel} colorFor={funnelColor} />
         </div>
         <div className={`${CARD} p-6`}>
           <div className="mb-4">
-            <h3 className="t-body font-bold text-[#1e1b4b]">مصادر الليدات</h3>
-            <p className="t-caption text-[#94a3b8]">توزيع نسبي بالفترة</p>
+            <h3 className="t-body font-bold text-[var(--content-primary)]">مصادر الليدات</h3>
+            <p className="t-caption text-[var(--content-tertiary)]">توزيع نسبي بالفترة</p>
           </div>
           <Donut rows={data.sources.map((s) => ({ label: s.label, count: s.count }))} />
         </div>
         <div className={`${CARD} p-6`}>
           <div className="mb-4">
-            <h3 className="t-body font-bold text-[#1e1b4b]">أسباب الخسارة</h3>
-            <p className="t-caption text-[#94a3b8]">مرتبة بالقيمة المخسورة</p>
+            <h3 className="t-body font-bold text-[var(--content-primary)]">أسباب الخسارة</h3>
+            <p className="t-caption text-[var(--content-tertiary)]">مرتبة بالقيمة المخسورة</p>
           </div>
           <BarBreakdown rows={data.lostReasons} colorFor={funnelColor} valueMode="value" />
         </div>
@@ -772,11 +563,10 @@ export default function InsightsTab() {
       <div className={`${CARD} p-6`}>
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="t-body font-bold text-[#1e1b4b]">جودة المصادر تفصيلياً</h3>
-            <p className="t-caption text-[#94a3b8]">نسبة الليدات النظيفة لكل مصدر</p>
+            <h3 className="t-body font-bold text-[var(--content-primary)]">جودة المصادر تفصيلياً</h3>
+            <p className="t-caption text-[var(--content-tertiary)]">نسبة الليدات النظيفة لكل مصدر</p>
           </div>
-          <Link href="/dashboard/leads" className="rounded-full border border-gray-100 px-3 py-1 t-caption font-semibold text-[#475569] transition hover:border-primary hover:text-primary">
-            كل الليدات →
+          <Link href="/dashboard/leads" className="rounded-full border border-[var(--border-subtle)] px-3 py-1 t-caption font-semibold text-[var(--content-secondary)] transition hover:border-primary hover:text-primary">كل الليدات →
           </Link>
         </div>
         <SourcesTable rows={data.sources} />
@@ -787,26 +577,24 @@ export default function InsightsTab() {
         <div className={`${CARD} p-6`}>
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h3 className="t-body font-bold text-[#1e1b4b]">أعلى الصفقات النشطة</h3>
-              <p className="t-caption text-[#94a3b8]">مرتبة بالقيمة المتوقعة</p>
+              <h3 className="t-body font-bold text-[var(--content-primary)]">أعلى الصفقات النشطة</h3>
+              <p className="t-caption text-[var(--content-tertiary)]">مرتبة بالقيمة المتوقعة</p>
             </div>
-            <Link href="/dashboard/deals" className="rounded-full border border-gray-100 px-3 py-1 t-caption font-semibold text-[#475569] transition hover:border-primary hover:text-primary">
-              كل الصفقات →
+            <Link href="/dashboard/deals" className="rounded-full border border-[var(--border-subtle)] px-3 py-1 t-caption font-semibold text-[var(--content-secondary)] transition hover:border-primary hover:text-primary">كل الصفقات →
             </Link>
           </div>
           <TopDealsTable rows={data.topActiveDeals} />
         </div>
         <div className={`${CARD} p-6`}>
           <div className="mb-4">
-            <h3 className="t-body font-bold text-[#1e1b4b]">آخر الصفقات المخسورة</h3>
-            <p className="t-caption text-[#94a3b8]">اضغط أي صفقة لفتح تقرير التحقيق</p>
+            <h3 className="t-body font-bold text-[var(--content-primary)]">آخر الصفقات المخسورة</h3>
+            <p className="t-caption text-[var(--content-tertiary)]">اضغط أي صفقة لفتح تقرير التحقيق</p>
           </div>
           <LostDealsTable rows={data.recentLostDeals} />
         </div>
       </div>
 
       {/* ── Embedded AI ──────────────────────────────────────────── */}
-      <InsightsChat data={data} />
     </div>
   );
 }

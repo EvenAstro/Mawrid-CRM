@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchLeadScoreModel, scoreWithModel, type LeadScoreModel, type LeadScoreResult } from "@/lib/leadScore/computeLeadScore";
 import Skeleton from "@/components/ui/Skeleton";
+import { CheckIcon, SparkIcon } from "@/components/icons";
 
 function Toggle({
   id,
@@ -41,10 +42,10 @@ function ToggleRow({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-[var(--radius-md)] border border-gray-100 bg-gray-25 p-3">
+    <div className="flex items-center justify-between gap-4 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-page)] p-3">
       <div>
-        <p className="t-body font-semibold text-[#475569]">{title}</p>
-        <p className="t-body-sm text-[#94a3b8]">{sub}</p>
+        <p className="t-body font-semibold text-[var(--content-secondary)]">{title}</p>
+        <p className="t-body-sm text-[var(--content-tertiary)]">{sub}</p>
       </div>
       <Toggle id={id} checked={checked} onChange={onChange} />
     </div>
@@ -84,16 +85,14 @@ export default function LeadScoringPage() {
   return (
     <>
       {/* Header banner */}
-      <div className="mb-6 flex flex-col gap-4 rounded-[var(--radius-lg)] bg-[#141c2e] p-8 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 flex flex-col gap-4 rounded-[var(--radius-lg)] bg-[var(--surface-inverse)] p-[var(--space-card-pad)] sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <span className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-lg)] bg-white/10 text-2xl text-[#7ee7cd]">
-            ✦
+          <span className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-lg)] bg-white/10 text-2xl text-[var(--brand-teal-300)]">
+            <SparkIcon className="h-4 w-4" />
           </span>
           <div>
             <h1 dir="auto" className="text-2xl font-bold text-white">تقييم العملاء</h1>
-            <p dir="auto" className="t-body text-white/60">
-              نسبة محسوبة من صفقاتكم الحقيقية — مو جدول ثابت
-            </p>
+            <p dir="auto" className="t-body text-white/60">نسبة محسوبة من صفقاتكم الحقيقية — مو جدول ثابت</p>
           </div>
         </div>
         <div className="flex gap-3">
@@ -111,11 +110,9 @@ export default function LeadScoringPage() {
       </div>
 
       {/* Form card */}
-      <div className="mx-auto max-w-[580px] rounded-[var(--radius-lg)] border border-gray-100 bg-[var(--surface-raised)] p-8 shadow-sm">
+      <div className="mx-auto max-w-[580px] rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-pad)] shadow-sm">
         <h2 dir="auto" className="text-lg font-bold text-ink">بيانات الليد</h2>
-        <p dir="auto" className="mb-6 t-body text-[#94a3b8]">
-          عبّي وش تعرفه عن هالليد — النسب مبنية على {model?.totalLeads ?? 0} ليد فعلي عندكم
-        </p>
+        <p dir="auto" className="mb-6 t-body text-[var(--content-tertiary)]">عبّي وش تعرفه عن هالليد — النسب مبنية على {model?.totalLeads ?? 0} ليد فعلي عندكم</p>
 
         {loadingModel ? (
           <div className="flex flex-col gap-5">
@@ -128,13 +125,11 @@ export default function LeadScoringPage() {
           <div className="flex flex-col gap-5">
             {/* Source */}
             <div>
-              <label dir="auto" className="mb-1.5 block t-body font-semibold text-[#475569]">
-                مصدر الليد 📍
-              </label>
+              <label dir="auto" className="mb-1.5 block t-body font-semibold text-[var(--content-secondary)]">مصدر الليد</label>
               <select
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
-                className="h-12 w-full rounded-[var(--radius-md)] border border-gray-100 bg-[var(--surface-raised)] px-4 t-body text-[#475569] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/10"
+                className="h-12 w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4 t-body text-[var(--content-secondary)] focus:border-[var(--brand-teal-700)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal-700)]/10"
               >
                 {sources.map((s) => {
                   const n = model?.bySource.get(s)?.total ?? 0;
@@ -149,7 +144,7 @@ export default function LeadScoringPage() {
 
             <ToggleRow
               id="ls-campaign"
-              title="جاء من حملة إعلانية؟ 💰"
+              title="جاء من حملة إعلانية؟"
               sub="مرتبط بحملة تتبّع (campaign_id) عند الوصول"
               checked={hasCampaign}
               onChange={setHasCampaign}
@@ -157,7 +152,7 @@ export default function LeadScoringPage() {
 
             <ToggleRow
               id="ls-matched"
-              title="مطابق لمنشأة موجودة؟ 🏢"
+              title="مطابق لمنشأة موجودة؟"
               sub="النظام طابقه تلقائياً بسجل منشأة معروف"
               checked={matched}
               onChange={setMatched}
@@ -166,9 +161,8 @@ export default function LeadScoringPage() {
             <button
               onClick={analyze}
               disabled={!source}
-              className="mt-2 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#1a5c4f] text-base font-bold text-white transition hover:bg-[#15503f] disabled:opacity-50"
-            >
-              حلّل الليد ←
+              className="mt-2 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[var(--brand-teal-700)] text-base font-bold text-white transition hover:bg-[var(--brand-teal-800)] disabled:opacity-50"
+            >حلّل الليد ←
             </button>
           </div>
         )}
@@ -177,25 +171,23 @@ export default function LeadScoringPage() {
       {/* Result card */}
       {result && (
         <div
-          className="ls-result mx-auto mt-6 max-w-[580px] rounded-[var(--radius-lg)] p-8 text-white shadow-lg"
-          style={{ background: result.pJunk >= 0.5 ? "#b91c1c" : "#1a5c4f" }}
+          className="ls-result mx-auto mt-6 max-w-[580px] rounded-[var(--radius-lg)] p-[var(--space-card-pad)] text-white e-2"
+          style={{ background: result.pJunk >= 0.5 ? "var(--status-danger-fg)" : "var(--brand-teal-700)" }}
         >
           <div className="flex flex-col items-center text-center">
-            <span className="text-[5rem] leading-none">{result.pJunk >= 0.5 ? "🚫" : "✅"}</span>
+            <span className="text-[5rem] leading-none">{result.pJunk >= 0.5 ? "" : ""}</span>
             <h3 dir="auto" className="mt-2 text-2xl font-bold">
               {result.pJunk >= 0.5 ? "غالباً مو مناسب" : "ليد واعد وحقيقي"}
             </h3>
             <span
               className={`mt-3 rounded-full border px-4 py-1 t-body-sm font-semibold ${
-                result.pJunk >= 0.5 ? "border-red-300 text-red-100" : "border-green-300 text-green-100"
+                result.pJunk >= 0.5 ? "border-[var(--status-danger-border)] text-[var(--status-danger-on-inverse)]" : "border-[var(--status-success-border)] text-[var(--status-success-on-inverse)]"
               }`}
             >
               {result.pJunk >= 0.5 ? "جانك" : "نظيف"}
             </span>
             {!result.confident && (
-              <span className="mt-2 t-caption text-white/70">
-                ⚠️ بيانات المصدر لسا قليلة — الرقم تقريبي بناءً على المتوسط العام
-              </span>
+              <span className="mt-2 t-caption text-white/70">بيانات المصدر لسا قليلة — الرقم تقريبي بناءً على المتوسط العام</span>
             )}
           </div>
 
@@ -209,7 +201,7 @@ export default function LeadScoringPage() {
                 className="h-full rounded-full"
                 style={{
                   width: `${(result.pJunk >= 0.5 ? result.pJunk : 1 - result.pJunk) * 100}%`,
-                  background: result.pJunk >= 0.5 ? "#fca5a5" : "#6ee7b7",
+                  background: result.pJunk >= 0.5 ? "var(--status-danger-on-inverse)" : "var(--status-success-on-inverse)",
                 }}
               />
             </div>
@@ -219,8 +211,8 @@ export default function LeadScoringPage() {
 
           <div className="mt-2 flex flex-col gap-2">
             {result.reasons.map((r, i) => (
-              <div key={i} dir="auto" className="flex items-start gap-2 text-[14px] text-white/90">
-                <span className="mt-0.5">✓</span>
+              <div key={i} dir="auto" className="flex items-start gap-2 t-body-sm text-white/90">
+                <span className="mt-0.5"><CheckIcon className="h-4 w-4" /></span>
                 <span>{r}</span>
               </div>
             ))}
@@ -228,15 +220,13 @@ export default function LeadScoringPage() {
 
           <div dir="auto" className="mt-5 rounded-[var(--radius-md)] bg-black/20 p-4 t-body text-white/90">
             {result.pJunk >= 0.5 ? (
-              <>⚠️ ما ننصح نصرف وقت فريق المبيعات على هالليد.</>
+              <>ما ننصح نصرف وقت فريق المبيعات على هالليد.</>
             ) : (
-              <>🚀 هالليد يستاهل متابعة فورية — سنّده لمندوب وابدأ التواصل بأسرع وقت.</>
+              <>هالليد يستاهل متابعة فورية — سنّده لمندوب وابدأ التواصل بأسرع وقت.</>
             )}
           </div>
 
-          <button onClick={reset} className="mt-5 w-full rounded-full border border-white/30 py-3 t-body font-semibold text-white transition hover:bg-white/10">
-            حلّل ليد ثاني
-          </button>
+          <button onClick={reset} className="mt-5 w-full rounded-full border border-white/30 py-3 t-body font-semibold text-white transition hover:bg-white/10">حلّل ليد ثاني</button>
         </div>
       )}
     </>

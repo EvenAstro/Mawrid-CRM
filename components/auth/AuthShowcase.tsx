@@ -64,7 +64,7 @@ export default function AuthShowcase({
   return (
     <div
       ref={panelRef}
-      className="relative hidden w-5/12 flex-col justify-between overflow-hidden bg-gradient-to-br from-[#0d1422] via-[#141c2e] to-[#163f36] p-12 lg:flex"
+      className="relative hidden w-5/12 flex-col justify-between overflow-hidden bg-gradient-to-br from-[var(--surface-inverse-deep)] via-[var(--surface-inverse)] to-[var(--brand-teal-900)] p-12 lg:flex"
     >
       {/* Drifting dot-grid mesh */}
       <div
@@ -77,22 +77,22 @@ export default function AuthShowcase({
 
       {/* Parallax blob layer */}
       <div ref={blobsRef} className="pointer-events-none absolute inset-0 will-change-transform">
-        <div className="auth-blob-a absolute -right-24 -top-24 h-80 w-80 rounded-full bg-[#3a9080]/30 blur-3xl" />
-        <div className="auth-blob-b absolute -bottom-28 -left-16 h-96 w-96 rounded-full bg-[#7ee7cd]/15 blur-3xl" />
-        <div className="auth-blob-c absolute left-1/3 top-1/3 h-60 w-60 rounded-full bg-[#4f6fff]/10 blur-3xl" />
+        <div className="auth-blob-a absolute -right-24 -top-24 h-80 w-80 rounded-full bg-[var(--brand-teal-400)]/30 blur-3xl" />
+        <div className="auth-blob-b absolute -bottom-28 -left-16 h-96 w-96 rounded-full bg-[var(--brand-teal-300)]/15 blur-3xl" />
+        <div className="auth-blob-c absolute left-1/3 top-1/3 h-60 w-60 rounded-full bg-[var(--content-accent)]/10 blur-3xl" />
       </div>
 
       {/* Logo */}
       <div className="auth-in relative flex items-center gap-2.5" style={{ animationDelay: "40ms" }}>
         <svg viewBox="0 0 36 36" className="h-9 w-9 flex-none" fill="none">
-          <rect width="36" height="36" rx="9" fill="#3a9080" />
+          <rect width="36" height="36" rx="9" fill="var(--brand-teal-400)" />
           <path d="M18 5C11.37 5 6 10.37 6 17c0 6.63 5.37 12 12 12h7v-7h-7a5 5 0 1 1 0-10c2.76 0 5 2.24 5 5v12h7V17C30 10.37 24.63 5 18 5z" fill="white" />
         </svg>
         <span className="text-lg font-bold text-white">مَوْرد</span>
       </div>
 
       <div className="relative">
-        <p className="auth-in mb-3 t-body-sm font-bold uppercase tracking-[0.18em] text-[#7ee7cd]" style={{ animationDelay: "110ms" }}>
+        <p className="auth-in mb-3 t-body-sm font-bold uppercase tracking-[0.18em] text-[var(--brand-teal-300)]" style={{ animationDelay: "110ms" }}>
           {eyebrow}
         </p>
         <h2 className="auth-in mb-3 text-5xl font-black leading-tight tracking-tight text-white" style={{ animationDelay: "170ms" }}>
@@ -110,14 +110,14 @@ export default function AuthShowcase({
               className="auth-in flex items-center gap-3 rounded-[var(--radius-md)] border border-white/10 bg-white/[0.07] px-3.5 py-2.5 backdrop-blur-sm"
               style={{ animationDelay: `${310 + i * 100}ms` }}
             >
-              <span className="flex h-8 w-8 flex-none items-center justify-center rounded-[var(--radius-sm)] bg-[#7ee7cd]/15 text-[#7ee7cd]">
+              <span className="flex h-8 w-8 flex-none items-center justify-center rounded-[var(--radius-sm)] bg-[var(--brand-teal-300)]/15 text-[var(--brand-teal-300)]">
                 {m.icon}
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate t-body-sm font-bold text-white">{m.title}</span>
                 <span className="block truncate t-micro text-white/45">{m.sub}</span>
               </span>
-              <span className="t-caption font-black tabular-nums text-[#7ee7cd]">{m.value}</span>
+              <span className="t-caption font-black tabular-nums text-[var(--brand-teal-300)]">{m.value}</span>
             </div>
           ))}
         </div>

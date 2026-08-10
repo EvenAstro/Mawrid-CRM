@@ -7,6 +7,7 @@ import Skeleton from "@/components/ui/Skeleton";
 import { fetchDealsForLeaderboard } from "@/lib/models/deals";
 import { fetchCompletedTasksSince } from "@/lib/models/tasks";
 import { fetchOutboundActivitiesSince } from "@/lib/models/activities";
+import { TrophyIcon, CheckIcon, PhoneIcon, RankMark } from "@/components/icons";
 
 interface RepStats {
   userId: string;
@@ -25,7 +26,6 @@ function monthStart(): string {
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString();
 }
 
-const MEDALS = ["🥇", "🥈", "🥉"];
 const CARD = "rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] e-1";
 
 export default function LeaderboardTab() {
@@ -109,48 +109,51 @@ export default function LeaderboardTab() {
   if (error) {
     return (
       <div className={`${CARD} py-16 text-center`}>
-        <p className="text-[14px] text-muted">تعذّر تحميل لوحة الأداء.</p>
+        <p className="t-body-sm text-muted">تعذّر تحميل لوحة الأداء.</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-5">
-      <section className="relative overflow-hidden rounded-[var(--radius-lg)] bg-[#141c2e] p-8 text-white">
+      <section className="relative overflow-hidden rounded-[var(--radius-lg)] bg-[var(--surface-inverse)] p-[var(--space-card-pad)] text-white">
         <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#7ee7cd]" />
-          <span className="t-micro font-bold uppercase tracking-wider text-[#7ee7cd]">أداء الفريق</span>
+          <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-teal-300)]" />
+          <span className="t-micro font-bold uppercase tracking-wider text-[var(--brand-teal-300)]">أداء الفريق</span>
         </div>
-        <h1 dir="auto" className="text-[26px] font-extrabold leading-tight">لوحة أداء المندوبين — هذا الشهر</h1>
-        <p dir="auto" className="mt-2 max-w-xl text-[14px] leading-relaxed text-white/70">
-          ترتيب مبني على قيمة الصفقات المربوحة، عدد الصفقات المغلقة، المهام المنجزة، والتواصل الصادر — كله من بيانات هذا الشهر الفعلية.
+        <h1 dir="auto" className="t-title-1 font-extrabold leading-tight">لوحة أداء المندوبين — هذا الشهر</h1>
+        <p dir="auto" className="mt-2 max-w-xl t-body-sm leading-relaxed text-white/70">ترتيب مبني على قيمة الصفقات المربوحة، عدد الصفقات المغلقة، المهام المنجزة، والتواصل الصادر — كله من بيانات هذا الشهر الفعلية.
         </p>
       </section>
 
       {rows.length === 0 ? (
         <div className={`${CARD} py-16 text-center`}>
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-mint text-xl">🏆</div>
-          <p dir="auto" className="text-[14px] text-muted">ما فيه بيانات كافية لبناء لوحة الأداء بعد.</p>
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-mint text-xl"><TrophyIcon className="h-4 w-4" /></div>
+          <p dir="auto" className="t-body-sm text-muted">ما فيه بيانات كافية لبناء لوحة الأداء بعد.</p>
         </div>
       ) : (
-        <div className={`${CARD} flex flex-col divide-y divide-[#eef4f1] overflow-hidden`}>
+        <div className={`${CARD} flex flex-col divide-y divide-[var(--border-subtle)] overflow-hidden`}>
           {rows.map((r, i) => (
             <div key={r.userId} className="flex items-center gap-4 p-5">
-              <span className="flex h-9 w-9 flex-none items-center justify-center text-[20px]">
-                {i < 3 ? MEDALS[i] : <span className="t-body-sm font-bold text-muted">{i + 1}</span>}
-              </span>
+              {/* Rank is data, so it is a tabular numeral in a ring. The three
+                  medal emoji it replaces rendered differently per OS and were
+                  announced as "1st place medal" by a screen reader. */}
+              <RankMark rank={i + 1} className="h-9 w-9" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <p dir="auto" className="truncate text-[14px] font-bold text-ink">{r.name}</p>
-                  <span dir="ltr" className="flex-none t-body-sm font-bold text-[#1a5c4f]">SAR {money(r.wonValueSAR)}</span>
+                  <p dir="auto" className="truncate t-body-sm font-bold text-ink">{r.name}</p>
+                  <span dir="ltr" className="flex-none t-body-sm font-bold text-[var(--brand-teal-700)]">SAR {money(r.wonValueSAR)}</span>
                 </div>
-                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-                  <div className="h-full rounded-full bg-[#1a5c4f]" style={{ width: `${(r.score / maxScore) * 100}%` }} />
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[var(--surface-sunken)]">
+                  <div
+                    className="h-full rounded-full bg-[var(--content-accent)] transition-[width] duration-[var(--motion-slow)] ease-[var(--ease-standard)]"
+                    style={{ width: `${(r.score / maxScore) * 100}%` }}
+                  />
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 t-caption text-muted">
-                  <span>🏆 {r.wonDeals} صفقة مربوحة</span>
-                  <span>✅ {r.tasksCompleted} مهمة منجزة</span>
-                  <span>📞 {r.outboundActivities} تواصل صادر</span>
+                  <span className="flex items-center gap-1"><TrophyIcon className="h-3.5 w-3.5" />{r.wonDeals} صفقة مربوحة</span>
+                  <span className="flex items-center gap-1"><CheckIcon className="h-3.5 w-3.5" />{r.tasksCompleted} مهمة منجزة</span>
+                  <span className="flex items-center gap-1"><PhoneIcon className="h-3.5 w-3.5" />{r.outboundActivities} تواصل صادر</span>
                 </div>
               </div>
             </div>

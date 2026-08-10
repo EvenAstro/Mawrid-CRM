@@ -7,6 +7,7 @@ import { BellIcon } from "@/components/navIcons";
 import { fetchNotifOverdueTasks, fetchNotifTodayTasks } from "@/lib/models/tasks";
 import { fetchNotifStuckDeals } from "@/lib/models/deals";
 import { fetchNotifNewLeads } from "@/lib/models/leads";
+import { AlertIcon, ClipboardIcon, DotIcon } from "@/components/icons";
 
 interface Notification {
   id: string;
@@ -15,7 +16,7 @@ interface Notification {
   subtitle: string;
   href: string;
   time: string;
-  icon: string;
+  icon: React.ReactNode;
 }
 
 const STORAGE_KEY = "mawrid_notif_seen";
@@ -88,7 +89,7 @@ export default function NotificationsDropdown() {
         subtitle: `متأخرة ${days} ${days === 1 ? "يوم" : "أيام"}`,
         href: "/dashboard/tasks",
         time: t.due_at!,
-        icon: "⚠️",
+        icon: <AlertIcon className="h-4 w-4" />,
       });
     });
 
@@ -103,7 +104,7 @@ export default function NotificationsDropdown() {
         subtitle: `مستحقة اليوم الساعة ${timeStr}`,
         href: "/dashboard/tasks",
         time: t.due_at!,
-        icon: "📋",
+        icon: <ClipboardIcon className="h-4 w-4" />,
       });
     });
 
@@ -116,7 +117,7 @@ export default function NotificationsDropdown() {
         subtitle: `لم تُحدَّث منذ ${days} يوم`,
         href: "/dashboard/deals",
         time: d.updated_at,
-        icon: "🔴",
+        icon: <DotIcon className="h-4 w-4" />,
       });
     });
 
@@ -128,7 +129,7 @@ export default function NotificationsDropdown() {
         subtitle: "تم إضافته اليوم",
         href: "/dashboard/leads",
         time: l.created_at,
-        icon: "🟢",
+        icon: <DotIcon className="h-4 w-4" />,
       });
     });
 
@@ -175,11 +176,11 @@ export default function NotificationsDropdown() {
       <button
         onClick={handleOpen}
         aria-label="الإشعارات"
-        className="relative rounded-[var(--radius-sm)] p-2 text-[#94a3b8] transition-colors hover:bg-[#f0faf8] hover:text-[#3a9080]"
+        className="relative rounded-[var(--radius-sm)] p-2 text-[var(--content-tertiary)] transition-colors hover:bg-[var(--surface-accent-subtle)] hover:text-[var(--brand-teal-400)]"
       >
         <BellIcon className="h-[18px] w-[18px]" />
         {unreadCount > 0 && (
-          <span className="absolute right-1 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 t-micro font-bold text-white ring-2 ring-white">
+          <span className="absolute right-1 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--brand-red-500)] px-1 t-micro font-bold text-white ring-2 ring-white">
             {unreadCount > 9 ? "٩+" : unreadCount}
           </span>
         )}
@@ -188,25 +189,22 @@ export default function NotificationsDropdown() {
       {open && (
         <div className="absolute left-0 top-full z-50 mt-2 w-[360px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-xl">
           <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3">
-            <h3 className="text-[14px] font-bold text-[#1e1b4b]">الإشعارات</h3>
+            <h3 className="t-body-sm font-bold text-[var(--content-primary)]">الإشعارات</h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="t-caption font-medium text-[#3a9080] hover:text-[#1a5c4f]"
-              >
-                تحديد الكل كمقروء
-              </button>
+                className="t-caption font-medium text-[var(--brand-teal-400)] hover:text-[var(--brand-teal-700)]"
+              >تحديد الكل كمقروء</button>
             )}
           </div>
 
           <div className="max-h-[400px] overflow-y-auto">
             {loading && items.length === 0 ? (
-              <div className="flex items-center justify-center py-8 t-body-sm text-[#94a3b8]">
-                جاري التحميل...
+              <div className="flex items-center justify-center py-8 t-body-sm text-[var(--content-tertiary)]">جاري التحميل...
               </div>
             ) : items.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-8 text-[#94a3b8]">
-                <span className="text-2xl">🔔</span>
+              <div className="flex flex-col items-center gap-2 py-8 text-[var(--content-tertiary)]">
+                <span className="text-2xl"><BellIcon className="h-4 w-4" /></span>
                 <span className="t-body-sm">لا توجد إشعارات</span>
               </div>
             ) : (
@@ -216,19 +214,19 @@ export default function NotificationsDropdown() {
                   <button
                     key={n.id}
                     onClick={() => handleItemClick(n)}
-                    className={`flex w-full items-start gap-3 px-4 py-3 text-right transition-colors hover:bg-[#f8faf9] ${
-                      !isRead ? "bg-[#f0faf8]" : ""
+                    className={`flex w-full items-start gap-3 px-4 py-3 text-right transition-colors hover:bg-[var(--surface-sunken)] ${
+                      !isRead ? "bg-[var(--surface-accent-subtle)]" : ""
                     }`}
                   >
                     <span className="mt-0.5 text-base">{n.icon}</span>
                     <div className="flex-1 min-w-0">
-                      <p className={`t-body-sm leading-snug ${!isRead ? "font-semibold text-[#1e1b4b]" : "text-[#475569]"}`}>
+                      <p className={`t-body-sm leading-snug ${!isRead ? "font-semibold text-[var(--content-primary)]" : "text-[var(--content-secondary)]"}`}>
                         {n.title}
                       </p>
-                      <p className="t-caption text-[#94a3b8] mt-0.5">{n.subtitle}</p>
+                      <p className="t-caption text-[var(--content-tertiary)] mt-0.5">{n.subtitle}</p>
                     </div>
                     {!isRead && (
-                      <span className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-[#3a9080]" />
+                      <span className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-[var(--brand-teal-400)]" />
                     )}
                   </button>
                 );

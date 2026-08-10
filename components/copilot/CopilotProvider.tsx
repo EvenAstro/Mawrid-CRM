@@ -182,7 +182,7 @@ export default function CopilotProvider({ children }: { children: React.ReactNod
     const s = summaryRef.current;
     if (!greeted && s && (s.stuckCount > 0 || s.upcomingCount > 0) && messagesRef.current.length === 0) {
       localStorage.setItem(todayKey(), "1");
-      const parts: string[] = ["صباح الخير! 🌅"];
+      const parts: string[] = ["صباح الخير! "];
       if (s.stuckCount > 0) parts.push(`عندك **${s.stuckCount}** صفقات ما تواصلت معها من أكثر من 7 أيام.`);
       if (s.upcomingCount > 0) parts.push(`ولديك **${s.upcomingCount}** مهام قادمة.`);
       parts.push("تبي أبدأ بها؟");

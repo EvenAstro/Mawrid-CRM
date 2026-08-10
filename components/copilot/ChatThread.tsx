@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCopilot, type ChatMessage } from "./CopilotProvider";
 import RichText from "./RichText";
+import { SparkIcon } from "@/components/icons";
 
 function timeLabel(at: number): string {
   return new Date(at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
@@ -40,27 +41,23 @@ function MessageActions({ msg }: { msg: ChatMessage }) {
       {isDraft && (
         <button
           onClick={copy}
-          className="rounded-full bg-teal-700 px-3 py-1 t-caption font-semibold text-white transition hover:bg-teal-800"
+          className="rounded-full bg-[var(--status-success-fg)] px-3 py-1 t-caption font-semibold text-white transition hover:bg-[var(--brand-teal-800)]"
         >
-          {copied ? "تم النسخ ✓" : "نسخ الرسالة 📋"}
+          {copied ? "تم النسخ" : "نسخ الرسالة"}
         </button>
       )}
       {isStuck && (
         <button
           onClick={() => router.push("/dashboard/deals")}
-          className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 t-caption font-semibold text-teal-700 transition hover:bg-teal-100"
-        >
-          عرض الصفقات
-        </button>
+          className="rounded-full border border-[var(--status-success-border)] bg-[var(--status-success-bg)] px-3 py-1 t-caption font-semibold text-[var(--status-success-fg)] transition hover:bg-[var(--status-success-bg)]"
+        >عرض الصفقات</button>
       )}
       {isAnalysis && (
         <button
           disabled
           title="قريباً"
-          className="cursor-not-allowed rounded-full border border-gray-200 px-3 py-1 t-caption font-semibold text-gray-300"
-        >
-          تصدير كتقرير
-        </button>
+          className="cursor-not-allowed rounded-full border border-[var(--border-default)] px-3 py-1 t-caption font-semibold text-[var(--content-disabled)]"
+        >تصدير كتقرير</button>
       )}
     </div>
   );
@@ -73,7 +70,7 @@ function TypingDots() {
         <span
           key={i}
           className="rounded-full"
-          style={{ height: 8, width: 8, background: "#0D9488", animation: `copilotBounce 1.2s ${i * 0.2}s infinite` }}
+          style={{ height: 8, width: 8, background: "var(--brand-teal-600)", animation: `copilotBounce 1.2s ${i * 0.2}s infinite` }}
         />
       ))}
       <style>{`@keyframes copilotBounce { 0%,80%,100% { transform: translateY(0); opacity:.35 } 40% { transform: translateY(-5px); opacity:1 } }`}</style>
@@ -92,13 +89,11 @@ export default function ChatThread({ emptyHint }: { emptyHint?: React.ReactNode 
   if (messages.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-[var(--radius-lg)] bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] text-2xl shadow-lg shadow-teal-900/20">
-          ✨
+        <div className="flex h-14 w-14 items-center justify-center rounded-[var(--radius-lg)] bg-[linear-gradient(135deg,#1a5c4f_0%,#2d8570_100%)] text-2xl shadow-lg e-accent">
+          <SparkIcon className="h-4 w-4" />
         </div>
-        <p className="mt-4 t-body font-semibold text-gray-900" dir="auto">
-          مرحباً! أنا مساعد مورد
-        </p>
-        <p className="mt-1 t-body-sm text-gray-400" dir="auto">
+        <p className="mt-4 t-body font-semibold text-[var(--content-primary)]" dir="auto">مرحباً! أنا مساعد مورد</p>
+        <p className="mt-1 t-body-sm text-[var(--content-tertiary)]" dir="auto">
           {emptyHint ?? "اسألني أي شيء عن صفقاتك وعملائك"}
         </p>
       </div>
@@ -119,18 +114,18 @@ export default function ChatThread({ emptyHint }: { emptyHint?: React.ReactNode 
                 style={
                   isUser
                     ? {
-                        background: "linear-gradient(135deg, #1A5C4F 0%, #2D8570 100%)",
+                        background: "linear-gradient(135deg, var(--brand-teal-700) 0%, var(--brand-teal-500) 100%)",
                         borderRadius: "16px 16px 4px 16px",
-                        color: "#fff",
+                        color: "var(--surface-raised)",
                         fontFamily: "Cairo, sans-serif",
                         fontWeight: 500,
                       }
                     : {
-                        background: "#fff",
-                        border: "1px solid #E8EFED",
+                        background: "var(--surface-raised)",
+                        border: "1px solid var(--border-subtle)",
                         borderRadius: "16px 16px 16px 4px",
                         boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                        color: "#1C2B26",
+                        color: "var(--brand-neutral-800)",
                         fontFamily: "Cairo, sans-serif",
                         lineHeight: 1.6,
                       }
@@ -147,7 +142,7 @@ export default function ChatThread({ emptyHint }: { emptyHint?: React.ReactNode 
                 )}
               </div>
               {!isUser && !showDots && m.content && <MessageActions msg={m} />}
-              <p className={`mt-1 t-micro text-gray-300 ${isUser ? "text-right" : "text-left"}`}>{timeLabel(m.at)}</p>
+              <p className={`mt-1 t-micro text-[var(--content-disabled)] ${isUser ? "text-right" : "text-left"}`}>{timeLabel(m.at)}</p>
             </div>
           </div>
         );

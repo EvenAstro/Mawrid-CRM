@@ -7,7 +7,7 @@ export default function Card({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`shadow-brand rounded-[var(--radius-lg)] border border-border-light bg-[var(--surface-raised)] p-6 ${className}`}
+      className={`shadow-brand rounded-[var(--radius-lg)] border border-border-light bg-[var(--surface-raised)] p-[var(--space-card-pad)] ${className}`}
       {...rest}
     >
       {children}

@@ -8,6 +8,7 @@ import Button from "@/components/ui/Button";
 import { fetchBriefingData, type BriefingData, type BriefingTask, type StuckDeal } from "@/lib/dailyBriefing";
 import CompleteTaskModal from "@/components/CompleteTaskModal";
 import { completeTask as completeTaskRow } from "@/lib/models/tasks";
+import { CloudSunIcon, MoonIcon, SunIcon, XIcon } from "@/components/icons";
 
 const BRIEFING_KEY = "mawrid_briefing_seen";
 const PANEL_KEY = "mawrid_briefing_panel_collapsed";
@@ -44,10 +45,10 @@ function greetingForHour(h: number): string {
   if (h < 12) return "أهلاً";
   return "مساء الخير";
 }
-function greetingEmoji(h: number): string {
-  if (h < 10) return "☀️";
-  if (h < 12) return "🌤";
-  return "🌙";
+function greetingGlyph(h: number): React.ReactNode {
+  if (h < 10) return <SunIcon className="h-4 w-4" />;
+  if (h < 12) return <CloudSunIcon className="h-4 w-4" />;
+  return <MoonIcon className="h-4 w-4" />;
 }
 
 /** One-line local summary of the day — no API call, pure data → text. */
@@ -120,13 +121,12 @@ function SuggestionPopover({ suggestion, onClose }: { suggestion: Suggestion; on
     >
       <div className="mb-1.5 flex items-center justify-between">
         <span className="flex items-center gap-1.5 t-micro font-bold text-primary">
-          <SparkleIcon className="h-3 w-3" /> اقتراح الذكاء الاصطناعي
-        </span>
-        <button onClick={onClose} aria-label="إغلاق" className="text-muted hover:text-ink-secondary">✕</button>
+          <SparkleIcon className="h-3 w-3" />اقتراح الذكاء الاصطناعي</span>
+        <button onClick={onClose} aria-label="إغلاق" className="text-muted hover:text-ink-secondary"><XIcon className="h-4 w-4" /></button>
       </div>
       {suggestion.status === "loading" && (
         <p className="flex items-center gap-1.5 py-1 t-caption text-muted">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gray-300" /> جارِ التفكير…
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--border-default)]" />جارِ التفكير…
         </p>
       )}
       {suggestion.status === "error" && <p className="py-1 t-caption text-danger">تعذّر جلب الاقتراح</p>}
@@ -333,7 +333,7 @@ export default function DailyBriefing() {
   const hasOverdue = data.overdueTasks.length > 0;
   // Priority queue: coldest deals surface first — that IS the prioritization.
   const priorityDeals = data.stuckDeals.slice(0, 5);
-  const statusColor = hasOverdue ? "#ef4444" : allClear ? "#10b981" : "#f59e0b";
+  const statusColor = hasOverdue ? "var(--brand-red-500)" : allClear ? "var(--brand-green-500)" : "var(--brand-amber-500)";
   const now = new Date();
   const summaryLine = daySummary(data.overdueTasks.length, data.stuckDeals.length, data.todayTasks.length);
 
@@ -345,12 +345,12 @@ export default function DailyBriefing() {
           style={{ animation: "briefingBackdropIn 0.2s ease-out" }}
         >
           <div
-            className="w-full max-w-[460px] rounded-[var(--radius-lg)] border border-border-light bg-[var(--surface-raised)] p-7 shadow-[0_20px_60px_rgba(0,0,0,0.15)]"
+            className="w-full max-w-[460px] rounded-[var(--radius-lg)] border border-border-light bg-[var(--surface-raised)] p-[var(--space-card-pad)] shadow-[0_20px_60px_rgba(0,0,0,0.15)]"
             style={{ animation: modalLeaving ? "briefingModalOut 0.4s ease-in forwards" : "briefingModalIn 0.3s ease-out" }}
           >
             <div className="flex items-center gap-3">
               <span className="flex h-11 w-11 flex-none items-center justify-center rounded-[var(--radius-md)] bg-mint text-lg">
-                {greetingEmoji(now.getHours())}
+                {greetingGlyph(now.getHours())}
               </span>
               <div className="min-w-0">
                 <p dir="auto" className="truncate t-title-3 font-extrabold text-ink">{greetingForHour(now.getHours())}، {firstName || "بك"}</p>
@@ -359,7 +359,7 @@ export default function DailyBriefing() {
             </div>
 
             <div className="mt-4 rounded-[var(--radius-md)] border border-border-light bg-mint/60 px-4 py-3">
-              <p dir="auto" className="text-[14px] font-semibold text-primary">{summaryLine}</p>
+              <p dir="auto" className="t-body-sm font-semibold text-primary">{summaryLine}</p>
             </div>
 
             {totalToday > 0 && (
@@ -370,14 +370,14 @@ export default function DailyBriefing() {
                     <div key={t.id} className="relative overflow-hidden rounded-[var(--radius-sm)] border border-border-light bg-[var(--surface-raised)] py-2.5 pl-3 pr-3">
                       <span className="absolute bottom-1.5 left-0 top-1.5 w-1 rounded-full bg-danger" />
                       <div className="flex items-center justify-between gap-2 pl-2">
-                        <span dir="auto" className="truncate text-[14px] font-medium text-ink">{t.title || "مهمة بدون عنوان"}</span>
+                        <span dir="auto" className="truncate t-body-sm font-medium text-ink">{t.title || "مهمة بدون عنوان"}</span>
                         <span className="flex-none t-caption font-semibold text-danger">متأخرة</span>
                       </div>
                     </div>
                   ))}
                   {data.todayTasks.map((t) => (
                     <div key={t.id} className="flex items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-border-light bg-[var(--surface-raised)] px-3 py-2.5">
-                      <span dir="auto" className="truncate text-[14px] font-medium text-ink">{t.title || "مهمة بدون عنوان"}</span>
+                      <span dir="auto" className="truncate t-body-sm font-medium text-ink">{t.title || "مهمة بدون عنوان"}</span>
                       <span className="flex-none font-mono t-body-sm text-muted">{timeAr(t.due_at)}</span>
                     </div>
                   ))}
@@ -387,14 +387,14 @@ export default function DailyBriefing() {
 
             {data.stuckDeals.length > 0 && (
               <div className="mt-4">
-                <SectionLabel icon={<TargetIcon className="h-3.5 w-3.5" />} tone="bg-amber-50 text-warning">صفقات تحتاج تواصل</SectionLabel>
+                <SectionLabel icon={<TargetIcon className="h-3.5 w-3.5" />} tone="bg-[var(--status-warning-bg)] text-warning">صفقات تحتاج تواصل</SectionLabel>
                 <div className="flex flex-col gap-1.5">
                   {data.stuckDeals.slice(0, 5).map((d) => (
                     <div key={d.id} className="relative overflow-hidden rounded-[var(--radius-sm)] border border-border-light bg-[var(--surface-raised)] py-2.5 pl-3 pr-3">
                       <span className="absolute bottom-1.5 left-0 top-1.5 w-1 rounded-full bg-warning" />
                       <div className="flex items-center justify-between gap-2 pl-2">
-                        <span dir="auto" className="truncate text-[14px] font-medium text-ink">{d.leadName || d.name || "صفقة"}</span>
-                        <span className="flex-none rounded-full bg-amber-50 px-2 py-0.5 t-micro font-bold text-warning">{d.daysSinceContact} يوم</span>
+                        <span dir="auto" className="truncate t-body-sm font-medium text-ink">{d.leadName || d.name || "صفقة"}</span>
+                        <span className="flex-none rounded-full bg-[var(--status-warning-bg)] px-2 py-0.5 t-micro font-bold text-warning">{d.daysSinceContact} يوم</span>
                       </div>
                     </div>
                   ))}
@@ -403,7 +403,7 @@ export default function DailyBriefing() {
             )}
 
             {totalToday === 0 && data.stuckDeals.length === 0 && (
-              <p className="py-6 text-center text-[14px] text-muted">لا يوجد ما يحتاج انتباهك الآن</p>
+              <p className="py-6 text-center t-body-sm text-muted">لا يوجد ما يحتاج انتباهك الآن</p>
             )}
 
             <Button onClick={dismiss} fullWidth className="mt-5">تم — ابدأ يومك</Button>
@@ -423,7 +423,7 @@ export default function DailyBriefing() {
         {/* Always-visible tab — the permanent, unmistakable "you have things to do" affordance. */}
         <button
           onClick={() => toggleCollapsed(!collapsed)}
-          className={`relative flex w-[52px] flex-none flex-col items-center gap-1.5 py-3.5 transition-colors ${collapsed ? "bg-mint" : "hover:bg-gray-25"}`}
+          className={`relative flex w-[52px] flex-none flex-col items-center gap-1.5 py-3.5 transition-colors ${collapsed ? "bg-mint" : "hover:bg-[var(--surface-page)]"}`}
           aria-label={collapsed ? "فتح المساعد اليومي" : "طي المساعد اليومي"}
           title="المساعد اليومي"
         >
@@ -445,10 +445,10 @@ export default function DailyBriefing() {
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden border-s border-border-light">
             {celebrate ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-2 px-5 text-center">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50 text-success">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--status-success-bg)] text-success">
                   <ChecklistIcon className="h-5 w-5" />
                 </span>
-                <p dir="auto" className="text-[14px] font-semibold text-ink">أنجزت كل شيء اليوم</p>
+                <p dir="auto" className="t-body-sm font-semibold text-ink">أنجزت كل شيء اليوم</p>
               </div>
             ) : (
               <>
@@ -457,13 +457,13 @@ export default function DailyBriefing() {
                     <span dir="auto" className="t-body-sm font-bold text-ink">المساعد اليومي</span>
                     <span className="h-1.5 w-1.5 flex-none rounded-full" style={{ background: statusColor }} />
                     {totalPending > 0 && (
-                      <span className="rounded-full bg-gray-50 px-1.5 py-0.5 t-micro font-bold text-ink-secondary">{totalPending}</span>
+                      <span className="rounded-full bg-[var(--surface-sunken)] px-1.5 py-0.5 t-micro font-bold text-ink-secondary">{totalPending}</span>
                     )}
                   </div>
                   <button
                     onClick={() => toggleCollapsed(true)}
                     aria-label="طي اللوحة"
-                    className="rounded-[var(--radius-sm)] p-1.5 text-muted transition hover:bg-gray-25 hover:text-primary"
+                    className="rounded-[var(--radius-sm)] p-1.5 text-muted transition hover:bg-[var(--surface-page)] hover:text-primary"
                   >
                     <ChevronIcon className="h-4 w-4" />
                   </button>
@@ -481,20 +481,20 @@ export default function DailyBriefing() {
                           return (
                             <div
                               key={t.id}
-                              className={`relative flex items-center gap-2.5 overflow-hidden rounded-[var(--radius-sm)] border border-border-light px-2.5 py-2 transition-opacity ${blocked ? "bg-gray-50 opacity-60" : "bg-[var(--surface-raised)]"} ${done ? "opacity-40" : ""}`}
+                              className={`relative flex items-center gap-2.5 overflow-hidden rounded-[var(--radius-sm)] border border-border-light px-2.5 py-2 transition-opacity ${blocked ? "bg-[var(--surface-sunken)] opacity-60" : "bg-[var(--surface-raised)]"} ${done ? "opacity-40" : ""}`}
                             >
                               {overdue && !blocked && <span className="absolute bottom-1 left-0 top-1 w-1 rounded-full bg-danger" />}
-                              {blocked && <span className="absolute bottom-1 left-0 top-1 w-1 rounded-full bg-amber-400" />}
+                              {blocked && <span className="absolute bottom-1 left-0 top-1 w-1 rounded-full bg-[var(--brand-amber-500)]" />}
                               {blocked ? (
-                                <span title={`بانتظار: ${t.blockedByTitle || "مهمة"}`} className="flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full border-2 border-dashed border-amber-300 ml-1">
-                                  <svg viewBox="0 0 16 16" fill="currentColor" className="h-2.5 w-2.5 text-amber-400"><path fillRule="evenodd" d="M8 1a7 7 0 100 14A7 7 0 008 1zM7.25 4.5a.75.75 0 011.5 0v3.25H11a.75.75 0 010 1.5H7.25V4.5z" clipRule="evenodd" /></svg>
+                                <span title={`بانتظار: ${t.blockedByTitle || "مهمة"}`} className="flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full border-2 border-dashed border-[var(--status-warning-border)] ml-1">
+                                  <svg viewBox="0 0 16 16" fill="currentColor" className="h-2.5 w-2.5 text-[var(--brand-amber-500)]"><path fillRule="evenodd" d="M8 1a7 7 0 100 14A7 7 0 008 1zM7.25 4.5a.75.75 0 011.5 0v3.25H11a.75.75 0 010 1.5H7.25V4.5z" clipRule="evenodd" /></svg>
                                 </span>
                               ) : (
                                 <button
                                   onClick={() => setCompleteTarget(t)}
                                   aria-label="إتمام المهمة"
                                   className={`flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full border-2 transition-colors ${
-                                    done ? "border-primary bg-primary" : overdue ? "ml-1 border-red-200 hover:border-primary" : "border-gray-200 hover:border-primary"
+                                    done ? "border-primary bg-primary" : overdue ? "ml-1 border-[var(--status-danger-border)] hover:border-primary" : "border-[var(--border-default)] hover:border-primary"
                                   }`}
                                 >
                                   {done && (
@@ -507,7 +507,7 @@ export default function DailyBriefing() {
                               <span dir="auto" className={`min-w-0 flex-1 truncate t-body-sm ${blocked ? "text-muted" : "text-ink-secondary"} ${done ? "line-through" : ""}`}>
                                 {t.title || "مهمة"}
                               </span>
-                              <span className={`flex-none font-mono t-micro ${blocked ? "text-amber-500" : overdue ? "font-semibold text-danger" : "text-muted"}`}>
+                              <span className={`flex-none font-mono t-micro ${blocked ? "text-[var(--brand-amber-500)]" : overdue ? "font-semibold text-danger" : "text-muted"}`}>
                                 {blocked ? "معلّقة" : overdue ? "متأخرة" : timeAr(t.due_at)}
                               </span>
                             </div>
@@ -519,7 +519,7 @@ export default function DailyBriefing() {
 
                   {priorityDeals.length > 0 && (
                     <>
-                      <SectionLabel icon={<TargetIcon className="h-3.5 w-3.5" />} tone="bg-amber-50 text-warning">أولوياتك — صفقات باردة</SectionLabel>
+                      <SectionLabel icon={<TargetIcon className="h-3.5 w-3.5" />} tone="bg-[var(--status-warning-bg)] text-warning">أولوياتك — صفقات باردة</SectionLabel>
                       <div className="flex flex-col gap-2">
                         {priorityDeals.map((d) => (
                           <div
@@ -535,7 +535,7 @@ export default function DailyBriefing() {
                                 <p dir="auto" className="min-w-0 flex-1 truncate t-body-sm font-semibold text-ink">
                                   {d.leadName || d.name || "صفقة"}
                                 </p>
-                                <span className="flex-none rounded-full bg-amber-50 px-2 py-0.5 t-micro font-bold text-warning">{d.daysSinceContact} يوم</span>
+                                <span className="flex-none rounded-full bg-[var(--status-warning-bg)] px-2 py-0.5 t-micro font-bold text-warning">{d.daysSinceContact} يوم</span>
                               </div>
                             </button>
                             <div className="mt-1.5 flex items-center gap-1.5">
@@ -543,14 +543,12 @@ export default function DailyBriefing() {
                                 onClick={(e) => askCopilotAboutDeal(e, d)}
                                 className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border-light bg-[var(--surface-raised)] px-2.5 py-1 t-micro font-semibold text-primary transition hover:border-primary/30 hover:bg-mint"
                               >
-                                <ChatIcon className="h-3 w-3" /> اسأل الكوبايلوت
-                              </button>
+                                <ChatIcon className="h-3 w-3" />اسأل الكوبايلوت</button>
                               <button
                                 onClick={(e) => toggleSuggestion(e, d)}
                                 className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border-light bg-[var(--surface-raised)] px-2.5 py-1 t-micro font-semibold text-primary transition hover:border-primary/30 hover:bg-mint"
                               >
-                                <SparkleIcon className="h-3 w-3" /> اقترح إجراء
-                              </button>
+                                <SparkleIcon className="h-3 w-3" />اقترح إجراء</button>
                             </div>
                             {openSuggestionId === d.id && suggestions[d.id] && (
                               <SuggestionPopover suggestion={suggestions[d.id]} onClose={() => setOpenSuggestionId(null)} />
@@ -568,18 +566,12 @@ export default function DailyBriefing() {
 
                 <div className="flex flex-col gap-2 border-t border-border-light px-3.5 py-3">
                   <Button onClick={planMyDay} size="sm" fullWidth className="gap-1.5">
-                    <SparkleIcon className="h-3.5 w-3.5" /> خطط لي يومي
-                  </Button>
+                    <SparkleIcon className="h-3.5 w-3.5" />خطط لي يومي</Button>
                   <Button onClick={() => copilot.setOpen(true)} variant="secondary" size="sm" fullWidth className="gap-1.5">
-                    <ChatIcon className="h-3.5 w-3.5" /> فتح الكوبايلوت
-                  </Button>
+                    <ChatIcon className="h-3.5 w-3.5" />فتح الكوبايلوت</Button>
                   <div className="grid grid-cols-2 gap-2">
-                    <Button onClick={() => router.push("/dashboard/tasks")} variant="ghost" size="sm" className="border border-border-light">
-                      كل المهام
-                    </Button>
-                    <Button onClick={() => router.push("/dashboard/deals?filter=active")} variant="ghost" size="sm" className="border border-border-light">
-                      كل الصفقات
-                    </Button>
+                    <Button onClick={() => router.push("/dashboard/tasks")} variant="ghost" size="sm" className="border border-border-light">كل المهام</Button>
+                    <Button onClick={() => router.push("/dashboard/deals?filter=active")} variant="ghost" size="sm" className="border border-border-light">كل الصفقات</Button>
                   </div>
                   {process.env.NODE_ENV !== "production" && (
                     <button
@@ -587,9 +579,8 @@ export default function DailyBriefing() {
                         localStorage.removeItem(BRIEFING_KEY);
                         location.reload();
                       }}
-                      className="w-full rounded-[var(--radius-sm)] border border-dashed border-gray-200 py-1.5 t-micro font-medium text-muted transition hover:border-gray-300"
-                    >
-                      إعادة تعيين (dev)
+                      className="w-full rounded-[var(--radius-sm)] border border-dashed border-[var(--border-default)] py-1.5 t-micro font-medium text-muted transition hover:border-[var(--border-strong)]"
+                    >إعادة تعيين (dev)
                     </button>
                   )}
                 </div>

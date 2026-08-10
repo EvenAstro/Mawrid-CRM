@@ -27,8 +27,8 @@ interface NextBestActionResponse {
 }
 
 const URGENCY_DOT: Record<Recommendation["urgency"], string> = {
-  high: "bg-red-500",
-  medium: "bg-amber-500",
+  high: "bg-[var(--brand-red-500)]",
+  medium: "bg-[var(--brand-amber-500)]",
   low: "bg-primary",
 };
 const URGENCY_LABEL_AR: Record<Recommendation["urgency"], string> = {
@@ -63,7 +63,7 @@ function RefreshIcon({ className = "h-4 w-4" }: { className?: string }) {
 /** Shared shell for the AI-insight visual treatment — a soft teal-tinted gradient card, distinct from plain white info cards. */
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-primary/15 bg-gradient-to-br from-mint/60 via-white to-white p-5 shadow-brand">
+    <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-primary/15 bg-[var(--surface-accent-subtle)] p-[var(--space-card-pad)] e-1">
       {children}
     </div>
   );
@@ -73,9 +73,7 @@ function HeaderRow({ onRefresh, refreshing }: { onRefresh?: () => void; refreshi
   return (
     <div className="mb-3 flex items-center justify-between">
       <span className="flex items-center gap-1.5 t-micro font-semibold uppercase tracking-[0.1em] text-primary/70">
-        <SparkleIcon className="h-3.5 w-3.5" />
-        أفضل إجراء تالٍ
-      </span>
+        <SparkleIcon className="h-3.5 w-3.5" />أفضل إجراء تالٍ</span>
       {onRefresh && (
         <button
           onClick={onRefresh}
@@ -177,9 +175,7 @@ export default function NextBestActionCard({
   if (dismissed) {
     return (
       <Shell>
-        <p dir="auto" className="t-body-sm text-muted">
-          يمكنك إعادة التحميل لاحقاً
-        </p>
+        <p dir="auto" className="t-body-sm text-muted">يمكنك إعادة التحميل لاحقاً</p>
       </Shell>
     );
   }
@@ -205,12 +201,8 @@ export default function NextBestActionCard({
     return (
       <Shell>
         <HeaderRow />
-        <p dir="auto" className="text-[14px] font-medium text-ink-secondary">
-          التوصية غير متاحة حالياً
-        </p>
-        <button onClick={() => load(false)} className="mt-2 t-caption font-semibold text-primary hover:underline">
-          إعادة المحاولة
-        </button>
+        <p dir="auto" className="t-body-sm font-medium text-ink-secondary">التوصية غير متاحة حالياً</p>
+        <button onClick={() => load(false)} className="mt-2 t-caption font-semibold text-primary hover:underline">إعادة المحاولة</button>
       </Shell>
     );
   }
@@ -223,9 +215,7 @@ export default function NextBestActionCard({
     return (
       <Shell>
         <HeaderRow onRefresh={() => load(true)} refreshing={refreshing} />
-        <p dir="auto" className="text-[14px] text-muted">
-          لا توجد بيانات كافية بعد
-        </p>
+        <p dir="auto" className="t-body-sm text-muted">لا توجد بيانات كافية بعد</p>
       </Shell>
     );
   }
@@ -253,9 +243,7 @@ export default function NextBestActionCard({
       </div>
 
       {isLooseMatch && (
-        <p dir="auto" className="mt-2.5 t-micro text-muted/70">
-          بناءً على بيانات محدودة
-        </p>
+        <p dir="auto" className="mt-2.5 t-micro text-muted/70">بناءً على بيانات محدودة</p>
       )}
 
       <div className="mt-4 flex items-center gap-2 border-t border-primary/10 pt-3">
@@ -264,14 +252,12 @@ export default function NextBestActionCard({
           disabled={executing}
           className="rounded-full px-3 py-1.5 t-caption font-semibold text-primary transition hover:bg-mint disabled:opacity-50"
         >
-          {executing ? "…" : "✓ تم التنفيذ"}
+          {executing ? "…" : "تم التنفيذ"}
         </button>
         <button
           onClick={dismiss}
           className="rounded-full px-3 py-1.5 t-caption font-semibold text-muted transition hover:bg-black/[0.03] hover:text-ink-secondary"
-        >
-          تجاهل
-        </button>
+        >تجاهل</button>
       </div>
     </Shell>
   );

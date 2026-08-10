@@ -8,6 +8,7 @@ import {
   type DealCategory,
 } from "@/lib/revenueIntelligence/buildRevenueIntelligence";
 import { supabase } from "@/lib/supabase";
+import { ChartUpIcon, CheckIcon, ScaleIcon, XIcon } from "@/components/icons";
 
 /* ═══ Global CSS ══════════════════════════════════════════════════════════ */
 const GLOBAL_CSS = `
@@ -42,41 +43,41 @@ const sarFull = (n: number) => n.toLocaleString("ar-SA");
 /* ═══ Design Tokens ═══════════════════════════════════════════════════════ */
 const C = {
   // Emerald primary
-  e1:"#022c22", e2:"#064e3b", e3:"#065f46", e4:"#059669", e5:"#10b981", e6:"#34d399", e7:"#6ee7b7",
+  e1:"var(--status-success-fg)", e2:"var(--status-success-fg)", e3:"var(--status-success-fg)", e4:"var(--status-success-fg)", e5:"var(--brand-green-500)", e6:"var(--brand-green-500)", e7:"var(--status-success-on-inverse)",
   // Indigo secondary
-  i1:"#312e81", i2:"#3730a3", i3:"#4338ca", i4:"#6366f1", i5:"#818cf8", i6:"#a5b4fc",
+  i1:"var(--status-info-fg)", i2:"var(--status-info-fg)", i3:"var(--status-info-fg)", i4:"var(--brand-indigo-500)", i5:"var(--brand-indigo-500)", i6:"var(--status-info-border)",
   // Amber warm
-  a1:"#78350f", a2:"#92400e", a3:"#b45309", a4:"#d97706", a5:"#f59e0b", a6:"#fbbf24",
+  a1:"var(--status-warning-fg)", a2:"var(--status-warning-fg)", a3:"var(--status-warning-fg)", a4:"var(--status-warning-fg)", a5:"var(--brand-amber-500)", a6:"var(--brand-amber-500)",
   // Rose danger
-  r1:"#7f1d1d", r2:"#991b1b", r3:"#b91c1c", r4:"#dc2626", r5:"#ef4444", r6:"#f87171",
+  r1:"var(--status-danger-fg)", r2:"var(--status-danger-fg)", r3:"var(--status-danger-fg)", r4:"var(--status-danger-fg)", r5:"var(--brand-red-500)", r6:"var(--brand-red-500)",
   // Neutral
-  tx:"#0f172a", tx2:"#475569", tx3:"#94a3b8", tx4:"#cbd5e1",
-  bg:"#ffffff", bg2:"#f8faf9", bg3:"#f0faf8",
-  border:"#d6ece5", borderL:"#d6ece5", borderD:"#c2ddd3",
+  tx:"var(--content-primary)", tx2:"var(--content-secondary)", tx3:"var(--content-tertiary)", tx4:"var(--border-strong)",
+  bg:"var(--surface-raised)", bg2:"var(--surface-sunken)", bg3:"var(--surface-accent-subtle)",
+  border:"var(--border-subtle)", borderL:"var(--border-subtle)", borderD:"var(--brand-teal-200)",
 };
 
 const CAT: Record<string,{label:string;sub:string;hex:string;bg:string;ring:string;grad:string}> = {
-  commit:   {label:"شبه مؤكدة",   sub:"احتمالية +80%",      hex:C.e3, bg:"#ecfdf5", ring:"#6ee7b7", grad:"linear-gradient(135deg,#065f46,#10b981)"},
-  best_case:{label:"محتملة",       sub:"احتمالية 30–80%",    hex:C.i3, bg:"#eef2ff", ring:"#a5b4fc", grad:"linear-gradient(135deg,#4338ca,#818cf8)"},
-  pipeline: {label:"قيد المتابعة",sub:"احتمالية أقل من 30%",hex:C.a2, bg:"#fffbeb", ring:"#fcd34d", grad:"linear-gradient(135deg,#92400e,#f59e0b)"},
+  commit:   {label:"شبه مؤكدة",   sub:"احتمالية +80%",      hex:C.e3, bg:"var(--status-success-bg)", ring:"var(--status-success-on-inverse)", grad:"linear-gradient(135deg,var(--status-success-fg),var(--brand-green-500))"},
+  best_case:{label:"محتملة",       sub:"احتمالية 30–80%",    hex:C.i3, bg:"var(--status-info-bg)", ring:"var(--status-info-border)", grad:"linear-gradient(135deg,var(--status-info-fg),var(--brand-indigo-500))"},
+  pipeline: {label:"قيد المتابعة",sub:"احتمالية أقل من 30%",hex:C.a2, bg:"var(--status-warning-bg)", ring:"var(--status-warning-on-inverse)", grad:"linear-gradient(135deg,var(--status-warning-fg),var(--brand-amber-500))"},
 };
 const RISK: Record<string,{label:string;dot:string;bg:string}> = {
-  high:  {label:"خطر عالٍ", dot:C.r5, bg:"#fef2f2"},
-  medium:{label:"متوسط",    dot:C.a5, bg:"#fffbeb"},
-  low:   {label:"مستقرة",   dot:C.e5, bg:"#ecfdf5"},
+  high:  {label:"خطر عالٍ", dot:C.r5, bg:"var(--status-danger-bg)"},
+  medium:{label:"متوسط",    dot:C.a5, bg:"var(--status-warning-bg)"},
+  low:   {label:"مستقرة",   dot:C.e5, bg:"var(--status-success-bg)"},
 };
 
 /* ═══ Health score ════════════════════════════════════════════════════════ */
 function calcHealth(d: RevenueIntelligenceData) {
-  if(!d.deals.length) return {score:0,label:"لا بيانات",color:C.tx3,grad:"linear-gradient(135deg,#9ca3af,#d1d5db)"};
+  if(!d.deals.length) return {score:0,label:"لا بيانات",color:C.tx3,grad:"linear-gradient(135deg,var(--content-tertiary),var(--border-strong))"};
   const w = d.winRateThisMonth;
   const r = Math.max(0, 100 - (d.atRiskCount / d.deals.length) * 200);
   const q = d.totalPipelineSAR > 0 ? (d.weightedPipelineSAR / d.totalPipelineSAR) * 100 : 50;
   const s = Math.min(100, Math.max(0, Math.round(w*.35 + r*.4 + q*.25)));
-  if(s>=75) return {score:s,label:"ممتاز",  color:C.e4, grad:"linear-gradient(135deg,#059669,#34d399)"};
-  if(s>=50) return {score:s,label:"جيد",    color:C.i4, grad:"linear-gradient(135deg,#4338ca,#818cf8)"};
-  if(s>=30) return {score:s,label:"متوسط",  color:C.a4, grad:"linear-gradient(135deg,#d97706,#fbbf24)"};
-  return          {score:s,label:"يحتاج عناية",color:C.r4, grad:"linear-gradient(135deg,#dc2626,#f87171)"};
+  if(s>=75) return {score:s,label:"ممتاز",  color:C.e4, grad:"linear-gradient(135deg,var(--status-success-fg),var(--brand-green-500))"};
+  if(s>=50) return {score:s,label:"جيد",    color:C.i4, grad:"linear-gradient(135deg,var(--status-info-fg),var(--brand-indigo-500))"};
+  if(s>=30) return {score:s,label:"متوسط",  color:C.a4, grad:"linear-gradient(135deg,var(--status-warning-fg),var(--brand-amber-500))"};
+  return          {score:s,label:"يحتاج عناية",color:C.r4, grad:"linear-gradient(135deg,var(--status-danger-fg),var(--brand-red-500))"};
 }
 
 /* ═══ AI helpers ══════════════════════════════════════════════════════════ */
@@ -91,7 +92,7 @@ function buildContext(d: RevenueIntelligenceData) {
     `صفقات في خطر عالٍ: ${d.atRiskCount} | قيمة ${sarFull(d.atRiskSAR)} ريال`,
     `توقعات: متحفظ ${sarFull(d.forecast[0]?.valueSAR??0)} | واقعي ${sarFull(d.forecast[1]?.valueSAR??0)} | متفائل ${sarFull(d.forecast[2]?.valueSAR??0)} ريال`,
     "","الصفقات في خطر:",
-    ...d.deals.filter(x=>x.riskLevel==="high").map(x=>`- ${x.name}${x.leadName?` (${x.leadName})`:""}: ${sarFull(x.valueSAR)} ريال | ${x.probabilityPct}% | ${x.riskReasons.join("، ")}`),
+    ...d.deals.filter(x=>x.riskLevel==="high").map(x=>`- ${x.name}${x.leadName?` (${x.leadName})`:""}: ${sarFull(x.valueSAR)} ريال | ${x.probabilityPct}% | ${x.riskReasons.join("،")}`),
     "","أكبر 8 صفقات:",
     ...d.deals.slice(0,8).map(x=>`- ${x.name}: ${sarFull(x.valueSAR)} ريال | ${x.probabilityPct}% | ${CAT[x.category]?.label}`),
   ].join("\n");
@@ -206,7 +207,7 @@ function HealthCard({data,ctx}:{data:RevenueIntelligenceData;ctx:string}) {
                   style={{transition:"stroke-dasharray 1.3s cubic-bezier(.4,0,.2,1) .2s",filter:`drop-shadow(0 2px 6px ${h.color}40)`}}/>
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-[28px] font-black tabular-nums leading-none" style={{color:h.color}}>
+                <span className="t-figure-md font-black tabular-nums leading-none" style={{color:h.color}}>
                   <AnimNum value={h.score} fmt={n=>`${n}`}/>
                 </span>
                 <span className="t-micro font-bold mt-0.5" style={{color:C.tx3}}>/ 100</span>
@@ -231,29 +232,27 @@ function HealthCard({data,ctx}:{data:RevenueIntelligenceData;ctx:string}) {
           {/* CTA */}
           <div className="mt-3 flex items-center justify-center gap-1.5 py-2 rounded-[var(--radius-sm)] border border-dashed group-hover:border-solid transition-all t-micro font-bold"
             style={{borderColor:`${h.color}30`,color:h.color}}>
-            <svg viewBox="0 0 14 14" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="7" cy="7" r="5.5"/><path d="M7 5v2.5M7 9.5h.01"/></svg>
-            فسّر لي بالذكاء الاصطناعي
-          </div>
+            <svg viewBox="0 0 14 14" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="7" cy="7" r="5.5"/><path d="M7 5v2.5M7 9.5h.01"/></svg>فسّر لي بالذكاء الاصطناعي</div>
         </div>
       </div>
 
       {/* AI panel */}
       {open&&(
-        <div className="ri-in mt-2.5 rounded-[var(--radius-lg)] border overflow-hidden" style={{background:"linear-gradient(145deg,#0f1729,#141c2e)",borderColor:`${h.color}20`,boxShadow:"0 12px 28px rgba(0,0,0,.18)"}}>
+        <div className="ri-in mt-2.5 rounded-[var(--radius-lg)] border overflow-hidden" style={{background:"linear-gradient(145deg,var(--surface-inverse-deep),var(--surface-inverse))",borderColor:`${h.color}20`,boxShadow:"0 12px 28px rgba(0,0,0,.18)"}}>
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]">
             <div className="flex items-center gap-2">
               <div className="h-5 w-5 rounded-[var(--radius-xs)] flex items-center justify-center" style={{background:h.grad}}>
                 <svg viewBox="0 0 12 12" className="h-2.5 w-2.5"><circle cx="6" cy="4.5" r="1.8" fill="none" stroke="white" strokeWidth="1"/><circle cx="3.5" cy="7.5" r="1.2" fill="none" stroke="white" strokeWidth="1"/><circle cx="8.5" cy="7.5" r="1.2" fill="none" stroke="white" strokeWidth="1"/></svg>
               </div>
               <span className="t-micro font-bold text-white/85">تحليل النبضة</span>
-              <span className="t-micro font-black text-emerald-400/70 bg-emerald-400/10 px-1.5 py-0.5 rounded">AI</span>
+              <span className="t-micro font-black text-[color-mix(in_srgb,var(--brand-green-500)_70%,transparent)] bg-[color-mix(in_srgb,var(--brand-green-500)_10%,transparent)] px-1.5 py-0.5 rounded">AI</span>
             </div>
-            <button onClick={e=>{e.stopPropagation();setOpen(false);}} className="text-white/25 hover:text-white/60 transition text-xs">✕</button>
+            <button onClick={e=>{e.stopPropagation();setOpen(false);}} className="text-white/25 hover:text-white/60 transition text-xs"><XIcon className="h-4 w-4" /></button>
           </div>
           <div className="px-4 py-3.5 t-caption text-white/70 leading-[1.8] min-h-[52px]">
             {loading?(
               <div className="flex items-center gap-2 text-white/30">
-                {[0,1,2].map(i=><span key={i} className="h-1.5 w-1.5 rounded-full bg-emerald-400/50 animate-bounce" style={{animationDelay:`${i*.15}s`}}/>)}
+                {[0,1,2].map(i=><span key={i} className="h-1.5 w-1.5 rounded-full bg-[color-mix(in_srgb,var(--brand-green-500)_50%,transparent)] "/>)}
                 <span className="t-micro">يحلل…</span>
               </div>
             ):insight}
@@ -295,7 +294,7 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
 - المرحلة: ${deal.stage}
 - في المرحلة منذ: ${deal.daysInStage} يوم
 - آخر تواصل: ${deal.daysSinceActivity!=null?`منذ ${deal.daysSinceActivity} يوم`:"لا يوجد تواصل"}
-- إشارات الخطر: ${deal.riskReasons.length?deal.riskReasons.join("، "):"لا توجد"}
+- إشارات الخطر: ${deal.riskReasons.length?deal.riskReasons.join("،"):"لا توجد"}
 
 اكتب لي خطة عمل عملية من 3 خطوات لإغلاق هذه الصفقة هذا الأسبوع.
 استخدم هذا التنسيق بالضبط:
@@ -315,16 +314,16 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
 
   const stepC=[C.e4,C.i4,C.a4];
   const stepG=[
-    "linear-gradient(135deg,#059669,#34d399)",
-    "linear-gradient(135deg,#4338ca,#818cf8)",
-    "linear-gradient(135deg,#d97706,#fbbf24)",
+    "linear-gradient(135deg,var(--status-success-fg),var(--brand-green-500))",
+    "linear-gradient(135deg,var(--status-info-fg),var(--brand-indigo-500))",
+    "linear-gradient(135deg,var(--status-warning-fg),var(--brand-amber-500))",
   ];
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-2xl"/>
+      <div className="absolute inset-0 bg-[color-mix(in_srgb,var(--surface-inverse-deep)_60%,transparent)] backdrop-blur-2xl"/>
       <div className="ri-in relative w-full max-w-lg overflow-hidden rounded-[var(--radius-lg)]" onClick={e=>e.stopPropagation()}
-        style={{background:"#141c2e",border:"1px solid rgba(255,255,255,.08)",boxShadow:"0 32px 80px rgba(0,0,0,.4)"}}>
+        style={{background:"var(--surface-inverse)",border:"1px solid rgba(255,255,255,.08)",boxShadow:"0 32px 80px rgba(0,0,0,.4)"}}>
         <div className="absolute top-[-40px] right-[-20px] h-48 w-48 pointer-events-none" style={{background:"radial-gradient(circle,rgba(16,185,129,.18),transparent 70%)"}}/>
         <div className="absolute bottom-[-30px] left-[-20px] h-40 w-40 pointer-events-none" style={{background:"radial-gradient(circle,rgba(52,211,153,.1),transparent 70%)"}}/>
 
@@ -333,13 +332,13 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-2.5">
-                <div className="h-7 w-7 rounded-[var(--radius-sm)] flex items-center justify-center ri-shine-wrap" style={{background:"linear-gradient(135deg,#059669,#34d399)",boxShadow:"0 4px 12px rgba(16,185,129,.3)"}}>
+                <div className="h-7 w-7 rounded-[var(--radius-sm)] flex items-center justify-center ri-shine-wrap" style={{background:"linear-gradient(135deg,var(--status-success-fg),var(--brand-green-500))",boxShadow:"0 4px 12px rgba(16,185,129,.3)"}}>
                   <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M7 2l5 9H2z"/><path d="M7 6v2M7 10h.01"/></svg>
                 </div>
                 <span className="t-micro font-black text-white/30 uppercase tracking-[.18em]">مدرب الصفقات</span>
-                <span className="t-micro font-black text-emerald-400/70 bg-emerald-400/10 px-1.5 py-0.5 rounded">AI</span>
+                <span className="t-micro font-black text-[color-mix(in_srgb,var(--brand-green-500)_70%,transparent)] bg-[color-mix(in_srgb,var(--brand-green-500)_10%,transparent)] px-1.5 py-0.5 rounded">AI</span>
               </div>
-              <h2 className="text-[18px] font-black text-white leading-snug">{deal.name}</h2>
+              <h2 className="t-title-3 font-black text-white leading-snug">{deal.name}</h2>
               {deal.leadName&&<p className="t-micro text-white/30 mt-0.5">{deal.leadName}</p>}
             </div>
             <button onClick={onClose} className="h-8 w-8 rounded-[var(--radius-sm)] flex items-center justify-center text-white/20 hover:text-white/50 hover:bg-white/5 transition flex-none">
@@ -348,7 +347,7 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
           </div>
           <div className="flex flex-wrap gap-1.5 mt-4">
             {[
-              {t:sarFull(deal.valueSAR)+" ر.س",bg:"rgba(52,211,153,.15)",c:"#34d399"},
+              {t:sarFull(deal.valueSAR)+"ر.س",bg:"rgba(52,211,153,.15)",c:"var(--brand-green-500)"},
               {t:`${deal.probabilityPct}% احتمالية`,bg:`${cat.hex}22`,c:cat.ring},
               {t:risk.label,bg:`${risk.dot}18`,c:risk.dot},
             ].map(b=>(
@@ -362,8 +361,7 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
           {loading&&(
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-white/30 t-micro">
-                <div className="h-4 w-4 rounded-full border-2 border-transparent border-t-emerald-400" style={{animation:"ri-spin .7s linear infinite"}}/>
-                يحلل الصفقة ويضع خطة عمل…
+                <div className="h-4 w-4 rounded-full border-2 border-transparent border-t-emerald-400" style={{animation:"ri-spin .7s linear infinite"}}/>يحلل الصفقة ويضع خطة عمل…
               </div>
               {[0,1,2].map(i=>(
                 <div key={i} className="rounded-[var(--radius-md)] p-4 border border-white/[0.04]" style={{background:"rgba(255,255,255,.02)"}}>
@@ -391,8 +389,7 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
         {done&&(
           <div className="px-6 pb-6 flex gap-2">
             <a href="/dashboard/deals" className="flex-1 ri-shine-wrap flex items-center justify-center gap-2 py-3 rounded-[var(--radius-md)] text-white t-caption font-bold hover:opacity-90 transition"
-              style={{background:"linear-gradient(135deg,#059669,#34d399)",boxShadow:"0 6px 18px rgba(16,185,129,.3)"}}>
-              افتح الصفقة <svg viewBox="0 0 12 12" fill="white" className="h-3 w-3 rotate-180"><path d="M4.5 3l3 3-3 3V3z"/></svg>
+              style={{background:"linear-gradient(135deg,var(--status-success-fg),var(--brand-green-500))",boxShadow:"0 6px 18px rgba(16,185,129,.3)"}}>افتح الصفقة<svg viewBox="0 0 12 12" fill="white" className="h-3 w-3 rotate-180"><path d="M4.5 3l3 3-3 3V3z"/></svg>
             </a>
             <button onClick={onClose} className="px-5 py-3 rounded-[var(--radius-md)] text-white/40 hover:text-white/70 border border-white/[0.08] t-caption font-medium transition">إغلاق</button>
           </div>
@@ -420,7 +417,7 @@ function KpiCard({label,note,value,fmt,unit,accent,icon,spark,ring,trend}:
             </div>
           </div>
           {trend && (
-            <div className="flex items-center gap-0.5 t-micro font-bold px-1.5 py-0.5 rounded-[var(--radius-xs)]" style={{background:trend.up?"#ecfdf5":"#fef2f2",color:trend.up?C.e4:C.r5}}>
+            <div className="flex items-center gap-0.5 t-micro font-bold px-1.5 py-0.5 rounded-[var(--radius-xs)]" style={{background:trend.up?"var(--status-success-bg)":"var(--status-danger-bg)",color:trend.up?C.e4:C.r5}}>
               <svg viewBox="0 0 12 12" className={`h-2.5 w-2.5 ${trend.up?"":"rotate-180"}`} fill="currentColor"><path d="M6 2l4 6H2z"/></svg>
               {trend.val}%
             </div>
@@ -431,7 +428,7 @@ function KpiCard({label,note,value,fmt,unit,accent,icon,spark,ring,trend}:
         <div className="flex-1 flex items-end justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-baseline gap-1 leading-none">
-              <span className="text-[34px] font-black tabular-nums tracking-tight" style={{color:accent}}>
+              <span className="t-figure-lg font-black tabular-nums tracking-tight" style={{color:accent}}>
                 <AnimNum value={value} fmt={fmt??sarK}/>
               </span>
               {unit&&<span className="t-micro font-semibold" style={{color:C.tx3}}>{unit}</span>}
@@ -457,9 +454,9 @@ function KpiCard({label,note,value,fmt,unit,accent,icon,spark,ring,trend}:
 function ForecastBars({scenarios}:{scenarios:RevenueIntelligenceData["forecast"]}) {
   const max=Math.max(...scenarios.map(s=>s.valueSAR),1);
   const pal=[
-    {c:C.e3, grad:"linear-gradient(90deg,#065f46,#10b981)", note:"الصفقات شبه المؤكدة فقط",lbl:"متحفظ"},
-    {c:C.e4, grad:"linear-gradient(90deg,#059669,#34d399)", note:"كل الصفقات × احتمالياتها", lbl:"واقعي"},
-    {c:C.e5, grad:"linear-gradient(90deg,#10b981,#6ee7b7)", note:"كل الصفقات بكامل قيمتها",  lbl:"متفائل"},
+    {c:C.e3, grad:"linear-gradient(90deg,var(--status-success-fg),var(--brand-green-500))", note:"الصفقات شبه المؤكدة فقط",lbl:"متحفظ"},
+    {c:C.e4, grad:"linear-gradient(90deg,var(--status-success-fg),var(--brand-green-500))", note:"كل الصفقات × احتمالياتها", lbl:"واقعي"},
+    {c:C.e5, grad:"linear-gradient(90deg,var(--brand-green-500),var(--status-success-on-inverse))", note:"كل الصفقات بكامل قيمتها",  lbl:"متفائل"},
   ];
   return (
     <div className="space-y-4">
@@ -479,7 +476,7 @@ function ForecastBars({scenarios}:{scenarios:RevenueIntelligenceData["forecast"]
                 {sarK(s.valueSAR)} <span className="t-micro font-medium" style={{color:C.tx3}}>ر.س</span>
               </p>
             </div>
-            <div className="h-2 w-full rounded-full overflow-hidden bg-slate-100">
+            <div className="h-2 w-full rounded-full overflow-hidden bg-[var(--surface-sunken)]">
               <div className="h-full rounded-full transition-all duration-1000" style={{width:`${pct}%`,background:p.grad,boxShadow:`0 0 10px ${p.c}30`}}/>
             </div>
           </div>
@@ -499,7 +496,7 @@ function DistPills({categories}:{categories:RevenueIntelligenceData["categories"
   const { slices } = categories.reduce<{ offset: number; slices: { pct: number; dash: number; offset: number; color: string }[] }>(
     (state, c, i) => {
       const pct = total ? c.totalSAR / total : 0, dash = pct * circ;
-      const sl = { pct, dash, offset: state.offset, color: colors[i] ?? "#ccc" };
+      const sl = { pct, dash, offset: state.offset, color: colors[i] ?? "var(--border-strong)" };
       return { offset: state.offset + dash, slices: [...state.slices, sl] };
     },
     { offset: 0, slices: [] },
@@ -577,8 +574,8 @@ function WeeklyChart({data}:{data:RevenueIntelligenceData["weeklyHistory"]}) {
     <div>
       <div className="flex items-center gap-5 mb-4">
         {[
-          {grad:"linear-gradient(180deg,#34d399,#059669)",l:"رابحة"},
-          {grad:"linear-gradient(180deg,#fca5a5,#ef4444)",l:"خاسرة"},
+          {grad:"linear-gradient(180deg,var(--brand-green-500),var(--status-success-fg))",l:"رابحة"},
+          {grad:"linear-gradient(180deg,var(--status-danger-on-inverse),var(--brand-red-500))",l:"خاسرة"},
         ].map(({grad,l})=>(
           <div key={l} className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-[var(--radius-xs)]" style={{background:grad}}/>
@@ -597,17 +594,17 @@ function WeeklyChart({data}:{data:RevenueIntelligenceData["weeklyHistory"]}) {
                 <div className="absolute z-20 rounded-[var(--radius-sm)] px-3 py-2 t-micro text-center whitespace-nowrap pointer-events-none"
                   style={{bottom:"calc(100% + 6px)",left:"50%",transform:"translateX(-50%)",background:C.e1,color:"white",boxShadow:"0 8px 20px rgba(0,0,0,.25)",border:"1px solid rgba(255,255,255,.06)"}}>
                   <p className="text-white/40 t-micro font-bold tracking-wider uppercase mb-1">{w.weekLabel}</p>
-                  {w.wonSAR>0&&<p className="text-emerald-300 font-bold">↑ {sarK(w.wonSAR)}</p>}
-                  {w.lostSAR>0&&<p className="text-red-300 font-bold">↓ {sarK(w.lostSAR)}</p>}
+                  {w.wonSAR>0&&<p className="text-[var(--status-success-on-inverse)] font-bold">↑ {sarK(w.wonSAR)}</p>}
+                  {w.lostSAR>0&&<p className="text-[var(--status-danger-on-inverse)] font-bold">↓ {sarK(w.lostSAR)}</p>}
                   {w.wonSAR===0&&w.lostSAR===0&&<p className="text-white/30">—</p>}
                   <div className="absolute left-1/2 -translate-x-1/2 top-full border-4 border-transparent" style={{borderTopColor:C.e1}}/>
                 </div>
               )}
               <div className="w-full flex items-end gap-[1.5px] h-[120px]">
                 <div className="flex-1 rounded-t-[3px] transition-all duration-200"
-                  style={{height:`${wonH}%`,background:isH?"linear-gradient(180deg,#34d399,#059669)":"linear-gradient(180deg,#10b981,#065f46)",minHeight:w.wonSAR>0?3:0,boxShadow:isH?"0 -4px 12px rgba(16,185,129,.4)":"none"}}/>
+                  style={{height:`${wonH}%`,background:isH?"linear-gradient(180deg,var(--brand-green-500),var(--status-success-fg))":"linear-gradient(180deg,var(--brand-green-500),var(--status-success-fg))",minHeight:w.wonSAR>0?3:0,boxShadow:isH?"0 -4px 12px rgba(16,185,129,.4)":"none"}}/>
                 <div className="flex-1 rounded-t-[3px] transition-all duration-200"
-                  style={{height:`${lostH}%`,background:isH?"linear-gradient(180deg,#fca5a5,#ef4444)":"linear-gradient(180deg,#fecaca,#f87171)",minHeight:w.lostSAR>0?3:0,boxShadow:isH?"0 -4px 12px rgba(239,68,68,.3)":"none"}}/>
+                  style={{height:`${lostH}%`,background:isH?"linear-gradient(180deg,var(--status-danger-on-inverse),var(--brand-red-500))":"linear-gradient(180deg,var(--status-danger-border),var(--brand-red-500))",minHeight:w.lostSAR>0?3:0,boxShadow:isH?"0 -4px 12px rgba(239,68,68,.3)":"none"}}/>
               </div>
               {i%3===0&&<span className="t-micro mt-1.5 whitespace-nowrap" style={{color:C.tx3}}>{w.weekLabel}</span>}
             </div>
@@ -620,122 +617,6 @@ function WeeklyChart({data}:{data:RevenueIntelligenceData["weeklyHistory"]}) {
 
 /* ═══ AI Chat Panel ═══════════════════════════════════════════════════════ */
 interface Msg{role:"user"|"assistant";content:string}
-function AiPanel({ctx}:{ctx:string}) {
-  const [msgs,setMsgs]=useState<Msg[]>([]);
-  const [val,setVal]=useState("");
-  const [busy,setBusy]=useState(false);
-  const end=useRef<HTMLDivElement>(null);
-  const QUICK=["أي صفقة أركّز عليها؟","ليش هذي الصفقات في خطر؟","كيف أحسّن نسبة الفوز؟","توقعك لنهاية الشهر؟"];
-
-  async function send(text:string){
-    const q=text.trim();if(!q||busy)return;setVal("");
-    const next:Msg[]=[...msgs,{role:"user",content:q}];
-    setMsgs(next);setBusy(true);
-    try{const reply=await callAI(next,ctx);setMsgs([...next,{role:"assistant",content:reply}]);}
-    catch{setMsgs([...next,{role:"assistant",content:"تعذّر الاتصال."}]);}
-    finally{setBusy(false);}
-  }
-  useEffect(()=>{end.current?.scrollIntoView({behavior:"smooth"});},[msgs,busy]);
-
-  return (
-    <div className="flex flex-col h-full relative" style={{background:"#141c2e"}}>
-      {/* noise */}
-      <div className="absolute inset-0 opacity-[0.035] pointer-events-none"
-        style={{backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",backgroundSize:"120px"}}/>
-      <div className="absolute top-[-20px] right-[-20px] h-48 w-48 pointer-events-none" style={{background:"radial-gradient(circle,rgba(16,185,129,.16),transparent 70%)",animation:"ri-orb 8s ease-in-out infinite"}}/>
-      <div className="absolute bottom-[80px] left-[-30px] h-36 w-36 pointer-events-none" style={{background:"radial-gradient(circle,rgba(52,211,153,.1),transparent 70%)",animation:"ri-orb2 10s ease-in-out infinite"}}/>
-
-      {/* header */}
-      <div className="relative px-5 pt-5 pb-4 border-b border-white/[0.06] flex items-center gap-3">
-        <div className="relative flex-none">
-          <div className="h-10 w-10 rounded-[var(--radius-md)] flex items-center justify-center ri-shine-wrap"
-            style={{background:"linear-gradient(135deg,#059669,#34d399)",boxShadow:"0 4px 16px rgba(16,185,129,.35)"}}>
-            <svg viewBox="0 0 24 24" className="h-5 w-5">
-              <rect x="4" y="7" width="16" height="12" rx="3" fill="none" stroke="white" strokeWidth="1.5"/>
-              <circle cx="9" cy="12" fill="#6ee7b7"><animate attributeName="r" values="1.5;2;1.5" dur="2.4s" repeatCount="indefinite"/></circle>
-              <circle cx="15" cy="12" fill="#6ee7b7"><animate attributeName="r" values="1.5;2;1.5" dur="2.4s" begin=".5s" repeatCount="indefinite"/></circle>
-              <path d="M9 16h6" stroke="white" strokeWidth="1.3" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 border-2" style={{borderColor:"#011d16"}}>
-            <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-40"/>
-          </span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="t-body-sm font-bold text-white">محلل الإيرادات</p>
-          <p className="t-micro text-white/25 mt-0.5">اسأله عن خط المبيعات</p>
-        </div>
-        <div className="flex items-center gap-1 rounded-full px-2 py-1 border" style={{background:"rgba(16,185,129,.08)",borderColor:"rgba(16,185,129,.15)"}}>
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"/>
-          <span className="t-micro font-black text-emerald-400/70 uppercase tracking-widest">مباشر</span>
-        </div>
-      </div>
-
-      {/* messages */}
-      <div className="relative flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-0">
-        {msgs.length===0&&(
-          <div className="pt-1 space-y-2">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="h-px flex-1" style={{background:"linear-gradient(90deg,transparent,rgba(255,255,255,.08))"}}/>
-              <p className="t-micro text-white/20 text-center uppercase tracking-[.25em] font-black">أسئلة مقترحة</p>
-              <div className="h-px flex-1" style={{background:"linear-gradient(90deg,rgba(255,255,255,.08),transparent)"}}/>
-            </div>
-            {QUICK.map((q,idx)=>(
-              <button key={q} onClick={()=>send(q)}
-                className="w-full text-right t-caption text-white/50 hover:text-white/90 border border-white/[0.06] hover:border-emerald-500/25 rounded-[var(--radius-md)] px-4 py-3 transition-all group flex items-center gap-2.5"
-                style={{background:"rgba(255,255,255,.025)",animation:`ri-up .5s cubic-bezier(.22,1,.36,1) ${idx*.06+.1}s both`}}>
-                <span className="h-5 w-5 rounded-[var(--radius-xs)] flex items-center justify-center t-micro font-bold flex-none group-hover:bg-emerald-500/20 transition-colors" style={{background:"rgba(16,185,129,.1)",color:"#6ee7b7"}}>{idx+1}</span>
-                <span className="flex-1">{q}</span>
-                <svg viewBox="0 0 12 12" className="h-3 w-3 flex-none opacity-40 group-hover:opacity-70 transition" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 3l3 3-3 3"/></svg>
-              </button>
-            ))}
-          </div>
-        )}
-        {msgs.map((m,i)=>(
-          <div key={i} className={`flex gap-2 ${m.role==="user"?"flex-row-reverse":""}`}>
-            {m.role==="assistant"&&(
-              <div className="h-6 w-6 rounded-[var(--radius-sm)] flex-none flex items-center justify-center mt-0.5"
-                style={{background:"linear-gradient(135deg,#059669,#34d399)",boxShadow:"0 2px 8px rgba(16,185,129,.25)"}}>
-                <svg viewBox="0 0 14 14" className="h-3 w-3"><rect x="1.5" y="3" width="11" height="8" rx="2" fill="none" stroke="white" strokeWidth="1.2"/><circle cx="5" cy="6.5" r="1" fill="#6ee7b7"/><circle cx="9" cy="6.5" r="1" fill="#6ee7b7"/></svg>
-              </div>
-            )}
-            <div className={`max-w-[85%] px-3.5 py-2.5 t-caption leading-[1.75] whitespace-pre-wrap rounded-[var(--radius-md)] ${m.role==="user"?"text-white rounded-tl-sm":"text-white/75 rounded-tr-sm border border-white/[0.06]"}`}
-              style={m.role==="user"?{background:"linear-gradient(135deg,#059669,#10b981)",boxShadow:"0 4px 12px rgba(16,185,129,.22)"}:{background:"rgba(255,255,255,.035)"}}>
-              {m.content}
-            </div>
-          </div>
-        ))}
-        {busy&&(
-          <div className="flex gap-2">
-            <div className="h-6 w-6 rounded-[var(--radius-sm)] flex-none flex items-center justify-center mt-0.5" style={{background:"linear-gradient(135deg,#059669,#34d399)"}}>
-              <svg viewBox="0 0 14 14" className="h-3 w-3"><rect x="1.5" y="3" width="11" height="8" rx="2" fill="none" stroke="white" strokeWidth="1.2"/><circle cx="5" cy="6.5" r="1" fill="#6ee7b7"/><circle cx="9" cy="6.5" r="1" fill="#6ee7b7"/></svg>
-            </div>
-            <div className="rounded-[var(--radius-md)] rounded-tr-sm px-3.5 py-2.5 flex items-center gap-1.5 border border-white/[0.06]" style={{background:"rgba(255,255,255,.03)"}}>
-              {[0,1,2].map(i=><span key={i} className="h-1.5 w-1.5 rounded-full bg-emerald-400/60 animate-bounce" style={{animationDelay:`${i*.15}s`}}/>)}
-            </div>
-          </div>
-        )}
-        <div ref={end}/>
-      </div>
-
-      {/* input */}
-      <div className="relative px-4 pb-4 pt-2 border-t border-white/[0.06]">
-        <div className="flex items-end gap-2 rounded-[var(--radius-md)] px-3 py-2 border transition-all focus-within:border-emerald-500/30"
-          style={{background:"rgba(255,255,255,.03)",borderColor:"rgba(255,255,255,.07)"}}>
-          <textarea value={val} onChange={e=>setVal(e.target.value)}
-            onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send(val);}}}
-            placeholder="اسأل عن خط مبيعاتك…" rows={1} style={{maxHeight:72}}
-            className="flex-1 bg-transparent t-caption text-white/70 placeholder-white/20 resize-none focus:outline-none leading-relaxed"/>
-          <button onClick={()=>send(val)} disabled={!val.trim()||busy}
-            className="h-7 w-7 rounded-[var(--radius-sm)] flex items-center justify-center flex-none transition-all disabled:opacity-15 hover:scale-105 active:scale-95"
-            style={{background:"linear-gradient(135deg,#059669,#34d399)",boxShadow:"0 3px 10px rgba(16,185,129,.35)"}}>
-            <svg viewBox="0 0 16 16" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 -rotate-90"><path d="M8 12V4M4 8l4-4 4 4"/></svg>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ═══ Deal Modal ══════════════════════════════════════════════════════════ */
 function DealModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}) {
@@ -750,7 +631,7 @@ function DealModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void})
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-        <div className="absolute inset-0 bg-slate-950/55 backdrop-blur-2xl"/>
+        <div className="absolute inset-0 bg-[color-mix(in_srgb,var(--surface-inverse-deep)_55%,transparent)] backdrop-blur-2xl"/>
         <div className="ri-in relative bg-[var(--surface-raised)] rounded-[var(--radius-lg)] w-full max-w-[420px] overflow-hidden" onClick={e=>e.stopPropagation()}
           style={{boxShadow:"0 24px 60px rgba(0,0,0,.18)"}}>
           <div className="h-1" style={{background:cat.grad}}/>
@@ -760,7 +641,7 @@ function DealModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void})
               <h2 className="text-lg font-black leading-tight" style={{color:C.tx}}>{deal.name}</h2>
               {deal.leadName&&<p className="t-caption mt-0.5" style={{color:C.tx3}}>{deal.leadName}</p>}
             </div>
-            <button onClick={onClose} className="h-8 w-8 rounded-[var(--radius-md)] bg-slate-50 hover:bg-slate-100 flex items-center justify-center transition flex-none mt-0.5" style={{color:C.tx2}}>
+            <button onClick={onClose} className="h-8 w-8 rounded-[var(--radius-md)] bg-[var(--surface-sunken)] hover:bg-[var(--surface-sunken)] flex items-center justify-center transition flex-none mt-0.5" style={{color:C.tx2}}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-3.5 w-3.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           </div>
@@ -769,13 +650,13 @@ function DealModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void})
             <span className="t-micro font-bold px-2.5 py-1 rounded-[var(--radius-sm)] border flex items-center gap-1" style={{color:risk.dot,borderColor:`${risk.dot}25`,background:risk.bg}}>
               <span className="h-1.5 w-1.5 rounded-full" style={{background:risk.dot}}/>{risk.label}
             </span>
-            <span className="t-micro font-bold px-2.5 py-1 rounded-[var(--radius-sm)] bg-slate-50 border" style={{color:C.tx2,borderColor:C.borderL}}>{deal.stage}</span>
+            <span className="t-micro font-bold px-2.5 py-1 rounded-[var(--radius-sm)] bg-[var(--surface-sunken)] border" style={{color:C.tx2,borderColor:C.borderL}}>{deal.stage}</span>
           </div>
           <div className="mx-6 mb-4 grid grid-cols-3 gap-2">
             {[
-              {label:"القيمة",val:sarFull(deal.valueSAR),unit:"ر.س",grad:"linear-gradient(135deg,#f8fafc,#f1f5f9)",bc:C.border,c:C.tx},
-              {label:"الاحتمالية",val:`${deal.probabilityPct}%`,unit:"",grad:"linear-gradient(135deg,#eef2ff,#e0e7ff)",bc:"#c7d2fe",c:C.i3},
-              {label:"المرجّحة",val:sarFull(w),unit:"ر.س",grad:"linear-gradient(135deg,#ecfdf5,#d1fae5)",bc:"#a7f3d0",c:C.e3},
+              {label:"القيمة",val:sarFull(deal.valueSAR),unit:"ر.س",grad:"linear-gradient(135deg,var(--surface-sunken),var(--surface-sunken))",bc:C.border,c:C.tx},
+              {label:"الاحتمالية",val:`${deal.probabilityPct}%`,unit:"",grad:"linear-gradient(135deg,var(--status-info-bg),var(--status-info-bg))",bc:"var(--status-info-border)",c:C.i3},
+              {label:"المرجّحة",val:sarFull(w),unit:"ر.س",grad:"linear-gradient(135deg,var(--status-success-bg),var(--status-success-bg))",bc:"var(--status-success-border)",c:C.e3},
             ].map(x=>(
               <div key={x.label} className="rounded-[var(--radius-md)] p-3 text-center border" style={{background:x.grad,borderColor:x.bc}}>
                 <p className="t-micro font-bold uppercase tracking-wider mb-1.5" style={{color:C.tx3}}>{x.label}</p>
@@ -796,11 +677,11 @@ function DealModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void})
             ))}
           </div>
           {deal.riskReasons.length>0&&(
-            <div className="mx-6 mb-4 rounded-[var(--radius-md)] border p-4" style={{background:"linear-gradient(135deg,#fef2f2,#fee2e2)",borderColor:"#fecaca"}}>
-              <p className="t-micro font-black text-red-600 uppercase tracking-[.2em] mb-2">إشارات الخطر</p>
+            <div className="mx-6 mb-4 rounded-[var(--radius-md)] border p-4" style={{background:"linear-gradient(135deg,var(--status-danger-bg),var(--status-danger-border))",borderColor:"var(--status-danger-border)"}}>
+              <p className="t-micro font-black text-[var(--status-danger-fg)] uppercase tracking-[.2em] mb-2">إشارات الخطر</p>
               <div className="space-y-1.5">
                 {deal.riskReasons.map(r=>(
-                  <div key={r} className="flex items-start gap-2"><span className="h-1.5 w-1.5 rounded-full bg-red-400 flex-none mt-1.5"/><p className="t-micro text-red-700 leading-snug">{r}</p></div>
+                  <div key={r} className="flex items-start gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-red-500)] flex-none mt-1.5"/><p className="t-micro text-[var(--status-danger-fg)] leading-snug">{r}</p></div>
                 ))}
               </div>
             </div>
@@ -808,11 +689,10 @@ function DealModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void})
           <div className="px-6 pb-6 flex gap-2">
             <button onClick={()=>setShowCoach(true)}
               className="flex-1 ri-shine-wrap flex items-center justify-center gap-2 py-3 rounded-[var(--radius-md)] text-white t-caption font-bold transition hover:opacity-90"
-              style={{background:"linear-gradient(135deg,#059669,#34d399)",boxShadow:"0 6px 18px rgba(16,185,129,.25)"}}>
-              <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round"><path d="M7 2l5 9H2z"/><path d="M7 6v2M7 10h.01"/></svg>
-              خطة إغلاق AI
+              style={{background:"linear-gradient(135deg,var(--status-success-fg),var(--brand-green-500))",boxShadow:"0 6px 18px rgba(16,185,129,.25)"}}>
+              <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round"><path d="M7 2l5 9H2z"/><path d="M7 6v2M7 10h.01"/></svg>خطة إغلاق AI
             </button>
-            <a href="/dashboard/deals" className="px-4 flex items-center justify-center rounded-[var(--radius-md)] border t-caption font-semibold hover:bg-slate-50 transition" style={{color:C.tx2,borderColor:C.border}}>فتح</a>
+            <a href="/dashboard/deals" className="px-4 flex items-center justify-center rounded-[var(--radius-md)] border t-caption font-semibold hover:bg-[var(--surface-sunken)] transition" style={{color:C.tx2,borderColor:C.border}}>فتح</a>
           </div>
         </div>
       </div>
@@ -825,15 +705,22 @@ function DealModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void})
 function Row({deal,onClick}:{deal:RIDeal;onClick:()=>void}) {
   const cat=CAT[deal.category]??CAT.pipeline, risk=RISK[deal.riskLevel];
   return (
-    <tr onClick={onClick} className="group border-b hover:bg-emerald-50/40 cursor-pointer transition-colors" style={{borderColor:C.borderL}}>
+    <tr
+      onClick={onClick}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
+      tabIndex={0}
+      role="button"
+      aria-label={`فتح الصفقة ${deal.name}`}
+      className="group cursor-pointer border-b border-[var(--border-subtle)] transition-colors duration-[var(--motion-fast)] hover:bg-[var(--surface-hover)]"
+    >
       <td className="px-5 py-3.5">
         <div className="flex items-center gap-3">
           <div className="relative flex-none">
             <span className="h-2 w-2 rounded-full block" style={{background:risk.dot}}/>
-            {risk.dot===C.r5&&<span className="absolute inset-0 rounded-full animate-ping opacity-30" style={{background:risk.dot}}/>}
+            
           </div>
           <div>
-            <p className="t-caption font-semibold group-hover:text-emerald-700 transition-colors" style={{color:C.tx}}>{deal.name}</p>
+            <p className="t-caption font-semibold group-hover:text-[var(--status-success-fg)] transition-colors" style={{color:C.tx}}>{deal.name}</p>
             {deal.leadName&&<p className="t-micro mt-0.5" style={{color:C.tx3}}>{deal.leadName}</p>}
           </div>
         </div>
@@ -849,7 +736,7 @@ function Row({deal,onClick}:{deal:RIDeal;onClick:()=>void}) {
       </td>
       <td className="px-4 py-3.5 hidden lg:table-cell">
         <div className="flex items-center gap-2">
-          <div className="h-1.5 w-14 rounded-full bg-slate-100 overflow-hidden">
+          <div className="h-1.5 w-14 rounded-full bg-[var(--surface-sunken)] overflow-hidden">
             <div className="h-full rounded-full" style={{width:`${deal.probabilityPct}%`,background:cat.grad}}/>
           </div>
           <span className="t-micro font-bold w-7 tabular-nums" style={{color:C.tx2}}>{deal.probabilityPct}%</span>
@@ -943,7 +830,7 @@ export default function RevenueTab() {
 
         {/* ─── HERO ─────────────────────────────────────────── */}
         <div className="ri-up relative overflow-hidden rounded-[var(--radius-lg)] text-white"
-          style={{background:"#141c2e"}}>
+          style={{background:"var(--surface-inverse)"}}>
           <div className="absolute top-[-50px] right-[-30px] h-72 w-72 pointer-events-none"
             style={{background:"radial-gradient(circle,rgba(52,211,153,.2),transparent 65%)",animation:"ri-orb 8s ease-in-out infinite"}}/>
           <div className="absolute bottom-[-50px] left-[15%] h-56 w-56 pointer-events-none"
@@ -956,14 +843,11 @@ export default function RevenueTab() {
                 <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 mb-5 border"
                   style={{background:"rgba(255,255,255,.06)",borderColor:"rgba(255,255,255,.12)",backdropFilter:"blur(6px)"}}>
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inset-0 rounded-full bg-emerald-400 opacity-55"/>
-                    <span className="relative rounded-full h-2 w-2 bg-emerald-400"/>
+                    <span className="relative rounded-full h-2 w-2 bg-[var(--brand-green-500)]"/>
                   </span>
                   <span className="t-micro font-bold text-white/50 tracking-[.2em] uppercase">لوحة مبيعات مباشرة</span>
                 </div>
-                <h1 className="text-[42px] lg:text-[52px] font-black leading-[.9] tracking-tight text-white">
-                  ذكاء الإيرادات
-                </h1>
+                <h1 className="t-display-2 lg:t-display-1 font-black leading-[.9] tracking-tight text-white">ذكاء الإيرادات</h1>
                 <p className="text-white/30 t-micro mt-4 font-medium flex items-center gap-2">
                   <svg viewBox="0 0 14 14" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="7" cy="7" r="5.5"/><path d="M7 4v3l2 1"/></svg>
                   {new Date(data.asOf).toLocaleString("ar-SA",{weekday:"long",day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}
@@ -971,14 +855,14 @@ export default function RevenueTab() {
               </div>
               <div className="flex flex-wrap gap-3 ri-up" style={{animationDelay:".1s"}}>
                 {[
-                  {label:"خط المبيعات",val:sarK(data.totalPipelineSAR),sub:`${data.deals.length} صفقة نشطة`,hi:true,icon:"📈"},
-                  {label:"الإيراد المرجّح",val:sarK(data.weightedPipelineSAR),sub:"بعد الاحتماليات",hi:false,icon:"⚖️"},
-                  {label:"مُغلق الشهر",val:sarK(data.wonThisMonthSAR),sub:`${data.wonThisMonthCount} صفقة`,hi:false,icon:"✓"},
+                  {label:"خط المبيعات",val:sarK(data.totalPipelineSAR),sub:`${data.deals.length} صفقة نشطة`,hi:true,icon:<ChartUpIcon className="h-4 w-4" />},
+                  {label:"الإيراد المرجّح",val:sarK(data.weightedPipelineSAR),sub:"بعد الاحتماليات",hi:false,icon:<ScaleIcon className="h-4 w-4" />},
+                  {label:"مُغلق الشهر",val:sarK(data.wonThisMonthSAR),sub:`${data.wonThisMonthCount} صفقة`,hi:false,icon:<CheckIcon className="h-4 w-4" />},
                 ].map(({label,val,sub,hi})=>(
                   <div key={label} className="ri-lift rounded-[var(--radius-lg)] px-5 py-4 min-w-[150px] backdrop-blur-md border ri-shine-wrap"
                     style={{background:hi?"rgba(255,255,255,.11)":"rgba(255,255,255,.05)",borderColor:hi?"rgba(255,255,255,.2)":"rgba(255,255,255,.08)",boxShadow:hi?"inset 0 1px 0 rgba(255,255,255,.12), 0 6px 16px rgba(0,0,0,.15)":"0 4px 12px rgba(0,0,0,.1)"}}>
                     <p className="t-micro text-white/35 mb-2 font-bold tracking-wider uppercase">{label}</p>
-                    <p className="text-[22px] font-black text-white leading-none tabular-nums">{val} <span className="t-micro font-medium text-white/35">ر.س</span></p>
+                    <p className="t-figure-sm font-black text-white leading-none tabular-nums">{val} <span className="t-micro font-medium text-white/35">ر.س</span></p>
                     <p className="t-micro text-white/25 mt-2">{sub}</p>
                   </div>
                 ))}
@@ -1014,52 +898,50 @@ export default function RevenueTab() {
         {atRisk.length>0&&(
           <div className="ri-up" style={{animationDelay:".2s"}}>
             <div className="flex items-center gap-4 mb-5">
-              <div className="h-px flex-1 rounded-full" style={{background:"linear-gradient(90deg,transparent,#fecaca)"}}/>
-              <div className="flex items-center gap-2.5 rounded-full px-5 py-2 border" style={{background:"linear-gradient(135deg,#fff5f5,#fef2f2)",borderColor:"#fecaca",boxShadow:"0 4px 12px rgba(239,68,68,.08)"}}>
+              <div className="h-px flex-1 rounded-full" style={{background:"linear-gradient(90deg,transparent,var(--status-danger-border))"}}/>
+              <div className="flex items-center gap-2.5 rounded-full px-5 py-2 border" style={{background:"linear-gradient(135deg,var(--status-danger-bg),var(--status-danger-bg))",borderColor:"var(--status-danger-border)",boxShadow:"0 4px 12px rgba(239,68,68,.08)"}}>
                 <div className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inset-0 rounded-full bg-red-400 opacity-40"/>
-                  <span className="relative rounded-full h-2.5 w-2.5 bg-red-500"/>
+                  <span className="relative rounded-full h-2.5 w-2.5 bg-[var(--brand-red-500)]"/>
                 </div>
-                <span className="t-micro font-bold text-red-700">{atRisk.length} صفقة تحتاج تدخلاً فورياً</span>
-                <span className="t-micro font-black text-red-500 tabular-nums">{sarFull(data.atRiskSAR)} ر.س</span>
+                <span className="t-micro font-bold text-[var(--status-danger-fg)]">{atRisk.length} صفقة تحتاج تدخلاً فورياً</span>
+                <span className="t-micro font-black text-[var(--brand-red-500)] tabular-nums">{sarFull(data.atRiskSAR)} ر.س</span>
               </div>
-              <div className="h-px flex-1 rounded-full" style={{background:"linear-gradient(90deg,#fecaca,transparent)"}}/>
+              <div className="h-px flex-1 rounded-full" style={{background:"linear-gradient(90deg,var(--status-danger-border),transparent)"}}/>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {atRisk.slice(0,6).map(deal=>{
                 const w=Math.round(deal.valueSAR*deal.probabilityPct/100);
                 return (
-                  <div key={deal.id} className="ri-lift group bg-[var(--surface-raised)] rounded-[var(--radius-lg)] border overflow-hidden" style={{borderColor:"#fecaca",boxShadow:"0 1px 3px rgba(239,68,68,.06)"}}>
-                    <div className="h-1 bg-gradient-to-l from-red-400 to-red-500"/>
+                  <div key={deal.id} className="ri-lift group bg-[var(--surface-raised)] rounded-[var(--radius-lg)] border overflow-hidden" style={{borderColor:"var(--status-danger-border)",boxShadow:"0 1px 3px rgba(239,68,68,.06)"}}>
+                    <div className="h-1 bg-gradient-to-l from-[var(--brand-red-500)] to-[var(--brand-red-500)]"/>
                     <button className="w-full text-right p-5 space-y-3" onClick={()=>setSel(deal)}>
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                          <p className="t-caption font-bold truncate group-hover:text-red-700 transition-colors" style={{color:C.tx}}>{deal.name}</p>
+                          <p className="t-caption font-bold truncate group-hover:text-[var(--status-danger-fg)] transition-colors" style={{color:C.tx}}>{deal.name}</p>
                           {deal.leadName&&<p className="t-micro mt-0.5 truncate" style={{color:C.tx3}}>{deal.leadName}</p>}
                         </div>
                         <div className="relative flex-none">
-                          <span className="h-2.5 w-2.5 rounded-full bg-red-500 block"/>
-                          <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-30"/>
+                          <span className="h-2.5 w-2.5 rounded-full bg-[var(--brand-red-500)] block"/>
                         </div>
                       </div>
                       <div className="space-y-1.5">
                         {deal.riskReasons.map(r=>(
                           <div key={r} className="flex items-start gap-1.5 flex-row-reverse">
-                            <span className="h-1.5 w-1.5 rounded-full bg-red-300 flex-none mt-1.5"/>
-                            <span className="t-micro text-red-600 leading-snug">{r}</span>
+                            <span className="h-1.5 w-1.5 rounded-full bg-[var(--status-danger-border)] flex-none mt-1.5"/>
+                            <span className="t-micro text-[var(--status-danger-fg)] leading-snug">{r}</span>
                           </div>
                         ))}
                       </div>
                       <div>
                         <div className="flex items-center justify-between t-micro mb-1.5">
-                          <span className="font-black text-red-600 tabular-nums">{deal.probabilityPct}%</span>
+                          <span className="font-black text-[var(--status-danger-fg)] tabular-nums">{deal.probabilityPct}%</span>
                           <span style={{color:C.tx3}}>الاحتمالية</span>
                         </div>
-                        <div className="h-1.5 w-full rounded-full overflow-hidden" style={{background:"#fee2e2"}}>
-                          <div className="h-full rounded-full transition-all duration-700" style={{width:`${Math.max(5,deal.probabilityPct)}%`,background:"linear-gradient(90deg,#fca5a5,#ef4444)"}}/>
+                        <div className="h-1.5 w-full rounded-full overflow-hidden" style={{background:"var(--status-danger-border)"}}>
+                          <div className="h-full rounded-full transition-all duration-700" style={{width:`${Math.max(5,deal.probabilityPct)}%`,background:"linear-gradient(90deg,var(--status-danger-on-inverse),var(--brand-red-500))"}}/>
                         </div>
                       </div>
-                      <div className="flex items-end justify-between pt-3 border-t" style={{borderColor:"#fee2e2"}}>
+                      <div className="flex items-end justify-between pt-3 border-t" style={{borderColor:"var(--status-danger-border)"}}>
                         <div>
                           <p className="t-micro uppercase tracking-wider font-bold" style={{color:C.tx3}}>المرجّحة</p>
                           <p className="t-caption font-black tabular-nums" style={{color:C.e3}}>{sarFull(w)}</p>
@@ -1072,9 +954,8 @@ export default function RevenueTab() {
                     </button>
                     <button onClick={()=>setCoachDeal(deal)}
                       className="w-full flex items-center justify-center gap-2 py-2.5 t-micro font-bold border-t transition hover:opacity-90 text-white"
-                      style={{backgroundColor:"#1a5c4f",borderColor:"#fecaca"}}>
-                      <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round"><path d="M6 1.5l4.5 8H1.5z"/><path d="M6 5v2M6 9h.01"/></svg>
-                      خطة إغلاق AI
+                      style={{backgroundColor:"var(--brand-teal-700)",borderColor:"var(--status-danger-border)"}}>
+                      <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round"><path d="M6 1.5l4.5 8H1.5z"/><path d="M6 5v2M6 9h.01"/></svg>خطة إغلاق AI
                     </button>
                   </div>
                 );
@@ -1088,30 +969,30 @@ export default function RevenueTab() {
           <div className="xl:col-span-2 flex flex-col gap-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Forecast */}
-              <div className="ri-up bg-[var(--surface-raised)] rounded-[var(--radius-lg)] border p-5" style={{animationDelay:".08s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
-                <SectionHead grad="linear-gradient(135deg,#065f46,#10b981)" accent={C.e4}
+              <div className="ri-up bg-[var(--surface-raised)] rounded-[var(--radius-lg)] border p-[var(--space-card-pad)]" style={{animationDelay:".08s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
+                <SectionHead grad="linear-gradient(135deg,var(--status-success-fg),var(--brand-green-500))" accent={C.e4}
                   icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M2 2v16h16"/><path d="m6 13 3-3 3 3 4-4"/></svg>}
                   title="توقعات الإيرادات" sub="3 سيناريوهات لنهاية الشهر"/>
                 <ForecastBars scenarios={data.forecast}/>
-                <div className="mt-4 rounded-[var(--radius-sm)] px-3 py-2 border flex items-center gap-2.5" style={{background:"linear-gradient(135deg,#ecfdf5,#d1fae5)",borderColor:"#a7f3d0"}}>
+                <div className="mt-4 rounded-[var(--radius-sm)] px-3 py-2 border flex items-center gap-2.5" style={{background:"linear-gradient(135deg,var(--status-success-bg),var(--status-success-bg))",borderColor:"var(--status-success-border)"}}>
                   <div className="h-5 w-5 rounded-[var(--radius-xs)] flex items-center justify-center flex-none" style={{background:C.e4,boxShadow:"0 2px 6px rgba(5,150,105,.3)"}}>
                     <svg viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" className="h-2.5 w-2.5"><path d="M2 6l3 3 5-5"/></svg>
                   </div>
-                  <p className="t-micro font-semibold text-emerald-800">يشمل <strong>{sarFull(data.wonThisMonthSAR)} ر.س</strong> مُغلق بالفعل</p>
+                  <p className="t-micro font-semibold text-[var(--status-success-fg)]">يشمل<strong>{sarFull(data.wonThisMonthSAR)} ر.س</strong>مُغلق بالفعل</p>
                 </div>
               </div>
               {/* Distribution */}
-              <div className="ri-up bg-[var(--surface-raised)] rounded-[var(--radius-lg)] border p-5" style={{animationDelay:".14s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
-                <SectionHead grad="linear-gradient(135deg,#4338ca,#818cf8)" accent={C.i4}
+              <div className="ri-up bg-[var(--surface-raised)] rounded-[var(--radius-lg)] border p-[var(--space-card-pad)]" style={{animationDelay:".14s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
+                <SectionHead grad="linear-gradient(135deg,var(--status-info-fg),var(--brand-indigo-500))" accent={C.i4}
                   icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M17.7 13.4A8 8 0 1 1 6.6 2.3"/><path d="M18 10A8 8 0 0 0 10 2v8z"/></svg>}
                   title="توزيع خط المبيعات" sub="حسب احتمالية الإغلاق"/>
                 <DistPills categories={data.categories}/>
               </div>
             </div>
             {/* Weekly */}
-            <div className="ri-up bg-[var(--surface-raised)] rounded-[var(--radius-lg)] border p-5" style={{animationDelay:".2s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
+            <div className="ri-up bg-[var(--surface-raised)] rounded-[var(--radius-lg)] border p-[var(--space-card-pad)]" style={{animationDelay:".2s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
               <div className="flex items-center justify-between mb-5">
-                <SectionHead grad="linear-gradient(135deg,#92400e,#f59e0b)" accent={C.a4}
+                <SectionHead grad="linear-gradient(135deg,var(--status-warning-fg),var(--brand-amber-500))" accent={C.a4}
                   icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M15 17V8M10 17V3M5 17v-5"/></svg>}
                   title="الأداء الأسبوعي" sub="آخر 12 أسبوع"/>
                 <div className="text-left mr-3">
@@ -1125,7 +1006,6 @@ export default function RevenueTab() {
           {/* AI Panel */}
           <div className="xl:col-span-1">
             <div className="relative rounded-[var(--radius-lg)] overflow-hidden sticky top-20" style={{height:560,boxShadow:"0 16px 40px rgba(4,45,32,.18),0 0 0 1px rgba(0,0,0,.05)"}}>
-              <AiPanel ctx={ctx}/>
             </div>
           </div>
         </div>
@@ -1135,11 +1015,11 @@ export default function RevenueTab() {
           <div className="px-6 py-5 border-b" style={{borderColor:C.borderL}}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-[var(--radius-md)] flex items-center justify-center flex-none" style={{backgroundColor:"#1a5c4f17",color:"#1a5c4f"}}>
+                <div className="h-9 w-9 rounded-[var(--radius-md)] flex items-center justify-center flex-none" style={{backgroundColor:"#1a5c4f17",color:"var(--brand-teal-700)"}}>
                   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M3 6h14M3 10h14M3 14h14"/></svg>
                 </div>
                 <div>
-                  <h2 className="text-[14px] font-bold" style={{color:C.tx}}>جميع الصفقات النشطة</h2>
+                  <h2 className="t-body-sm font-bold" style={{color:C.tx}}>جميع الصفقات النشطة</h2>
                   <p className="t-micro mt-0.5" style={{color:C.tx3}}>انقر لعرض التفاصيل أو طلب خطة إغلاق من AI</p>
                 </div>
               </div>
@@ -1150,7 +1030,7 @@ export default function RevenueTab() {
                 </svg>
                 <input value={search} onChange={e=>setSearch(e.target.value)}
                   placeholder="بحث عن صفقة أو عميل…"
-                  className="rounded-[var(--radius-md)] pr-9 pl-4 py-2 t-micro w-52 border bg-[#f8faf9] focus:bg-[var(--surface-raised)] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 focus:border-[#1a5c4f]/40 transition"
+                  className="rounded-[var(--radius-md)] pr-9 pl-4 py-2 t-micro w-52 border bg-[var(--surface-sunken)] focus:bg-[var(--surface-raised)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal-700)]/15 focus:border-[var(--brand-teal-700)]/40 transition"
                   style={{borderColor:C.border}}/>
               </div>
             </div>
@@ -1160,7 +1040,7 @@ export default function RevenueTab() {
                 return (
                   <button key={key} onClick={()=>setFilter(key)}
                     className="px-3.5 py-1.5 rounded-[var(--radius-sm)] t-micro font-bold border transition-all"
-                    style={{backgroundColor:active?(isRisk?"#dc2626":"#1a5c4f"):"white",color:active?"white":C.tx2,borderColor:active?"transparent":C.border}}>
+                    style={{backgroundColor:active?(isRisk?"var(--status-danger-fg)":"var(--brand-teal-700)"):"white",color:active?"white":C.tx2,borderColor:active?"transparent":C.border}}>
                     {label}{count!==undefined&&<span className="mr-1 opacity-65">({count})</span>}
                   </button>
                 );
@@ -1194,10 +1074,9 @@ export default function RevenueTab() {
           {filtered.length>0&&(
             <div className="px-6 py-3.5 border-t flex flex-wrap items-center justify-between gap-2" style={{background:C.bg2,borderColor:C.borderL}}>
               <p className="t-micro" style={{color:C.tx3}}>
-                <strong style={{color:C.tx}}>{filtered.length}</strong> صفقة · إجمالي: <strong className="tabular-nums" style={{color:C.tx}}>{sarFull(filtered.reduce((s,d)=>s+d.valueSAR,0))} ر.س</strong>
+                <strong style={{color:C.tx}}>{filtered.length}</strong>صفقة · إجمالي: <strong className="tabular-nums" style={{color:C.tx}}>{sarFull(filtered.reduce((s,d)=>s+d.valueSAR,0))} ر.س</strong>
               </p>
-              <p className="t-micro" style={{color:C.tx3}}>
-                مرجّح: <strong className="font-black tabular-nums" style={{color:C.e4}}>{sarFull(filtered.reduce((s,d)=>s+Math.round(d.valueSAR*d.probabilityPct/100),0))} ر.س</strong>
+              <p className="t-micro" style={{color:C.tx3}}>مرجّح: <strong className="font-black tabular-nums" style={{color:C.e4}}>{sarFull(filtered.reduce((s,d)=>s+Math.round(d.valueSAR*d.probabilityPct/100),0))} ر.س</strong>
               </p>
             </div>
           )}

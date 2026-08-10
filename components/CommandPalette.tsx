@@ -7,6 +7,7 @@ import { useRole } from "@/components/RoleProvider";
 import { searchLeadsForPalette } from "@/lib/models/leads";
 import { searchDealsForPalette } from "@/lib/models/deals";
 import { searchContactsForPalette } from "@/lib/models/contacts";
+import { BriefcaseIcon, DocumentIcon, TargetIcon, UserIcon } from "@/components/icons";
 
 type ResultKind = "page" | "lead" | "deal" | "contact";
 
@@ -16,7 +17,7 @@ interface Result {
   title: string;
   subtitle?: string;
   href: string;
-  icon: string;
+  icon: React.ReactNode;
 }
 
 const KIND_LABEL: Record<ResultKind, string> = {
@@ -35,7 +36,7 @@ function pageResults(query: string, can: (key: string) => boolean): Result[] {
     title: f.label,
     subtitle: f.description,
     href: f.href,
-    icon: "📄",
+    icon: <DocumentIcon className="h-4 w-4" />,
   }));
 }
 
@@ -55,13 +56,13 @@ async function remoteResults(query: string): Promise<Result[]> {
 
   const results: Result[] = [];
   (leadsRes.data ?? []).forEach((l) =>
-    results.push({ kind: "lead", id: String(l.id), title: l.full_name || l.company_name || "عميل بدون اسم", subtitle: l.company_name ?? undefined, href: `/dashboard/leads?open=${l.id}`, icon: "🎯" }),
+    results.push({ kind: "lead", id: String(l.id), title: l.full_name || l.company_name || "عميل بدون اسم", subtitle: l.company_name ?? undefined, href: `/dashboard/leads?open=${l.id}`, icon: <TargetIcon className="h-4 w-4" /> }),
   );
   (dealsRes.data ?? []).forEach((d) =>
-    results.push({ kind: "deal", id: String(d.id), title: d.name || "صفقة بدون اسم", href: `/dashboard/deals?open=${d.id}`, icon: "💼" }),
+    results.push({ kind: "deal", id: String(d.id), title: d.name || "صفقة بدون اسم", href: `/dashboard/deals?open=${d.id}`, icon: <BriefcaseIcon className="h-4 w-4" /> }),
   );
   (contactsRes.data ?? []).forEach((c) =>
-    results.push({ kind: "contact", id: String(c.id), title: c.full_name || "جهة اتصال", subtitle: c.role ?? undefined, href: `/dashboard/contacts?open=${c.id}`, icon: "👤" }),
+    results.push({ kind: "contact", id: String(c.id), title: c.full_name || "جهة اتصال", subtitle: c.role ?? undefined, href: `/dashboard/contacts?open=${c.id}`, icon: <UserIcon className="h-4 w-4" /> }),
   );
   return results;
 }
@@ -167,7 +168,7 @@ export default function CommandPalette() {
         className="w-full max-w-[560px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-2xl"
       >
         <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] px-4 py-3.5">
-          <span className="text-[#94a3b8]">
+          <span className="text-[var(--content-tertiary)]">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" className="h-4.5 w-4.5"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></svg>
           </span>
           <input
@@ -177,9 +178,9 @@ export default function CommandPalette() {
             onKeyDown={handleKeyDown}
             dir="auto"
             placeholder="ابحث عن عميل، صفقة، جهة اتصال، أو صفحة..."
-            className="w-full border-0 bg-transparent t-body text-ink placeholder:text-[#94a3b8] focus:outline-none"
+            className="w-full border-0 bg-transparent t-body text-ink placeholder:text-[var(--content-tertiary)] focus:outline-none"
           />
-          <kbd className="flex-none rounded-[var(--radius-xs)] border border-[var(--border-subtle)] bg-[#f8faf9] px-1.5 py-0.5 t-micro font-semibold text-[#94a3b8]">Esc</kbd>
+          <kbd className="flex-none rounded-[var(--radius-xs)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-1.5 py-0.5 t-micro font-semibold text-[var(--content-tertiary)]">Esc</kbd>
         </div>
 
         <div className="max-h-[360px] overflow-y-auto py-2">
@@ -195,14 +196,14 @@ export default function CommandPalette() {
                 key={`${r.kind}-${r.id}`}
                 onClick={() => go(r)}
                 onMouseEnter={() => setActiveIndex(i)}
-                className={`flex w-full items-center gap-3 px-4 py-2.5 text-right transition-colors ${i === activeIndexClamped ? "bg-[#f0faf8]" : "hover:bg-[#f8faf9]"}`}
+                className={`flex w-full items-center gap-3 px-4 py-2.5 text-right transition-colors ${i === activeIndexClamped ? "bg-[var(--surface-accent-subtle)]" : "hover:bg-[var(--surface-sunken)]"}`}
               >
-                <span className="flex h-8 w-8 flex-none items-center justify-center rounded-[var(--radius-sm)] bg-[#f0faf8] t-body">{r.icon}</span>
+                <span className="flex h-8 w-8 flex-none items-center justify-center rounded-[var(--radius-sm)] bg-[var(--surface-accent-subtle)] t-body">{r.icon}</span>
                 <div className="min-w-0 flex-1">
                   <p dir="auto" className="truncate t-body-sm font-semibold text-ink">{r.title}</p>
                   {r.subtitle && <p dir="auto" className="truncate t-caption text-muted">{r.subtitle}</p>}
                 </div>
-                <span className="flex-none rounded-full bg-gray-100 px-2 py-0.5 t-micro font-semibold text-[#94a3b8]">{KIND_LABEL[r.kind]}</span>
+                <span className="flex-none rounded-full bg-[var(--surface-sunken)] px-2 py-0.5 t-micro font-semibold text-[var(--content-tertiary)]">{KIND_LABEL[r.kind]}</span>
               </button>
             ))
           )}

@@ -32,8 +32,8 @@ export default function CopilotWidget() {
           <SparkleRobot />
           {unread && (
             <span className="absolute right-1 top-1 flex h-3.5 w-3.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-              <span className="relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-white bg-red-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--brand-red-500)] opacity-75" />
+              <span className="relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-white bg-[var(--brand-red-500)]" />
             </span>
           )}
         </button>
@@ -41,14 +41,14 @@ export default function CopilotWidget() {
 
       {/* Sliding panel */}
       <div
-        className={`fixed left-0 top-0 z-[56] flex h-screen w-full max-w-[480px] flex-col border-r border-gray-100 bg-[var(--surface-raised)] shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`fixed left-0 top-0 z-[56] flex h-screen w-full max-w-[480px] flex-col border-r border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-2xl transition-transform duration-300 ease-in-out ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Header */}
         <div
           className="flex h-16 flex-none items-center justify-between px-4"
-          style={{ background: "linear-gradient(135deg, #0A2E28 0%, #1A5C4F 100%)" }}
+          style={{ background: "linear-gradient(135deg, var(--brand-teal-950) 0%, var(--brand-teal-700) 100%)" }}
         >
           <style>{`@keyframes copilotStatus { 0%,100% { opacity:1; transform:scale(1) } 50% { opacity:.4; transform:scale(.85) } }`}</style>
           <div className="flex items-center gap-2.5">
@@ -56,10 +56,8 @@ export default function CopilotWidget() {
               <SparkleRobot className="h-5 w-5" />
             </span>
             <div>
-              <p className="flex items-center gap-2 text-[16px] font-bold leading-tight text-white" style={{ fontFamily: "Cairo, sans-serif" }}>
-                <span className="h-2 w-2 rounded-full bg-green-400" style={{ animation: "copilotStatus 2.4s ease-in-out infinite" }} />
-                مساعد مورد
-              </p>
+              <p className="flex items-center gap-2 t-body-lg font-bold leading-tight text-white" style={{ fontFamily: "Cairo, sans-serif" }}>
+                <span className="h-2 w-2 rounded-full bg-[var(--brand-green-500)]" style={{ animation: "copilotStatus 2.4s ease-in-out infinite" }} />مساعد مورد</p>
               <p className="t-micro" style={{ color: "rgba(255,255,255,0.6)" }}>متصل ويعرف كل شيء عن صفقاتك</p>
             </div>
           </div>
@@ -77,7 +75,7 @@ export default function CopilotWidget() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4" style={{ background: "#FAFCFB" }}>
+        <div className="flex-1 overflow-y-auto p-4" style={{ background: "var(--surface-page)" }}>
           <ChatThread />
         </div>
 

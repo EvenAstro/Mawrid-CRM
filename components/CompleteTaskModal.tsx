@@ -44,7 +44,7 @@ export default function CompleteTaskModal({
       <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm" />
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-[440px] rounded-[var(--radius-lg)] border border-border-light bg-[var(--surface-raised)] p-6 shadow-2xl"
+        className="relative w-full max-w-[440px] rounded-[var(--radius-lg)] border border-border-light bg-[var(--surface-raised)] p-[var(--space-card-pad)] shadow-2xl"
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
