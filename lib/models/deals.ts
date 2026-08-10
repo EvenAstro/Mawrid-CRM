@@ -220,15 +220,6 @@ export async function fetchStaleDealsForBriefing() {
     .limit(30);
 }
 
-/** Full select for the playbook builder — every field the pattern analysis needs. */
-export async function fetchDealsForPlaybook() {
-  return supabase
-    .from("deals")
-    .select(
-      "id, name, lead_id, expected_value_minor, won_value_minor, created_at, updated_at, pipeline_stages(label, terminal_type), lost_reasons(label), leads(sources(label))",
-    )
-    .is("deleted_at", null);
-}
 
 /** Full select for the revenue intelligence builder. */
 export async function fetchDealsForRevenueIntelligence() {

@@ -5,7 +5,6 @@ import { SearchIcon, LeadsIcon } from "@/components/navIcons";
 import { WifiOffIcon } from "@/components/icons";
 import LeadSlideOver from "@/components/LeadSlideOver";
 import NewLeadSlideOver from "@/components/NewLeadSlideOver";
-import { fetchLeadScoreModel, getAIScore, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
 import { useRole } from "@/components/RoleProvider";
 import { fetchLeads, softDeleteLeads, type Lead } from "@/lib/models/leads";
 import { initials, formatDate, formatPhone, downloadCSV } from "@/lib/format";
@@ -14,42 +13,6 @@ import EmptyState from "@/components/ui/EmptyState";
 import Button from "@/components/ui/Button";
 
 const PAGE_SIZE = 15;
-
-function scoreHex(score: number): string {
-  if (score >= 70) return "var(--brand-green-500)"; // green
-  if (score >= 40) return "var(--brand-amber-500)"; // amber
-  return "var(--brand-red-500)"; // red
-}
-
-/** Compact colored progress ring with the score in matching color. */
-function AiScoreRing({ score }: { score: number }) {
-  const color = scoreHex(score);
-  const R = 15;
-  const C = 2 * Math.PI * R;
-  const offset = C * (1 - Math.max(0, Math.min(100, score)) / 100);
-  return (
-    <span className="inline-flex items-center gap-2">
-      <span className="relative inline-flex h-9 w-9 items-center justify-center">
-        <svg width="36" height="36" viewBox="0 0 36 36" className="-rotate-90">
-          <circle cx="18" cy="18" r={R} fill="none" stroke="var(--border-subtle)" strokeWidth="3.5" />
-          <circle
-            cx="18"
-            cy="18"
-            r={R}
-            fill="none"
-            stroke={color}
-            strokeWidth="3.5"
-            strokeLinecap="round"
-            strokeDasharray={C}
-            strokeDashoffset={offset}
-          />
-        </svg>
-      </span>
-      <span className="t-body-sm font-bold" style={{ color }}>{score}%</span>
-    </span>
-  );
-}
-
 
 function StatCard({
   value,
@@ -89,7 +52,7 @@ function StatCard({
   );
 }
 
-type SortKey = "name" | "source" | "stage" | "score" | "owner" | "created_at";
+type SortKey = "name" | "source" | "stage" | "owner" | "created_at";
 
 export default function LeadsPage() {
   const { role, userId, loading: roleLoading } = useRole();
@@ -109,7 +72,6 @@ export default function LeadsPage() {
   const [newLeadOpen, setNewLeadOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "clean" | "junk">("all");
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
-  const [scoreModel, setScoreModel] = useState<LeadScoreModel | null>(null);
 
   // Whether the user has narrowed the list themselves. Drives which empty
   // state they get — "clear your filters" vs "add your first lead".
@@ -148,19 +110,6 @@ export default function LeadsPage() {
     if (roleLoading) return; // wait for the current user's role to resolve first
     load();
   }, [roleLoading, load]);
-
-  useEffect(() => {
-    fetchLeadScoreModel()
-      .then(setScoreModel)
-      .catch((err) => console.error("[Leads] lead score model failed", err));
-  }, []);
-
-  // Cache AI scores per lead id so they aren't recomputed on every render.
-  const scoreCache = useMemo(() => {
-    const map = new Map<string | number, number>();
-    for (const l of leads) map.set(l.id, getAIScore(l, scoreModel));
-    return map;
-  }, [leads, scoreModel]);
 
   // Open the deep-linked lead once data has loaded.
   useEffect(() => {
@@ -218,8 +167,6 @@ export default function LeadsPage() {
           return dir * (a.sources?.label ?? "").localeCompare(b.sources?.label ?? "", "ar");
         case "stage":
           return dir * (a.pipeline_stages?.label ?? "").localeCompare(b.pipeline_stages?.label ?? "", "ar");
-        case "score":
-          return dir * ((scoreCache.get(a.id) ?? 0) - (scoreCache.get(b.id) ?? 0));
         case "owner":
           return dir * (a.owner ?? "").localeCompare(b.owner ?? "", "ar");
         case "created_at":
@@ -228,7 +175,7 @@ export default function LeadsPage() {
       }
     });
     return arr;
-  }, [filtered, sortKey, sortDir, scoreCache]);
+  }, [filtered, sortKey, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -267,7 +214,6 @@ export default function LeadsPage() {
       "الإيميل": l.email ?? "",
       "المصدر": l.sources?.label ?? "",
       "المرحلة": l.pipeline_stages?.label ?? "",
-      "تقييم AI": scoreCache.get(l.id) ?? getAIScore(l, scoreModel),
       "المسؤول": l.owner ?? "",
       "تاريخ الإضافة": formatDate(l.created_at),
     })));
@@ -436,7 +382,6 @@ export default function LeadsPage() {
                 <th className="cursor-pointer select-none px-3 py-3.5 hover:text-[var(--content-secondary)]" onClick={() => toggleSort("source")}>المصدر{sortIndicator("source")}</th>
                 <th className="cursor-pointer select-none px-3 py-3.5 hover:text-[var(--content-secondary)]" onClick={() => toggleSort("stage")}>المرحلة{sortIndicator("stage")}</th>
                 <th className="px-3 py-3.5">الحالة</th>
-                <th className="cursor-pointer select-none px-3 py-3.5 hover:text-[var(--content-secondary)]" onClick={() => toggleSort("score")}>تقييم AI{sortIndicator("score")}</th>
                 <th className="cursor-pointer select-none px-3 py-3.5 hover:text-[var(--content-secondary)]" onClick={() => toggleSort("owner")}>المسؤول{sortIndicator("owner")}</th>
                 <th className="cursor-pointer select-none px-3 py-3.5 hover:text-[var(--content-secondary)]" onClick={() => toggleSort("created_at")}>التاريخ{sortIndicator("created_at")}</th>
                 <th className="px-3 py-3.5 text-right"></th>
@@ -583,11 +528,6 @@ export default function LeadsPage() {
                         ) : (
                           <span className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] bg-[var(--surface-sunken)] px-2.5 py-1 t-caption font-semibold text-[var(--content-tertiary)] ring-1 ring-[var(--border-subtle)]">جديد</span>
                         )}
-                      </td>
-
-                      {/* AI Score */}
-                      <td className="px-3 py-2.5">
-                        <AiScoreRing score={scoreCache.get(lead.id) ?? getAIScore(lead, scoreModel)} />
                       </td>
 
                       {/* Owner */}

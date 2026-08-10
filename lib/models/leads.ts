@@ -134,11 +134,6 @@ export async function searchLeadsForPalette(likePattern: string, limit = 5) {
   return supabase.from("leads").select("id, full_name, company_name").is("deleted_at", null).or(`full_name.ilike.${likePattern},company_name.ilike.${likePattern}`).limit(limit);
 }
 
-/** Touchpoint rows for a lead (campaign attribution) — used by LeadSlideOver. */
-export async function fetchLeadTouchpoints(leadId: string | number) {
-  return supabase.from("lead_touchpoints").select("campaign_id, raw_payload").eq("lead_id", leadId);
-}
-
 /** Marks a lead as having responded, with the timestamp used to patch UI state. */
 export async function markLeadResponded(leadId: string | number, at: string): Promise<{ error: Error | null }> {
   const { error } = await supabase
@@ -172,16 +167,6 @@ export async function markLeadNoResponse(leadId: string | number, at: string): P
 /** Minimal select for the insights builder — id/date/junk/source only. */
 export async function fetchLeadsForInsights() {
   return supabase.from("leads").select("id, created_at, junk_reason_id, sources(label)").is("deleted_at", null);
-}
-
-/** Minimal select for the lead-score model builder. */
-export async function fetchLeadsForScoring() {
-  return supabase.from("leads").select("id, junk_reason_id, establishment_id, sources(label)").is("deleted_at", null);
-}
-
-/** All lead_touchpoints (lead_id + campaign_id) — used by the lead-score model builder. */
-export async function fetchAllLeadTouchpoints() {
-  return supabase.from("lead_touchpoints").select("lead_id, campaign_id");
 }
 
 /** Minimal select for the Copilot business snapshot. */

@@ -6,13 +6,12 @@ import { useToast } from "@/components/Toast";
 import NextBestActionCard from "@/components/NextBestActionCard";
 import NewDealSlideOver from "@/components/NewDealSlideOver";
 import CompleteTaskModal from "@/components/CompleteTaskModal";
-import { fetchLeadScoreModel, scoreWithModel } from "@/lib/leadScore/computeLeadScore";
 import { fetchProfiles, type Profile } from "@/lib/profiles";
 import { initials, formatDate, formatDateTime, formatPhone, todayInput, profileName } from "@/lib/format";
 import { useRole } from "@/components/RoleProvider";
 import { canActOnTask } from "@/lib/permissions";
 import { logAudit, fieldChangeMessage } from "@/lib/auditLog";
-import { fetchLeadTouchpoints, markLeadResponded, markLeadNoResponse, markLeadJunk, updateLead, type Lead } from "@/lib/models/leads";
+import { markLeadResponded, markLeadNoResponse, markLeadJunk, updateLead, type Lead } from "@/lib/models/leads";
 import { createLeadTask, fetchLeadOpenTasks, fetchLeadCompletedTasks, fetchLeadAllTasksCompact, completeLeadTask } from "@/lib/models/tasks";
 import { fetchLeadActivities } from "@/lib/models/activities";
 import {
@@ -50,23 +49,9 @@ interface Task {
 }
 interface TaskType { id: string; label: string }
 
-interface LeadScore {
-  pJunk: number;
-  pClean: number;
-  score: number;
-  isJunk: boolean;
-  hasCampaign: boolean;
-  matched: boolean;
-  source: string;
-}
 
 
 
-function scoreColor(pct: number): string {
-  if (pct >= 70) return "var(--status-success-fg)";
-  if (pct >= 40) return "var(--brand-amber-500)";
-  return "var(--status-danger-fg)";
-}
 
 function nowTimeInput() {
   const d = new Date();
@@ -113,7 +98,6 @@ export default function LeadSlideOver({
   const [tasks, setTasks] = useState<Task[]>([]);
   const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [leadScore, setLeadScore] = useState<LeadScore | null>(null);
 
   const [outcomeMode, setOutcomeMode] = useState<"responded" | "junk" | null>(null);
   const [savingOutcome, setSavingOutcome] = useState(false);
@@ -182,7 +166,6 @@ export default function LeadSlideOver({
     setCompletedTasks([]);
     setAllLeadTasks([]);
     setShowHistory(false);
-    setLeadScore(null);
     setOutcomeMode(null);
     setAddingActivity(false);
     setAddingTask(false);
@@ -191,8 +174,7 @@ export default function LeadSlideOver({
     setRespondedNote("");
 
     const fetchAll = async () => {
-      const [tps] = await Promise.all([
-        fetchLeadTouchpoints(lead.id),
+      await Promise.all([
         refetchActivities(lead.id),
         refetchTasks(lead.id),
         fetchActiveActivityTypes().then(setActivityTypes),
@@ -203,16 +185,6 @@ export default function LeadSlideOver({
         fetchTaskTypes().then(setTaskTypes),
         fetchProfiles().then(setProfiles),
       ]);
-
-      const has_campaign = tps.data?.some((t: { campaign_id: string | null }) => t.campaign_id && t.campaign_id !== "--") || false;
-      const matched = !!lead.establishment_id;
-      const source = lead.sources?.label || "غير محدد";
-      const model = await fetchLeadScoreModel();
-      const result = scoreWithModel(model, { source, matched, hasCampaign: has_campaign });
-      setLeadScore({
-        pJunk: result.pJunk, pClean: 1 - result.pJunk, score: result.score,
-        isJunk: result.pJunk >= 0.5, hasCampaign: has_campaign, matched, source,
-      });
     };
     fetchAll();
   }, [lead]);
@@ -225,9 +197,6 @@ export default function LeadSlideOver({
   }, [open, onClose, dealOpen, completeTarget]);
 
   const data = shown;
-  const R = 34;
-  const CIRC = 2 * Math.PI * R;
-  const color = leadScore ? scoreColor(leadScore.score) : "var(--status-success-fg)";
 
   const isJunkLead = !!data?.junk_reason_id;
   const isResponded = data?.contact_outcome === "responded";
@@ -719,66 +688,6 @@ export default function LeadSlideOver({
                   </div>
                 )}
               </Section>
-
-              {/* ─── AI Lead Score ──────────────────────────────── */}
-              {!leadScore && (
-                <div className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-[color-mix(in_srgb,var(--border-default)_80%,transparent)] bg-[var(--surface-raised)] p-[var(--space-card-pad)] shadow-sm">
-                  <svg className="h-5 w-5 animate-spin text-[var(--brand-teal-700)]" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.4 0 0 5.4 0 12h4z" />
-                  </svg>
-                  <span className="t-body font-medium text-[var(--content-secondary)]">جارِ حساب تقييم الذكاء الاصطناعي…</span>
-                </div>
-              )}
-              {leadScore && (
-                <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[color-mix(in_srgb,var(--border-default)_80%,transparent)] bg-[var(--surface-raised)] shadow-sm">
-                  <div className="border-b border-[var(--border-subtle)] bg-[var(--surface-inverse)] px-6 py-4">
-                    <h3 className="t-body font-bold text-white">تقييم AI للعميل</h3>
-                  </div>
-                  <div className="p-6">
-                    <div className="flex items-center gap-6">
-                      <div className="relative flex-none">
-                        <svg width="88" height="88" className="-rotate-90">
-                          <circle cx="44" cy="44" r={R} fill="none" stroke="var(--surface-sunken)" strokeWidth="7" />
-                          <circle cx="44" cy="44" r={R} fill="none" stroke={color} strokeWidth="7" strokeLinecap="round"
-                            strokeDasharray={CIRC} strokeDashoffset={CIRC * (1 - leadScore.score / 100)}
-                            style={{ transition: "stroke-dashoffset 0.6s ease" }} />
-                        </svg>
-                        <span className="absolute inset-0 flex items-center justify-center t-title-2 font-extrabold" style={{ color }}>
-                          {leadScore.score}%
-                        </span>
-                      </div>
-                      <div className="min-w-0 flex-1 space-y-3">
-                        <div>
-                          <div className="flex justify-between t-body-sm">
-                            <span className="font-medium text-[var(--content-tertiary)]">احتمالية العميل الحقيقي</span>
-                            <span className="font-bold" style={{ color }}>{leadScore.score}%</span>
-                          </div>
-                          <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-[var(--surface-sunken)]">
-                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${leadScore.score}%`, backgroundColor: color }} />
-                          </div>
-                        </div>
-                        <div className="flex gap-4 t-body-sm">
-                          <span className="text-[var(--content-tertiary)]">p_junk: <b className="text-[var(--content-secondary)]">{Math.round(leadScore.pJunk * 100)}%</b></span>
-                          <span className="text-[var(--content-tertiary)]">p_clean: <b className="text-[var(--content-secondary)]">{Math.round(leadScore.pClean * 100)}%</b></span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className={`mt-5 rounded-[var(--radius-md)] p-3.5 text-center t-body-sm font-semibold ${leadScore.isJunk ? "bg-[var(--status-danger-bg)] text-[var(--status-danger-fg)] ring-1 ring-[var(--status-danger-border)]" : "bg-[var(--surface-accent-subtle)] text-[var(--brand-teal-800)] ring-1 ring-[var(--brand-teal-200)]"}`}>
-                      {leadScore.isJunk ? "عميل محتمل جنك — أولوية منخفضة" : "عميل واعد — يستحق المتابعة الفورية"}
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <span className="rounded-[var(--radius-sm)] bg-[var(--surface-sunken)] px-3 py-1.5 t-body-sm font-medium text-[var(--content-secondary)]"> {leadScore.source}</span>
-                      <span className={`rounded-[var(--radius-sm)] px-3 py-1.5 t-body-sm font-medium ${leadScore.hasCampaign ? "bg-[var(--surface-accent-subtle)] text-[var(--brand-teal-700)]" : "bg-[var(--surface-sunken)] text-[var(--content-tertiary)]"}`}>
-                        {leadScore.hasCampaign ? "حملة مدفوعة" : "عضوي"}
-                      </span>
-                      <span className={`rounded-[var(--radius-sm)] px-3 py-1.5 t-body-sm font-medium ${leadScore.matched ? "bg-[var(--surface-accent-subtle)] text-[var(--brand-teal-700)]" : "bg-[var(--surface-sunken)] text-[var(--content-tertiary)]"}`}>
-                        {leadScore.matched ? "تم المطابقة" : "لم يطابق"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* ─── Activities & Tasks — Tabbed ───────────────── */}
               <div className="rounded-[var(--radius-lg)] border border-[color-mix(in_srgb,var(--border-default)_80%,transparent)] bg-[var(--surface-raised)] shadow-sm">

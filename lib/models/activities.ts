@@ -110,20 +110,7 @@ export async function fetchEntityActivitiesAdmin(entityType: string, entityId: s
     .eq("entity_id", entityId);
 }
 
-/**
- * Activities matching a batch of entity ids (deal or lead), scoped to the
- * caller's own RLS access — used by the playbook builder, which runs in the
- * signed-in rep's own browser session.
- */
-export async function fetchActivitiesByEntityIds(entityType: string, entityIds: string[]) {
-  return supabase
-    .from("activities")
-    .select("entity_type, entity_id, direction, occurred_at, body, situational_tag")
-    .eq("entity_type", entityType)
-    .in("entity_id", entityIds);
-}
-
-/** Same as fetchActivitiesByEntityIds, but with full admin visibility — used by the AI context builders. */
+/** Activities for many entities, with full admin visibility — used by the AI context builders. */
 export async function fetchActivitiesByEntityIdsAdmin(entityType: string, entityIds: string[]) {
   return supabaseAdmin
     .from("activities")

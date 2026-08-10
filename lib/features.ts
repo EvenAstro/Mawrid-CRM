@@ -20,8 +20,6 @@ export const FEATURES: FeatureDef[] = [
   { key: "activities", label: "النشاطات", description: "سجل كل النشاطات المسجّلة", group: "التفاعل", href: "/dashboard/activities" },
   { key: "tasks", label: "المهام", description: "قائمة المهام والتقويم", group: "التفاعل", href: "/dashboard/tasks" },
   { key: "insights", label: "الرؤى والإيرادات", description: "رؤى تحليلية وذكاء الإيرادات", group: "الذكاء", href: "/dashboard/insights" },
-  { key: "lead_scoring", label: "تقييم العملاء", description: "نموذج الذكاء الاصطناعي لتقييم العملاء", group: "الذكاء", href: "/dashboard/lead-scoring" },
-  { key: "playbook", label: "الدليل التكتيكي", description: "الدليل التكتيكي للمبيعات", group: "الذكاء", href: "/dashboard/playbook" },
   { key: "users", label: "إدارة المستخدمين", description: "إدارة حسابات الفريق وصلاحياتهم", group: "الإدارة", href: "/dashboard/users" },
 ];
 

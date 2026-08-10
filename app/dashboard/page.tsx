@@ -12,8 +12,7 @@ import { useToast } from "@/components/Toast";
 import NewLeadSlideOver from "@/components/NewLeadSlideOver";
 import LogActivitySlideOver from "@/components/LogActivitySlideOver";
 import AddContactSlideOver from "@/components/AddContactSlideOver";
-import { dayHeader, dayKey, formatDateTime, initials, money, compactSAR, DATE_LOCALE, formatLongDate } from "@/lib/format";
-import { fetchLeadScoreModel, getAIScore, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
+import { dayHeader, dayKey, formatDate, formatDateTime, initials, money, compactSAR, DATE_LOCALE, formatLongDate } from "@/lib/format";
 import { fetchLeadsSummary } from "@/lib/models/leads";
 import { fetchDealsSummary } from "@/lib/models/deals";
 import { fetchRecentActivities } from "@/lib/models/activities";
@@ -140,12 +139,6 @@ function ActivityGlyph({ label, className }: { label?: string | null; className?
   if (l.includes("meeting")) return <CalendarIcon className={className} />;
   return <DotIcon className={className} />;
 }
-function aiPill(score: number) {
-  if (score >= 70) return "bg-[var(--status-success-bg)] text-[color:var(--status-success-fg)] border border-[var(--status-success-border)]";
-  if (score >= 40) return "bg-[var(--status-warning-bg)] text-[color:var(--status-warning-fg)] border border-[var(--status-warning-border)]";
-  return "bg-[var(--status-danger-bg)] text-[color:var(--status-danger-fg)] border border-[var(--status-danger-border)]";
-}
-
 /* ---------- Chart ---------- */
 function PipelineChart({ points }: { points: { label: string; value: number }[] }) {
   const [hover, setHover] = useState<number | null>(null);
@@ -284,7 +277,6 @@ export default function DashboardPage() {
   const [logActivityOpen, setLogActivityOpen] = useState(false);
   const [addContactOpen, setAddContactOpen] = useState(false);
   const [completing, setCompleting] = useState<Set<string | number>>(new Set());
-  const [scoreModel, setScoreModel] = useState<LeadScoreModel | null>(null);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -326,9 +318,6 @@ export default function DashboardPage() {
       setDeals((d.data as unknown as Deal[]) ?? []);
       setActivities((a.data as unknown as Activity[]) ?? []);
       setTasks((t.data as unknown as Task[]) ?? []);
-      fetchLeadScoreModel()
-        .then(setScoreModel)
-        .catch((err) => console.error("[Dashboard] lead score model failed", err));
     } catch (err) {
       console.error("[Dashboard] Unexpected error loading dashboard", err);
       setError(true);
@@ -703,9 +692,7 @@ export default function DashboardPage() {
               <button onClick={() => setNewLeadOpen(true)} className="t-caption mt-3 rounded-full bg-[var(--surface-accent)] px-4 py-2 font-semibold text-[color:var(--content-on-accent)] transition-colors hover:bg-[var(--surface-accent-hover)]">+ عميل جديد</button>
             </div>
           ) : (
-            m.recentLeads.map((l) => {
-              const score = getAIScore(l, scoreModel);
-              return (
+            m.recentLeads.map((l) => (
                 <Link key={l.id} href={`/dashboard/leads?open=${l.id}`} className="flex items-center gap-3 rounded-[var(--radius-sm)] px-1 py-2.5 transition-colors duration-[var(--motion-fast)] hover:bg-[var(--surface-hover)]">
                   {/* One avatar treatment. The five-gradient rotation it replaces
                       encoded nothing — position in a list is not an attribute. */}
@@ -716,10 +703,9 @@ export default function DashboardPage() {
                     <p dir="auto" className="t-body-sm truncate font-semibold text-[color:var(--content-primary)]">{l.full_name || "عميل بدون اسم"}</p>
                     <p className="t-caption text-[color:var(--content-tertiary)]">{l.sources?.label || "—"}</p>
                   </div>
-                  <span className={`t-figure rounded-full px-2 py-0.5 t-caption ${aiPill(score)}`}>{score}%</span>
+                  <span className="t-caption flex-none text-[color:var(--content-tertiary)]">{formatDate(l.created_at)}</span>
                 </Link>
-              );
-            })
+            ))
           )}
         </Panel>
       </div>
