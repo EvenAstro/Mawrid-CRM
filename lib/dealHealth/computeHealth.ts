@@ -43,7 +43,7 @@ export type FactorBasis =
   | { kind: "fallback"; sampleSize: number; needed: number };
 
 export interface HealthFactor {
-  key: "turning_point" | "silence" | "no_next_step" | "one_sided" | "age";
+  key: "turning_point" | "silence" | "no_next_step" | "age";
   label: string;
   /** What was observed, in the user's words. */
   detail: string;
@@ -94,7 +94,6 @@ export interface DealHealth {
 export const MANUAL_WEIGHTS = {
   turningPoint: -25,
   noNextStep: -10,
-  oneSided: -9,
   /** Used for silence/age only when their baselines can't be derived. */
   silenceFallback: -15,
   ageFallback: -10,
@@ -327,28 +326,23 @@ export function computeHealth(
     clear.push("فيه مهمة قادمة");
   }
 
-  // ── 4. One-sided conversation ───────────────────────────────────────────
-  const inbound = mine.filter((a) => a.direction === "inbound").length;
-  const outbound = mine.filter((a) => a.direction === "outbound").length;
-  if (outbound >= 3 && inbound === 0) {
-    factors.push({
-      key: "one_sided",
-      label: "محادثة من طرف واحد",
-      detail: `${outbound} رسالة منّا، بدون أي رد`,
-      contribution: MANUAL_WEIGHTS.oneSided,
-      basis: { kind: "manual" },
-    });
-  } else if (outbound >= 4 && inbound > 0 && outbound / inbound >= 4) {
-    factors.push({
-      key: "one_sided",
-      label: "محادثة من طرف واحد",
-      detail: `${outbound} منّا مقابل ${inbound} من العميل`,
-      contribution: MANUAL_WEIGHTS.oneSided,
-      basis: { kind: "manual" },
-    });
-  } else if (inbound > 0) {
-    clear.push("العميل يتفاعل");
-  }
+  /**
+   * The one-sided-conversation factor was removed, not suppressed.
+   *
+   * It fired on 26 of 39 open deals — under the discrimination ceiling, so the
+   * population guard would have kept it. But only 5 of those 39 have a single
+   * inbound activity logged at all, and 94 of 2,962 activities in the whole
+   * account are inbound. "The customer isn't replying" was therefore measuring
+   * whether anyone recorded the reply, not whether one arrived.
+   *
+   * That is a failure the fire-rate guard cannot catch: the signal does vary
+   * across deals, it just varies with something other than what it claims. A
+   * health score that penalises undocumented deals rewards diligent typing
+   * rather than healthy deals, which is the worst thing it could measure.
+   *
+   * It can come back when inbound coverage is real — after 64 (paste a
+   * conversation) and 76/83 (log from the call) are writing replies.
+   */
 
   // ── 5. Age against how long a won deal usually takes ────────────────────
   const ab = baselines.ageDays;
