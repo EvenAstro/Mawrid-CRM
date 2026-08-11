@@ -59,6 +59,19 @@ export function PhoneIcon({ className = base }: IconProps) {
   );
 }
 
+/** WhatsApp. Drawn at the set's stroke weight in currentColor rather than the
+ * brand mark — a green logo dropped into this palette would be the only
+ * foreign colour in the product, and the button beside it already says
+ * "واتساب". */
+export function WhatsAppIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M3.5 20.5l1.3-4a8 8 0 1 1 3.2 3.2l-4.5.8z" />
+      <path d="M9 8.5c.3 2.5 2.2 4.5 4.7 5.2l1-1.4 2 .8-.2 1.6c-2.9.5-6.6-2.4-7.6-5.4l1.4-.8z" />
+    </svg>
+  );
+}
+
 export function ChatBubbleIcon({ className = base }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>

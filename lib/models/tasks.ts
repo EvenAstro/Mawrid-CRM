@@ -258,3 +258,15 @@ export async function fetchOpenTaskDealIds(dealIds: string[]) {
     .in("entity_id", dealIds)
     .is("completed_at", null);
 }
+
+/** Open tasks on one deal, for the deal panel. */
+export async function fetchDealOpenTasks(dealId: string) {
+  return supabase
+    .from("tasks")
+    .select("id, title, due_at, completed_at")
+    .eq("entity_type", "deal")
+    .eq("entity_id", dealId)
+    .is("completed_at", null)
+    .order("due_at", { ascending: true })
+    .limit(10);
+}

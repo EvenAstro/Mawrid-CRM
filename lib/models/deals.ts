@@ -11,6 +11,9 @@ export interface Deal {
   /** Who carries this deal. Selected by `*` all along; typed only once the
    * team board and the deals owner filter needed to read it. */
   owner_id: string | null;
+  /** The person this deal is with. Selected by `*`; typed once the deal panel
+   * needed a phone number to call. */
+  lead_id: string | null;
   created_at: string | null;
   /**
    * Last modification. NOT a close date, and it must not be used as one.

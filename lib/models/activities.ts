@@ -226,3 +226,14 @@ export async function fetchDealActivitiesForHealth(dealIds: string[]) {
     .eq("entity_type", "deal")
     .in("entity_id", dealIds);
 }
+
+/** One deal's timeline, newest first — the deal panel's history block. */
+export async function fetchDealTimeline(dealId: string, limit = 20) {
+  return supabase
+    .from("activities")
+    .select("id, body, direction, occurred_at, situational_tag, activity_types(label)")
+    .eq("entity_type", "deal")
+    .eq("entity_id", dealId)
+    .order("occurred_at", { ascending: false })
+    .limit(limit);
+}

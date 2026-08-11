@@ -13,6 +13,7 @@ import Skeleton from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import NewDealSlideOver from "@/components/NewDealSlideOver";
 import NextBestActionCard from "@/components/NextBestActionCard";
+import DealRecord from "@/components/deals/DealRecord";
 import { useRole } from "@/components/RoleProvider";
 import { fetchDealsBoard, moveDealStage, type Deal, type StageCol } from "@/lib/models/deals";
 import { fetchProfiles } from "@/lib/profiles";
@@ -382,10 +383,15 @@ export default function DealsPage() {
               <Detail icon={<CurrencyIcon className="h-4 w-4" />} label="العملة" value={selected.currency_code} last />
             </Panel>
 
-            <Panel className="p-[var(--space-card-pad)]">
-              <p className="t-eyebrow flex items-center gap-1.5 text-[color:var(--content-tertiary)]"><NoteIcon className="h-3.5 w-3.5" />الملاحظات</p>
-              <p dir="auto" className="t-body-sm mt-2 text-[color:var(--content-secondary)]">{selected.notes || "لا توجد ملاحظات"}</p>
-            </Panel>
+            {selected.notes && (
+              <Panel className="p-[var(--space-card-pad)]">
+                <p className="t-eyebrow flex items-center gap-1.5 text-[color:var(--content-tertiary)]"><NoteIcon className="h-3.5 w-3.5" />الملاحظات</p>
+                <p dir="auto" className="t-body-sm mt-2 text-[color:var(--content-secondary)]">{selected.notes}</p>
+              </Panel>
+            )}
+
+            {/* The deal's own record — contact, open tasks, timeline. */}
+            <DealRecord dealId={String(selected.id)} leadId={selected.lead_id ?? null} />
           </div>
         )}
       </SlideOver>

@@ -187,3 +187,14 @@ export async function fetchNotifNewLeads(sinceIso: string) {
     .gte("created_at", sinceIso)
     .order("created_at", { ascending: false }).limit(5);
 }
+
+/** Contact details for one lead — feeds the deal panel's contact block.
+ * `phone` aliases normalized_phone, matching fetchLeads, so callers get one
+ * shape regardless of which query produced the row. */
+export async function fetchLeadContact(leadId: string | number) {
+  return supabase
+    .from("leads")
+    .select("id, full_name, company_name, phone:normalized_phone, email:normalized_email")
+    .eq("id", leadId)
+    .maybeSingle();
+}
