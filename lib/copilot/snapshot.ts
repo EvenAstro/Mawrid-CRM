@@ -131,7 +131,7 @@ export async function buildSnapshot(): Promise<BusinessSnapshot> {
     fetchProfilesAdmin(),
     fetchConversationsForSnapshot(),
     fetchConversationMembersForSnapshot(),
-    fetchRecentMessagesForSnapshot(40),
+    fetchRecentMessagesForSnapshot(80),
   ]);
 
   const leads = (leadsRes.data as unknown as LeadRow[]) ?? [];
@@ -308,20 +308,25 @@ export async function buildSnapshot(): Promise<BusinessSnapshot> {
     arr.push(nameById.get(m.user_id) ?? "عضو");
     membersByConv.set(m.conversation_id, arr);
   }
-  const convLines = convs.slice(0, 15).map((c) => {
+  const convLines = convs.slice(0, 30).map((c) => {
     const who = (membersByConv.get(c.id) ?? []).join("، ") || "—";
     const label = c.kind === "group" ? `مجموعة «${c.title ?? "بدون اسم"}»` : c.kind === "dm" ? "محادثة مباشرة" : `نقاش مرتبط بـ${c.kind}`;
     return `- ${label} — الأعضاء: ${who}`;
   }).join("\n");
-  const msgLines = msgs.slice(0, 15).map((m) => {
-    const body = (m.body ?? "").replace(/\s+/g, " ").slice(0, 120);
-    return `- ${nameById.get(m.sender_id ?? "") ?? "مستخدم"}: ${body}`;
+  // Full bodies, capped only where a single message would crowd out the rest
+  // of the context. 600 characters is longer than any message the team has
+  // sent; the cap exists so one pasted document cannot swallow the window.
+  const msgLines = msgs.slice(0, 60).map((m) => {
+    const raw = (m.body ?? "").replace(/\s+/g, " ").trim();
+    const body = raw.length > 600 ? `${raw.slice(0, 600)}…` : raw;
+    const when = m.created_at ? new Date(m.created_at).toISOString().slice(0, 10) : "";
+    return `- [${when}] ${nameById.get(m.sender_id ?? "") ?? "مستخدم"}: ${body}`;
   }).join("\n");
 
   const sections: SnapshotSections = {
     team: `فريق العمل وتوزيع الصفقات:
 ${teamLines || "(لا يوجد)"}`,
-    chat: `المحادثات الداخلية بين أعضاء الفريق — الإجمالي ${convs.length} محادثة، ${msgs.length} رسالة أخيرة:
+    chat: `المحادثات الداخلية بين أعضاء الفريق — ${convs.length} محادثة، وآخر ${Math.min(60, msgs.length)} رسالة بنصها الكامل:
 ${convLines || "(لا توجد محادثات)"}
 
 آخر الرسائل:
