@@ -52,6 +52,23 @@ export interface HealthFactor {
   basis: FactorBasis;
 }
 
+/**
+ * A factor that fired on nearly the whole population, so it was measured,
+ * found not to discriminate, and taken out of the score.
+ *
+ * The fourth provenance state, and the strongest one. `manual`, `fallback`
+ * and `unmeasured` all say some version of "we couldn't measure this".
+ * This one says we did measure it and it turned out to carry no information
+ * — a judgement, not a gap.
+ */
+export interface IgnoredFactor {
+  key: HealthFactor["key"];
+  label: string;
+  detail: string;
+  firedOn: number;
+  population: number;
+}
+
 export interface DealHealth {
   dealId: string;
   score: number;
@@ -68,6 +85,8 @@ export interface DealHealth {
    * score, which is the worst direction for it to lean.
    */
   unmeasured: string[];
+  /** Measured, and found not to discriminate. See suppressNonDiscriminating. */
+  ignored: IgnoredFactor[];
 }
 
 /** Hand-set weights. Named, exported and overridable rather than inline
@@ -126,6 +145,16 @@ export interface Baselines {
   silenceDays: { value: number; sampleSize: number; derived: boolean };
   /** Typical age of a deal at the point it was won. */
   ageDays: { value: number; sampleSize: number; derived: boolean };
+}
+
+/**
+ * Nearest-rank percentile. Deliberately not interpolated — these are whole
+ * days and a fractional day baseline reads as false precision.
+ */
+function percentile(xs: number[], p: number): number {
+  if (!xs.length) return 0;
+  const s = [...xs].sort((a, b) => a - b);
+  return s[Math.min(s.length - 1, Math.floor(p * (s.length - 1)))];
 }
 
 function median(xs: number[]): number {
@@ -188,9 +217,12 @@ export function deriveBaselines(
       silenceSample >= MIN_SAMPLE && gaps.length
         ? { value: Math.max(1, median(gaps)), sampleSize: silenceSample, derived: true }
         : { value: FALLBACK_SILENCE_DAYS, sampleSize: silenceSample, derived: false },
+    // 75th percentile, not the median. "Older than most of the deals you have
+    // won" is the comparison a rep would actually make; "older than the
+    // typical one" flags half the board by construction.
     ageDays:
       ages.length >= MIN_SAMPLE
-        ? { value: Math.max(1, median(ages)), sampleSize: ages.length, derived: true }
+        ? { value: Math.max(1, percentile(ages, 0.75)), sampleSize: ages.length, derived: true }
         : { value: FALLBACK_AGE_DAYS, sampleSize: ages.length, derived: false },
   };
 }
@@ -346,5 +378,73 @@ export function computeHealth(
     Math.min(100, 100 + factors.reduce((s, f) => s + f.contribution, 0)),
   );
 
-  return { dealId: deal.id, score, factors, clear, unmeasured };
+  return { dealId: deal.id, score, factors, clear, unmeasured, ignored: [] };
+}
+
+/**
+ * Removes factors that fire on nearly every deal.
+ *
+ * ── The lesson this encodes ──────────────────────────────────────────────
+ *
+ * MIN_SAMPLE is not sufficient on its own, and finding that out cost us a
+ * shipped defect. The age baseline cleared the gate with six won deals and
+ * produced a "norm" of 10 days, which meant every open deal older than a
+ * fortnight was penalised — on an account where the median open deal is
+ * months old. The factor fired on almost the whole board, looked like
+ * insight, and ranked nothing.
+ *
+ * Sample size answers "do we have enough rows to compute this?". It says
+ * nothing about "does the result tell the deals apart?". A factor that fires
+ * on 37 of 39 deals is a constant with a signal's clothes on: it shifts every
+ * score by the same amount and changes no ordering. Since ranking is the
+ * entire purpose of the score, such a factor is worse than absent — it costs
+ * the reader attention and returns nothing.
+ *
+ * So every factor added from here gets checked twice: enough sample to
+ * compute, and enough variance to distinguish. This function is the second
+ * check, and it applies to factors that do not exist yet.
+ *
+ * The suppressed factor is not hidden. It is reported with its fire rate and
+ * rendered greyed, because "we measured this and it does not discriminate" is
+ * a stronger statement than silence — and a different statement from the
+ * three ways this module says "we could not measure it".
+ */
+
+/** Above this share of the population, a factor is not distinguishing. */
+export const DISCRIMINATION_CEILING = 0.7;
+
+/** Below this many deals, fire rates are noise and nothing is suppressed. */
+const MIN_POPULATION = 5;
+
+export function suppressNonDiscriminating(results: DealHealth[]): DealHealth[] {
+  if (results.length < MIN_POPULATION) return results;
+
+  const fired = new Map<HealthFactor["key"], number>();
+  for (const r of results) {
+    for (const f of r.factors) fired.set(f.key, (fired.get(f.key) ?? 0) + 1);
+  }
+
+  const suppressed = new Set<HealthFactor["key"]>();
+  for (const [key, n] of fired) {
+    if (n / results.length > DISCRIMINATION_CEILING) suppressed.add(key);
+  }
+  if (!suppressed.size) return results;
+
+  return results.map((r) => {
+    const kept = r.factors.filter((f) => !suppressed.has(f.key));
+    const ignored: IgnoredFactor[] = r.factors
+      .filter((f) => suppressed.has(f.key))
+      .map((f) => ({
+        key: f.key,
+        label: f.label,
+        detail: f.detail,
+        firedOn: fired.get(f.key) ?? 0,
+        population: results.length,
+      }));
+    const score = Math.max(
+      0,
+      Math.min(100, 100 + kept.reduce((s, f) => s + f.contribution, 0)),
+    );
+    return { ...r, factors: kept, ignored, score };
+  });
 }

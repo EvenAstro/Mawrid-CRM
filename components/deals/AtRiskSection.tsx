@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   computeHealth,
   deriveBaselines,
+  suppressNonDiscriminating,
   type DealHealth,
   type HealthActivityRow,
   type HealthDealRow,
@@ -97,8 +98,13 @@ export default function AtRiskSection({ deals }: { deals: Deal[] }) {
           withTask.size > 0,
         ),
       }));
-      scored.sort((a, b) => a.health.score - b.health.score);
-      setRanked(scored);
+      // Population pass: a factor firing on nearly every deal ranks nothing.
+      // Has to run over the whole set, which is why it is not inside
+      // computeHealth — a per-deal function cannot see the population.
+      const adjusted = suppressNonDiscriminating(scored.map((s) => s.health));
+      const withHealth = scored.map((s, i) => ({ ...s, health: adjusted[i] }));
+      withHealth.sort((a, b) => a.health.score - b.health.score);
+      setRanked(withHealth);
     } catch (err) {
       console.error("[health] load failed", err);
       setFailed(true);

@@ -12,6 +12,22 @@ export interface Deal {
    * team board and the deals owner filter needed to read it. */
   owner_id: string | null;
   created_at: string | null;
+  /**
+   * Last modification. NOT a close date, and it must not be used as one.
+   *
+   * There is no closed_at column. Several places treat updated_at as a proxy
+   * for when a deal was won or lost, and it is wrong every time the row is
+   * touched afterwards — which happens on any edit, including a note.
+   *
+   * This has already cost one feature: proposal 86 (reviving lost deals whose
+   * reason has expired) needed "how long since this closed" and was dropped,
+   * because all 193 lost deals report updated_at within the last 90 days and
+   * the elapsed-time filter selected zero rows.
+   *
+   * Anything reaching for time-since-close needs a real closed_at column
+   * written at the stage transition first. deal_stage_history records the
+   * transitions and is the natural source once it has depth.
+   */
   updated_at: string | null;
   stage_id: string | null;
   expected_value_minor: number | null;

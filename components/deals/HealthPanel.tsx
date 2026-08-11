@@ -207,6 +207,27 @@ export default function HealthPanel({
         </p>
       )}
 
+      {health.ignored.length > 0 && (
+        /* Measured, and found not to discriminate. Greyed and with no number,
+           because it contributes nothing — but present, because "we checked
+           this and it tells your deals apart in no way" is a judgement worth
+           showing, and a different claim from the three ways this panel says
+           "we couldn't measure it". */
+        <div className="flex flex-col gap-1.5">
+          <p className="t-eyebrow text-[color:var(--content-tertiary)]">فحصناه ولا يفرّق</p>
+          {health.ignored.map((f) => (
+            <div key={f.key} className="flex items-baseline justify-between gap-3">
+              <span className="t-caption text-[color:var(--content-tertiary)]">
+                {f.label}
+              </span>
+              <span dir="ltr" className="t-micro tabular-nums text-[color:var(--content-tertiary)]">
+                يُطلق على {f.firedOn} من {f.population}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {health.unmeasured.length > 0 && (
         /* Deliberately above "سليم". A factor we could not evaluate must never
            sit below a list of things that are fine, where it reads as one of
