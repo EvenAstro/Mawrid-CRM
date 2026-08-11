@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /** Data-access layer for the `messages` table. */
 
@@ -165,4 +166,15 @@ export async function countMessages(conversationId: string) {
     .select("id", { count: "exact", head: true })
     .eq("conversation_id", conversationId)
     .is("deleted_at", null);
+}
+
+/** Recent messages across every conversation — the Supervisor's chat context.
+ * Bodies are included: the assistant is asked to answer about what the team
+ * discussed, which it cannot do from counts alone. */
+export async function fetchRecentMessagesForSnapshot(limit = 40) {
+  return supabaseAdmin
+    .from("messages")
+    .select("conversation_id, sender_id, body, created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
 }

@@ -106,3 +106,31 @@ export async function upsertProfileWithRole(
   });
   return { error };
 }
+
+/** Every profile with a display name, for server-side context builders.
+ * Admin client because API routes carry no browser session. */
+export async function fetchProfilesAdmin(): Promise<{ id: string; name: string }[]> {
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("id, first_name, last_name, full_name, email");
+  if (error) {
+    console.error("[profiles] fetchProfilesAdmin failed", error);
+    return [];
+  }
+  return ((data as Profile[]) ?? []).map((p) => ({
+    id: p.id,
+    name: p.full_name || [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email || "مستخدم",
+  }));
+}
+
+/** Display name for one user id — used by the Supervisor to address them. */
+export async function fetchProfileName(userId: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("first_name, full_name, email")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error || !data) return null;
+  const p = data as { first_name: string | null; full_name: string | null; email: string | null };
+  return p.first_name || p.full_name || p.email || null;
+}

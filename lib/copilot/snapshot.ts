@@ -3,6 +3,9 @@ import { fetchLeadsForSnapshot } from "@/lib/models/leads";
 import { fetchDealsForSnapshot } from "@/lib/models/deals";
 import { fetchActivitiesByEntityIdsAdmin, fetchRecentActivitiesAdmin, fetchLatestActivityTimestamp } from "@/lib/models/activities";
 import { fetchOpenTasksForSnapshot } from "@/lib/models/tasks";
+import { fetchConversationsForSnapshot, fetchConversationMembersForSnapshot } from "@/lib/models/conversations";
+import { fetchRecentMessagesForSnapshot } from "@/lib/models/messages";
+import { fetchProfilesAdmin } from "@/lib/profiles";
 
 const DAY_MS = 86_400_000;
 const STUCK_DAYS = 7;
@@ -24,6 +27,7 @@ interface LeadRow {
 interface DealRow {
   id: string;
   name: string | null;
+  owner_id: string | null;
   lead_id: string | null;
   expected_value_minor: number | null;
   won_value_minor: number | null;
@@ -56,6 +60,8 @@ export interface StuckDeal {
 }
 
 export interface SnapshotSections {
+  team: string;
+  chat: string;
   leads: string;
   dealsOverview: string;
   closest: string;
@@ -113,12 +119,19 @@ async function fetchActivitiesFor(dealIds: string[], leadIds: string[]): Promise
  * historical; anchoring to now would mark every deal stuck and every task past.
  */
 export async function buildSnapshot(): Promise<BusinessSnapshot> {
-  const [leadsRes, dealsRes, recentActsRes, latestActRes, tasksRes] = await Promise.all([
+  const [
+    leadsRes, dealsRes, recentActsRes, latestActRes, tasksRes,
+    profiles, convsRes, membersRes, msgsRes,
+  ] = await Promise.all([
     fetchLeadsForSnapshot(),
     fetchDealsForSnapshot(),
     fetchRecentActivitiesAdmin(12),
     fetchLatestActivityTimestamp(),
     fetchOpenTasksForSnapshot(),
+    fetchProfilesAdmin(),
+    fetchConversationsForSnapshot(),
+    fetchConversationMembersForSnapshot(),
+    fetchRecentMessagesForSnapshot(40),
   ]);
 
   const leads = (leadsRes.data as unknown as LeadRow[]) ?? [];
@@ -261,7 +274,58 @@ export async function buildSnapshot(): Promise<BusinessSnapshot> {
 - قيمة الـ Pipeline النشطة: SAR ${money(pipelineValue)}
 - صفقات عالقة (بلا نشاط ${STUCK_DAYS}+ أيام): ${stuck.length}`;
 
+  // ── Team ─────────────────────────────────────────────────────────────────
+  // Who owns what. The assistant was asked account-wide questions and had no
+  // owner dimension at all, the same gap proposal 67 filled in the UI.
+  const nameById = new Map(profiles.map((p) => [p.id, p.name]));
+  const dealsByOwner = new Map<string, { open: number; won: number; lost: number; valueSAR: number }>();
+  for (const d of deals) {
+    const key = d.owner_id ?? "—";
+    const acc = dealsByOwner.get(key) ?? { open: 0, won: 0, lost: 0, valueSAR: 0 };
+    const t = d.pipeline_stages?.terminal_type ?? null;
+    if (t === "won") acc.won++;
+    else if (t === "lost") acc.lost++;
+    else {
+      acc.open++;
+      acc.valueSAR += valueSAR(d);
+    }
+    dealsByOwner.set(key, acc);
+  }
+  const teamLines = [...dealsByOwner.entries()]
+    .sort((a, b) => b[1].valueSAR - a[1].valueSAR)
+    .map(([id, a]) =>
+      `- ${nameById.get(id) ?? (id === "—" ? "بدون مالك" : "مستخدم محذوف")}: ${a.open} مفتوحة (SAR ${money(a.valueSAR)}) · ${a.won} مربوحة · ${a.lost} مخسورة`,
+    )
+    .join("\n");
+
+  // ── Internal chat ────────────────────────────────────────────────────────
+  const convs = (convsRes.data as { id: string; kind: string; title: string | null; created_at: string | null; last_message_at: string | null }[] | null) ?? [];
+  const members = (membersRes.data as { conversation_id: string; user_id: string }[] | null) ?? [];
+  const msgs = (msgsRes.data as { conversation_id: string; sender_id: string | null; body: string | null; created_at: string | null }[] | null) ?? [];
+  const membersByConv = new Map<string, string[]>();
+  for (const m of members) {
+    const arr = membersByConv.get(m.conversation_id) ?? [];
+    arr.push(nameById.get(m.user_id) ?? "عضو");
+    membersByConv.set(m.conversation_id, arr);
+  }
+  const convLines = convs.slice(0, 15).map((c) => {
+    const who = (membersByConv.get(c.id) ?? []).join("، ") || "—";
+    const label = c.kind === "group" ? `مجموعة «${c.title ?? "بدون اسم"}»` : c.kind === "dm" ? "محادثة مباشرة" : `نقاش مرتبط بـ${c.kind}`;
+    return `- ${label} — الأعضاء: ${who}`;
+  }).join("\n");
+  const msgLines = msgs.slice(0, 15).map((m) => {
+    const body = (m.body ?? "").replace(/\s+/g, " ").slice(0, 120);
+    return `- ${nameById.get(m.sender_id ?? "") ?? "مستخدم"}: ${body}`;
+  }).join("\n");
+
   const sections: SnapshotSections = {
+    team: `فريق العمل وتوزيع الصفقات:
+${teamLines || "(لا يوجد)"}`,
+    chat: `المحادثات الداخلية بين أعضاء الفريق — الإجمالي ${convs.length} محادثة، ${msgs.length} رسالة أخيرة:
+${convLines || "(لا توجد محادثات)"}
+
+آخر الرسائل:
+${msgLines || "(لا توجد رسائل)"}`,
     leads: `العملاء المحتملون:
 - الإجمالي: ${totalLeads} (نظيف ${cleanLeads} · جانك ${junkLeads})
 - توزيع حسب المصدر: ${leadsBySource || "—"}`,

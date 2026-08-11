@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { fetchCurrentProfile } from "@/lib/profiles";
+import { profileName } from "@/lib/format";
 import { useCopilot } from "@/components/copilot/CopilotProvider";
 import ChatThread from "@/components/copilot/ChatThread";
 import Composer from "@/components/copilot/Composer";
@@ -89,6 +91,22 @@ export default function Supervisor() {
   const [data, setData] = useState<CoachPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [me, setMe] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetchCurrentProfile()
+      .then((p) => {
+        if (!alive || !p) return;
+        // First name only. "يا هلا عماد" is how a colleague opens; the full
+        // legal name reads like a bank.
+        setMe(p.first_name || profileName(p).split(" ")[0] || null);
+      })
+      .catch((err) => console.error("[supervisor] profile failed", err));
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const load = useCallback(async () => {
     setFailed(false);
@@ -161,7 +179,9 @@ export default function Supervisor() {
               <RobotIcon className="h-5 w-5" />
             </span>
             <span className="min-w-0 flex-1">
-              <h2 className="t-title-3 truncate text-[color:var(--content-inverse-primary)]">المشرف</h2>
+              <h2 className="t-title-3 truncate text-[color:var(--content-inverse-primary)]">
+                {me ? `يا هلا ${me}` : "المشرف"}
+              </h2>
               <span className="t-micro block text-[color:var(--content-inverse-tertiary)]">
                 {stats
                   ? `${stats.activeDeals} صفقة نشطة · ${stats.totalLeads} عميل`

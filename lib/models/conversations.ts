@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /** Data-access layer for `conversations` and `conversation_members`. */
 
@@ -98,4 +99,19 @@ export async function addGroupMember(conversationId: string, userId: string) {
 
 export async function leaveConversation(conversationId: string) {
   return supabase.rpc("leave_conversation", { p_conversation_id: conversationId });
+}
+
+/** Every conversation with its member ids and last message — feeds the
+ * Supervisor's account context. Admin client: the Supervisor answers about
+ * the whole account, and the API route has no browser session attached. */
+export async function fetchConversationsForSnapshot() {
+  return supabaseAdmin
+    .from("conversations")
+    .select("id, kind, title, created_at, last_message_at")
+    .order("last_message_at", { ascending: false })
+    .limit(50);
+}
+
+export async function fetchConversationMembersForSnapshot() {
+  return supabaseAdmin.from("conversation_members").select("conversation_id, user_id");
 }

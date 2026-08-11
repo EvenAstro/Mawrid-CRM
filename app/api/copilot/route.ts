@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildSnapshot } from "@/lib/copilot/snapshot";
 import { requireUser } from "@/lib/auth/requireUser";
+import { fetchProfileName } from "@/lib/profiles";
 import { checkRateLimit } from "@/lib/rateLimit";
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
@@ -14,10 +15,11 @@ const BASE_SYSTEM = `أنت مساعد مبيعات ذكي مدمج في نظا�
 
 const CAPABILITIES = `=== قدراتك ===
 
-1. الإجابة على أسئلة الأعمال بناءً على البيانات أعلاه
+1. الإجابة على أي سؤال عن الحساب من البيانات أعلاه — عملاء، صفقات، نشاطات، مهام، فريق العمل، والمحادثات الداخلية بين الأعضاء
 2. كتابة رسائل احترافية للعملاء (واتساب، إيميل، مكالمة)
 3. تحليل الأداء واقتراح أولويات العمل
-4. تحليل أي صفقة أو عميل بالاسم
+4. تحليل أي صفقة أو عميل أو مندوب بالاسم
+5. الإجابة عن من يشتغل على ماذا، ومن راسل من، وآخر ما دار في المحادثات
 
 عند الإجابة على سؤال تحليلي (مثل: وين، كم، من، وش، ملخص): ابدأ بالإجابة المباشرة، ثم الأرقام الداعمة من البيانات، ثم توصية عملية واحدة. لا تكتب رسالة إلا إذا طُلب منك ذلك صراحة.
 
@@ -33,7 +35,10 @@ interface ChatMessage {
   content: string;
 }
 
-type SectionKey = "leads" | "dealsOverview" | "closest" | "stuck" | "lost" | "weekly" | "activities" | "tasks";
+type SectionKey = "team" | "chat" | "leads" | "dealsOverview" | "closest" | "stuck" | "lost" | "weekly" | "activities" | "tasks";
+
+/** Every section. The fallback route sends all of them — see routeRequest. */
+const ALL_SECTIONS: SectionKey[] = ["team", "chat", "leads", "dealsOverview", "closest", "stuck", "lost", "weekly", "activities", "tasks"];
 
 /**
  * Deterministic intent routing. llama-3.3 can't reliably self-classify over a
@@ -96,7 +101,22 @@ function routeRequest(lastUser: string): { sections: SectionKey[]; instruction: 
     };
   }
   // Unmatched → give a broad but bounded set and let the model choose.
-  return { sections: ["stuck", "closest", "leads", "dealsOverview", "activities"], instruction: "" };
+  if (/محادث|شات|رسائل|مجموع(ة|ات)\s*العمل|كلّم|راسل/.test(t)) {
+    return { sections: ["chat", "team"], instruction: "أجب من قسم «المحادثات الداخلية» أعلاه — فيه قائمة المحادثات وأعضاؤها وآخر الرسائل." };
+  }
+  if (/الفريق|المندوب|من\s*عنده|توزيع|مين\s*يشتغل|أفضل\s*مندوب/.test(t)) {
+    return { sections: ["team", "dealsOverview", "stuck"], instruction: "أجب من قسم «فريق العمل» أعلاه بالأسماء والأرقام." };
+  }
+  // Default: everything.
+  //
+  // This branch used to send five of the ten sections, which is why an
+  // off-script question got "معلوماتك لا تحتوي على تفاصيل محادثات الشات" —
+  // the data existed and the router had simply not included it. A model
+  // cannot answer from a section it never sees, and deciding in advance
+  // which five a user is allowed to ask about is a guess we kept getting
+  // wrong. The keyword branches above stay because they sharpen focused
+  // questions; this catch-all now withholds nothing.
+  return { sections: ALL_SECTIONS, instruction: "" };
 }
 
 function isChatMessage(v: unknown): v is ChatMessage {
@@ -164,7 +184,13 @@ export async function POST(req: NextRequest) {
     dataBlock = "(تعذّر تحميل بيانات الأعمال الآن)";
   }
 
+  // Who is asking. The assistant addressed everyone as an anonymous "you"
+  // while holding the account's whole team roster — greeting the user by name
+  // costs one lookup and is the difference between a tool and an assistant.
+  const who = await fetchProfileName(caller.id);
+
   const system = `${BASE_SYSTEM}
+${who ? `\nالمستخدم الذي تتحدث معه اسمه: ${who}. نادِه باسمه عند التحية أو عند الإشارة إليه، بدون مبالغة.` : ""}
 
 === بيانات الأعمال الحالية (محدّثة للتو) ===
 
