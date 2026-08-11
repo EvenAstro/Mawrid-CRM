@@ -11,6 +11,7 @@ import DailyBriefing from "@/components/DailyBriefing";
 import { initials as initialsOf } from "@/lib/format";
 import RoleProvider, { useRole } from "@/components/RoleProvider";
 import { FEATURES } from "@/lib/features";
+import { PhoneIcon } from "@/components/icons";
 import { ActivitiesIcon, ContactsIcon, DashboardIcon, DealsIcon, InsightsIcon, LeadsIcon, LogoutIcon, TasksIcon, UsersIcon } from "@/components/navIcons";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
 import CommandPalette from "@/components/CommandPalette";
@@ -26,6 +27,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   activities: ActivitiesIcon,
   tasks: TasksIcon,
   insights: InsightsIcon,
+  calls: PhoneIcon,
   team: UsersIcon,
   users: UsersIcon,
 };

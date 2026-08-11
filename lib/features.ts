@@ -17,6 +17,7 @@ export const FEATURES: FeatureDef[] = [
   { key: "leads", label: "العملاء المحتملون", description: "إدارة ومتابعة العملاء المحتملين", group: "مساحة العمل", href: "/dashboard/leads" },
   { key: "deals", label: "الصفقات", description: "مسار الصفقات ولوحة المبيعات", group: "مساحة العمل", href: "/dashboard/deals" },
   { key: "team", label: "لوحة الفريق", description: "توزيع الصفقات على المندوبين وأين تسكت", group: "الإدارة", href: "/dashboard/team" },
+  { key: "calls", label: "مكالماتك", description: "قائمة الاتصالات المقترحة اليوم مرتّبة بالأولوية", group: "مساحة العمل", href: "/dashboard/calls" },
   { key: "chat", label: "المحادثات", description: "محادثات داخلية بين أعضاء الفريق", group: "التفاعل", href: "/dashboard/chat" },
   { key: "activities", label: "النشاطات", description: "سجل كل النشاطات المسجّلة", group: "التفاعل", href: "/dashboard/activities" },
   { key: "tasks", label: "المهام", description: "قائمة المهام والتقويم", group: "التفاعل", href: "/dashboard/tasks" },

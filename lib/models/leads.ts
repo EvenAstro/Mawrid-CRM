@@ -198,3 +198,11 @@ export async function fetchLeadContact(leadId: string | number) {
     .eq("id", leadId)
     .maybeSingle();
 }
+
+/** Contacts for many leads at once — the call queue needs a phone per deal. */
+export async function fetchLeadContactsByIds(ids: (string | number)[]) {
+  return supabase
+    .from("leads")
+    .select("id, full_name, company_name, phone:normalized_phone")
+    .in("id", ids);
+}
