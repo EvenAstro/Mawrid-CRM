@@ -270,3 +270,29 @@ export async function fetchDealOpenTasks(dealId: string) {
     .order("due_at", { ascending: true })
     .limit(10);
 }
+
+/** Creates a task linked to a deal — used by the parse-note review card
+ * (proposal 64). Mirrors createLeadTask but sets entity_type "deal", the
+ * dimension proposal 78 made writable. */
+export async function createDealTask(input: {
+  title: string;
+  dueAt: string | null;
+  dealId: string;
+  assigneeId: string | null;
+}): Promise<{ error: Error | null }> {
+  const now = new Date().toISOString();
+  const { error } = await supabase.from("tasks").insert({
+    id: crypto.randomUUID(),
+    title: input.title,
+    description: null,
+    due_at: input.dueAt,
+    task_type_id: null,
+    assignee_uid: input.assigneeId,
+    depends_on_task_id: null,
+    entity_type: "deal",
+    entity_id: input.dealId,
+    created_at: now,
+    updated_at: now,
+  });
+  return { error };
+}

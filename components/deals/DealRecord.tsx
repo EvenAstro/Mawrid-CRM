@@ -8,6 +8,7 @@ import { formatDateTime, formatDate, formatPhone } from "@/lib/format";
 import { Panel } from "@/components/ui/Panel";
 import Skeleton from "@/components/ui/Skeleton";
 import { PhoneIcon, WhatsAppIcon, CheckIcon, ClockIcon } from "@/components/icons";
+import PasteNoteCard from "@/components/deals/PasteNoteCard";
 
 /**
  * The deal's own record — proposal 82.
@@ -102,6 +103,8 @@ export default function DealRecord({
 
   return (
     <div className="flex flex-col gap-5">
+      <PasteNoteCard dealId={dealId} onSaved={load} />
+
       {/* ── Contact ─────────────────────────────────────────────────────── */}
       {contact && (
         <Panel className="p-[var(--space-card-pad)]">
