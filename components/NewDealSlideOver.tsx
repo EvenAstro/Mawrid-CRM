@@ -172,7 +172,7 @@ export default function NewDealSlideOver({
 
         <div className="grid grid-cols-2 gap-4">
           <Input id="nd-close" label="تاريخ الإغلاق المتوقع" type="date" value={closeDate} onChange={(e) => setCloseDate(e.target.value)} />
-          <Input id="nd-prob" label="الاحتمالية %" type="number" min="0" max="100" value={probability} onChange={(e) => setProbability(e.target.value)} placeholder="0" />
+          <Input id="nd-prob" label="تقدير المندوب %" type="number" min="0" max="100" value={probability} onChange={(e) => setProbability(e.target.value)} placeholder="0" />
         </div>
 
         <Textarea id="nd-notes" label="الملاحظات" dir="auto" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات عن هذه الصفقة..." />

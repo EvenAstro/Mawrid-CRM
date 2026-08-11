@@ -166,13 +166,15 @@ export async function buildSnapshot(): Promise<BusinessSnapshot> {
     .map((d) => `${d.name || "بدون اسم"} — ${d.lost_reasons?.label || "بدون سبب"} — SAR ${money(valueSAR(d))}`)
     .join("\n");
 
-  // Closest to closing: active deals ranked by win probability, then value.
+  // Ranked by the rep's own estimate, then value. probability_pct is typed by
+  // hand in the new-deal form — nothing computes it — so this ordering is a
+  // sort of the team's opinion, not a model output, and the prompt says so.
   const closest = [...activeDeals]
     .sort((a, b) => (b.probability_pct ?? -1) - (a.probability_pct ?? -1) || valueSAR(b) - valueSAR(a))
     .slice(0, 5)
     .map(
       (d) =>
-        `${d.name || "بدون اسم"} — ${d.pipeline_stages?.label || "—"} — احتمالية ${
+        `${d.name || "بدون اسم"} — ${d.pipeline_stages?.label || "—"} — تقدير المندوب ${
           d.probability_pct != null ? d.probability_pct + "%" : "غير محددة"
         } — SAR ${money(valueSAR(d))}`,
     )
@@ -267,7 +269,7 @@ export async function buildSnapshot(): Promise<BusinessSnapshot> {
 - نشطة: ${activeDeals.length} · مربوحة: ${wonDeals.length} · مخسورة: ${lostDeals.length}
 - قيمة الـ Pipeline النشطة: SAR ${money(pipelineValue)}
 - توزيع الصفقات النشطة حسب المرحلة: ${dealsByStage || "—"}`,
-    closest: `أقرب الصفقات للإغلاق (حسب الاحتمالية):
+    closest: `أقرب الصفقات للإغلاق (مرتبة حسب تقدير المندوب نفسه، وهو رقم يكتبه يدوياً وليس محسوباً):
 ${closest || "(لا يوجد)"}`,
     stuck: `صفقات عالقة (بلا نشاط ${STUCK_DAYS}+ أيام) — الإجمالي ${stuck.length}:
 ${stuckList}`,

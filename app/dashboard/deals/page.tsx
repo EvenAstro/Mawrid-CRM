@@ -180,7 +180,7 @@ export default function DealsPage() {
                 "الصفقة": d.name ?? "",
                 "المرحلة": d.pipeline_stages?.label ?? "",
                 "القيمة": dealValue(d),
-                "الاحتمالية": d.probability_pct != null ? `${d.probability_pct}%` : "",
+                "تقدير المندوب %": d.probability_pct != null ? `${d.probability_pct}%` : "",
                 "تاريخ الإغلاق المتوقع": formatDate(d.target_close_date),
               })))}
             >تصدير CSV
@@ -322,9 +322,13 @@ export default function DealsPage() {
                         {d.probability_pct != null && d.probability_pct > 0 && (
                           <div className="flex items-center gap-2">
                             <div className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--surface-sunken)]">
-                              <div className="h-full rounded-full bg-[var(--content-accent)]" style={{ width: `${Math.min(100, d.probability_pct)}%` }} />
+                              <div className="h-full rounded-full bg-[var(--content-tertiary)]" style={{ width: `${Math.min(100, d.probability_pct)}%` }} />
                             </div>
-                            <span className="t-micro flex-none font-bold tabular-nums text-[color:var(--content-accent)]">AI {d.probability_pct}%</span>
+                            {/* Was "AI {pct}%". Nothing computes this field — NewDealSlideOver puts it
+                                in a number input and the rep types it. Labelling a
+                                hand-typed guess as a model output is the one claim in this
+                                product that cannot survive being asked about. */}
+                            <span className="t-micro flex-none font-bold tabular-nums text-[color:var(--content-tertiary)]">تقدير {d.probability_pct}%</span>
                           </div>
                         )}
 
@@ -373,7 +377,7 @@ export default function DealsPage() {
 
             <Panel className="overflow-hidden">
               <Detail icon={<SignalIcon className="h-4 w-4" />} label="المرحلة" value={selected.pipeline_stages?.label ?? null} />
-              <Detail icon={<TargetIcon className="h-4 w-4" />} label="الاحتمالية" value={selected.probability_pct != null ? `${selected.probability_pct}%` : null} />
+              <Detail icon={<TargetIcon className="h-4 w-4" />} label="تقدير المندوب" value={selected.probability_pct != null ? `${selected.probability_pct}%` : null} />
               <Detail icon={<CalendarIcon className="h-4 w-4" />} label="تاريخ الإغلاق المتوقع" value={selected.target_close_date ? formatDate(selected.target_close_date) : null} />
               <Detail icon={<CurrencyIcon className="h-4 w-4" />} label="العملة" value={selected.currency_code} last />
             </Panel>
