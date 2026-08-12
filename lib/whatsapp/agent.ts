@@ -23,14 +23,18 @@ import { toolsFor, runCrmTool, type CrmToolCtx } from "@/lib/whatsapp/crmTools";
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 
-/** Tried in order. All free on OpenRouter; all support tool calling and
- *  handle Arabic well. Free endpoints throttle hard and often, so treat
- *  falling through as the expected path, not the exception. */
+/** Tried in order. OpenRouter's free-tier model slugs churn constantly —
+ *  one going 404 because it was renamed or retired is normal, not a sign
+ *  the whole chain is broken, so treat falling through as the expected
+ *  path. The last entry is a paid model with a stable, unchanging slug —
+ *  confirmed working in this project before — so the chain always has a
+ *  floor: even if every free endpoint above it 404s or throttles, the
+ *  agent still replies instead of going silent. */
 const MODELS = [
   "deepseek/deepseek-chat-v3-0324:free",
-  "qwen/qwen3-235b-a22b:free",
-  "meta-llama/llama-4-maverick:free",
-  "google/gemma-3-27b-it:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "qwen/qwen-2.5-72b-instruct:free",
+  "meta-llama/llama-3.3-70b-instruct", // paid fallback — always resolves
 ];
 
 const MAX_TOOL_ROUNDS = 5;
