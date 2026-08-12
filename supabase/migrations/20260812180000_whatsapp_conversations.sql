@@ -113,16 +113,21 @@ as $$
     c.last_at,
     m.body,
     m.direction,
-    ld.id,
+    ld.id::text,
     ld.full_name,
     ps.label,
     coalesce(pr.full_name, nullif(trim(concat_ws(' ', pr.first_name, pr.last_name)), ''))
   from convo c
   join      last_msg  m  on m.wa_from  = c.wa_from
   left join lead_link ll on ll.wa_from = c.wa_from
-  left join public.leads ld on ld.id = ll.lead_id and ld.deleted_at is null
-  left join public.pipeline_stages ps on ps.id = ld.stage_id
-  left join public.profiles pr on pr.id = ld.owner_id
+  -- Every id compared as text. This schema mixes the two representations —
+  -- leads.id is text while pipeline_stages.id and profiles.id are uuid —
+  -- and casting both sides is the only join condition that holds no matter
+  -- which of the two a given column turns out to be.
+  left join public.leads ld
+    on ld.id::text = ll.lead_id and ld.deleted_at is null
+  left join public.pipeline_stages ps on ps.id::text = ld.stage_id::text
+  left join public.profiles pr on pr.id::text = ld.owner_id::text
   order by c.last_at desc;
 $$;
 
