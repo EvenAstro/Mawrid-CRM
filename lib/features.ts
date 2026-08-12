@@ -23,6 +23,7 @@ export const FEATURES: FeatureDef[] = [
   { key: "tasks", label: "المهام", description: "قائمة المهام والتقويم", group: "التفاعل", href: "/dashboard/tasks" },
   { key: "insights", label: "الرؤى والإيرادات", description: "رؤى تحليلية وذكاء الإيرادات", group: "الذكاء", href: "/dashboard/insights" },
   { key: "users", label: "إدارة المستخدمين", description: "إدارة حسابات الفريق وصلاحياتهم", group: "الإدارة", href: "/dashboard/users" },
+  { key: "whatsapp_agent", label: "وكيل واتساب — تجريبي", description: "تحكم ومراقبة وكيل الرد التلقائي التجريبي على واتساب", group: "الإدارة", href: "/dashboard/whatsapp-test" },
 ];
 
 const FEATURE_BY_KEY = new Map(FEATURES.map((f) => [f.key, f]));
@@ -42,7 +43,7 @@ export function getFeature(key: string): FeatureDef | undefined {
 }
 
 /** Baseline access before any per-user override is applied. */
-const SALES_DEFAULT_DENY = new Set(["insights", "users", "team"]);
+const SALES_DEFAULT_DENY = new Set(["insights", "users", "team", "whatsapp_agent"]);
 
 export function defaultFeatureAccess(role: Role | null, key: string): boolean {
   if (role === "admin" || role === "manager") return true;
