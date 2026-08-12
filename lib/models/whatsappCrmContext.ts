@@ -42,7 +42,7 @@ export async function findLeadByPhone(waFrom: string): Promise<CrmLeadContext | 
 
   const { data: candidates, error } = await supabaseAdmin
     .from("leads")
-    .select("id, full_name, company_name, owner_id, normalized_phone, created_at, pipeline_stages(label)")
+    .select("id, full_name, establishment_name, owner_id, normalized_phone, created_at, pipeline_stages(label)")
     .not("normalized_phone", "is", null)
     .is("deleted_at", null)
     .ilike("normalized_phone", `%${target}%`)
@@ -56,7 +56,7 @@ export async function findLeadByPhone(waFrom: string): Promise<CrmLeadContext | 
   type Row = {
     id: string;
     full_name: string | null;
-    company_name: string | null;
+    establishment_name: string | null;
     owner_id: string | null;
     normalized_phone: string | null;
     pipeline_stages: { label: string } | null;
@@ -89,7 +89,7 @@ export async function findLeadByPhone(waFrom: string): Promise<CrmLeadContext | 
   return {
     leadId: String(lead.id),
     fullName: lead.full_name,
-    companyName: lead.company_name,
+    companyName: lead.establishment_name,
     ownerId: lead.owner_id,
     ownerName: ownerRow ? ownerRow.full_name || [ownerRow.first_name, ownerRow.last_name].filter(Boolean).join(" ") || null : null,
     ownerEmail: ownerRow?.email ?? null,
@@ -159,7 +159,7 @@ export async function createLeadFromWhatsApp(input: {
   const { error } = await supabaseAdmin.from("leads").insert({
     id,
     full_name: input.fullName,
-    company_name: input.companyName,
+    establishment_name: input.companyName,
     normalized_phone: input.waFrom,
     primary_source_id: sourceId,
     stage_id: stageId,
