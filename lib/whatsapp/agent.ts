@@ -1,5 +1,6 @@
 import { fetchWhatsAppHistory } from "@/lib/models/whatsappAgent";
-import { TOOLS, runTool } from "@/lib/whatsapp/tools";
+import { findLeadByPhone, type CrmLeadContext } from "@/lib/models/whatsappCrmContext";
+import { toolsFor, runCrmTool, type CrmToolCtx } from "@/lib/whatsapp/crmTools";
 
 /**
  * The sandbox agent's reply logic.
@@ -10,11 +11,14 @@ import { TOOLS, runTool } from "@/lib/whatsapp/tools";
  * keyword router, no allowed-questions list, unlike the Copilot's routeRequest
  * or 64's tightly-scoped extraction prompt.
  *
- * It can also act, not just talk: a small tool-calling loop lets it look up
- * and book against the sandbox appointment domain (lib/whatsapp/tools.ts),
- * so a conversation can chain "check availability" → "that doctor's full,
- * try this one" → "book it" without a human in the loop. See that file for
- * what it can actually touch.
+ * It can also act, not just talk. Every inbound message first resolves the
+ * sender's phone against the real `leads` table (lib/whatsapp/crmTools.ts +
+ * lib/models/whatsappCrmContext.ts) — an existing lead gets tools to check
+ * their own status, leave a note, or flag their rep for a callback; a
+ * stranger gets a tool to become a qualified lead once they show real
+ * interest. Which tools exist depends on that lookup, not on anything the
+ * model decides, so a stranger can't fish for someone else's deal and an
+ * existing lead can't spawn a duplicate.
  *
  * What stays true regardless: it answers as this company, grounded in real
  * data where the question calls for it, and every exchange is logged
@@ -23,12 +27,13 @@ import { TOOLS, runTool } from "@/lib/whatsapp/tools";
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL = "meta-llama/llama-3.3-70b-instruct";
-// A tool-calling turn can chain multiple lookups before it has enough to
-// answer (e.g. check one doctor, then another) — capped so a confused model
-// can't loop forever burning the OpenRouter budget on one WhatsApp message.
+// A tool-calling turn can chain multiple actions before it has enough to
+// answer (e.g. check status, then log a note, then flag the rep) — capped
+// so a confused model can't loop forever burning the OpenRouter budget on
+// one WhatsApp message.
 const MAX_TOOL_ROUNDS = 4;
 
-const SYSTEM = `أنت موظف خدمة عملاء تابع لشركة "مَوْرد" (Mawrid) — أول منصة محاسبية سعودية بالذكاء الاصطناعي.
+const BASE_SYSTEM = `أنت موظف خدمة عملاء تابع لشركة "مَوْرد" (Mawrid) — أول منصة محاسبية سعودية بالذكاء الاصطناعي.
 ترد على عملاء الشركة عبر واتساب.
 أجب دائماً بالعربية، بأسلوب سعودي مهني وودود.
 
@@ -48,20 +53,42 @@ const SYSTEM = `أنت موظف خدمة عملاء تابع لشركة "مَو�
 جاوب على أي سؤال يخص الشركة أو منتجها أو خدماتها بأفضل ما تعرف، معتمداً على المعلومات فوق.
 لو سُئلت عن شيء لا تملك معلومة مؤكدة عنه (سعر محدد، موعد تسليم، تفاصيل عقد)، لا تختلق رقماً — قل بوضوح إنك ستتأكد وترد، ولا تعطِ رقماً أو التزاماً وهمياً.
 لا تذكر أبداً أنك نموذج ذكاء اصطناعي أو أنك تجريبي، إلا لو سُئلت مباشرة.
-اجعل ردودك قصيرة ومناسبة لمحادثة واتساب — لا فقرات طويلة.
+اجعل ردودك قصيرة ومناسبة لمحادثة واتساب — لا فقرات طويلة.`;
 
-بالإضافة لهذا، عندك أدوات تقدر تستخدمها لحجز مواعيد أطباء حقيقية بنظام تجريبي (عيادة تجريبية، مو جزء من مَوْرد نفسها):
-- لو العميل سأل عن دكتور معين وهل هو مداوم، استخدم check_doctor_availability. لو ما كان مداوم أو ما عنده مواعيد فاضية، اقترح استخدام list_doctors وقول للعميل دكتور بديل متاح، بدون ما تسأله إذا يبي البديل أو لا — اقترحه مباشرة.
-- لو العميل اختار موعد، تأكد من اسمه قبل ما تحجز (اسأله لو ما ذكره)، وبعدها استخدم book_slot.
-- لو سأل عن مواعيده الحالية، استخدم list_my_bookings.
-- بعد أي حجز ناجح، أكّد للعميل بجملة قصيرة فيها اسم الطبيب والوقت.
-- خذ قرارات متسلسلة بنفسك (تحقق ثم اقترح بديل ثم احجز) بدون ما ترجع تسأل العميل خطوات لا داعي لها.`;
+const EXISTING_LEAD_GUIDANCE = `
+عندك سياق حقيقي عن هذا العميل موجود بالأسفل — استخدمه، لا تسأله عن معلومات موجودة عندك أصلاً.
+- لو سأل عن حالته أو مرحلته أو "وين وصلت معي"، استخدم get_customer_status.
+- أي تفصيل يذكره يستاهل يوصل لمندوبه (سبب اعتراض، طلب تعديل، ملاحظة) سجّله فوراً بـadd_note بدون ما تسأله "تبي أسجلها؟" — سجّلها وأكمل الرد بشكل طبيعي.
+- لو طلب اتصال، أبدى شكوى، أو أي شي يحتاج إنسان يتدخل، استخدم request_human_help فوراً (اجعل urgent=true لو طلب رد سريع أو كانت شكوى)، وأكّد للعميل إن مندوبه راح يتواصل معه.
+- خذ القرارات هذي بنفسك بالتسلسل الصحيح (تحقق من الحالة، ثم سجّل، ثم نبّه) بدون ما ترجع تسأل العميل خطوات إدارية لا تخصه.`;
+
+const NEW_PROSPECT_GUIDANCE = `
+هذا رقم جديد ما عندنا عنه أي سجل — تعامل معه كعميل محتمل.
+- لا تسأل عن اسمه أو تفاصيله إلا لو أبدى اهتمام حقيقي (سأل عن سعر، يبي تجربة، يبي يشترك) — سؤال عام عن الشركة لا يستدعي ذلك.
+- إذا أبدى اهتمام، اسأله بشكل طبيعي متسلسل: نوع نشاطه، ثم حجمه (فروع/موظفين) إن كان مناسباً، ثم استخدم create_qualified_lead بملخص واضح لاهتمامه.
+- بعد إنشاء العميل المحتمل، اعرض عليه التواصل مع مندوب بشري (مكالمة أو عرض توضيحي). لو وافق، استخدم request_human_help.
+- خذ القرارات هذي بنفسك بالتسلسل الصحيح بدون ما ترجع تسأل خطوات إدارية لا داعي لها.`;
 
 interface ChatMessage {
   role: "system" | "user" | "assistant" | "tool";
   content: string;
   tool_calls?: { id: string; type: "function"; function: { name: string; arguments: string } }[];
   tool_call_id?: string;
+}
+
+function contextBlock(lead: CrmLeadContext | null): string {
+  if (!lead) return "\n\nحالة هذا الرقم: غير مسجل بالنظام (عميل محتمل جديد).";
+  const deals = lead.deals.length
+    ? lead.deals.map((d) => `${d.name ?? "صفقة"} (${d.stageLabel ?? "بدون مرحلة"})`).join("، ")
+    : "لا توجد صفقات مفتوحة";
+  const lastActivity = lead.recentActivities[0]?.body ?? "لا يوجد";
+  return `\n\nسياق هذا العميل بالنظام:
+- الاسم: ${lead.fullName ?? "غير مسجل"}
+- المنشأة: ${lead.companyName ?? "غير مسجلة"}
+- مرحلته: ${lead.stageLabel ?? "غير محددة"}
+- مندوبه المسؤول: ${lead.ownerName ?? "بدون مندوب معيّن حالياً"}
+- صفقاته: ${deals}
+- آخر ملاحظة مسجلة: ${lastActivity}`;
 }
 
 export async function generateWhatsAppReply(waFrom: string, incoming: string): Promise<string | null> {
@@ -71,9 +98,16 @@ export async function generateWhatsAppReply(waFrom: string, incoming: string): P
     return null;
   }
 
+  // Resolve identity once per incoming message — every tool call and the
+  // system prompt itself are built from this single lookup, so a stranger
+  // can never end up with an existing lead's tools mid-conversation.
+  const lead = await findLeadByPhone(waFrom);
+  const ctx: CrmToolCtx = { waFrom, lead };
+  const system = BASE_SYSTEM + (lead ? EXISTING_LEAD_GUIDANCE : NEW_PROSPECT_GUIDANCE) + contextBlock(lead);
+
   const history = await fetchWhatsAppHistory(waFrom, 20);
   const messages: ChatMessage[] = [
-    { role: "system", content: SYSTEM },
+    { role: "system", content: system },
     ...history.map((h) => ({
       role: h.direction === "inbound" ? ("user" as const) : ("assistant" as const),
       content: h.body,
@@ -99,7 +133,7 @@ export async function generateWhatsAppReply(waFrom: string, incoming: string): P
           messages,
           // Last round: force a plain answer so a model stuck wanting to
           // call more tools still produces something to send the customer.
-          tools: round < MAX_TOOL_ROUNDS ? TOOLS : undefined,
+          tools: round < MAX_TOOL_ROUNDS ? toolsFor(ctx) : undefined,
         }),
       }).finally(() => clearTimeout(timeout));
 
@@ -118,7 +152,9 @@ export async function generateWhatsAppReply(waFrom: string, incoming: string): P
 
       messages.push({ role: "assistant", content: choice?.content ?? "", tool_calls: toolCalls });
       for (const call of toolCalls) {
-        const result = await runTool(call.function.name, call.function.arguments, waFrom);
+        // ctx.lead can change mid-turn (create_qualified_lead sets it), so
+        // each call reads whatever the previous one left behind.
+        const result = await runCrmTool(call.function.name, call.function.arguments, ctx);
         messages.push({ role: "tool", tool_call_id: call.id, content: result });
       }
     }
