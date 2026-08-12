@@ -4,6 +4,11 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { getContext, getDealMeta, type MatchTier } from "@/lib/nextBestAction/getContext";
 import { buildPrompt } from "@/lib/nextBestAction/buildPrompt";
 import { requireUser } from "@/lib/auth/requireUser";
+<<<<<<< HEAD
+=======
+import { checkRateLimit } from "@/lib/rateLimit";
+import { fetchCachedRecommendation, upsertRecommendationCache } from "@/lib/models/nextBestActionCache";
+>>>>>>> main
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -45,7 +50,20 @@ function isValidModelOutput(v: unknown): v is Omit<Recommendation, "matchTier"> 
 }
 
 export async function POST(req: NextRequest) {
+<<<<<<< HEAD
   if (!(await requireUser(req))) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+=======
+  const caller = await requireUser(req);
+  if (!caller) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
+  const rl = checkRateLimit(`${caller.id}:next-best-action`, 40, 60_000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "rate_limit", message: "طلبات كثيرة جداً — حاول بعد شوي." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+    );
+  }
+>>>>>>> main
 
   let body: { dealId?: unknown };
   try {
@@ -75,11 +93,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (!force) {
-    const { data: cached } = await supabase
-      .from("next_best_action_cache")
-      .select("recommendation, generated_at, activity_count_at_generation")
-      .eq("deal_id", dealId)
-      .maybeSingle();
+    const cached = await fetchCachedRecommendation(supabase, dealId);
 
     if (cached) {
       const rec = cached.recommendation as Recommendation;
@@ -159,12 +173,7 @@ export async function POST(req: NextRequest) {
   const recommendation: Recommendation = { ...parsed, matchTier: context.matchTier, stageId: context.stageId };
   const generatedAt = new Date().toISOString();
 
-  const { error: upsertError } = await supabase.from("next_best_action_cache").upsert({
-    deal_id: dealId,
-    recommendation,
-    generated_at: generatedAt,
-    activity_count_at_generation: context.activityCount,
-  });
+  const { error: upsertError } = await upsertRecommendationCache(supabase, dealId, recommendation, generatedAt, context.activityCount);
   if (upsertError) {
     // Non-fatal: recommendation is still valid, it just won't be cached this
     // time (e.g. the RLS policy from Step 1 hasn't been applied yet).

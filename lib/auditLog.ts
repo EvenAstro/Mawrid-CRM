@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { supabase } from "@/lib/supabase";
 
 /**
@@ -26,6 +27,17 @@ export async function logAudit(leadId: string | number, userId: string | null, m
     const { is_system: _, ...fallback } = row;
     await supabase.from("activities").insert(fallback);
   }
+=======
+import { insertSystemActivity } from "@/lib/models/activities";
+
+/**
+ * Writes a system-generated activity row so field edits / task lifecycle
+ * events show up in the lead's activity feed alongside manually logged
+ * calls/messages.
+ */
+export async function logAudit(leadId: string | number, userId: string | null, message: string) {
+  await insertSystemActivity(leadId, userId, message);
+>>>>>>> main
 }
 
 const FIELD_LABELS: Record<string, string> = {

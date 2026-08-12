@@ -2,23 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
-import { SearchIcon } from "@/components/navIcons";
+import { SearchIcon, ActivitiesIcon } from "@/components/navIcons";
+import { CalendarIcon, ChatBubbleIcon, DotIcon, MailIcon, PhoneIcon, WifiOffIcon } from "@/components/icons";
 import { dayHeader, dayKey, formatDateTime } from "@/lib/format";
 import Button from "@/components/ui/Button";
 import Skeleton from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import LogActivitySlideOver from "@/components/LogActivitySlideOver";
-
-interface Activity {
-  id: string;
-  body: string | null;
-  occurred_at: string | null;
-  direction: string | null;
-  entity_type: string | null;
-  entity_id: string | null;
-  activity_types: { label: string; color: string | null } | null;
-}
+import { useRole } from "@/components/RoleProvider";
+import { fetchActivitiesPage, type Activity } from "@/lib/models/activities";
+import { fetchLeadRefs } from "@/lib/models/leads";
 
 const PAGE = 20;
 const CHIPS = [
@@ -31,14 +24,15 @@ const CHIPS = [
 
 function iconFor(label?: string | null) {
   const l = (label || "").toLowerCase();
-  if (l.includes("whatsapp")) return { c: "#10b981", g: "💬" };
-  if (l.includes("call")) return { c: "#1a5c4f", g: "📞" };
-  if (l.includes("email")) return { c: "#8b5cf6", g: "✉️" };
-  if (l.includes("meeting") || l.includes("deal")) return { c: "#f59e0b", g: "🗓️" };
-  return { c: "#1a5c4f", g: "•" };
+  if (l.includes("whatsapp")) return { c: "var(--brand-green-500)", g: <ChatBubbleIcon className="h-4 w-4" /> };
+  if (l.includes("call")) return { c: "var(--brand-teal-700)", g: <PhoneIcon className="h-4 w-4" /> };
+  if (l.includes("email")) return { c: "var(--content-accent)", g: <MailIcon className="h-4 w-4" /> };
+  if (l.includes("meeting") || l.includes("deal")) return { c: "var(--brand-amber-500)", g: <CalendarIcon className="h-4 w-4" /> };
+  return { c: "var(--brand-teal-700)", g: <DotIcon className="h-4 w-4" /> };
 }
 
 export default function ActivitiesPage() {
+  const { role, userId, loading: roleLoading } = useRole();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [leadNames, setLeadNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -51,34 +45,29 @@ export default function ActivitiesPage() {
 
   const load = useCallback(async () => {
     setError(false);
-    const { data, error: err, count } = await supabase
-      .from("activities")
-      .select("*, activity_types(label, color)", { count: "exact" })
-      .order("occurred_at", { ascending: false })
-      .range(0, limit - 1);
-    if (err) {
+    try {
+      const { activities: list, total } = await fetchActivitiesPage(role, userId, limit);
+      setActivities(list);
+      setTotal(total);
+
+      const leadIds = Array.from(new Set(list.filter((a) => a.entity_type === "lead" && a.entity_id).map((a) => a.entity_id as string)));
+      if (leadIds.length) {
+        const leads = await fetchLeadRefs(leadIds);
+        const map: Record<string, string> = {};
+        leads.forEach((l) => { if (l.full_name) map[String(l.id)] = l.full_name; });
+        setLeadNames((prev) => ({ ...prev, ...map }));
+      }
+    } catch (err) {
       console.error("[Activities] fetch failed", err);
       setError(true);
-      setLoading(false);
-      return;
-    }
-    const list = (data as unknown as Activity[]) || [];
-    setActivities(list);
-    setTotal(count ?? list.length);
-
-    const leadIds = Array.from(new Set(list.filter((a) => a.entity_type === "lead" && a.entity_id).map((a) => a.entity_id as string)));
-    if (leadIds.length) {
-      const { data: leads } = await supabase.from("leads").select("id, full_name").in("id", leadIds);
-      const map: Record<string, string> = {};
-      (leads as { id: string; full_name: string | null }[] | null)?.forEach((l) => { if (l.full_name) map[l.id] = l.full_name; });
-      setLeadNames((prev) => ({ ...prev, ...map }));
     }
     setLoading(false);
-  }, [limit]);
+  }, [limit, role, userId]);
 
   useEffect(() => {
+    if (roleLoading) return;
     load();
-  }, [load]);
+  }, [roleLoading, load]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -103,6 +92,7 @@ export default function ActivitiesPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Hero header */}
+<<<<<<< HEAD
       <div className="rounded-3xl bg-[#141c2e] px-7 py-7">
         <div className="flex flex-wrap items-center justify-between gap-5">
           <div className="flex items-center gap-4">
@@ -119,22 +109,49 @@ export default function ActivitiesPage() {
       </div>
 
       <div className="flex flex-col gap-3 rounded-2xl border border-[#d6ece5] bg-white p-4 shadow-[0_2px_8px_rgba(26,92,79,0.05)] sm:flex-row sm:items-center">
+=======
+      <div className="rounded-[var(--radius-lg)] bg-[var(--surface-inverse)] px-7 py-7">
+        <div className="flex flex-wrap items-center justify-between gap-5">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-[var(--radius-lg)] bg-white/10">
+              <svg viewBox="0 0 20 20" fill="none" stroke="var(--surface-raised)" strokeWidth={1.8} className="h-6 w-6"><path d="M2 10h4l2-6 4 12 2-6h4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </div>
+            <div>
+              <h1 dir="auto" className="t-title-1 font-bold tracking-[-0.02em] text-white">النشاطات</h1>
+              <p className="mt-1 text-sm text-white/50">{loading ? "جارِ التحميل…" : `${total} نشاط عبر النظام`}</p>
+            </div>
+          </div>
+          <button onClick={() => setLogOpen(true)} className="rounded-[var(--radius-md)] bg-[var(--brand-teal-400)] px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-[var(--brand-teal-600)]">+ تسجيل نشاط</button>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-compact)] e-1 sm:flex-row sm:items-center">
+>>>>>>> main
         <div className="relative flex-1">
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">
             <SearchIcon className="h-4 w-4" />
           </span>
+<<<<<<< HEAD
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث في النشاطات..." className="h-11 w-full rounded-xl border border-[#d6ece5] bg-[#f8faf9] pl-11 pr-4 text-[14px] text-ink-secondary placeholder:text-muted focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition" />
+=======
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث في النشاطات..." className="h-11 w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] pl-11 pr-4 t-body-sm text-ink-secondary placeholder:text-muted focus:border-[var(--brand-teal-700)] focus:bg-[var(--surface-raised)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal-700)]/15 transition" />
+>>>>>>> main
         </div>
 
         <div className="flex flex-wrap gap-2">
           {CHIPS.map((c) => (
+<<<<<<< HEAD
             <button key={c.key} onClick={() => setChip(c.key)} className={`rounded-full px-4 py-1.5 text-[13px] font-semibold transition ${chip === c.key ? "bg-[#1a5c4f] text-white shadow-sm" : "border border-[#d6ece5] bg-[#f8faf9] text-ink-secondary hover:border-[#1a5c4f] hover:text-[#1a5c4f]"}`}>
+=======
+            <button key={c.key} onClick={() => setChip(c.key)} className={`rounded-full px-4 py-1.5 t-body-sm font-semibold transition ${chip === c.key ? "bg-[var(--brand-teal-700)] text-white shadow-sm" : "border border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-ink-secondary hover:border-[var(--brand-teal-700)] hover:text-[var(--brand-teal-700)]"}`}>
+>>>>>>> main
               {c.label}
             </button>
           ))}
         </div>
       </div>
 
+<<<<<<< HEAD
       <div className="overflow-hidden rounded-2xl border border-[#d6ece5] bg-white shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
         {loading ? (
           <div className="p-6">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="mb-3 h-12" />)}</div>
@@ -149,10 +166,31 @@ export default function ActivitiesPage() {
                 <p className="sticky top-0 z-[1] mb-1 inline-block rounded-full bg-[#f0faf8] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#1a5c4f]">{g.header}</p>
                 <div className="relative">
                   {g.items.length > 1 && <span className="absolute right-[15px] top-1 bottom-1 w-px bg-[#e8f0ec]" />}
+=======
+      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] e-1">
+        {loading ? (
+          <div className="p-6">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="mb-3 h-12" />)}</div>
+        ) : error ? (
+          <EmptyState variant="broken" title="تعذّر تحميل النشاطات" subtitle="ما وصلنا للخادم. تحقق من اتصالك وحاول مرة ثانية." action={<Button onClick={() => { setLoading(true); load(); }}>إعادة المحاولة</Button>} />
+        ) : filtered.length === 0 ? (
+          (chip !== "all" || search.trim()) ? (
+          <EmptyState variant="no-results" title="ما فيه نشاط يطابق التصفية" subtitle="جرّب تصنيف ثاني أو امسح البحث." action={<Button variant="secondary" onClick={() => { setChip("all"); setSearch(""); }}>عرض الكل</Button>} />
+        ) : (
+          <EmptyState variant="first-run" title="ما فيه نشاطات بعد" subtitle="كل مكالمة ورسالة تسجّلها هنا تبني تاريخ العميل — وعليها يعتمد تحليل المساعد." action={<Button onClick={() => setLogOpen(true)}>+ تسجيل نشاط</Button>} />
+        )
+        ) : (
+          <div className="flex flex-col p-4">
+            {groups.map((g) => (
+              <div key={g.key}>
+                <p className="sticky top-0 z-[1] mb-1 inline-block rounded-full bg-[var(--surface-accent-subtle)] px-2.5 py-0.5 t-micro font-bold uppercase tracking-wider text-[var(--brand-teal-700)]">{g.header}</p>
+                <div className="relative">
+                  {g.items.length > 1 && <span className="absolute right-[15px] top-1 bottom-1 w-px bg-[var(--border-subtle)]" />}
+>>>>>>> main
                   {g.items.map((a) => {
                     const ic = iconFor(a.activity_types?.label);
                     const name = a.entity_id ? leadNames[a.entity_id] : undefined;
                     return (
+<<<<<<< HEAD
                       <div key={a.id} className="relative flex gap-3 rounded-xl px-1 py-3 transition-colors hover:bg-[#f8faf9]">
                         <span className="relative z-10 mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full text-sm ring-4 ring-white" style={{ backgroundColor: `${ic.c}1a`, color: ic.c }}>{ic.g}</span>
                         <div className="min-w-0 flex-1">
@@ -165,6 +203,20 @@ export default function ActivitiesPage() {
                           </div>
                           <p dir="auto" className="text-[15px] text-ink-secondary">{a.body || "—"}</p>
                           <p className="mt-1 text-[12px] text-muted">{formatDateTime(a.occurred_at)}</p>
+=======
+                      <div key={a.id} className="relative flex gap-3 rounded-[var(--radius-md)] px-1 py-3 transition-colors hover:bg-[var(--surface-sunken)]">
+                        <span className="relative z-10 mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full text-sm ring-4 ring-white" style={{ backgroundColor: `${ic.c}1a`, color: ic.c }}>{ic.g}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-0.5 flex flex-wrap items-center gap-2">
+                            {a.activity_types?.label && <span className="rounded-full bg-[var(--surface-accent-subtle)] px-2 py-0.5 t-caption font-semibold text-[var(--brand-teal-700)]">{a.activity_types.label}</span>}
+                            {name && a.entity_type === "lead" && (
+                              <Link href={`/dashboard/leads?open=${a.entity_id}`} dir="auto" className="t-body-sm font-semibold text-[var(--brand-teal-700)] hover:underline">{name}</Link>
+                            )}
+                            {a.direction && <span className="rounded-full bg-[var(--surface-sunken)] px-1.5 py-0.5 t-micro font-medium text-muted">{a.direction}</span>}
+                          </div>
+                          <p dir="auto" className="t-body text-ink-secondary">{a.body || "—"}</p>
+                          <p className="mt-1 t-caption text-muted">{formatDateTime(a.occurred_at)}</p>
+>>>>>>> main
                         </div>
                       </div>
                     );
@@ -173,9 +225,13 @@ export default function ActivitiesPage() {
               </div>
             ))}
             {activities.length < total && (
+<<<<<<< HEAD
               <button onClick={() => setLimit((l) => l + PAGE)} className="mx-auto my-4 rounded-full border border-[#d6ece5] bg-[#f0faf8] px-6 py-2 text-[13px] font-semibold text-[#1a5c4f] transition hover:border-[#1a5c4f] hover:bg-white">
                 تحميل المزيد
               </button>
+=======
+              <button onClick={() => setLimit((l) => l + PAGE)} className="mx-auto my-4 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-accent-subtle)] px-6 py-2 t-body-sm font-semibold text-[var(--brand-teal-700)] transition hover:border-[var(--brand-teal-700)] hover:bg-[var(--surface-raised)]">تحميل المزيد</button>
+>>>>>>> main
             )}
           </div>
         )}

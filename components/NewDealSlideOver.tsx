@@ -6,6 +6,8 @@ import { useToast } from "@/components/Toast";
 import SlideOver from "@/components/ui/SlideOver";
 import Button from "@/components/ui/Button";
 import { Input, Textarea, Select } from "@/components/ui/Field";
+import { searchLeadsByName } from "@/lib/models/leads";
+import { createDeal } from "@/lib/models/deals";
 
 interface Stage {
   id: string;
@@ -63,13 +65,8 @@ export default function NewDealSlideOver({
     }
     let active = true;
     const t = setTimeout(async () => {
-      const { data } = await supabase
-        .from("leads")
-        .select("id, full_name")
-        .ilike("full_name", `%${query.trim()}%`)
-        .is("deleted_at", null)
-        .limit(6);
-      if (active) setHits((data as LeadHit[]) || []);
+      const data = await searchLeadsByName(query.trim());
+      if (active) setHits(data.map((l) => ({ id: String(l.id), full_name: l.full_name })));
     }, 250);
     return () => {
       active = false;
@@ -96,22 +93,18 @@ export default function NewDealSlideOver({
       return;
     }
     setSaving(true);
-    const now = new Date().toISOString();
     const minor = amount.trim() ? Math.round(parseFloat(amount) * 100) : null;
     const { data: userData } = await supabase.auth.getUser();
-    const { error } = await supabase.from("deals").insert({
-      id: crypto.randomUUID(),
+    const { error } = await createDeal({
       name: name.trim(),
-      lead_id: customer?.id ?? null,
-      stage_id: stageId || null,
-      expected_value_minor: Number.isFinite(minor as number) ? minor : null,
-      currency_code: currency,
-      probability_pct: probability.trim() ? Math.round(parseFloat(probability)) : 0,
-      target_close_date: closeDate || null,
+      leadId: customer?.id ?? null,
+      stageId: stageId || null,
+      expectedValueMinor: Number.isFinite(minor as number) ? minor : null,
+      currencyCode: currency,
+      probabilityPct: probability.trim() ? Math.round(parseFloat(probability)) : 0,
+      targetCloseDate: closeDate || null,
       notes: notes.trim() || null,
-      owner_id: userData.user?.id ?? null,
-      created_at: now,
-      updated_at: now,
+      ownerId: userData.user?.id ?? null,
     });
     setSaving(false);
     if (error) {
@@ -142,6 +135,7 @@ export default function NewDealSlideOver({
         <Input id="nd-name" label="اسم الصفقة *" dir="auto" value={name} onChange={(e) => setName(e.target.value)} placeholder="مثلاً: نظام نقاط بيع — الفيحان" error={err.name} autoFocus />
 
         <div className="relative">
+<<<<<<< HEAD
           <label className="mb-1.5 block text-[13px] font-semibold uppercase tracking-wide text-muted">العميل</label>
           {customer ? (
             <div className="flex items-center justify-between rounded-xl border border-primary/30 bg-mint px-3.5 py-2.5">
@@ -150,11 +144,25 @@ export default function NewDealSlideOver({
             </div>
           ) : (
             <input dir="auto" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث عن عميل بالاسم..." autoComplete="off" className="h-11 w-full rounded-xl border border-border-light bg-white px-3.5 text-[15px] text-ink-secondary placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+=======
+          <label className="mb-1.5 block t-body-sm font-semibold uppercase tracking-wide text-muted">العميل</label>
+          {customer ? (
+            <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-primary/30 bg-mint px-3.5 py-2.5">
+              <span dir="auto" className="t-body font-medium text-ink">{customer.full_name || "بدون اسم"}</span>
+              <button type="button" onClick={() => { setCustomer(null); setQuery(""); }} className="t-body-sm font-semibold text-primary hover:underline">تغيير</button>
+            </div>
+          ) : (
+            <input dir="auto" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث عن عميل بالاسم..." autoComplete="off" className="h-11 w-full rounded-[var(--radius-md)] border border-border-light bg-[var(--surface-raised)] px-3.5 t-body text-ink-secondary placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+>>>>>>> main
           )}
           {!customer && hits.length > 0 && (
-            <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-border-light bg-white shadow-lg">
+            <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-[var(--radius-md)] border border-border-light bg-[var(--surface-raised)] shadow-lg">
               {hits.map((h) => (
+<<<<<<< HEAD
                 <button key={h.id} type="button" dir="auto" onClick={() => { setCustomer(h); setHits([]); }} className="block w-full px-3.5 py-2.5 text-left text-[15px] text-ink-secondary transition hover:bg-mint">
+=======
+                <button key={h.id} type="button" dir="auto" onClick={() => { setCustomer(h); setHits([]); }} className="block w-full px-3.5 py-2.5 text-left t-body text-ink-secondary transition hover:bg-mint">
+>>>>>>> main
                   {h.full_name || "بدون اسم"}
                 </button>
               ))}
@@ -179,7 +187,11 @@ export default function NewDealSlideOver({
 
         <div className="grid grid-cols-2 gap-4">
           <Input id="nd-close" label="تاريخ الإغلاق المتوقع" type="date" value={closeDate} onChange={(e) => setCloseDate(e.target.value)} />
+<<<<<<< HEAD
           <Input id="nd-prob" label="الاحتمالية %" type="number" min="0" max="100" value={probability} onChange={(e) => setProbability(e.target.value)} placeholder="0" />
+=======
+          <Input id="nd-prob" label="تقدير المندوب %" type="number" min="0" max="100" value={probability} onChange={(e) => setProbability(e.target.value)} placeholder="0" />
+>>>>>>> main
         </div>
 
         <Textarea id="nd-notes" label="الملاحظات" dir="auto" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات عن هذه الصفقة..." />

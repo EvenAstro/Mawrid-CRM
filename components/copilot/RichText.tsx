@@ -20,7 +20,7 @@ function inline(text: string, keyBase: string): React.ReactNode[] {
       parts.push(
         <code
           key={`${keyBase}-c${i++}`}
-          className="rounded bg-black/[0.06] px-1.5 py-0.5 text-[0.85em] font-medium text-teal-800"
+          className="rounded bg-black/[0.06] px-1.5 py-0.5 text-[0.85em] font-medium text-[var(--status-success-fg)]"
         >
           {tok.slice(1, -1)}
         </code>,
@@ -57,7 +57,7 @@ export default function RichText({ content }: { content: string }) {
         <ul key={`ul${key++}`} className="my-1.5 space-y-1">
           {items.map((it, i) => (
             <li key={i} dir="auto" className="flex gap-2 leading-relaxed">
-              <span className="mt-2 h-1 w-1 flex-none rounded-full bg-teal-600" />
+              <span className="mt-2 h-1 w-1 flex-none rounded-full bg-[var(--status-success-fg)]" />
               <span className="min-w-0">{inline(it, `uli${i}`)}</span>
             </li>
           ))}
@@ -80,7 +80,7 @@ export default function RichText({ content }: { content: string }) {
     if (heading) {
       flushList();
       blocks.push(
-        <p key={`h${key++}`} dir="auto" className="mb-1 mt-2.5 text-[13px] font-bold text-teal-800 first:mt-0">
+        <p key={`h${key++}`} dir="auto" className="mb-1 mt-2.5 t-body-sm font-bold text-[var(--status-success-fg)] first:mt-0">
           {inline(heading[1], `h${key}`)}
         </p>,
       );
@@ -113,5 +113,5 @@ export default function RichText({ content }: { content: string }) {
   }
   flushList();
 
-  return <div className="text-[15px]">{blocks}</div>;
+  return <div className="t-body">{blocks}</div>;
 }

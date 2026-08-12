@@ -1,33 +1,90 @@
 /** Shared formatting helpers so dates/money render identically across the app. */
 
+/**
+ * The one locale the whole product formats dates and times with.
+ *
+ * Both extensions are load-bearing, and neither is optional:
+ *
+ *   -u-ca-gregory — plain "ar-SA" resolves to the Islamic (Umm al-Qura)
+ *     calendar in Chrome and Safari, so every date in the app rendered as
+ *     Hijri: 2026-08-09 showed as "٢٦ صفر ١٤٤٨ هـ". Deal close dates and
+ *     contract dates could not be reconciled. Node's ICU resolves "ar-SA" to
+ *     gregory instead, which is why this survived every non-browser check.
+ *
+ *   -nu-latn — plain "ar-SA" also resolves to Arabic-Indic digits (٠١٢٣),
+ *     while money went through an en-US NumberFormat (0123). The same card
+ *     showed both. Latin digits everywhere is the house style, and it keeps
+ *     tabular-nums alignment working in tables.
+ *
+ * Anything formatting a date or time outside these helpers must use this
+ * constant. A bare "ar-SA" anywhere in the codebase is a bug.
+ */
+export const DATE_LOCALE = "ar-SA-u-ca-gregory-nu-latn";
+
 const nf = new Intl.NumberFormat("en-US");
 
+<<<<<<< HEAD
 /** "٢ يوليو · ١:٠٠ م" — the canonical timestamp format for the whole app. */
+=======
+/** "9 أغسطس · 01:00 م" — the canonical timestamp format for the whole app. */
+>>>>>>> main
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
+<<<<<<< HEAD
   const date = d.toLocaleDateString("ar-SA", { month: "short", day: "numeric" });
   const time = d.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
   return `${date} · ${time}`;
 }
 
 /** "٢ يوليو ٢٠٢٦" — date only. */
+=======
+  const date = d.toLocaleDateString(DATE_LOCALE, { month: "short", day: "numeric" });
+  const time = d.toLocaleTimeString(DATE_LOCALE, { hour: "2-digit", minute: "2-digit" });
+  return `${date} · ${time}`;
+}
+
+/** "9 أغسطس 2026" — date only. */
+>>>>>>> main
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
+<<<<<<< HEAD
   return d.toLocaleDateString("ar-SA", { year: "numeric", month: "short", day: "numeric" });
 }
 
 /** "١:٠٠ م" — time only. */
+=======
+  return d.toLocaleDateString(DATE_LOCALE, { year: "numeric", month: "short", day: "numeric" });
+}
+
+/** "1:00 م" — time only. */
+>>>>>>> main
 export function formatTime(iso: string | null | undefined): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
+<<<<<<< HEAD
   return d.toLocaleTimeString("ar-SA", { hour: "numeric", minute: "2-digit" });
 }
 
+=======
+  return d.toLocaleTimeString(DATE_LOCALE, { hour: "numeric", minute: "2-digit" });
+}
+
+/** "الأحد، 09 أغسطس 2026" — long form for page headers. */
+export function formatLongDate(d: Date): string {
+  return d.toLocaleDateString(DATE_LOCALE, {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+>>>>>>> main
 /** "+966 50 123 4567" — group a raw phone number into readable chunks
  * instead of one unbroken digit string. Saudi mobile numbers (+966 5XXXXXXXX)
  * get the natural 2-3-4 grouping; anything else falls back to 3-digit groups
@@ -43,6 +100,15 @@ export function formatPhone(phone: string | null | undefined): string {
     return `+966 ${rest.slice(0, 2)} ${rest.slice(2, 5)} ${rest.slice(5)}`;
   }
 
+<<<<<<< HEAD
+=======
+  // Local Saudi format (05XXXXXXXX, 10 digits) — same 2-3-4 grouping as the
+  // +966 form above, just without the country code.
+  if (digits.startsWith("05") && digits.length === 10) {
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+  }
+
+>>>>>>> main
   const groups: string[] = [];
   for (let i = 0; i < digits.length; i += 3) groups.push(digits.slice(i, i + 3));
   return plus + groups.join(" ");
@@ -60,7 +126,11 @@ export function dayHeader(iso: string | null | undefined): string {
   const diff = Math.round((today.getTime() - day.getTime()) / 86_400_000);
   if (diff === 0) return "اليوم";
   if (diff === 1) return "أمس";
+<<<<<<< HEAD
   return d.toLocaleDateString("ar-SA", { month: "short", day: "numeric" });
+=======
+  return d.toLocaleDateString(DATE_LOCALE, { month: "short", day: "numeric" });
+>>>>>>> main
 }
 
 /** Sortable day key (YYYY-MM-DD) for grouping. */
@@ -113,6 +183,23 @@ export function todayInput(): string {
   return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10);
 }
 
+<<<<<<< HEAD
+=======
+/**
+ * Now, formatted for a `datetime-local` input (YYYY-MM-DDTHH:mm) in the
+ * user's own timezone.
+ *
+ * Distinct from todayInput() because an activity needs a time. Recording
+ * every call at midnight makes a day's touchpoints unorderable against each
+ * other and rounds every "days since contact" figure.
+ */
+export function nowLocalInput(): string {
+  const d = new Date();
+  const off = d.getTimezoneOffset();
+  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 16);
+}
+
+>>>>>>> main
 /** Build a display name from a Profile record. */
 export function profileName(p: { full_name?: string | null; first_name?: string | null; last_name?: string | null } | undefined | null): string {
   if (!p) return "";

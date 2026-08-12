@@ -3,13 +3,26 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { LeadsIcon, CheckCircleIcon, RevenueIcon, TrendingUpIcon } from "@/components/navIcons";
+import { LeadsIcon, CheckCircleIcon, RevenueIcon, TrendingUpIcon, ActivitiesIcon } from "@/components/navIcons";
+import { AlertIcon, CalendarIcon, CelebrationIcon, ChartBarIcon, ChatBubbleIcon, ClockIcon, DotIcon, EmptyChartIcon, MailIcon, PhoneIcon, TargetIcon, WifiOffIcon } from "@/components/icons";
+import { Panel, PanelHead, CommandBand, BandButton } from "@/components/ui/Panel";
+import CountUp from "@/components/ui/CountUp";
+import Sparkline from "@/components/ui/Sparkline";
 import { useToast } from "@/components/Toast";
 import NewLeadSlideOver from "@/components/NewLeadSlideOver";
 import LogActivitySlideOver from "@/components/LogActivitySlideOver";
 import AddContactSlideOver from "@/components/AddContactSlideOver";
+<<<<<<< HEAD
 import { dayHeader, dayKey, formatDateTime, initials, money, compactSAR } from "@/lib/format";
 import { fetchLeadScoreModel, getAIScore, type LeadScoreModel } from "@/lib/leadScore/computeLeadScore";
+=======
+import { dayHeader, dayKey, formatDate, formatDateTime, initials, money, compactSAR, DATE_LOCALE, formatLongDate } from "@/lib/format";
+import { fetchLeadsSummary } from "@/lib/models/leads";
+import { fetchDealsSummary } from "@/lib/models/deals";
+import { fetchRecentActivities } from "@/lib/models/activities";
+import { fetchUpcomingTasks, completeTaskQuick } from "@/lib/models/tasks";
+import LedgerSection from "@/components/ui/LedgerSection";
+>>>>>>> main
 
 /* ---------- Types ---------- */
 type Stage = { label: string; terminal_type: string | null } | null;
@@ -55,7 +68,11 @@ function greeting() {
   return "مساء الخير";
 }
 function longDate(d: Date) {
+<<<<<<< HEAD
   return d.toLocaleDateString("ar-SA", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+=======
+  return formatLongDate(d);
+>>>>>>> main
 }
 function timeOf(iso: string | null) {
   if (!iso) return "—";
@@ -95,6 +112,7 @@ function latestDate(iso: (string | null)[]): Date {
   // Use the most recent data point, but never a future date beyond today.
   return new Date(Math.min(max || now, now));
 }
+<<<<<<< HEAD
 function trendText(cur: number, prev: number): { text: string; cls: string; dir: "up" | "down" | "flat" } {
   if (prev === 0 && cur === 0) return { text: "لا بيانات بعد", cls: "text-[#94a3b8]", dir: "flat" };
   if (prev === 0) return { text: "أول شهر", cls: "text-[#94a3b8]", dir: "flat" };
@@ -102,18 +120,49 @@ function trendText(cur: number, prev: number): { text: string; cls: string; dir:
   if (pct === 0) return { text: "بدون تغيير", cls: "text-[#94a3b8]", dir: "flat" };
   if (pct > 0) return { text: `${pct}% عن الشهر الماضي`, cls: "text-[#10b981]", dir: "up" };
   return { text: `${Math.abs(pct)}% عن الشهر الماضي`, cls: "text-[#ef4444]", dir: "down" };
+=======
+function trendText(cur: number, prev: number): { text: string; dir: "up" | "down" | "flat" } {
+  if (prev === 0 && cur === 0) return { text: "لا بيانات بعد", dir: "flat" };
+  if (prev === 0) return { text: "أول شهر", dir: "flat" };
+  const pct = Math.round(((cur - prev) / prev) * 100);
+  if (pct === 0) return { text: "بدون تغيير", dir: "flat" };
+  if (pct > 0) return { text: `${pct}% عن الشهر الماضي`, dir: "up" };
+  return { text: `${Math.abs(pct)}% عن الشهر الماضي`, dir: "down" };
+>>>>>>> main
 }
+/* Status hues on navy need their light-surface values lifted, or they fail
+   contrast against the band. These are the -500 stops, which clear AA there. */
+const TREND_ON_NAVY: Record<"up" | "down" | "flat", string> = {
+  up: "text-[var(--status-success-on-inverse)]",
+  down: "text-[var(--status-danger-on-inverse)]",
+  flat: "text-[color:var(--content-inverse-tertiary)]",
+};
+const OVERVIEW_DOT = {
+  accent: "bg-[var(--content-accent)]",
+  success: "bg-[var(--status-success-fg)]",
+  danger: "bg-[var(--status-danger-fg)]",
+} as const;
+const OVERVIEW_BADGE = {
+  accent: "bg-[var(--surface-accent-subtle)] text-[color:var(--content-accent)]",
+  success: "bg-[var(--status-success-bg)] text-[color:var(--status-success-fg)]",
+  danger: "bg-[var(--status-danger-bg)] text-[color:var(--status-danger-fg)]",
+} as const;
 function taskTitle(t: Task) {
   return t.title || t.name || "مهمة بدون عنوان";
 }
+<<<<<<< HEAD
 function activityColor(label?: string | null) {
+=======
+function ActivityGlyph({ label, className }: { label?: string | null; className?: string }) {
+>>>>>>> main
   const l = (label || "").toLowerCase();
-  if (l.includes("whatsapp")) return "#10b981";
-  if (l.includes("call")) return "#1a5c4f";
-  if (l.includes("email")) return "#8b5cf6";
-  if (l.includes("deal") || l.includes("meeting")) return "#f59e0b";
-  return "#1a5c4f";
+  if (l.includes("whatsapp")) return <ChatBubbleIcon className={className} />;
+  if (l.includes("call")) return <PhoneIcon className={className} />;
+  if (l.includes("email")) return <MailIcon className={className} />;
+  if (l.includes("meeting")) return <CalendarIcon className={className} />;
+  return <DotIcon className={className} />;
 }
+<<<<<<< HEAD
 function activityGlyph(label?: string | null) {
   const l = (label || "").toLowerCase();
   if (l.includes("whatsapp")) return "💬";
@@ -135,6 +184,8 @@ const AVATAR_GRADIENTS = [
   "from-[#ec4899] to-[#be185d]",
 ];
 
+=======
+>>>>>>> main
 /* ---------- Chart ---------- */
 function PipelineChart({ points }: { points: { label: string; value: number }[] }) {
   const [hover, setHover] = useState<number | null>(null);
@@ -156,10 +207,10 @@ function PipelineChart({ points }: { points: { label: string; value: number }[] 
   if (allZero) {
     return (
       <div className="flex h-44 flex-col items-center justify-center gap-3 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f0faf8] text-2xl">📊</div>
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--surface-accent-subtle)] text-[color:var(--content-accent)]"><EmptyChartIcon className="h-6 w-6" /></div>
         <div>
-          <p dir="auto" className="text-[18px] font-semibold text-[#1e1b4b]">لا توجد صفقات هذا الأسبوع</p>
-          <p dir="auto" className="mt-1 text-sm text-[#3f554e]">ستظهر قيمة الصفقات الجديدة هنا عند إضافتها.</p>
+          <p dir="auto" className="t-title-3 text-[color:var(--content-primary)]">لا توجد صفقات هذا الأسبوع</p>
+          <p dir="auto" className="t-body-sm mt-1 text-[color:var(--content-secondary)]">ستظهر قيمة الصفقات الجديدة هنا عند إضافتها.</p>
         </div>
       </div>
     );
@@ -168,27 +219,29 @@ function PipelineChart({ points }: { points: { label: string; value: number }[] 
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="170" onMouseLeave={() => setHover(null)}>
       <defs>
         <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1a5c4f" stopOpacity="0.18" />
-          <stop offset="100%" stopColor="#1a5c4f" stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--content-accent)" stopOpacity="0.16" />
+          <stop offset="100%" stopColor="var(--content-accent)" stopOpacity="0" />
         </linearGradient>
       </defs>
       {[0, 0.5, 1].map((g) => (
-        <line key={g} x1={padL} x2={W - padR} y1={y(maxVal * g)} y2={y(maxVal * g)} stroke="#f1f5f9" strokeWidth="1" />
+        <line key={g} x1={padL} x2={W - padR} y1={y(maxVal * g)} y2={y(maxVal * g)} stroke="var(--border-subtle)" strokeWidth="1" />
       ))}
+      {/* No draw-in: this chart sits behind a network fetch, and animating it
+          after the wait only pushes the numbers further away. */}
       {area && <path d={area} fill="url(#areaGrad)" />}
-      {line && <path d={line} fill="none" stroke="#1a5c4f" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
+      {line && <path d={line} fill="none" stroke="var(--content-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
       {points.map((p, i) => (
         <g key={p.label}>
-          <text x={x(i)} y={H - 6} textAnchor="middle" fontSize="10" fill="#94a3b8">{p.label}</text>
-          <circle cx={x(i)} cy={y(p.value)} r="4" fill="white" stroke="#1a5c4f" strokeWidth="2" />
+          <text x={x(i)} y={H - 6} textAnchor="middle" fontSize="10" fill="var(--content-tertiary)">{p.label}</text>
+          <circle cx={x(i)} cy={y(p.value)} r="4" fill="var(--surface-raised)" stroke="var(--content-accent)" strokeWidth="2" />
           <circle cx={x(i)} cy={y(p.value)} r="14" fill="transparent" onMouseEnter={() => setHover(i)} />
         </g>
       ))}
       {hover != null && (
         <g>
-          <line x1={x(hover)} x2={x(hover)} y1={padT} y2={H - padB} stroke="#1a5c4f" strokeWidth="1" strokeDasharray="3 3" />
-          <rect x={Math.min(Math.max(x(hover) - 46, 2), W - 94)} y={Math.max(y(points[hover].value) - 40, 2)} width="92" height="32" rx="6" fill="#1e1b4b" />
-          <text x={Math.min(Math.max(x(hover), 48), W - 48)} y={Math.max(y(points[hover].value) - 26, 14)} textAnchor="middle" fontSize="9" fill="#a5b4c9">{points[hover].label}</text>
+          <line x1={x(hover)} x2={x(hover)} y1={padT} y2={H - padB} stroke="var(--content-accent)" strokeWidth="1" strokeDasharray="3 3" />
+          <rect x={Math.min(Math.max(x(hover) - 46, 2), W - 94)} y={Math.max(y(points[hover].value) - 40, 2)} width="92" height="32" rx="6" fill="var(--surface-inverse)" />
+          <text x={Math.min(Math.max(x(hover), 48), W - 48)} y={Math.max(y(points[hover].value) - 26, 14)} textAnchor="middle" fontSize="9" fill="var(--content-inverse-tertiary)">{points[hover].label}</text>
           <text x={Math.min(Math.max(x(hover), 48), W - 48)} y={Math.max(y(points[hover].value) - 14, 26)} textAnchor="middle" fontSize="10" fontWeight="700" fill="white">SAR {money(points[hover].value)}</text>
         </g>
       )}
@@ -197,17 +250,70 @@ function PipelineChart({ points }: { points: { label: string; value: number }[] 
 }
 
 function Skeleton() {
-  const box = "animate-pulse rounded-2xl bg-white";
   return (
     <div className="flex flex-col gap-6">
+<<<<<<< HEAD
       <div className="h-9 w-64 animate-pulse rounded-lg bg-white" />
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <div key={i} className={`${box} h-36 border border-[#d6ece5]`} />)}</div>
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3"><div className={`${box} h-80 border border-[#d6ece5] lg:col-span-2`} /><div className={`${box} h-80 border border-[#d6ece5]`} /></div>
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className={`${box} h-64 border border-[#d6ece5]`} />)}</div>
+=======
+      <div className="skeleton-shimmer h-[188px] rounded-[var(--radius-lg)]" />
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-pad)]">
+            <div className="flex items-center justify-between">
+              <div className="skeleton-shimmer h-11 w-11 rounded-[var(--radius-lg)]" />
+              <div className="skeleton-shimmer h-5 w-20 rounded-full" />
+            </div>
+            <div className="skeleton-shimmer mt-4 h-3.5 w-24 rounded" />
+            <div className="skeleton-shimmer mt-2 h-8 w-16 rounded" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-pad)] lg:col-span-2">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="skeleton-shimmer h-10 w-10 rounded-[var(--radius-md)]" />
+            <div className="skeleton-shimmer h-4 w-32 rounded" />
+          </div>
+          <div className="skeleton-shimmer h-40 rounded-[var(--radius-md)]" />
+        </div>
+        <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-pad)]">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="skeleton-shimmer h-10 w-10 rounded-[var(--radius-md)]" />
+            <div className="skeleton-shimmer h-4 w-20 rounded" />
+          </div>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 py-2.5">
+              <div className="skeleton-shimmer h-4 w-4 flex-none rounded-full" />
+              <div className="skeleton-shimmer h-3.5 flex-1 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-pad)]">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="skeleton-shimmer h-10 w-10 rounded-[var(--radius-md)]" />
+              <div className="skeleton-shimmer h-4 w-24 rounded" />
+            </div>
+            {Array.from({ length: 3 }).map((_, j) => (
+              <div key={j} className="flex items-center gap-3 py-2.5">
+                <div className="skeleton-shimmer h-7 w-7 flex-none rounded-full" />
+                <div className="skeleton-shimmer h-3.5 flex-1 rounded" />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+>>>>>>> main
     </div>
   );
 }
 
+<<<<<<< HEAD
 const CARD = "rounded-2xl border border-[#d6ece5] bg-white p-6 shadow-[0_2px_8px_rgba(26,92,79,0.04)] transition-all duration-200 hover:shadow-[0_4px_16px_rgba(26,92,79,0.08)]";
 
 function CardHead({ icon, color, title, subtitle, action }: { icon: React.ReactNode; color: string; title: string; subtitle?: string; action?: React.ReactNode }) {
@@ -226,6 +332,8 @@ function CardHead({ icon, color, title, subtitle, action }: { icon: React.ReactN
     </div>
   );
 }
+=======
+>>>>>>> main
 
 /* ---------- Page ---------- */
 export default function DashboardPage() {
@@ -238,11 +346,12 @@ export default function DashboardPage() {
   const [now, setNow] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  /** Sources that failed while others succeeded — drives the partial-load notice. */
+  const [partial, setPartial] = useState<string[]>([]);
   const [newLeadOpen, setNewLeadOpen] = useState(false);
   const [logActivityOpen, setLogActivityOpen] = useState(false);
   const [addContactOpen, setAddContactOpen] = useState(false);
   const [completing, setCompleting] = useState<Set<string | number>>(new Set());
-  const [scoreModel, setScoreModel] = useState<LeadScoreModel | null>(null);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -254,26 +363,36 @@ export default function DashboardPage() {
     try {
       const [{ data: user }, l, d, a, t] = await Promise.all([
         supabase.auth.getUser(),
-        supabase.from("leads").select("*, sources(label), pipeline_stages(label, terminal_type)").is("deleted_at", null),
-        supabase.from("deals").select("*, pipeline_stages(label, terminal_type)").is("deleted_at", null),
-        supabase.from("activities").select("*, activity_types(label)").order("occurred_at", { ascending: false }).limit(5),
-        supabase.from("tasks").select("*").is("completed_at", null).order("due_at", { ascending: true }).limit(5),
+        fetchLeadsSummary(),
+        fetchDealsSummary(),
+        fetchRecentActivities(5),
+        fetchUpcomingTasks(5),
       ]);
-      const firstErr = l.error || d.error || a.error || t.error;
-      if (firstErr) {
-        console.error("[Dashboard] Supabase fetch failed", { leads: l.error, deals: d.error, activities: a.error, tasks: t.error });
+      // Partial failure, not all-or-nothing. Previously any one of these four
+      // rejecting blanked the whole screen — a rep lost the dashboard because
+      // the tasks query timed out. Each source now fails on its own and the
+      // panels that loaded still render.
+      const failedSources = [
+        l.error && "العملاء",
+        d.error && "الصفقات",
+        a.error && "النشاطات",
+        t.error && "المهام",
+      ].filter(Boolean) as string[];
+      if (failedSources.length === 4) {
+        console.error("[Dashboard] every source failed", { leads: l.error, deals: d.error, activities: a.error, tasks: t.error });
         setError(true);
         return;
       }
+      if (failedSources.length) {
+        console.warn("[Dashboard] partial load", failedSources);
+      }
+      setPartial(failedSources);
       const name = (user.user?.user_metadata?.full_name as string) || (user.user?.email ?? "").split("@")[0] || "";
       setFirstName(name.split(" ")[0]);
       setLeads((l.data as unknown as Lead[]) ?? []);
       setDeals((d.data as unknown as Deal[]) ?? []);
       setActivities((a.data as unknown as Activity[]) ?? []);
       setTasks((t.data as unknown as Task[]) ?? []);
-      fetchLeadScoreModel()
-        .then(setScoreModel)
-        .catch((err) => console.error("[Dashboard] lead score model failed", err));
     } catch (err) {
       console.error("[Dashboard] Unexpected error loading dashboard", err);
       setError(true);
@@ -290,10 +409,7 @@ export default function DashboardPage() {
     async (task: Task) => {
       if (completing.has(task.id)) return;
       setCompleting((prev) => new Set(prev).add(task.id));
-      const { error: upErr } = await supabase
-        .from("tasks")
-        .update({ completed_at: new Date().toISOString() })
-        .eq("id", task.id);
+      const { error: upErr } = await completeTaskQuick(String(task.id));
       if (upErr) {
         console.error("[Dashboard] Failed to complete task", upErr);
         toast("تعذّر تحديث المهمة", "error");
@@ -332,10 +448,35 @@ export default function DashboardPage() {
     const anchor = latestDate([...deals.map((d) => d.created_at), ...leads.map((l) => l.created_at)]);
     const days = last7Days(anchor);
     const series = days.map((day) => ({
+<<<<<<< HEAD
       label: day.toLocaleDateString("ar-SA", { weekday: "short" }),
       value: deals.filter((d) => sameDay(d.created_at, day)).reduce((s, d) => s + dealValue(d), 0),
     }));
     const seriesRange = `${days[0].toLocaleDateString("ar-SA", { month: "short", day: "numeric" })} – ${days[6].toLocaleDateString("ar-SA", { month: "short", day: "numeric" })}`;
+=======
+      label: day.toLocaleDateString(DATE_LOCALE, { weekday: "short" }),
+      value: deals.filter((d) => sameDay(d.created_at, day)).reduce((s, d) => s + dealValue(d), 0),
+    }));
+    const seriesRange = `${days[0].toLocaleDateString(DATE_LOCALE, { month: "short", day: "numeric" })} – ${days[6].toLocaleDateString(DATE_LOCALE, { month: "short", day: "numeric" })}`;
+
+    // Cumulative counts across the same 7-day window, for the KPI sparklines —
+    // running totals (not per-day deltas) so the trend line reads as growth.
+    let leadRunning = 0, cleanRunning = 0, dealRunning = 0, pipeRunning = 0;
+    const leadsSeries: number[] = [];
+    const cleanSeries: number[] = [];
+    const dealsSeries: number[] = [];
+    const pipeSeries: number[] = [];
+    for (const day of days) {
+      leadRunning += leads.filter((l) => sameDay(l.created_at, day)).length;
+      cleanRunning += leads.filter((l) => !l.junk_reason_id && sameDay(l.created_at, day)).length;
+      dealRunning += deals.filter((d) => sameDay(d.created_at, day)).length;
+      pipeRunning += deals.filter((d) => sameDay(d.created_at, day)).reduce((s, d) => s + dealValue(d), 0);
+      leadsSeries.push(leadRunning);
+      cleanSeries.push(cleanRunning);
+      dealsSeries.push(dealRunning);
+      pipeSeries.push(pipeRunning);
+    }
+>>>>>>> main
 
     // Recent Leads: exclude bot-stage leads (fake signups), newest first.
     const recentLeads = [...leads]
@@ -347,7 +488,7 @@ export default function DashboardPage() {
     const cleanTrend = trendText(leads.filter((l) => !l.junk_reason_id && monthOffset(l.created_at, 0, anchor)).length, leads.filter((l) => !l.junk_reason_id && monthOffset(l.created_at, 1, anchor)).length);
     const dealsTrend = trendText(deals.filter((d) => monthOffset(d.created_at, 0, anchor)).length, deals.filter((d) => monthOffset(d.created_at, 1, anchor)).length);
     const pipeTrend = trendText(deals.filter((d) => monthOffset(d.created_at, 0, anchor)).reduce((s, d) => s + dealValue(d), 0), deals.filter((d) => monthOffset(d.created_at, 1, anchor)).reduce((s, d) => s + dealValue(d), 0));
-    return { total_leads, clean_leads, junk_leads, total_deals, won, lost, pipeline_value, win_rate, series, seriesRange, recentLeads, leadsTrend, cleanTrend, dealsTrend, pipeTrend };
+    return { total_leads, clean_leads, junk_leads, total_deals, won, lost, pipeline_value, win_rate, series, seriesRange, recentLeads, leadsTrend, cleanTrend, dealsTrend, pipeTrend, leadsSeries, cleanSeries, dealsSeries, pipeSeries };
   }, [leads, deals]);
 
   if (loading) return <Skeleton />;
@@ -355,24 +496,39 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-3xl">🔌</div>
+        <div className="flex h-16 w-16 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--status-danger-bg)] text-[color:var(--status-danger-fg)]"><WifiOffIcon className="h-7 w-7" /></div>
         <div>
+<<<<<<< HEAD
           <h2 className="text-xl font-bold text-[#1e1b4b]">خطأ في الاتصال</h2>
           <p className="mt-1 max-w-sm text-sm text-[#94a3b8]">
             لم نتمكن من الوصول للخادم. تحقق من اتصالك وحاول مرة أخرى.
+=======
+          <h2 className="t-title-2 text-[color:var(--content-primary)]">خطأ في الاتصال</h2>
+          <p className="t-body-sm mt-1 max-w-sm text-[color:var(--content-tertiary)]">لم نتمكن من الوصول للخادم. تحقق من اتصالك وحاول مرة أخرى.
+>>>>>>> main
           </p>
         </div>
         <button
           onClick={() => { setLoading(true); load(); }}
+<<<<<<< HEAD
           className="rounded-xl bg-[#1a5c4f] px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-[#1a5c4f]/20 transition hover:bg-[#15503f]"
         >
           إعادة المحاولة
         </button>
+=======
+          className="t-body-sm rounded-[var(--radius-md)] bg-[var(--surface-accent)] px-5 py-2.5 font-semibold text-[color:var(--content-on-accent)] transition-colors hover:bg-[var(--surface-accent-hover)]"
+        >إعادة المحاولة</button>
+>>>>>>> main
       </div>
     );
   }
 
+  // One accent, not four. The KPI tiles previously carried a different hue
+  // each, which made the row read as a colour chart rather than a number row.
+  // Semantic colour is reserved for the trend, where up/down actually means
+  // something.
   const kpis = [
+<<<<<<< HEAD
     { label: "إجمالي العملاء", value: String(m.total_leads), Icon: LeadsIcon, color: "#1a5c4f", trend: m.leadsTrend, href: "/dashboard/leads" },
     { label: "عملاء نظيفون", value: String(m.clean_leads), Icon: CheckCircleIcon, color: "#10b981", trend: m.cleanTrend, href: "/dashboard/leads?filter=clean" },
     { label: "صفقات نشطة", value: String(m.total_deals), Icon: RevenueIcon, color: "#f59e0b", trend: m.dealsTrend, href: "/dashboard/deals?filter=active" },
@@ -446,9 +602,109 @@ export default function DashboardPage() {
             <div><p className="text-lg font-bold text-[#1e1b4b]">{m.total_deals}</p><p className="text-xs text-[#94a3b8]">إجمالي الصفقات</p></div>
             <div><p className="text-lg font-bold text-green-600">{m.won}</p><p className="text-xs text-[#94a3b8]">مكسوبة</p></div>
             <div><p className="text-lg font-bold text-red-600">{m.lost}</p><p className="text-xs text-[#94a3b8]">خاسرة</p></div>
-          </div>
-        </div>
+=======
+    { label: "إجمالي العملاء", n: m.total_leads, format: (v: number) => String(Math.round(v)), Icon: LeadsIcon, trend: m.leadsTrend, href: "/dashboard/leads", spark: m.leadsSeries },
+    { label: "عملاء نظيفون", n: m.clean_leads, format: (v: number) => String(Math.round(v)), Icon: CheckCircleIcon, trend: m.cleanTrend, href: "/dashboard/leads?filter=clean", spark: m.cleanSeries },
+    { label: "صفقات نشطة", n: m.total_deals, format: (v: number) => String(Math.round(v)), Icon: RevenueIcon, trend: m.dealsTrend, href: "/dashboard/deals?filter=active", spark: m.dealsSeries },
+    { label: "قيمة الصفقات", n: m.pipeline_value, format: (v: number) => `SAR ${compactSAR(v)}`, Icon: TrendingUpIcon, trend: m.pipeTrend, href: "/dashboard/insights", spark: m.pipeSeries },
+  ];
 
+  const overview = [
+    { tone: "accent" as const, label: "قيمة الصفقات", value: `SAR ${money(m.pipeline_value)}` },
+    { tone: "success" as const, label: "عملاء نظيفون", value: m.clean_leads },
+    { tone: "danger" as const, label: "عملاء غير مؤهلين", value: m.junk_leads },
+  ];
+
+  return (
+    <div className="flex flex-col gap-[var(--space-card-gap)]">
+      {/* The KPI row lives inside the navy band rather than as four more white
+          cards below it. That is the Meridian read: dark structure carrying
+          the summary, ivory surfaces carrying the detail. */}
+      <CommandBand
+        icon={<span className="t-title-3 font-bold text-[color:var(--content-inverse-accent)]">{initials(firstName || "أنت")}</span>}
+        title={`${greeting()}، ${firstName || "بك"}`}
+        subtitle={
+          <span className="flex items-center gap-1.5">
+            <CalendarIcon className="h-3.5 w-3.5" />
+            {longDate(now)}
+          </span>
+        }
+        actions={
+          <>
+            <BandButton onClick={() => setNewLeadOpen(true)}>+ عميل جديد</BandButton>
+            <BandButton variant="ghost" onClick={() => setLogActivityOpen(true)}>تسجيل نشاط</BandButton>
+            <BandButton variant="ghost" onClick={() => setAddContactOpen(true)}>إضافة جهة اتصال</BandButton>
+          </>
+        }
+        footer={
+          <div className="grid grid-cols-1 divide-y divide-[var(--border-inverse)] sm:grid-cols-2 sm:divide-y-0 md:grid-cols-4">
+            {kpis.map(({ label, n, format, Icon, trend, href, spark }, i) => (
+              <Link
+                key={label}
+                href={href}
+                className={`group flex flex-col gap-2 px-6 py-5 transition-colors duration-[var(--motion-fast)] ease-[var(--ease-standard)] hover:bg-white/[0.05] ${
+                  i > 0 ? "sm:border-s sm:border-[var(--border-inverse)]" : ""
+                }`}
+              >
+                <span className="flex items-center gap-2 text-[color:var(--content-inverse-tertiary)]">
+                  <Icon className="h-4 w-4" />
+                  <span className="t-caption font-semibold">{label}</span>
+                </span>
+                <span className="t-figure t-figure-md leading-none text-[color:var(--content-inverse-primary)]">
+                  <CountUp value={n} format={format} />
+                </span>
+                <span className="flex items-center justify-between gap-2">
+                  <span className={`t-micro flex items-center gap-1 font-bold ${TREND_ON_NAVY[trend.dir]}`}>
+                    {trend.dir === "up" && <svg viewBox="0 0 12 12" fill="currentColor" className="h-2.5 w-2.5"><path d="M6 2l4 5H7v3H5V7H2z" /></svg>}
+                    {trend.dir === "down" && <svg viewBox="0 0 12 12" fill="currentColor" className="h-2.5 w-2.5"><path d="M6 10 2 5h3V2h2v3h3z" /></svg>}
+                    {trend.text}
+                  </span>
+                  {spark.length >= 2 && <Sparkline values={spark} color="var(--brand-teal-300)" width={64} height={20} />}
+                </span>
+              </Link>
+            ))}
+          </div>
+        }
+      />
+
+      {partial.length > 0 && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[var(--radius-md)] border border-[var(--status-warning-border)] bg-[var(--status-warning-bg)] px-4 py-3"
+        >
+          <AlertIcon className="h-4 w-4 flex-none text-[color:var(--status-warning-fg)]" />
+          <p className="t-body-sm text-[color:var(--status-warning-fg)]">
+            تعذّر تحميل: {partial.join("، ")} — بقية اللوحة محدّثة.
+          </p>
+          <button
+            onClick={() => { setLoading(true); load(); }}
+            className="t-caption font-bold text-[color:var(--status-warning-fg)] underline underline-offset-2"
+          >
+            إعادة المحاولة
+          </button>
+        </div>
+      )}
+
+      <LedgerSection label="النشاط" meta={m.seriesRange}>
+      <div className="grid grid-cols-1 gap-[var(--space-card-gap)] lg:grid-cols-3">
+        <Panel className="p-[var(--space-card-pad)] lg:col-span-2">
+          <PanelHead
+            icon={<ChartBarIcon className="h-5 w-5" />}
+            title="نشاط الصفقات"
+            subtitle={`قيمة الصفقات · ${m.seriesRange}`}
+            action={<span className="t-micro rounded-full bg-[var(--surface-sunken)] px-3 py-1 font-bold text-[color:var(--content-tertiary)]">آخر ٧ أيام</span>}
+            className="mb-4"
+          />
+          <PipelineChart points={m.series} />
+          <div className="mt-4 flex gap-8 border-t border-[var(--border-subtle)] pt-4">
+            <div><p className="t-figure t-title-3 text-[color:var(--content-primary)]">{m.total_deals}</p><p className="t-caption text-[color:var(--content-tertiary)]">إجمالي الصفقات</p></div>
+            <div><p className="t-figure t-title-3 text-[color:var(--status-success-fg)]">{m.won}</p><p className="t-caption text-[color:var(--content-tertiary)]">مكسوبة</p></div>
+            <div><p className="t-figure t-title-3 text-[color:var(--status-danger-fg)]">{m.lost}</p><p className="t-caption text-[color:var(--content-tertiary)]">خاسرة</p></div>
+>>>>>>> main
+          </div>
+        </Panel>
+
+<<<<<<< HEAD
         <div className={`${CARD} relative flex flex-col overflow-hidden`}>
           <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-[#1a5c4f] to-[#38d39f]" />
           <CardHead
@@ -466,17 +722,43 @@ export default function DashboardPage() {
             <p className="mb-3 text-xs font-semibold tracking-wider text-[#94a3b8]">المهام القادمة</p>
             {tasks.length === 0 ? (
               <p className="py-6 text-center text-sm text-[#94a3b8]">🎉 لا مهام لليوم!</p>
+=======
+        <Panel className="flex flex-col p-[var(--space-card-pad)]">
+          <PanelHead
+            icon={<ClockIcon className="h-5 w-5" />}
+            title="اليوم"
+            subtitle={longDate(now)}
+            action={
+              <p className="t-figure rounded-[var(--radius-sm)] bg-[var(--surface-accent-subtle)] px-3 py-1.5 t-body-lg text-[color:var(--content-accent)]">
+                {now.toLocaleTimeString(DATE_LOCALE, { hour: "2-digit", minute: "2-digit" })}
+              </p>
+            }
+            className="mb-4"
+          />
+          <div className="flex-1 border-t border-[var(--border-subtle)] pt-4">
+            <p className="t-eyebrow mb-3 text-[color:var(--content-tertiary)]">المهام القادمة</p>
+            {tasks.length === 0 ? (
+              <p className="t-body-sm flex items-center justify-center gap-2 py-6 text-center text-[color:var(--content-tertiary)]">
+                <CelebrationIcon className="h-4 w-4 text-[color:var(--content-accent)]" />لا مهام لليوم!
+              </p>
+>>>>>>> main
             ) : (
               tasks.map((t) => {
                 const done = completing.has(t.id);
                 return (
+<<<<<<< HEAD
                   <div key={t.id} className="flex items-center gap-3 border-b border-[#e8f0ec] py-2.5 last:border-0">
+=======
+                  <div key={t.id} className="flex items-center gap-3 border-b border-[var(--border-subtle)] py-2.5 last:border-0">
+>>>>>>> main
                     <button
                       type="button"
                       onClick={() => completeTask(t)}
-                      aria-label="Mark task complete"
-                      className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-                        done ? "border-[#1a5c4f] bg-[#1a5c4f] text-white" : "border-gray-100 hover:border-[#1a5c4f]"
+                      aria-label={`إنهاء المهمة: ${taskTitle(t)}`}
+                      className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-[var(--motion-fast)] ${
+                        done
+                          ? "border-[var(--content-accent)] bg-[var(--content-accent)] text-white"
+                          : "border-[var(--border-strong)] hover:border-[var(--content-accent)]"
                       }`}
                     >
                       {done && (
@@ -485,18 +767,19 @@ export default function DashboardPage() {
                         </svg>
                       )}
                     </button>
-                    <span dir="auto" className={`flex-1 truncate text-sm transition-colors ${done ? "text-[#94a3b8] line-through" : "text-[#334155]"}`}>
+                    <span dir="auto" className={`t-body-sm flex-1 truncate transition-colors ${done ? "text-[color:var(--content-tertiary)] line-through" : "text-[color:var(--content-secondary)]"}`}>
                       {taskTitle(t)}
                     </span>
-                    <span className="text-xs text-[#94a3b8]">{timeOf(t.due_at)}</span>
+                    <span className="t-caption tabular-nums text-[color:var(--content-tertiary)]">{timeOf(t.due_at)}</span>
                   </div>
                 );
               })
             )}
           </div>
-        </div>
+        </Panel>
       </div>
 
+<<<<<<< HEAD
       {/* Bottom row */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Sales Overview */}
@@ -564,6 +847,70 @@ export default function DashboardPage() {
           />
           {activities.length === 0 ? (
             <p className="py-6 text-center text-sm text-[#94a3b8]">لا توجد نشاطات مسجلة</p>
+=======
+      </LedgerSection>
+
+      <LedgerSection label="التفاصيل" meta={`${m.total_deals} صفقة`}>
+      <div className="grid grid-cols-1 gap-[var(--space-card-gap)] lg:grid-cols-3">
+        {/* Sales overview */}
+        <Panel className="p-[var(--space-card-pad)]">
+          <PanelHead icon={<TargetIcon className="h-5 w-5" />} title="ملخص المبيعات" className="mb-4" />
+
+          <div className="mb-5 flex items-center gap-5 border-b border-[var(--border-subtle)] pb-5">
+            <div className="relative h-28 w-28 flex-none">
+              <svg viewBox="0 0 120 120" className="h-28 w-28 -rotate-90" role="img" aria-label={`نسبة الفوز ${m.win_rate.toFixed(0)} بالمئة`}>
+                <circle cx="60" cy="60" r="50" fill="none" stroke="var(--surface-sunken)" strokeWidth="12" />
+                <circle
+                  cx="60" cy="60" r="50" fill="none" stroke="var(--status-danger-fg)" strokeWidth="12" strokeLinecap="round" opacity="0.8"
+                  strokeDasharray={`${m.total_deals ? (m.lost / m.total_deals) * 314.16 : 0} 314.16`}
+                />
+                <circle
+                  cx="60" cy="60" r="50" fill="none" stroke="var(--content-accent)" strokeWidth="12" strokeLinecap="round"
+                  strokeDasharray={`${(Math.min(100, m.win_rate) / 100) * 314.16} 314.16`}
+                  style={{ transition: "stroke-dasharray var(--motion-slow) var(--ease-standard)" }}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="t-figure t-figure-sm leading-none text-[color:var(--content-primary)]">{m.win_rate.toFixed(0)}%</span>
+                <span className="t-micro mt-1 font-semibold text-[color:var(--content-tertiary)]">نسبة الفوز</span>
+              </div>
+            </div>
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center justify-between rounded-[var(--radius-sm)] bg-[var(--status-success-bg)] px-3 py-2">
+                <span className="t-caption flex items-center gap-1.5 font-semibold text-[color:var(--status-success-fg)]"><span className="h-2 w-2 rounded-full bg-current" />مكسوبة</span>
+                <span className="t-figure t-body text-[color:var(--status-success-fg)]">{m.won}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-[var(--radius-sm)] bg-[var(--status-danger-bg)] px-3 py-2">
+                <span className="t-caption flex items-center gap-1.5 font-semibold text-[color:var(--status-danger-fg)]"><span className="h-2 w-2 rounded-full bg-current" />خاسرة</span>
+                <span className="t-figure t-body text-[color:var(--status-danger-fg)]">{m.lost}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            {overview.map((o) => (
+              <div key={o.label} className="flex items-center justify-between rounded-[var(--radius-sm)] px-2 py-2 transition-colors duration-[var(--motion-fast)] hover:bg-[var(--surface-hover)]">
+                <div className="flex items-center gap-2.5">
+                  <div className={`h-2 w-2 flex-none rounded-full ${OVERVIEW_DOT[o.tone]}`} />
+                  <span className="t-body-sm text-[color:var(--content-secondary)]">{o.label}</span>
+                </div>
+                <span className={`t-figure rounded-[var(--radius-xs)] px-2 py-0.5 t-body-sm ${OVERVIEW_BADGE[o.tone]}`}>{o.value}</span>
+              </div>
+            ))}
+          </div>
+        </Panel>
+
+        {/* Activity feed */}
+        <Panel className="p-[var(--space-card-pad)]">
+          <PanelHead
+            icon={<ActivitiesIcon className="h-5 w-5" />}
+            title="آخر النشاطات"
+            action={<Link href="/dashboard/activities" className="t-caption font-semibold text-[color:var(--content-accent)] hover:underline">عرض الكل ←</Link>}
+            className="mb-4"
+          />
+          {activities.length === 0 ? (
+            <p className="t-body-sm py-6 text-center text-[color:var(--content-tertiary)]">لا توجد نشاطات مسجلة</p>
+>>>>>>> main
           ) : (
             (() => {
               const groups: { key: string; header: string; items: Activity[] }[] = [];
@@ -575,6 +922,7 @@ export default function DashboardPage() {
               }
               return groups.map((g) => (
                 <div key={g.key}>
+<<<<<<< HEAD
                   <p className="mb-1 inline-block rounded-full bg-[#f1f5f9] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#7c8b86]">{g.header}</p>
                   <div className="relative">
                     {g.items.length > 1 && <span className="absolute right-[13px] top-1 bottom-1 w-px bg-[#e8f0ec]" />}
@@ -590,13 +938,30 @@ export default function DashboardPage() {
                         </div>
                       );
                     })}
+=======
+                  <p className="t-eyebrow mb-1 inline-block rounded-full bg-[var(--surface-sunken)] px-2.5 py-0.5 text-[color:var(--content-tertiary)]">{g.header}</p>
+                  <div className="relative">
+                    {g.items.length > 1 && <span className="absolute inset-y-1 right-[13px] w-px bg-[var(--border-subtle)]" />}
+                    {g.items.map((a) => (
+                      <div key={a.id} className="relative flex gap-3 rounded-[var(--radius-sm)] px-1 py-2.5 transition-colors duration-[var(--motion-fast)] hover:bg-[var(--surface-hover)]">
+                        <span className="relative z-10 mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[var(--surface-accent-subtle)] text-[color:var(--content-accent)] ring-4 ring-[var(--surface-raised)]">
+                          <ActivityGlyph label={a.activity_types?.label} className="h-3.5 w-3.5" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p dir="auto" className="t-body-sm line-clamp-2 text-[color:var(--content-secondary)]">{a.body || a.activity_types?.label || "نشاط"}</p>
+                          <span className="t-caption text-[color:var(--content-tertiary)]">{formatDateTime(a.occurred_at)}</span>
+                        </div>
+                      </div>
+                    ))}
+>>>>>>> main
                   </div>
                 </div>
               ));
             })()
           )}
-        </div>
+        </Panel>
 
+<<<<<<< HEAD
         {/* Recent Leads */}
         <div className={`${CARD} relative overflow-hidden`}>
           <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-[#ec4899] to-[#f9a8d4]" />
@@ -629,7 +994,41 @@ export default function DashboardPage() {
             })
           )}
         </div>
+=======
+        {/* Recent leads */}
+        <Panel className="p-[var(--space-card-pad)]">
+          <PanelHead
+            icon={<LeadsIcon className="h-5 w-5" />}
+            title="أحدث العملاء"
+            action={<Link href="/dashboard/leads" className="t-caption font-semibold text-[color:var(--content-accent)] hover:underline">عرض الكل ←</Link>}
+            className="mb-4"
+          />
+          {m.recentLeads.length === 0 ? (
+            <div className="py-6 text-center">
+              <p className="t-body-sm text-[color:var(--content-tertiary)]">لا يوجد عملاء بعد — أضف أول عميل</p>
+              <button onClick={() => setNewLeadOpen(true)} className="t-caption mt-3 rounded-full bg-[var(--surface-accent)] px-4 py-2 font-semibold text-[color:var(--content-on-accent)] transition-colors hover:bg-[var(--surface-accent-hover)]">+ عميل جديد</button>
+            </div>
+          ) : (
+            m.recentLeads.map((l) => (
+                <Link key={l.id} href={`/dashboard/leads?open=${l.id}`} className="flex items-center gap-3 rounded-[var(--radius-sm)] px-1 py-2.5 transition-colors duration-[var(--motion-fast)] hover:bg-[var(--surface-hover)]">
+                  {/* One avatar treatment. The five-gradient rotation it replaces
+                      encoded nothing — position in a list is not an attribute. */}
+                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[var(--surface-inverse)]">
+                    <span className="t-micro font-bold text-white">{initials(l.full_name)}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p dir="auto" className="t-body-sm truncate font-semibold text-[color:var(--content-primary)]">{l.full_name || "عميل بدون اسم"}</p>
+                    <p className="t-caption text-[color:var(--content-tertiary)]">{l.sources?.label || "—"}</p>
+                  </div>
+                  <span className="t-caption flex-none text-[color:var(--content-tertiary)]">{formatDate(l.created_at)}</span>
+                </Link>
+            ))
+          )}
+        </Panel>
+>>>>>>> main
       </div>
+
+      </LedgerSection>
 
       <NewLeadSlideOver open={newLeadOpen} onClose={() => setNewLeadOpen(false)} onCreated={load} />
       <LogActivitySlideOver open={logActivityOpen} onClose={() => setLogActivityOpen(false)} onCreated={load} />

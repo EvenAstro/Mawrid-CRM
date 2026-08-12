@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { AlertIcon } from "@/components/icons";
 
 export default function GlobalError({
   error,
@@ -15,7 +16,7 @@ export default function GlobalError({
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-ivory px-6 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-3xl">⚠️</div>
+      <div className="flex h-16 w-16 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--status-danger-bg)] text-3xl"><AlertIcon className="h-4 w-4" /></div>
       <div>
         <h1 className="text-xl font-bold text-ink">Something went wrong</h1>
         <p className="mt-1 max-w-sm text-sm text-muted">
@@ -26,7 +27,7 @@ export default function GlobalError({
         <button onClick={reset} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-primary/25 transition hover:bg-primary-dark">
           Try again
         </button>
-        <button onClick={() => location.reload()} className="rounded-full border border-border-light bg-white px-5 py-2.5 text-sm font-semibold text-ink-secondary transition hover:border-primary hover:text-primary">
+        <button onClick={() => location.reload()} className="rounded-full border border-border-light bg-[var(--surface-raised)] px-5 py-2.5 text-sm font-semibold text-ink-secondary transition hover:border-primary hover:text-primary">
           Reload page
         </button>
       </div>

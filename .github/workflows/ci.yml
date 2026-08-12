@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint app components lib
+
+      - name: Build
+        run: npx next build
+        env:
+          # Dummy values so the build succeeds without secrets — the app
+          # reads Supabase's public URL/anon key from lib/supabase.ts
+          # directly, not env vars, so build-time only needs these to
+          # exist for the server-only routes' env checks to not throw.
+          SUPABASE_SERVICE_ROLE_KEY: ci-placeholder
+          OPENROUTER_API_KEY: ci-placeholder

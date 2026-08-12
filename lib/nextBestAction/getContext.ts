@@ -1,5 +1,6 @@
-import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import type { SituationalTag } from "@/lib/classifyActivity";
+import { fetchActivitiesByEntityIdsAdmin, countActivitiesMatching } from "@/lib/models/activities";
+import { fetchDealStageContext, fetchResolvedDealsExcept, fetchDealLeadId, fetchDealLeadAndStage } from "@/lib/models/deals";
 
 export type MatchTier = "exact" | "stage" | "tag" | "none";
 
@@ -69,17 +70,16 @@ function chunk<T>(arr: T[], size: number): T[][] {
  */
 async function fetchActivitiesFor(dealIds: string[], leadIds: string[]): Promise<RawActivity[]> {
   const results: RawActivity[] = [];
-  const cols = "entity_type, entity_id, direction, occurred_at, body, situational_tag";
 
   for (const c of chunk(dealIds, CHUNK_SIZE)) {
     if (!c.length) continue;
-    const { data, error } = await supabase.from("activities").select(cols).eq("entity_type", "deal").in("entity_id", c);
+    const { data, error } = await fetchActivitiesByEntityIdsAdmin("deal", c);
     if (error) console.error("[getContext] deal-activities chunk fetch failed", error);
     if (data) results.push(...(data as RawActivity[]));
   }
   for (const c of chunk(leadIds, CHUNK_SIZE)) {
     if (!c.length) continue;
-    const { data, error } = await supabase.from("activities").select(cols).eq("entity_type", "lead").in("entity_id", c);
+    const { data, error } = await fetchActivitiesByEntityIdsAdmin("lead", c);
     if (error) console.error("[getContext] lead-activities chunk fetch failed", error);
     if (data) results.push(...(data as RawActivity[]));
   }
@@ -152,11 +152,7 @@ async function enrichCandidates(candidates: CandidateDeal[]): Promise<EnrichedCa
  * only signal available.
  */
 export async function getContext(dealId: string): Promise<DealContext | null> {
-  const { data: deal, error: dealError } = await supabase
-    .from("deals")
-    .select("id, lead_id, stage_id, updated_at, pipeline_stages(label, terminal_type)")
-    .eq("id", dealId)
-    .single();
+  const { data: deal, error: dealError } = await fetchDealStageContext(dealId);
 
   if (dealError || !deal) {
     console.error("[getContext] deal not found", dealError);
@@ -189,11 +185,7 @@ export async function getContext(dealId: string): Promise<DealContext | null> {
 
   // Deals table is small (~hundreds of rows) — fetching it whole is fine;
   // it's the activities table (thousands of rows) that needs targeted queries.
-  const { data: resolvedDealsRaw, error: resolvedError } = await supabase
-    .from("deals")
-    .select("id, lead_id, stage_id, updated_at, pipeline_stages(label, terminal_type)")
-    .is("deleted_at", null)
-    .neq("id", liveDeal.id);
+  const { data: resolvedDealsRaw, error: resolvedError } = await fetchResolvedDealsExcept(liveDeal.id);
 
   if (resolvedError || !resolvedDealsRaw) {
     console.error("[getContext] resolved deals fetch failed", resolvedError);
@@ -273,28 +265,24 @@ export async function getContext(dealId: string): Promise<DealContext | null> {
 
 /** Cheap activity count for a deal (deal-linked + originating-lead-linked), used for cache staleness checks. */
 export async function getActivityCount(dealId: string): Promise<number> {
-  const { data: deal } = await supabase.from("deals").select("lead_id").eq("id", dealId).single();
+  const { data: deal } = await fetchDealLeadId(dealId);
   if (!deal) return 0;
 
-  let query = supabase.from("activities").select("id", { count: "exact", head: true });
-  query = deal.lead_id
-    ? query.or(`and(entity_type.eq.deal,entity_id.eq.${dealId}),and(entity_type.eq.lead,entity_id.eq.${deal.lead_id})`)
-    : query.eq("entity_type", "deal").eq("entity_id", dealId);
-
-  const { count } = await query;
+  const orFilter = deal.lead_id
+    ? `and(entity_type.eq.deal,entity_id.eq.${dealId}),and(entity_type.eq.lead,entity_id.eq.${deal.lead_id})`
+    : null;
+  const { count } = await countActivitiesMatching(orFilter, "deal", dealId);
   return count ?? 0;
 }
 
 /** Cheap staleness signals for cache reads: current activity count + current stage_id. */
 export async function getDealMeta(dealId: string): Promise<{ activityCount: number; stageId: string | null }> {
-  const { data: deal } = await supabase.from("deals").select("lead_id, stage_id").eq("id", dealId).single();
+  const { data: deal } = await fetchDealLeadAndStage(dealId);
   if (!deal) return { activityCount: 0, stageId: null };
 
-  let query = supabase.from("activities").select("id", { count: "exact", head: true });
-  query = deal.lead_id
-    ? query.or(`and(entity_type.eq.deal,entity_id.eq.${dealId}),and(entity_type.eq.lead,entity_id.eq.${deal.lead_id})`)
-    : query.eq("entity_type", "deal").eq("entity_id", dealId);
-
-  const { count } = await query;
+  const orFilter = deal.lead_id
+    ? `and(entity_type.eq.deal,entity_id.eq.${dealId}),and(entity_type.eq.lead,entity_id.eq.${deal.lead_id})`
+    : null;
+  const { count } = await countActivitiesMatching(orFilter, "deal", dealId);
   return { activityCount: count ?? 0, stageId: deal.stage_id ?? null };
 }

@@ -1,5 +1,11 @@
-import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import { money } from "@/lib/format";
+import { fetchLeadsForSnapshot } from "@/lib/models/leads";
+import { fetchDealsForSnapshot } from "@/lib/models/deals";
+import { fetchActivitiesByEntityIdsAdmin, fetchRecentActivitiesAdmin, fetchLatestActivityTimestamp } from "@/lib/models/activities";
+import { fetchOpenTasksForSnapshot } from "@/lib/models/tasks";
+import { fetchConversationsForSnapshot, fetchConversationMembersForSnapshot } from "@/lib/models/conversations";
+import { fetchRecentMessagesForSnapshot } from "@/lib/models/messages";
+import { fetchProfilesAdmin } from "@/lib/profiles";
 
 const DAY_MS = 86_400_000;
 const STUCK_DAYS = 7;
@@ -21,6 +27,7 @@ interface LeadRow {
 interface DealRow {
   id: string;
   name: string | null;
+  owner_id: string | null;
   lead_id: string | null;
   expected_value_minor: number | null;
   won_value_minor: number | null;
@@ -53,6 +60,8 @@ export interface StuckDeal {
 }
 
 export interface SnapshotSections {
+  team: string;
+  chat: string;
   leads: string;
   dealsOverview: string;
   closest: string;
@@ -88,17 +97,16 @@ function valueSAR(d: DealRow): number {
 }
 
 async function fetchActivitiesFor(dealIds: string[], leadIds: string[]): Promise<ActivityRow[]> {
-  const cols = "entity_type, entity_id, occurred_at";
   const out: ActivityRow[] = [];
   for (const c of chunk(dealIds, CHUNK_SIZE)) {
     if (!c.length) continue;
-    const { data } = await supabase.from("activities").select(cols).eq("entity_type", "deal").in("entity_id", c);
-    if (data) out.push(...(data as ActivityRow[]));
+    const { data } = await fetchActivitiesByEntityIdsAdmin("deal", c);
+    if (data) out.push(...(data as unknown as ActivityRow[]));
   }
   for (const c of chunk(leadIds, CHUNK_SIZE)) {
     if (!c.length) continue;
-    const { data } = await supabase.from("activities").select(cols).eq("entity_type", "lead").in("entity_id", c);
-    if (data) out.push(...(data as ActivityRow[]));
+    const { data } = await fetchActivitiesByEntityIdsAdmin("lead", c);
+    if (data) out.push(...(data as unknown as ActivityRow[]));
   }
   return out;
 }
@@ -111,21 +119,19 @@ async function fetchActivitiesFor(dealIds: string[], leadIds: string[]): Promise
  * historical; anchoring to now would mark every deal stuck and every task past.
  */
 export async function buildSnapshot(): Promise<BusinessSnapshot> {
-  const [leadsRes, dealsRes, recentActsRes, latestActRes, tasksRes] = await Promise.all([
-    supabase.from("leads").select("id, junk_reason_id, created_at, sources(label)").is("deleted_at", null),
-    supabase
-      .from("deals")
-      .select(
-        "id, name, lead_id, expected_value_minor, won_value_minor, currency_code, probability_pct, created_at, updated_at, pipeline_stages(label, terminal_type), lost_reasons(label)",
-      )
-      .is("deleted_at", null),
-    supabase
-      .from("activities")
-      .select("entity_type, entity_id, body, direction, occurred_at, activity_types(label)")
-      .order("occurred_at", { ascending: false })
-      .limit(12),
-    supabase.from("activities").select("occurred_at").order("occurred_at", { ascending: false }).limit(1),
-    supabase.from("tasks").select("title, due_at").is("completed_at", null).order("due_at", { ascending: true }).limit(200),
+  const [
+    leadsRes, dealsRes, recentActsRes, latestActRes, tasksRes,
+    profiles, convsRes, membersRes, msgsRes,
+  ] = await Promise.all([
+    fetchLeadsForSnapshot(),
+    fetchDealsForSnapshot(),
+    fetchRecentActivitiesAdmin(12),
+    fetchLatestActivityTimestamp(),
+    fetchOpenTasksForSnapshot(),
+    fetchProfilesAdmin(),
+    fetchConversationsForSnapshot(),
+    fetchConversationMembersForSnapshot(),
+    fetchRecentMessagesForSnapshot(80),
   ]);
 
   const leads = (leadsRes.data as unknown as LeadRow[]) ?? [];
@@ -173,13 +179,15 @@ export async function buildSnapshot(): Promise<BusinessSnapshot> {
     .map((d) => `${d.name || "بدون اسم"} — ${d.lost_reasons?.label || "بدون سبب"} — SAR ${money(valueSAR(d))}`)
     .join("\n");
 
-  // Closest to closing: active deals ranked by win probability, then value.
+  // Ranked by the rep's own estimate, then value. probability_pct is typed by
+  // hand in the new-deal form — nothing computes it — so this ordering is a
+  // sort of the team's opinion, not a model output, and the prompt says so.
   const closest = [...activeDeals]
     .sort((a, b) => (b.probability_pct ?? -1) - (a.probability_pct ?? -1) || valueSAR(b) - valueSAR(a))
     .slice(0, 5)
     .map(
       (d) =>
-        `${d.name || "بدون اسم"} — ${d.pipeline_stages?.label || "—"} — احتمالية ${
+        `${d.name || "بدون اسم"} — ${d.pipeline_stages?.label || "—"} — تقدير المندوب ${
           d.probability_pct != null ? d.probability_pct + "%" : "غير محددة"
         } — SAR ${money(valueSAR(d))}`,
     )
@@ -266,7 +274,63 @@ export async function buildSnapshot(): Promise<BusinessSnapshot> {
 - قيمة الـ Pipeline النشطة: SAR ${money(pipelineValue)}
 - صفقات عالقة (بلا نشاط ${STUCK_DAYS}+ أيام): ${stuck.length}`;
 
+  // ── Team ─────────────────────────────────────────────────────────────────
+  // Who owns what. The assistant was asked account-wide questions and had no
+  // owner dimension at all, the same gap proposal 67 filled in the UI.
+  const nameById = new Map(profiles.map((p) => [p.id, p.name]));
+  const dealsByOwner = new Map<string, { open: number; won: number; lost: number; valueSAR: number }>();
+  for (const d of deals) {
+    const key = d.owner_id ?? "—";
+    const acc = dealsByOwner.get(key) ?? { open: 0, won: 0, lost: 0, valueSAR: 0 };
+    const t = d.pipeline_stages?.terminal_type ?? null;
+    if (t === "won") acc.won++;
+    else if (t === "lost") acc.lost++;
+    else {
+      acc.open++;
+      acc.valueSAR += valueSAR(d);
+    }
+    dealsByOwner.set(key, acc);
+  }
+  const teamLines = [...dealsByOwner.entries()]
+    .sort((a, b) => b[1].valueSAR - a[1].valueSAR)
+    .map(([id, a]) =>
+      `- ${nameById.get(id) ?? (id === "—" ? "بدون مالك" : "مستخدم محذوف")}: ${a.open} مفتوحة (SAR ${money(a.valueSAR)}) · ${a.won} مربوحة · ${a.lost} مخسورة`,
+    )
+    .join("\n");
+
+  // ── Internal chat ────────────────────────────────────────────────────────
+  const convs = (convsRes.data as { id: string; kind: string; title: string | null; created_at: string | null; last_message_at: string | null }[] | null) ?? [];
+  const members = (membersRes.data as { conversation_id: string; user_id: string }[] | null) ?? [];
+  const msgs = (msgsRes.data as { conversation_id: string; sender_id: string | null; body: string | null; created_at: string | null }[] | null) ?? [];
+  const membersByConv = new Map<string, string[]>();
+  for (const m of members) {
+    const arr = membersByConv.get(m.conversation_id) ?? [];
+    arr.push(nameById.get(m.user_id) ?? "عضو");
+    membersByConv.set(m.conversation_id, arr);
+  }
+  const convLines = convs.slice(0, 30).map((c) => {
+    const who = (membersByConv.get(c.id) ?? []).join("، ") || "—";
+    const label = c.kind === "group" ? `مجموعة «${c.title ?? "بدون اسم"}»` : c.kind === "dm" ? "محادثة مباشرة" : `نقاش مرتبط بـ${c.kind}`;
+    return `- ${label} — الأعضاء: ${who}`;
+  }).join("\n");
+  // Full bodies, capped only where a single message would crowd out the rest
+  // of the context. 600 characters is longer than any message the team has
+  // sent; the cap exists so one pasted document cannot swallow the window.
+  const msgLines = msgs.slice(0, 60).map((m) => {
+    const raw = (m.body ?? "").replace(/\s+/g, " ").trim();
+    const body = raw.length > 600 ? `${raw.slice(0, 600)}…` : raw;
+    const when = m.created_at ? new Date(m.created_at).toISOString().slice(0, 10) : "";
+    return `- [${when}] ${nameById.get(m.sender_id ?? "") ?? "مستخدم"}: ${body}`;
+  }).join("\n");
+
   const sections: SnapshotSections = {
+    team: `فريق العمل وتوزيع الصفقات:
+${teamLines || "(لا يوجد)"}`,
+    chat: `المحادثات الداخلية بين أعضاء الفريق — ${convs.length} محادثة، وآخر ${Math.min(60, msgs.length)} رسالة بنصها الكامل:
+${convLines || "(لا توجد محادثات)"}
+
+آخر الرسائل:
+${msgLines || "(لا توجد رسائل)"}`,
     leads: `العملاء المحتملون:
 - الإجمالي: ${totalLeads} (نظيف ${cleanLeads} · جانك ${junkLeads})
 - توزيع حسب المصدر: ${leadsBySource || "—"}`,
@@ -274,7 +338,7 @@ export async function buildSnapshot(): Promise<BusinessSnapshot> {
 - نشطة: ${activeDeals.length} · مربوحة: ${wonDeals.length} · مخسورة: ${lostDeals.length}
 - قيمة الـ Pipeline النشطة: SAR ${money(pipelineValue)}
 - توزيع الصفقات النشطة حسب المرحلة: ${dealsByStage || "—"}`,
-    closest: `أقرب الصفقات للإغلاق (حسب الاحتمالية):
+    closest: `أقرب الصفقات للإغلاق (مرتبة حسب تقدير المندوب نفسه، وهو رقم يكتبه يدوياً وليس محسوباً):
 ${closest || "(لا يوجد)"}`,
     stuck: `صفقات عالقة (بلا نشاط ${STUCK_DAYS}+ أيام) — الإجمالي ${stuck.length}:
 ${stuckList}`,

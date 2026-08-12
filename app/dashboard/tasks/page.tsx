@@ -1,9 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
+<<<<<<< HEAD
 import { formatTime, formatDateTime, profileName, downloadCSV } from "@/lib/format";
+=======
+import { formatTime, formatDateTime, profileName, downloadCSV, DATE_LOCALE } from "@/lib/format";
+>>>>>>> main
 import Button from "@/components/ui/Button";
 import SlideOver from "@/components/ui/SlideOver";
 import Skeleton from "@/components/ui/Skeleton";
@@ -12,6 +15,7 @@ import CompleteTaskModal from "@/components/CompleteTaskModal";
 import { fetchProfiles, type Profile } from "@/lib/profiles";
 import { useRole } from "@/components/RoleProvider";
 import { canActOnTask } from "@/lib/permissions";
+<<<<<<< HEAD
 
 interface Task {
   id: string;
@@ -28,6 +32,11 @@ interface TaskType {
   label: string;
 }
 
+=======
+import { fetchTasksPage, completeTask, createTask as createTaskRow, editTask, type Task, type TaskType } from "@/lib/models/tasks";
+import { CalendarIcon, ChatBubbleIcon, ClipboardIcon, MailIcon, MonitorIcon, PhoneIcon } from "@/components/icons";
+
+>>>>>>> main
 
 function startOfDay(d: Date) {
   const x = new Date(d);
@@ -35,16 +44,26 @@ function startOfDay(d: Date) {
   return x;
 }
 
+<<<<<<< HEAD
 const TASK_TYPE_STYLE: Record<string, { c: string; g: string }> = {
   call: { c: "#1a5c4f", g: "📞" },
   whatsapp: { c: "#10b981", g: "💬" },
   email: { c: "#8b5cf6", g: "✉️" },
   meeting: { c: "#f59e0b", g: "🗓️" },
   demo: { c: "#0ea5e9", g: "🖥️" },
+=======
+const TASK_TYPE_STYLE: Record<string, { c: string; g: React.ReactNode }> = {
+  call: { c: "var(--brand-teal-700)", g: <PhoneIcon className="h-4 w-4" /> },
+  whatsapp: { c: "var(--brand-green-500)", g: <ChatBubbleIcon className="h-4 w-4" /> },
+  email: { c: "var(--content-accent)", g: <MailIcon className="h-4 w-4" /> },
+  meeting: { c: "var(--brand-amber-500)", g: <CalendarIcon className="h-4 w-4" /> },
+  demo: { c: "var(--content-accent)", g: <MonitorIcon className="h-4 w-4" /> },
+>>>>>>> main
 };
 function taskTypeStyle(label?: string | null) {
   const l = (label || "").toLowerCase();
   for (const key in TASK_TYPE_STYLE) if (l.includes(key)) return TASK_TYPE_STYLE[key];
+<<<<<<< HEAD
   return { c: "#1a5c4f", g: "📋" };
 }
 const AVATAR_GRADIENTS = [
@@ -53,6 +72,16 @@ const AVATAR_GRADIENTS = [
   "from-[#f59e0b] to-[#c2660a]",
   "from-[#0ea5e9] to-[#0369a1]",
   "from-[#ec4899] to-[#be185d]",
+=======
+  return { c: "var(--brand-teal-700)", g: <ClipboardIcon className="h-4 w-4" /> };
+}
+const AVATAR_GRADIENTS = [
+  "from-[var(--brand-teal-700)] to-[var(--brand-teal-900)]",
+  "from-[var(--brand-indigo-500)] to-[var(--status-info-fg)]",
+  "from-[var(--brand-amber-500)] to-[var(--status-warning-fg)]",
+  "from-[var(--content-accent)] to-[var(--content-accent)]",
+  "from-[var(--content-accent)] to-[var(--content-accent)]",
+>>>>>>> main
 ];
 function hashColorIndex(s: string) {
   let h = 0;
@@ -88,6 +117,7 @@ export default function TasksPage() {
   const profileMap = useMemo(() => new Map(profiles.map((p) => [p.id, p])), [profiles]);
 
   const load = useCallback(async () => {
+<<<<<<< HEAD
     let tasksQuery = supabase.from("tasks").select("*, task_types(label, color)", { count: "exact" }).is("completed_at", null).order("due_at", { ascending: true }).range(0, limit - 1);
     // Everyone only sees tasks assigned to them, regardless of role.
     if (userId) {
@@ -104,6 +134,16 @@ export default function TasksPage() {
     setProfiles(pf);
     setLoading(false);
   }, [role, userId, limit]);
+=======
+    // Everyone only sees tasks assigned to them, regardless of role.
+    const [{ tasks, total, types }, pf] = await Promise.all([fetchTasksPage(userId, limit), fetchProfiles()]);
+    setTasks(tasks);
+    setTotal(total);
+    setTypes(types);
+    setProfiles(pf);
+    setLoading(false);
+  }, [userId, limit]);
+>>>>>>> main
   useEffect(() => {
     if (roleLoading) return;
     load();
@@ -143,10 +183,7 @@ export default function TasksPage() {
   const complete = useCallback(async (t: Task, note: string) => {
     if (completing.has(t.id)) return;
     setCompleting((p) => new Set(p).add(t.id));
-    const { error } = await supabase
-      .from("tasks")
-      .update({ completed_at: new Date().toISOString(), completion_note: note })
-      .eq("id", t.id);
+    const { error } = await completeTask(t.id, note);
     if (error) {
       console.error("[Tasks] complete failed", error);
       toast("تعذّر تحديث المهمة", "error");
@@ -165,17 +202,13 @@ export default function TasksPage() {
   async function createTask() {
     if (!nt.title.trim()) { setNtErr("العنوان مطلوب"); return; }
     setSaving(true);
-    const now = new Date().toISOString();
     const dueAt = nt.due ? new Date(`${nt.due}T${nt.time || "09:00"}:00`).toISOString() : null;
-    const { error } = await supabase.from("tasks").insert({
-      id: crypto.randomUUID(),
+    const { error } = await createTaskRow({
       title: nt.title.trim(),
       description: nt.description.trim() || null,
-      due_at: dueAt,
-      task_type_id: nt.typeId || null,
-      assignee_uid: nt.assigneeId || null,
-      created_at: now,
-      updated_at: now,
+      dueAt,
+      taskTypeId: nt.typeId || null,
+      assigneeId: nt.assigneeId || null,
     });
     setSaving(false);
     if (error) {
@@ -206,10 +239,7 @@ export default function TasksPage() {
     if (!editDraft.title.trim()) { toast("العنوان مطلوب", "error"); return; }
     setSavingEdit(true);
     const dueAt = editDraft.due ? new Date(`${editDraft.due}T${editDraft.time || "09:00"}:00`).toISOString() : null;
-    const { error } = await supabase
-      .from("tasks")
-      .update({ title: editDraft.title.trim(), due_at: dueAt, updated_at: new Date().toISOString() })
-      .eq("id", detail.id);
+    const { error } = await editTask(detail.id, editDraft.title.trim(), dueAt);
     setSavingEdit(false);
     if (error) {
       console.error("[Tasks] edit failed", error);
@@ -229,17 +259,26 @@ export default function TasksPage() {
     const ty = taskTypeStyle(t.task_types?.label);
     const avatarGrad = AVATAR_GRADIENTS[hashColorIndex(assignee ? profileName(assignee) : t.id)];
     return (
+<<<<<<< HEAD
       <div className={`group relative flex items-start gap-3 overflow-hidden rounded-2xl border border-[#e4ebe7] bg-white p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all ${done ? "opacity-40" : "hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(26,92,79,0.1)]"}`}>
         <span className="absolute inset-y-0 right-0 w-1" style={{ backgroundColor: ty.c, opacity: done ? 0.3 : 0.8 }} />
 
         {canAct ? (
           <button onClick={() => setCompleteTarget(t)} aria-label="Complete task" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 transition-colors ${done ? "border-[#1a5c4f] bg-[#1a5c4f] text-white" : `${tone} hover:border-[#1a5c4f]`}`}>
+=======
+      <div className={`group relative flex items-start gap-3 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-compact)] e-1 transition-all ${done ? "opacity-40" : "hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(26,92,79,0.1)]"}`}>
+        <span className="absolute inset-y-0 right-0 w-1" style={{ backgroundColor: ty.c, opacity: done ? 0.3 : 0.8 }} />
+
+        {canAct ? (
+          <button onClick={() => setCompleteTarget(t)} aria-label="Complete task" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 transition-colors ${done ? "border-[var(--brand-teal-700)] bg-[var(--brand-teal-700)] text-white" : `${tone} hover:border-[var(--brand-teal-700)]`}`}>
+>>>>>>> main
             {done && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3"><path d="M20 6 9 17l-5-5" /></svg>}
           </button>
         ) : (
-          <span title="بس المسؤول عن المهمة يقدر ينهيها" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 border-gray-200 opacity-50 ${tone}`} />
+          <span title="بس المسؤول عن المهمة يقدر ينهيها" className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full border-2 border-[var(--border-default)] opacity-50 ${tone}`} />
         )}
 
+<<<<<<< HEAD
         <span className="mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-xl text-sm" style={{ backgroundColor: `${ty.c}17`, color: ty.c }}>{ty.g}</span>
 
         <button onClick={() => openDetail(t)} className="min-w-0 flex-1 text-left">
@@ -249,13 +288,29 @@ export default function TasksPage() {
             {t.task_types?.label && <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ backgroundColor: `${ty.c}17`, color: ty.c }}>{t.task_types.label}</span>}
             {t.due_at && (
               <span className="flex items-center gap-1 text-[12px] text-muted">
+=======
+        <span className="mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-[var(--radius-md)] text-sm" style={{ backgroundColor: `${ty.c}17`, color: ty.c }}>{ty.g}</span>
+
+        <button onClick={() => openDetail(t)} className="min-w-0 flex-1 text-left">
+          <p dir="auto" className={`t-body font-semibold text-ink ${done ? "line-through" : ""}`}>{t.title || "مهمة بدون عنوان"}</p>
+          {t.description && <p dir="auto" className="mt-0.5 line-clamp-1 t-body-sm text-muted">{t.description}</p>}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {t.task_types?.label && <span className="rounded-full px-2 py-0.5 t-micro font-semibold" style={{ backgroundColor: `${ty.c}17`, color: ty.c }}>{t.task_types.label}</span>}
+            {t.due_at && (
+              <span className="flex items-center gap-1 t-caption text-muted">
+>>>>>>> main
                 <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth={1.4} className="h-3 w-3"><circle cx="7" cy="7" r="5.5" /><path d="M7 4v3l2 1.5" strokeLinecap="round" /></svg>
                 {formatTime(t.due_at)}
               </span>
             )}
             {assignee && (
+<<<<<<< HEAD
               <span className="flex items-center gap-1.5 rounded-full bg-gray-50 py-0.5 pl-2 pr-0.5 text-[11px] font-medium text-ink-secondary">
                 <span className={`flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br text-[8px] font-bold text-white ${avatarGrad}`}>{profileName(assignee).slice(0, 1)}</span>
+=======
+              <span className="flex items-center gap-1.5 rounded-full bg-[var(--surface-sunken)] py-0.5 pl-2 pr-0.5 t-micro font-medium text-ink-secondary">
+                <span className={`flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br t-micro font-bold text-white ${avatarGrad}`}>{profileName(assignee).slice(0, 1)}</span>
+>>>>>>> main
                 {profileName(assignee)}
               </span>
             )}
@@ -268,6 +323,7 @@ export default function TasksPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Hero header */}
+<<<<<<< HEAD
       <div className="rounded-3xl bg-[#141c2e] px-7 py-7">
         <div className="flex flex-wrap items-center justify-between gap-5">
           <div className="flex items-center gap-4">
@@ -276,6 +332,16 @@ export default function TasksPage() {
             </div>
             <div>
               <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">المهام</h1>
+=======
+      <div className="rounded-[var(--radius-lg)] bg-[var(--surface-inverse)] px-7 py-7">
+        <div className="flex flex-wrap items-center justify-between gap-5">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-[var(--radius-lg)] bg-white/10">
+              <svg viewBox="0 0 20 20" fill="none" stroke="var(--surface-raised)" strokeWidth={1.8} className="h-6 w-6"><rect x="3.5" y="3.5" width="13" height="13" rx="3" /><path d="M6.5 10l2.2 2.2L13.5 7.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </div>
+            <div>
+              <h1 dir="auto" className="t-title-1 font-bold tracking-[-0.02em] text-white">المهام</h1>
+>>>>>>> main
               <p className="mt-1 text-sm text-white/50">{loading ? "جارِ التحميل…" : `${total} مهمة مفتوحة`}</p>
             </div>
           </div>
@@ -288,11 +354,18 @@ export default function TasksPage() {
                 "المسؤول": t.assignee_uid ? profileName(profileMap.get(t.assignee_uid)) : "",
               })))}
               disabled={!visible.length}
+<<<<<<< HEAD
               className="rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-white/10 disabled:opacity-40"
             >
               تصدير CSV
             </button>
             <button onClick={() => setNewOpen(true)} className="rounded-xl bg-[#3a9080] px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#328173]">+ مهمة جديدة</button>
+=======
+              className="rounded-[var(--radius-md)] border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-white/10 disabled:opacity-40"
+            >تصدير CSV
+            </button>
+            <button onClick={() => setNewOpen(true)} className="rounded-[var(--radius-md)] bg-[var(--brand-teal-400)] px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-[var(--brand-teal-600)]">+ مهمة جديدة</button>
+>>>>>>> main
           </div>
         </div>
       </div>
@@ -301,7 +374,11 @@ export default function TasksPage() {
         {/* List */}
         <div className="flex flex-col gap-5 lg:col-span-3">
           {dayFilter && (
+<<<<<<< HEAD
             <button onClick={() => setDayFilter(null)} className="self-start rounded-full bg-[#f0faf8] px-3 py-1 text-[13px] font-semibold text-[#1a5c4f]">عرض {dayFilter} · مسح ✕</button>
+=======
+            <button onClick={() => setDayFilter(null)} className="self-start rounded-full bg-[var(--surface-accent-subtle)] px-3 py-1 t-body-sm font-semibold text-[var(--brand-teal-700)]">عرض {dayFilter} · مسح</button>
+>>>>>>> main
           )}
           {loading ? (
             Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16" />)
@@ -309,6 +386,7 @@ export default function TasksPage() {
             <>
               {groups.overdue.length > 0 && (
                 <section>
+<<<<<<< HEAD
                   <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-red-50 text-red-500">متأخرة · {groups.overdue.length}</h2>
                   <div className="flex flex-col gap-2">{groups.overdue.map((t) => <TaskRow key={t.id} t={t} tone="border-red-300" />)}</div>
                 </section>
@@ -319,16 +397,34 @@ export default function TasksPage() {
                   <p className="rounded-xl border border-dashed border-[#d6ece5] py-5 text-center text-[15px] text-muted">🎉 لا توجد مهام لليوم!</p>
                 ) : (
                   <div className="flex flex-col gap-2">{groups.todayT.map((t) => <TaskRow key={t.id} t={t} tone="border-[#1a5c4f]/40" />)}</div>
+=======
+                  <h2 className="mb-3 inline-block rounded-[var(--radius-sm)] px-3 py-1.5 t-micro font-semibold uppercase tracking-wider bg-[var(--status-danger-bg)] text-[var(--brand-red-500)]">متأخرة · {groups.overdue.length}</h2>
+                  <div className="flex flex-col gap-2">{groups.overdue.map((t) => <TaskRow key={t.id} t={t} tone="border-[var(--status-danger-border)]" />)}</div>
+                </section>
+              )}
+              <section>
+                <h2 className="mb-3 inline-block rounded-[var(--radius-sm)] px-3 py-1.5 t-micro font-semibold uppercase tracking-wider bg-[var(--surface-accent-subtle)] text-[var(--brand-teal-700)]">اليوم · {groups.todayT.length}</h2>
+                {groups.todayT.length === 0 ? (
+                  <p className="rounded-[var(--radius-md)] border border-dashed border-[var(--border-subtle)] py-5 text-center t-body text-muted">لا توجد مهام لليوم!</p>
+                ) : (
+                  <div className="flex flex-col gap-2">{groups.todayT.map((t) => <TaskRow key={t.id} t={t} tone="border-[var(--brand-teal-700)]/40" />)}</div>
+>>>>>>> main
                 )}
               </section>
               {groups.week.length > 0 && (
                 <section>
+<<<<<<< HEAD
                   <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-gray-50 text-gray-600">هذا الأسبوع · {groups.week.length}</h2>
                   <div className="flex flex-col gap-2">{groups.week.map((t) => <TaskRow key={t.id} t={t} tone="border-[#d6ece5]" />)}</div>
+=======
+                  <h2 className="mb-3 inline-block rounded-[var(--radius-sm)] px-3 py-1.5 t-micro font-semibold uppercase tracking-wider bg-[var(--surface-sunken)] text-[var(--content-secondary)]">هذا الأسبوع · {groups.week.length}</h2>
+                  <div className="flex flex-col gap-2">{groups.week.map((t) => <TaskRow key={t.id} t={t} tone="border-[var(--border-subtle)]" />)}</div>
+>>>>>>> main
                 </section>
               )}
               {groups.upcoming.length > 0 && (
                 <section>
+<<<<<<< HEAD
                   <h2 className="mb-3 inline-block rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider bg-gray-50 text-gray-500">قادمة · {groups.upcoming.length}</h2>
                   <div className="flex flex-col gap-2">{groups.upcoming.map((t) => <TaskRow key={t.id} t={t} tone="border-[#d6ece5]" />)}</div>
                 </section>
@@ -336,6 +432,14 @@ export default function TasksPage() {
               {tasks.length < total && (
                 <button onClick={() => setLimit((l) => l + PAGE)} className="self-start rounded-full border border-[#d6ece5] bg-white px-5 py-2 text-[13px] font-semibold text-ink-secondary transition hover:border-[#1a5c4f] hover:text-[#1a5c4f]">
                   تحميل المزيد ({total - tasks.length} متبقي)
+=======
+                  <h2 className="mb-3 inline-block rounded-[var(--radius-sm)] px-3 py-1.5 t-micro font-semibold uppercase tracking-wider bg-[var(--surface-sunken)] text-[var(--content-tertiary)]">قادمة · {groups.upcoming.length}</h2>
+                  <div className="flex flex-col gap-2">{groups.upcoming.map((t) => <TaskRow key={t.id} t={t} tone="border-[var(--border-subtle)]" />)}</div>
+                </section>
+              )}
+              {tasks.length < total && (
+                <button onClick={() => setLimit((l) => l + PAGE)} className="self-start rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-5 py-2 t-body-sm font-semibold text-ink-secondary transition hover:border-[var(--brand-teal-700)] hover:text-[var(--brand-teal-700)]">تحميل المزيد ({total - tasks.length} متبقي)
+>>>>>>> main
                 </button>
               )}
             </>
@@ -343,6 +447,7 @@ export default function TasksPage() {
         </div>
 
         {/* Calendar */}
+<<<<<<< HEAD
         <div className="h-fit rounded-2xl border border-[#d6ece5] bg-white p-5 shadow-[0_2px_8px_rgba(26,92,79,0.05)] lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-[15px] font-semibold text-ink">{month.toLocaleDateString("ar-SA", { month: "long", year: "numeric" })}</span>
@@ -353,6 +458,18 @@ export default function TasksPage() {
             </div>
           </div>
           <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase text-muted">
+=======
+        <div className="h-fit rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-[var(--space-card-pad)] e-1 lg:col-span-2">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="t-body font-semibold text-ink">{month.toLocaleDateString(DATE_LOCALE, { month: "long", year: "numeric" })}</span>
+            <div className="flex gap-1">
+              <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="rounded px-2 py-0.5 t-body text-ink-secondary transition hover:bg-[var(--surface-accent-subtle)]">‹</button>
+              <button onClick={() => { setMonth(new Date(today.getFullYear(), today.getMonth(), 1)); setDayFilter(null); }} className="rounded-[var(--radius-sm)] bg-[var(--brand-teal-700)] px-2.5 py-0.5 t-body-sm font-semibold text-white transition hover:bg-[var(--brand-teal-800)]">اليوم</button>
+              <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="rounded px-2 py-0.5 t-body text-ink-secondary transition hover:bg-[var(--surface-accent-subtle)]">›</button>
+            </div>
+          </div>
+          <div className="mb-1 grid grid-cols-7 gap-1 text-center t-micro font-semibold uppercase text-muted">
+>>>>>>> main
             {["أح", "إث", "ثل", "أر", "خم", "جم", "سب"].map((d) => <span key={d}>{d}</span>)}
           </div>
           <div className="grid grid-cols-7 gap-1">
@@ -364,9 +481,15 @@ export default function TasksPage() {
               const hasTasks = taskDays.has(dateStr);
               const isSel = dayFilter === dateStr;
               return (
+<<<<<<< HEAD
                 <button key={day} onClick={() => setDayFilter(isSel ? null : dateStr)} className={`flex h-9 flex-col items-center justify-center rounded-lg text-[13px] transition ${isSel ? "bg-[#1a5c4f] text-white" : isToday ? "bg-[#1a5c4f]/10 font-bold text-[#1a5c4f]" : hasTasks ? "font-semibold text-[#1a5c4f] hover:bg-[#f0faf8]" : "text-ink-secondary hover:bg-gray-25"}`}>
                   {day}
                   {hasTasks && !isSel && !isToday && <span className="h-1 w-1 rounded-full bg-[#1a5c4f]" />}
+=======
+                <button key={day} onClick={() => setDayFilter(isSel ? null : dateStr)} className={`flex h-9 flex-col items-center justify-center rounded-[var(--radius-sm)] t-body-sm transition ${isSel ? "bg-[var(--brand-teal-700)] text-white" : isToday ? "bg-[var(--brand-teal-700)]/10 font-bold text-[var(--brand-teal-700)]" : hasTasks ? "font-semibold text-[var(--brand-teal-700)] hover:bg-[var(--surface-accent-subtle)]" : "text-ink-secondary hover:bg-[var(--surface-page)]"}`}>
+                  {day}
+                  {hasTasks && !isSel && !isToday && <span className="h-1 w-1 rounded-full bg-[var(--brand-teal-700)]" />}
+>>>>>>> main
                 </button>
               );
             })}
@@ -411,7 +534,11 @@ export default function TasksPage() {
                 </>
               ) : (
                 <>
+<<<<<<< HEAD
                   <Button variant="secondary" fullWidth onClick={() => setEditingDetail(true)}>✏️ تعديل</Button>
+=======
+                  <Button variant="secondary" fullWidth onClick={() => setEditingDetail(true)}>تعديل</Button>
+>>>>>>> main
                   <Button fullWidth onClick={() => setCompleteTarget(detail)}>إنجاز المهمة</Button>
                 </>
               )}
@@ -422,9 +549,7 @@ export default function TasksPage() {
         {detail && (
           <div className="flex flex-col gap-5">
             {!canActOnTask(role, userId, detail.assignee_uid) && (
-              <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-2.5 text-[13px] font-medium text-amber-700">
-                للعرض فقط — بس المسؤول عن هذي المهمة يقدر يعدّلها أو ينهيها
-              </div>
+              <div className="rounded-[var(--radius-md)] border border-[var(--status-warning-border)] bg-[var(--status-warning-bg)] px-4 py-2.5 t-body-sm font-medium text-[var(--status-warning-fg)]">للعرض فقط — بس المسؤول عن هذي المهمة يقدر يعدّلها أو ينهيها</div>
             )}
             {editingDetail ? (
               <>
@@ -437,21 +562,30 @@ export default function TasksPage() {
             ) : (
               <>
                 <div>
+<<<<<<< HEAD
                   <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">الوصف</p>
                   <p dir="auto" className="mt-1 text-[15px] text-ink-secondary">{detail.description || "—"}</p>
                 </div>
                 <div>
                   <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">تاريخ الاستحقاق</p>
                   <p className="mt-1 text-[15px] text-ink">{detail.due_at ? new Date(detail.due_at).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" }) : "—"}</p>
+=======
+                  <p className="t-body-sm font-semibold uppercase tracking-wide text-muted">الوصف</p>
+                  <p dir="auto" className="mt-1 t-body text-ink-secondary">{detail.description || "—"}</p>
                 </div>
                 <div>
-                  <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">المسؤول</p>
-                  <p className="mt-1 text-[15px] text-ink">{detail.assignee_uid ? profileName(profileMap.get(detail.assignee_uid)) || "—" : "—"}</p>
+                  <p className="t-body-sm font-semibold uppercase tracking-wide text-muted">تاريخ الاستحقاق</p>
+                  <p className="mt-1 t-body text-ink">{detail.due_at ? new Date(detail.due_at).toLocaleString(DATE_LOCALE, { dateStyle: "medium", timeStyle: "short" }) : "—"}</p>
+>>>>>>> main
+                </div>
+                <div>
+                  <p className="t-body-sm font-semibold uppercase tracking-wide text-muted">المسؤول</p>
+                  <p className="mt-1 t-body text-ink">{detail.assignee_uid ? profileName(profileMap.get(detail.assignee_uid)) || "—" : "—"}</p>
                 </div>
                 {detail.completion_note && (
                   <div>
-                    <p className="text-[13px] font-semibold uppercase tracking-wide text-muted">ملاحظة الإنجاز</p>
-                    <p dir="auto" className="mt-1 text-[15px] text-ink-secondary">{detail.completion_note}</p>
+                    <p className="t-body-sm font-semibold uppercase tracking-wide text-muted">ملاحظة الإنجاز</p>
+                    <p dir="auto" className="mt-1 t-body text-ink-secondary">{detail.completion_note}</p>
                   </div>
                 )}
               </>

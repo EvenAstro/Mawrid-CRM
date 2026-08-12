@@ -1,0 +1,165 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { fetchProfiles, type Profile } from "@/lib/profiles";
+import { profileName, money } from "@/lib/format";
+import Skeleton from "@/components/ui/Skeleton";
+import { fetchDealsForLeaderboard } from "@/lib/models/deals";
+import { fetchCompletedTasksSince } from "@/lib/models/tasks";
+import { fetchOutboundActivitiesSince } from "@/lib/models/activities";
+import { TrophyIcon, CheckIcon, PhoneIcon, RankMark } from "@/components/icons";
+
+interface RepStats {
+  userId: string;
+  name: string;
+  wonDeals: number;
+  wonValueSAR: number;
+  tasksCompleted: number;
+  outboundActivities: number;
+  /** Simple weighted score to rank by — revenue matters most, then
+   * closed deals and completed tasks, then raw outreach volume. */
+  score: number;
+}
+
+function monthStart(): string {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString();
+}
+
+const CARD = "rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] e-1";
+
+export default function LeaderboardTab() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [rows, setRows] = useState<RepStats[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setError(false);
+      try {
+        const since = monthStart();
+        const [profiles, dealsRes, tasksRes, activitiesRes] = await Promise.all([
+          fetchProfiles(),
+          fetchDealsForLeaderboard(since),
+          fetchCompletedTasksSince(since),
+          fetchOutboundActivitiesSince(since),
+        ]);
+
+        if (cancelled) return;
+
+        const salesReps = (profiles as Profile[]).filter((p) => p.role === "sales" || p.role === "manager" || p.role === "admin");
+        const byId = new Map<string, RepStats>();
+        salesReps.forEach((p) => {
+          byId.set(p.id, { userId: p.id, name: profileName(p), wonDeals: 0, wonValueSAR: 0, tasksCompleted: 0, outboundActivities: 0, score: 0 });
+        });
+
+        type DealRow = { owner_id: string | null; won_value_minor: number | null; expected_value_minor: number | null; pipeline_stages: { terminal_type: string | null } | null };
+        ((dealsRes.data as unknown as DealRow[]) ?? []).forEach((d) => {
+          if (!d.owner_id || d.pipeline_stages?.terminal_type !== "won") return;
+          const rep = byId.get(d.owner_id);
+          if (!rep) return;
+          rep.wonDeals += 1;
+          rep.wonValueSAR += (d.won_value_minor ?? d.expected_value_minor ?? 0) / 100;
+        });
+
+        type TaskRow = { assignee_uid: string | null };
+        ((tasksRes.data as unknown as TaskRow[]) ?? []).forEach((t) => {
+          if (!t.assignee_uid) return;
+          const rep = byId.get(t.assignee_uid);
+          if (rep) rep.tasksCompleted += 1;
+        });
+
+        type ActivityRow = { user_id: string | null };
+        ((activitiesRes.data as unknown as ActivityRow[]) ?? []).forEach((a) => {
+          if (!a.user_id) return;
+          const rep = byId.get(a.user_id);
+          if (rep) rep.outboundActivities += 1;
+        });
+
+        const list = Array.from(byId.values()).map((r) => ({
+          ...r,
+          score: r.wonValueSAR * 1 + r.wonDeals * 500 + r.tasksCompleted * 50 + r.outboundActivities * 10,
+        }));
+        list.sort((a, b) => b.score - a.score);
+
+        setRows(list);
+      } catch (err) {
+        console.error("[Leaderboard] failed to build", err);
+        if (!cancelled) setError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const maxScore = useMemo(() => Math.max(1, ...rows.map((r) => r.score)), [rows]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-3">
+        {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16" />)}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={`${CARD} py-16 text-center`}>
+        <p className="t-body-sm text-muted">تعذّر تحميل لوحة الأداء.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <section className="relative overflow-hidden rounded-[var(--radius-lg)] bg-[var(--surface-inverse)] p-[var(--space-card-pad)] text-white">
+        <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-teal-300)]" />
+          <span className="t-micro font-bold uppercase tracking-wider text-[var(--brand-teal-300)]">أداء الفريق</span>
+        </div>
+        <h1 dir="auto" className="t-title-1 font-extrabold leading-tight">لوحة أداء المندوبين — هذا الشهر</h1>
+        <p dir="auto" className="mt-2 max-w-xl t-body-sm leading-relaxed text-white/70">ترتيب مبني على قيمة الصفقات المربوحة، عدد الصفقات المغلقة، المهام المنجزة، والتواصل الصادر — كله من بيانات هذا الشهر الفعلية.
+        </p>
+      </section>
+
+      {rows.length === 0 ? (
+        <div className={`${CARD} py-16 text-center`}>
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-mint text-xl"><TrophyIcon className="h-4 w-4" /></div>
+          <p dir="auto" className="t-body-sm text-muted">ما فيه بيانات كافية لبناء لوحة الأداء بعد.</p>
+        </div>
+      ) : (
+        <div className={`${CARD} flex flex-col divide-y divide-[var(--border-subtle)] overflow-hidden`}>
+          {rows.map((r, i) => (
+            <div key={r.userId} className="flex items-center gap-4 p-5">
+              {/* Rank is data, so it is a tabular numeral in a ring. The three
+                  medal emoji it replaces rendered differently per OS and were
+                  announced as "1st place medal" by a screen reader. */}
+              <RankMark rank={i + 1} className="h-9 w-9" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p dir="auto" className="truncate t-body-sm font-bold text-ink">{r.name}</p>
+                  <span dir="ltr" className="flex-none t-body-sm font-bold text-[var(--brand-teal-700)]">SAR {money(r.wonValueSAR)}</span>
+                </div>
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[var(--surface-sunken)]">
+                  <div
+                    className="h-full rounded-full bg-[var(--content-accent)] transition-[width] duration-[var(--motion-slow)] ease-[var(--ease-standard)]"
+                    style={{ width: `${(r.score / maxScore) * 100}%` }}
+                  />
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 t-caption text-muted">
+                  <span className="flex items-center gap-1"><TrophyIcon className="h-3.5 w-3.5" />{r.wonDeals} صفقة مربوحة</span>
+                  <span className="flex items-center gap-1"><CheckIcon className="h-3.5 w-3.5" />{r.tasksCompleted} مهمة منجزة</span>
+                  <span className="flex items-center gap-1"><PhoneIcon className="h-3.5 w-3.5" />{r.outboundActivities} تواصل صادر</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

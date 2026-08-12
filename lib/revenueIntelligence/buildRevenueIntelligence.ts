@@ -1,4 +1,6 @@
-import { supabase } from "@/lib/supabase";
+import { fetchDealsForRevenueIntelligence } from "@/lib/models/deals";
+import { fetchDealActivitiesSince } from "@/lib/models/activities";
+import { DATE_LOCALE } from "@/lib/format";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -130,17 +132,8 @@ export async function buildRevenueIntelligence(): Promise<RevenueIntelligenceDat
   const twelveWeeksAgo = new Date(now.getTime() - 84 * 86_400_000);
 
   const [dealsRes, activitiesRes] = await Promise.all([
-    supabase
-      .from("deals")
-      .select(
-        "id, name, expected_value_minor, won_value_minor, probability_pct, created_at, updated_at, stage_id, pipeline_stages(id, label, color, terminal_type, sort_order), leads(full_name)",
-      )
-      .is("deleted_at", null),
-    supabase
-      .from("activities")
-      .select("entity_id, entity_type, occurred_at")
-      .eq("entity_type", "deal")
-      .gte("occurred_at", twelveWeeksAgo.toISOString()),
+    fetchDealsForRevenueIntelligence(),
+    fetchDealActivitiesSince(twelveWeeksAgo.toISOString()),
   ]);
 
   const allDeals = (dealsRes.data as unknown as Array<{
@@ -274,7 +267,7 @@ export async function buildRevenueIntelligence(): Promise<RevenueIntelligenceDat
   for (let i = 11; i >= 0; i--) {
     const ws = weekStart(new Date(now.getTime() - i * 7 * 86_400_000));
     const key = ws.toISOString().slice(0, 10);
-    const label = ws.toLocaleDateString("ar-SA", { month: "short", day: "numeric" });
+    const label = ws.toLocaleDateString(DATE_LOCALE, { month: "short", day: "numeric" });
     weekMap.set(key, { weekLabel: label, weekStart: key, wonSAR: 0, lostSAR: 0, newPipelineSAR: 0, wonCount: 0 });
   }
 

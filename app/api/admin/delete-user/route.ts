@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
+import { fetchProfileRole } from "@/lib/profiles";
 
 /**
  * Deletes a team member's account entirely (admin only), invoked from
@@ -40,12 +41,8 @@ export async function POST(req: NextRequest) {
   if (callerErr || !callerUser.user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
-  const { data: callerProfile } = await callerClient
-    .from("profiles")
-    .select("role")
-    .eq("id", callerUser.user.id)
-    .maybeSingle();
-  if (callerProfile?.role !== "admin") {
+  const callerRole = await fetchProfileRole(callerClient, callerUser.user.id);
+  if (callerRole !== "admin") {
     return NextResponse.json({ error: "Only an admin can delete accounts" }, { status: 403 });
   }
   if (userId === callerUser.user.id) {

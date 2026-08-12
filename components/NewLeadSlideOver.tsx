@@ -3,11 +3,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
-
-interface Source {
-  id: string;
-  label: string;
-}
+import { fetchActiveSources, fetchAllPipelineStages, type Source } from "@/lib/models/refData";
+import { createLead } from "@/lib/models/leads";
 
 export default function NewLeadSlideOver({
   open,
@@ -31,16 +28,8 @@ export default function NewLeadSlideOver({
   useEffect(() => {
     if (!open || sources.length) return;
     (async () => {
-      const [{ data: src }, { data: stages }] = await Promise.all([
-        supabase
-          .from("sources")
-          .select("id, label")
-          .eq("is_archived", false)
-          .order("sort_order", { ascending: true }),
-        supabase.from("pipeline_stages").select("id, label, terminal_type"),
-      ]);
-      if (src) setSources(src as Source[]);
-      const list = (stages as { id: string; label: string; terminal_type: string | null }[]) || [];
+      const [src, list] = await Promise.all([fetchActiveSources(), fetchAllPipelineStages()]);
+      setSources(src);
       const start =
         list.find((s) => s.label.toLowerCase() === "new") ||
         list.find((s) => s.terminal_type == null);
@@ -70,18 +59,14 @@ export default function NewLeadSlideOver({
       return;
     }
     setSaving(true);
-    const now = new Date().toISOString();
     const { data: userData } = await supabase.auth.getUser();
-    const { error } = await supabase.from("leads").insert({
-      id: crypto.randomUUID(),
-      full_name: fullName.trim(),
-      normalized_phone: phone.trim() || null,
-      primary_source_id: sourceId || null,
-      stage_id: defaultStageId,
+    const { error } = await createLead({
+      fullName: fullName.trim(),
+      normalizedPhone: phone.trim() || null,
+      primarySourceId: sourceId || null,
+      stageId: defaultStageId,
       notes: notes.trim() || null,
-      owner_id: userData.user?.id ?? null,
-      created_at: now,
-      updated_at: now,
+      ownerId: userData.user?.id ?? null,
     });
     setSaving(false);
     if (error) {
@@ -96,9 +81,9 @@ export default function NewLeadSlideOver({
   }
 
   const inputCls =
-    "h-11 w-full rounded-xl border border-[#e8ece9] bg-white px-3.5 text-[15px] text-[#334155] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15";
+    "h-11 w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3.5 t-body text-[var(--content-secondary)] placeholder:text-[var(--content-tertiary)] focus:border-[var(--brand-teal-700)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal-700)]/15";
   const labelCls =
-    "mb-1.5 block text-[13px] font-semibold uppercase tracking-wide text-[#94a3b8]";
+    "mb-1.5 block t-body-sm font-semibold uppercase tracking-wide text-[var(--content-tertiary)]";
 
   return (
     <>
@@ -109,19 +94,24 @@ export default function NewLeadSlideOver({
         }`}
       />
       <aside
-        className={`fixed right-0 top-0 z-50 flex h-screen w-full max-w-[460px] flex-col border-l border-[#e8ece9] bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`fixed right-0 top-0 z-50 flex h-screen w-full max-w-[460px] flex-col border-l border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-2xl transition-transform duration-300 ease-in-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-[#e8ece9] p-6">
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] p-6">
           <div>
+<<<<<<< HEAD
             <h2 className="text-xl font-bold text-[#1e1b4b]">عميل جديد</h2>
             <p className="mt-0.5 text-[13px] text-[#94a3b8]">أضف عميل لمسار المبيعات</p>
+=======
+            <h2 className="text-xl font-bold text-[var(--content-primary)]">عميل جديد</h2>
+            <p className="mt-0.5 t-body-sm text-[var(--content-tertiary)]">أضف عميل لمسار المبيعات</p>
+>>>>>>> main
           </div>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="text-[#94a3b8] transition hover:text-[#334155]"
+            className="text-[var(--content-tertiary)] transition hover:text-[var(--content-secondary)]"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-5 w-5">
               <path d="M6 6l12 12M18 6 6 18" />
@@ -176,23 +166,32 @@ export default function NewLeadSlideOver({
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
               placeholder="أي ملاحظات عن هذا العميل..."
+<<<<<<< HEAD
               className="w-full rounded-xl border border-[#e8ece9] bg-white px-3.5 py-2.5 text-[15px] text-[#334155] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15"
+=======
+              className="w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3.5 py-2.5 t-body text-[var(--content-secondary)] placeholder:text-[var(--content-tertiary)] focus:border-[var(--brand-teal-700)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal-700)]/15"
+>>>>>>> main
             />
           </div>
         </form>
 
-        <div className="flex gap-3 border-t border-[#e8ece9] p-6">
+        <div className="flex gap-3 border-t border-[var(--border-subtle)] p-6">
           <button
             onClick={onClose}
             type="button"
+<<<<<<< HEAD
             className="h-11 flex-1 rounded-xl border border-[#e8ece9] text-[15px] font-semibold text-[#334155] transition hover:bg-[#f8fafc]"
           >
             إلغاء
           </button>
+=======
+            className="h-11 flex-1 rounded-[var(--radius-md)] border border-[var(--border-subtle)] t-body font-semibold text-[var(--content-secondary)] transition hover:bg-[var(--surface-sunken)]"
+          >إلغاء</button>
+>>>>>>> main
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="h-11 flex-1 rounded-xl bg-[#1a5c4f] text-[15px] font-semibold text-white shadow-sm shadow-[#1a5c4f]/25 transition hover:bg-[#15503f] disabled:opacity-60"
+            className="h-11 flex-1 rounded-[var(--radius-md)] bg-[var(--brand-teal-700)] t-body font-semibold text-white shadow-sm shadow-[var(--brand-teal-700)]/25 transition hover:bg-[var(--brand-teal-800)] disabled:opacity-60"
           >
             {saving ? "جاري الحفظ..." : "حفظ العميل"}
           </button>

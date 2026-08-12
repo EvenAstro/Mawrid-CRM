@@ -47,7 +47,10 @@ function contextForPath(pathname: string): string {
   if (pathname.startsWith("/dashboard/leads")) return "أنا على صفحة العملاء المحتملين";
   if (pathname.startsWith("/dashboard/activities")) return "أنا على صفحة النشاطات";
   if (pathname.startsWith("/dashboard/tasks")) return "أنا على صفحة المهام";
+<<<<<<< HEAD
   if (pathname.startsWith("/dashboard/lead-scoring")) return "أنا على صفحة تقييم العملاء";
+=======
+>>>>>>> main
   if (pathname.startsWith("/dashboard/contacts")) return "أنا على صفحة جهات الاتصال";
   return "";
 }
@@ -182,7 +185,7 @@ export default function CopilotProvider({ children }: { children: React.ReactNod
     const s = summaryRef.current;
     if (!greeted && s && (s.stuckCount > 0 || s.upcomingCount > 0) && messagesRef.current.length === 0) {
       localStorage.setItem(todayKey(), "1");
-      const parts: string[] = ["صباح الخير! 🌅"];
+      const parts: string[] = ["صباح الخير! "];
       if (s.stuckCount > 0) parts.push(`عندك **${s.stuckCount}** صفقات ما تواصلت معها من أكثر من 7 أيام.`);
       if (s.upcomingCount > 0) parts.push(`ولديك **${s.upcomingCount}** مهام قادمة.`);
       parts.push("تبي أبدأ بها؟");

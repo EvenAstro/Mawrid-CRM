@@ -1,0 +1,352 @@
+/* =============================================================================
+   MERIDIAN — Mawrid design tokens
+   =============================================================================
+
+   Navy is a structural material here, not a header color. Every screen reads as
+   dark rails and dark data panels framing ivory work surfaces, with teal used
+   as a light source rather than as decoration.
+
+   Three rules this file encodes, and which the screens must not break:
+
+   1. MOTION IS FOR MARKETING. The dashboard gets state transitions only —
+      no entrances, no reveals, no staggers. Those screens wait on Supabase and
+      on the AI routes; animating the spinner-to-content handoff makes an
+      already-slow screen feel slower. `--motion-*` durations are capped low
+      for that reason, and the marketing durations are namespaced separately so
+      they cannot leak into app chrome.
+
+   2. RTL IS THE COMPOSITION, NOT A MIRROR. Spacing tokens are direction-neutral
+      and screens use logical properties (inline-start/end). Nothing should need
+      an `[dir]` override.
+
+   3. TWO ELEVATIONS, HARD-EDGED. Depth comes from layering and a hairline ring,
+      not from large blurs. Overlay is the only exception.
+
+   Token layers, outer to inner:
+     PRIMITIVE  — raw ramps, never referenced by components
+     SEMANTIC   — what components actually use (surface/content/accent/border)
+     SCALE      — type, space, radius, elevation, motion
+   ========================================================================== */
+
+:root {
+  /* ---------------------------------------------------------------------
+     PRIMITIVE — raw ramps. Do not use these in components; they exist so the
+     semantic layer below has something to point at.
+     --------------------------------------------------------------------- */
+
+  /* Brand teal. --brand-teal-700 is the locked primary; the rest derive. */
+  --brand-teal-950: #06231c;
+  --brand-teal-900: #0d3b30;
+  --brand-teal-800: #134a3d;
+  --brand-teal-700: #1a5c4f; /* LOCKED — primary brand color */
+  --brand-teal-600: #22705f;
+  --brand-teal-500: #2d8570;
+  --brand-teal-400: #3a9080;
+  --brand-teal-300: #7ec8b5;
+  --brand-teal-200: #b3e2d4;
+  --brand-teal-100: #d6f0ea;
+  --brand-teal-50: #f0faf8;
+
+  /* Brand navy. --brand-navy-900 is the locked structural navy. */
+  --brand-navy-950: #0b111d;
+  --brand-navy-900: #141c2e; /* LOCKED — structural navy */
+  --brand-navy-800: #1e293f;
+  --brand-navy-700: #2a3752;
+  --brand-navy-600: #3b4a68;
+  --brand-navy-500: #55658a;
+
+  /* Neutrals, warmed very slightly toward the teal so they sit with the brand
+     instead of reading as a separate gray system. */
+  --brand-neutral-950: #0a0f0d;
+  --brand-neutral-900: #111916;
+  --brand-neutral-800: #1c2b26;
+  --brand-neutral-700: #2d3f39;
+  --brand-neutral-600: #3f554e;
+  --brand-neutral-500: #5a7069;
+  --brand-neutral-400: #6b8880;
+  --brand-neutral-300: #9bb5af;
+  --brand-neutral-200: #c8d8d5;
+  --brand-neutral-150: #dde7e4;
+  --brand-neutral-100: #e8efed;
+  --brand-neutral-50: #f4f8f7;
+  --brand-neutral-25: #fafcfb;
+  --brand-white: #ffffff;
+
+  /* Status hues. Each is tuned so its -fg clears 4.5:1 on its own -bg. */
+  --brand-green-700: #047857;
+  --brand-green-500: #10b981;
+  --brand-green-50: #ecfdf5;
+  --brand-amber-700: #b45309;
+  --brand-amber-500: #f59e0b;
+  --brand-amber-50: #fffbeb;
+  --brand-red-700: #b91c1c;
+  --brand-red-500: #ef4444;
+  --brand-red-50: #fef2f2;
+  --brand-indigo-700: #4338ca;
+  --brand-indigo-500: #6366f1;
+  --brand-indigo-50: #eef2ff;
+
+  /* ---------------------------------------------------------------------
+     SEMANTIC — SURFACE. Named for the role the surface plays, so a screen can
+     be restyled by repointing a token instead of editing every component.
+     --------------------------------------------------------------------- */
+  --surface-page: var(--brand-neutral-25);
+  --surface-raised: var(--brand-white);
+  --surface-sunken: var(--brand-neutral-50);
+  --surface-hover: var(--brand-neutral-50);
+  --surface-active: var(--brand-teal-50);
+  --surface-accent-subtle: var(--brand-teal-50);
+  --surface-accent: var(--brand-teal-700);
+  --surface-accent-hover: var(--brand-teal-800);
+
+  /* The navy half of Meridian: rails, data panels, marketing bands. */
+  --surface-inverse: var(--brand-navy-900);
+  --surface-inverse-raised: var(--brand-navy-800);
+  --surface-inverse-hover: var(--brand-navy-700);
+  --surface-inverse-deep: var(--brand-navy-950);
+
+  /* ---------------------------------------------------------------------
+     SEMANTIC — CONTENT. Contrast ratios below are measured against the surface
+     each token is meant to sit on; all clear WCAG AA for their size class.
+     --------------------------------------------------------------------- */
+  --content-primary: var(--brand-navy-900); /* 17.0:1 on --surface-raised */
+  --content-secondary: var(--brand-neutral-600); /* 8.0:1  on --surface-raised */
+  --content-tertiary: var(--brand-neutral-500); /* 5.3:1 raised, 5.2:1 page */
+  --content-disabled: var(--brand-neutral-300);
+  --content-accent: var(--brand-teal-700); /* 7.8:1  on --surface-raised */
+  --content-on-accent: var(--brand-white); /* 7.8:1  on --surface-accent */
+
+  /* On navy. -inverse-tertiary is deliberately not lighter: below this value it
+     fails AA at 13px, which is the smallest text the rails use. */
+  --content-inverse-primary: var(--brand-white); /* 17.0:1 on --surface-inverse */
+  --content-inverse-secondary: #b9c4d6; /*  9.7:1 on --surface-inverse */
+  --content-inverse-tertiary: #8a97ae; /*  5.8:1 on --surface-inverse */
+  --content-inverse-accent: var(--brand-teal-300); /*  8.8:1 on --surface-inverse */
+
+  /* ---------------------------------------------------------------------
+     SEMANTIC — BORDER. `subtle` is the default hairline; `default` is for
+     anything that needs to read as a real edge; `strong` is for inputs.
+     --------------------------------------------------------------------- */
+  --border-subtle: var(--brand-neutral-100);
+  --border-default: var(--brand-neutral-150);
+  --border-strong: var(--brand-neutral-200);
+  --border-accent: var(--brand-teal-400);
+  --border-focus: var(--brand-teal-700);
+  --border-inverse: rgba(255, 255, 255, 0.1);
+  --border-inverse-strong: rgba(255, 255, 255, 0.18);
+
+  /* ---------------------------------------------------------------------
+     SEMANTIC — STATUS
+     --------------------------------------------------------------------- */
+  --status-success-fg: var(--brand-green-700);
+  --status-success-bg: var(--brand-green-50);
+  --status-success-border: #a7f3d0;
+  --status-warning-fg: var(--brand-amber-700);
+  --status-warning-bg: var(--brand-amber-50);
+  --status-warning-border: #fde68a;
+  --status-danger-fg: var(--brand-red-700);
+  --status-danger-bg: var(--brand-red-50);
+  --status-danger-border: #fecaca;
+  /* On a navy ground the -fg stops above are unreadable, so status needs a
+     lifted set. Measured against --surface-inverse: danger 9.0:1, warning
+     11.8:1, success 11.2:1. Used by the loss report and any navy panel. */
+  --status-danger-on-inverse: #fca5a5;
+  --status-warning-on-inverse: #fcd34d;
+  --status-success-on-inverse: #6ee7b7;
+
+  --status-info-fg: var(--brand-indigo-700);
+  --status-info-bg: var(--brand-indigo-50);
+  --status-info-border: #c7d2fe;
+
+  /* ---------------------------------------------------------------------
+     SCALE — TYPE
+
+     Two families. IBM Plex Sans Arabic carries headings: it has real weight
+     contrast and holds its shape at display sizes, which Cairo does not. Cairo
+     stays on body, UI and every table, where its wider counters read better at
+     13-15px and where switching families mid-screen would be noise.
+
+     Line heights are looser than a Latin-first scale would use. Arabic ascenders
+     and descenders overlap across lines at 1.4 and the text starts to feel
+     cramped; 1.7 on body is the floor for comfortable Arabic reading.
+     --------------------------------------------------------------------- */
+  --font-display: var(--font-plex-arabic), var(--font-cairo), system-ui, sans-serif;
+  --font-body: var(--font-cairo), system-ui, sans-serif;
+  /* System stack, deliberately not a webfont: the one screen that needs
+     monospace already waits on an AI route, and a CDN font request there
+     blocks render for a few timestamps. */
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Display / headings — Plex, tight tracking, tight leading */
+  --text-display-1: 3.75rem; /* 60px — landing hero only */
+  --text-display-1-lh: 1.06;
+  --text-display-2: 2.75rem; /* 44px — section heroes */
+  --text-display-2-lh: 1.1;
+  --text-title-1: 2rem; /* 32px — page titles */
+  --text-title-1-lh: 1.18;
+  --text-title-2: 1.5rem; /* 24px — card / section titles */
+  --text-title-2-lh: 1.28;
+  --text-title-3: 1.1875rem; /* 19px — subsection */
+  --text-title-3-lh: 1.36;
+
+  /* Body / UI — Cairo, generous leading */
+  --text-body-lg: 1.0625rem; /* 17px */
+  --text-body-lg-lh: 1.7;
+  --text-body: 0.9375rem; /* 15px — default */
+  --text-body-lh: 1.7;
+  --text-body-sm: 0.84375rem; /* 13.5px — table cells, dense UI */
+  --text-body-sm-lh: 1.6;
+  --text-caption: 0.75rem; /* 12px — labels, meta */
+  --text-caption-lh: 1.5;
+  --text-micro: 0.6875rem; /* 11px — badges. Floor: never smaller. */
+  --text-micro-lh: 1.45;
+
+  /* Figures are a type role, not a heading. KPI values, gauge centres and
+     money totals were bypassing the ramp entirely with one-off pixel sizes
+     because there was nowhere for them to go. They set their own leading of 1
+     — a figure has no descenders to clear and should sit tight in its tile. */
+  --text-figure-sm: 1.25rem; /* 20px — inline totals, gauge centres */
+  --text-figure-md: 1.625rem; /* 26px — panel figures */
+  --text-figure-lg: 2rem; /* 32px — the one number a screen is about */
+
+  /* Tracking. Arabic does not take negative tracking well — it breaks the
+     joins — so display tracking applies to the Latin/numeral runs only, kept
+     mild for that reason. */
+  --tracking-display: -0.02em;
+  --tracking-title: -0.011em;
+  --tracking-body: 0;
+  --tracking-caps: 0.06em; /* the only place caps are allowed: eyebrows */
+
+  /* IBM Plex Sans Arabic ships 100-700 with no 800/900, so headings top out at
+     bold. That is not a compromise: Plex 700 already has more stroke contrast
+     than Cairo 900, which is why the display face was worth adding. Never set
+     a weight above 700 on --font-display — the browser will synthesise it and
+     the Arabic joins smear. */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800; /* body/Cairo only */
+  --weight-black: 900; /* body/Cairo only — numerals, KPI figures */
+
+  /* ---------------------------------------------------------------------
+     SCALE — SPACE. 4px base. The named tokens below are the ones layout code
+     should reach for; the numeric steps exist for everything else.
+     --------------------------------------------------------------------- */
+  --space-0: 0;
+  --space-1: 0.25rem; /* 4  */
+  --space-2: 0.5rem; /* 8  */
+  --space-3: 0.75rem; /* 12 */
+  --space-4: 1rem; /* 16 */
+  --space-5: 1.25rem; /* 20 */
+  --space-6: 1.5rem; /* 24 */
+  --space-8: 2rem; /* 32 */
+  --space-10: 2.5rem; /* 40 */
+  --space-12: 3rem; /* 48 */
+  --space-16: 4rem; /* 64 */
+  --space-20: 5rem; /* 80 */
+  --space-24: 6rem; /* 96 */
+  --space-32: 8rem; /* 128 */
+
+  /* Named layout rhythm. Screens use these so density stays consistent. */
+  --space-card-pad: var(--space-5); /* inside a card */
+  --space-card-compact: var(--space-4); /* inside a card in a 3-up grid */
+  --space-card-gap: var(--space-4); /* between cards */
+  --space-block: var(--space-8); /* between blocks on a page */
+  --space-section: var(--space-16); /* between page sections (app) */
+  --space-section-lg: var(--space-24); /* between marketing sections */
+  --space-gutter: var(--space-6); /* page inline padding, >=768px */
+  --space-gutter-sm: var(--space-4); /* page inline padding, <768px */
+
+  /* ---------------------------------------------------------------------
+     SCALE — RADIUS. Meridian is hard-edged: panels stay at md/lg, and the
+     large radii are reserved for marketing surfaces.
+     --------------------------------------------------------------------- */
+  --radius-xs: 0.375rem; /* 6  — badges, chips */
+  --radius-sm: 0.5rem; /* 8  — inputs, small buttons */
+  --radius-md: 0.625rem; /* 10 — buttons, table wrappers */
+  --radius-lg: 0.875rem; /* 14 — cards, panels */
+  --radius-xl: 1.125rem; /* 18 — modals, large panels */
+  --radius-2xl: 1.5rem; /* 24 — marketing blocks only */
+  --radius-full: 9999px;
+
+  /* ---------------------------------------------------------------------
+     SCALE — ELEVATION. Two levels in the app, plus overlay. Each pairs a tight
+     shadow with a hairline ring, so an edge is visible even where the shadow
+     lands on a same-value background.
+     --------------------------------------------------------------------- */
+  --elevation-0: none;
+  --elevation-1:
+    0 1px 2px rgba(10, 15, 13, 0.05),
+    0 0 0 1px rgba(10, 15, 13, 0.04);
+  --elevation-2:
+    0 4px 16px -2px rgba(10, 15, 13, 0.09),
+    0 0 0 1px rgba(10, 15, 13, 0.05);
+  --elevation-overlay:
+    0 24px 60px -12px rgba(10, 15, 13, 0.24),
+    0 0 0 1px rgba(10, 15, 13, 0.06);
+
+  /* On navy, a shadow is invisible — depth has to come from a lighter ring. */
+  --elevation-inverse-1: 0 0 0 1px rgba(255, 255, 255, 0.07);
+  --elevation-inverse-2:
+    0 8px 28px -6px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+
+  /* Teal used as a light source, not as a glow for its own sake. */
+  --elevation-accent: 0 6px 20px -6px rgba(26, 92, 79, 0.35);
+
+  --focus-ring: 0 0 0 2px var(--surface-raised), 0 0 0 4px var(--border-focus);
+  --focus-ring-inverse: 0 0 0 2px var(--surface-inverse), 0 0 0 4px var(--brand-teal-300);
+
+  /* ---------------------------------------------------------------------
+     SCALE — MOTION
+
+     App durations are capped at 220ms and are for STATE ONLY: hover, focus,
+     open/close, selection. There is no entrance token here on purpose — if a
+     dashboard screen wants to animate content in, the answer is no.
+
+     Marketing durations are namespaced --motion-mk-* and are only valid on the
+     landing page and the auth showcase panel.
+     --------------------------------------------------------------------- */
+  --motion-instant: 90ms;
+  --motion-fast: 140ms;
+  --motion-base: 180ms;
+  --motion-slow: 220ms;
+
+  --motion-mk-base: 480ms;
+  --motion-mk-slow: 700ms;
+  --motion-mk-ambient: 15s; /* drifting blobs, mesh */
+
+  /* Standard: decelerate into rest. Exit: accelerate away. Entry: for things
+     arriving from off-screen. Spring is for the one or two places that need
+     a little overshoot — never in the dashboard. */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-entry: cubic-bezier(0, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ---------------------------------------------------------------------
+     SCALE — LAYOUT
+     --------------------------------------------------------------------- */
+  --layout-rail: 15rem; /* 240 — dashboard sidebar, expanded */
+  --layout-rail-collapsed: 4.5rem; /* 72 */
+  --layout-topbar: 4rem; /* 64 */
+  --layout-content-max: 87.5rem; /* 1400 — app content */
+  --layout-prose-max: 45rem; /* 720 — long-form text */
+  --layout-marketing-max: 75rem; /* 1200 */
+}
+
+/* When the user asks for less motion, every duration collapses to zero at the
+   token level. That is deliberately blunt: it means a component cannot forget
+   to add its own reduced-motion guard, because there is no duration left to
+   animate with. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-instant: 0ms;
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+    --motion-mk-base: 0ms;
+    --motion-mk-slow: 0ms;
+  }
+}
