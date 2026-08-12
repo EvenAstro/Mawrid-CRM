@@ -29,8 +29,26 @@ create unique index if not exists whatsapp_agent_log_wa_message_id_key
   on public._whatsapp_agent_log (wa_message_id)
   where wa_message_id is not null;
 
+-- text, not uuid: leads.id is text in this schema, and a uuid column here
+-- can't be joined against it without a cast.
 alter table public._whatsapp_agent_log
-  add column if not exists lead_id uuid;
+  add column if not exists lead_id text;
+
+-- Repairs the column if an earlier run of this migration created it as
+-- uuid before the type mismatch surfaced.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name   = '_whatsapp_agent_log'
+      and column_name  = 'lead_id'
+      and data_type    = 'uuid'
+  ) then
+    alter table public._whatsapp_agent_log
+      alter column lead_id type text using lead_id::text;
+  end if;
+end $$;
 
 create index if not exists whatsapp_agent_log_lead_idx
   on public._whatsapp_agent_log (lead_id)
@@ -42,7 +60,11 @@ create index if not exists whatsapp_agent_log_lead_idx
 -- user, so a rep who can't see a lead gets the conversation row with null
 -- lead details rather than a name they shouldn't have. The log itself is
 -- already readable by any authenticated user under its own RLS policy.
-create or replace function public.whatsapp_conversations()
+-- Dropped rather than replaced: create or replace refuses to change a
+-- function's return type, and lead_id's type is exactly what's changing.
+drop function if exists public.whatsapp_conversations();
+
+create function public.whatsapp_conversations()
 returns table (
   wa_from       text,
   message_count bigint,
@@ -51,7 +73,7 @@ returns table (
   last_at       timestamptz,
   last_body     text,
   last_direction text,
-  lead_id       uuid,
+  lead_id       text,
   lead_name     text,
   stage_label   text,
   owner_name    text
