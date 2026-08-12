@@ -20,20 +20,73 @@ import { toolsFor, runCrmTool, type CrmToolCtx } from "@/lib/whatsapp/crmTools";
  */
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_MODELS_ENDPOINT = "https://openrouter.ai/api/v1/models";
 
-/** Tried in order, free-tier only — this account runs with no OpenRouter
- *  balance, so a paid model here is dead weight: it will always 402 and
- *  cost a fallback round for nothing. Free-tier slugs 404 as a block when
- *  the account hasn't opted in to OpenRouter's free-model data policy
- *  (openrouter.ai/settings/privacy → "free model publication") — that
- *  toggle, not the slugs, was the actual cause of every 404 seen in
- *  production so far. */
-const MODELS = [
-  "deepseek/deepseek-chat-v3-0324:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "qwen/qwen-2.5-72b-instruct:free",
-  "google/gemma-2-9b-it:free",
-];
+/** Hardcoded free-model slugs go stale fast — OpenRouter retires or
+ *  repoints them roughly weekly, and production logs have caught three
+ *  different sets of these 404ing within the same day. A handful of
+ *  well-known providers we've seen offer a free tier reliably, kept only
+ *  as the seed order for sorting the live list below — never sent to the
+ *  API directly. */
+const PREFERRED_FREE_PROVIDERS = ["deepseek", "qwen", "meta-llama", "google", "mistralai"];
+
+/** Same account, same balance state, same low-cost paid fallback that was
+ *  already confirmed to work here — kept only as an absolute floor in case
+ *  discoverFreeModels() itself fails (network hiccup, OpenRouter outage).
+ *  With no balance on the account this will 402, same as everything else,
+ *  but it costs nothing extra to try. */
+const STATIC_FLOOR = "meta-llama/llama-3.3-70b-instruct";
+
+interface OpenRouterModelInfo {
+  id: string;
+  pricing?: { prompt?: string; completion?: string };
+  supported_parameters?: string[];
+}
+
+let freeModelsCache: { models: string[]; fetchedAt: number } | null = null;
+const FREE_MODELS_CACHE_MS = 10 * 60 * 1000; // 10 min — long enough to matter across a burst of messages, short enough to notice when OpenRouter's lineup shifts
+
+/**
+ * Asks OpenRouter itself which models are free right now, instead of
+ * trusting a hardcoded slug list that reliably goes stale within days.
+ * No auth required for this endpoint. Filters to ones that actually
+ * support tool calling — a free model that can't call recommend_solution
+ * is worse than useless here, it just wastes a fallback round.
+ */
+async function discoverFreeModels(): Promise<string[]> {
+  if (freeModelsCache && Date.now() - freeModelsCache.fetchedAt < FREE_MODELS_CACHE_MS) {
+    return freeModelsCache.models;
+  }
+  try {
+    const res = await fetch(OPENROUTER_MODELS_ENDPOINT, { signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) throw new Error(`models list → ${res.status}`);
+    const data = await res.json();
+    const all = (data?.data as OpenRouterModelInfo[]) ?? [];
+    const free = all.filter(
+      (m) =>
+        m.id.endsWith(":free") &&
+        m.pricing?.prompt === "0" &&
+        m.pricing?.completion === "0" &&
+        (m.supported_parameters?.includes("tools") ?? false),
+    );
+    // Known-reliable providers first, everything else after — order is a
+    // quality heuristic, not a correctness requirement.
+    free.sort((a, b) => {
+      const rank = (id: string) => {
+        const i = PREFERRED_FREE_PROVIDERS.findIndex((p) => id.startsWith(p + "/"));
+        return i === -1 ? PREFERRED_FREE_PROVIDERS.length : i;
+      };
+      return rank(a.id) - rank(b.id);
+    });
+    const models = free.slice(0, 6).map((m) => m.id);
+    freeModelsCache = { models, fetchedAt: Date.now() };
+    if (!models.length) console.warn("[whatsapp agent] OpenRouter free-model discovery returned nothing");
+    return models;
+  } catch (err) {
+    console.warn("[whatsapp agent] free-model discovery failed", err);
+    return freeModelsCache?.models ?? []; // serve stale over nothing if we have it
+  }
+}
 
 const MAX_TOOL_ROUNDS = 5;
 
@@ -156,7 +209,9 @@ async function callModel(
   messages: ChatMessage[],
   tools: ReturnType<typeof toolsFor> | undefined,
 ): Promise<{ content?: string; tool_calls?: ChatMessage["tool_calls"] } | null> {
-  for (const model of MODELS) {
+  const discovered = await discoverFreeModels();
+  const chain = discovered.length ? [...discovered, STATIC_FLOOR] : [STATIC_FLOOR];
+  for (const model of chain) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
     try {
