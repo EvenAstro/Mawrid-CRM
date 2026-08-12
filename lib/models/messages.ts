@@ -14,6 +14,7 @@ export interface MessageRow {
   attachment_name?: string | null;
   attachment_type?: string | null;
   attachment_size?: number | null;
+  mentions?: string[] | null;
 }
 
 export const MESSAGE_PAGE = 40;
@@ -31,7 +32,7 @@ export async function fetchMessages(
 ) {
   let q = supabase
     .from("messages")
-    .select("id, conversation_id, sender_id, body, created_at, deleted_at, attachment_path, attachment_name, attachment_type, attachment_size")
+    .select("id, conversation_id, sender_id, body, created_at, deleted_at, attachment_path, attachment_name, attachment_type, attachment_size, mentions")
     .eq("conversation_id", conversationId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -51,11 +52,17 @@ export async function sendMessage(
   conversationId: string,
   senderId: string,
   body: string,
+  mentions: string[] = [],
 ) {
   return supabase
     .from("messages")
-    .insert({ conversation_id: conversationId, sender_id: senderId, body: body.trim() })
-    .select("id, conversation_id, sender_id, body, created_at, deleted_at, attachment_path, attachment_name, attachment_type, attachment_size")
+    .insert({
+      conversation_id: conversationId,
+      sender_id: senderId,
+      body: body.trim(),
+      mentions,
+    })
+    .select("id, conversation_id, sender_id, body, created_at, deleted_at, attachment_path, attachment_name, attachment_type, attachment_size, mentions")
     .single();
 }
 

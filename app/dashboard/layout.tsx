@@ -89,6 +89,28 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
+
+  // The badge on "المحادثات" — polled rather than realtime because it has
+  // to be live everywhere in the app, not just the chat page itself, and a
+  // Realtime channel per open tab for a number nobody watches closely isn't
+  // worth the connection. Re-checks on route change too, so leaving the
+  // chat page clears a stale count immediately instead of waiting a cycle.
+  useEffect(() => {
+    let cancelled = false;
+    async function poll() {
+      const { data, error } = await supabase.rpc("unread_counts");
+      if (cancelled || error) return;
+      const total = ((data ?? []) as { unread: number }[]).reduce((a, r) => a + Number(r.unread), 0);
+      setChatUnread(total);
+    }
+    poll();
+    const t = setInterval(poll, 20_000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [pathname]);
 
   useEffect(() => {
     setCollapsed(localStorage.getItem("mawrid_sidebar_collapsed") === "1");
@@ -153,6 +175,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
   const navGroups = GROUP_ORDER.map((heading) => ({
     heading,
     items: FEATURES.filter((f) => f.group === heading && can(f.key)).map((f) => ({
+      key: f.key,
       label: f.label,
       href: f.href,
       Icon: ICONS[f.key] ?? DashboardIcon,
@@ -237,8 +260,9 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
                 </p>
               )}
               <div className="space-y-0.5">
-                {group.items.map(({ label, href, Icon }) => {
+                {group.items.map(({ key, label, href, Icon }) => {
                   const active = isActive(pathname, href);
+                  const badge = key === "chat" ? chatUnread : 0;
                   return (
                     <Link
                       key={label}
@@ -251,7 +275,18 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
                           : "font-medium text-[color:var(--content-inverse-tertiary)] hover:bg-white/[0.06] hover:text-[color:var(--content-inverse-primary)]"
                       } ${effectiveCollapsed ? "justify-center px-0" : ""}`}
                     >
-                      <Icon className="h-5 w-5 flex-shrink-0" />
+                      <span className="relative flex-shrink-0">
+                        <Icon className="h-5 w-5" />
+                        {badge > 0 && (
+                          <span
+                            className={`t-micro absolute flex items-center justify-center rounded-full bg-[var(--status-danger-fg)] font-bold leading-none text-white ${
+                              effectiveCollapsed ? "-end-1 -top-1 h-4 min-w-[16px] px-0.5" : "-end-1.5 -top-1.5 h-4 min-w-[16px] px-0.5"
+                            }`}
+                          >
+                            {badge > 9 ? "9+" : badge}
+                          </span>
+                        )}
+                      </span>
                       {!effectiveCollapsed && label}
                     </Link>
                   );

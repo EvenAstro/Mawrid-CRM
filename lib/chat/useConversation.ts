@@ -11,6 +11,7 @@ import {
   type MessageRow,
 } from "@/lib/models/messages";
 import { mergeMessage, pendingId } from "@/lib/chat/grouping";
+import { notifyMentions } from "@/lib/chat/notifyMentions";
 
 export type LiveStatus = "connecting" | "live" | "offline";
 
@@ -120,7 +121,7 @@ export function useConversation(conversationId: string | null, meId: string | nu
    * user typed vanishing is the worst thing a chat can do.
    */
   const send = useCallback(
-    async (body: string) => {
+    async (body: string, mentions: string[] = []) => {
       const text = body.trim();
       if (!conversationId || !meId || !text) return;
 
@@ -131,10 +132,11 @@ export function useConversation(conversationId: string | null, meId: string | nu
         body: text,
         created_at: new Date().toISOString(),
         deleted_at: null,
+        mentions,
       };
       setMessages((cur) => [...cur, temp]);
 
-      const { data, error: err } = await sendMessageRow(conversationId, meId, text);
+      const { data, error: err } = await sendMessageRow(conversationId, meId, text, mentions);
       if (err || !data) {
         console.error("[chat] send failed", err);
         setFailedIds((s) => new Set(s).add(temp.id));
@@ -143,6 +145,14 @@ export function useConversation(conversationId: string | null, meId: string | nu
       // Realtime may already have merged the real row; mergeMessage is
       // idempotent so doing it here too is safe and covers a dead channel.
       setMessages((cur) => mergeMessage(cur, data as MessageRow));
+
+      // Fire-and-forget — a slow or failed email must never hold up the
+      // message itself, which is already sent and showing on screen.
+      if (mentions.length > 0) {
+        notifyMentions(conversationId, (data as MessageRow).id, mentions).catch((e) =>
+          console.error("[chat] mention notify failed", e),
+        );
+      }
     },
     [conversationId, meId],
   );
@@ -184,7 +194,7 @@ export function useConversation(conversationId: string | null, meId: string | nu
         next.delete(tempId);
         return next;
       });
-      await send(msg.body);
+      await send(msg.body, msg.mentions ?? []);
     },
     [send],
   );

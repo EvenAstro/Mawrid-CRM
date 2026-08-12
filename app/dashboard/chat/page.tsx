@@ -228,6 +228,13 @@ export default function ChatPage() {
   }, [active, meId, membersByConversation, profiles]);
   const totalUnread = Object.values(unread).reduce((a, b) => a + b, 0);
 
+  // Who you can @mention in the open thread — everyone else in it.
+  const mentionable = useMemo(() => {
+    if (!active || !meId) return [];
+    const ids = (membersByConversation.get(active.id) ?? []).filter((id) => id !== meId);
+    return ids.map((id) => ({ id, label: nameOf(id) }));
+  }, [active, meId, membersByConversation, nameOf]);
+
   return (
     <div className="flex flex-col gap-[var(--space-card-gap)]">
       <CommandBand
@@ -522,7 +529,12 @@ export default function ChatPage() {
                 onReload={thread.reload}
               />
 
-              <ChatComposer onSend={thread.send} onSendFile={handleSendFile} uploading={thread.uploading} />
+              <ChatComposer
+                onSend={thread.send}
+                onSendFile={handleSendFile}
+                uploading={thread.uploading}
+                mentionable={mentionable}
+              />
             </>
           ) : (
             <EmptyState
