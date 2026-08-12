@@ -42,7 +42,7 @@ export async function findLeadByPhone(waFrom: string): Promise<CrmLeadContext | 
 
   const { data: candidates, error } = await supabaseAdmin
     .from("leads")
-    .select("id, full_name, establishment_name, owner_id, normalized_phone, created_at, pipeline_stages(label)")
+    .select("id, full_name, owner_id, normalized_phone, created_at, pipeline_stages(label)")
     .not("normalized_phone", "is", null)
     .is("deleted_at", null)
     .ilike("normalized_phone", `%${target}%`)
@@ -56,7 +56,6 @@ export async function findLeadByPhone(waFrom: string): Promise<CrmLeadContext | 
   type Row = {
     id: string;
     full_name: string | null;
-    establishment_name: string | null;
     owner_id: string | null;
     normalized_phone: string | null;
     pipeline_stages: { label: string } | null;
@@ -89,7 +88,10 @@ export async function findLeadByPhone(waFrom: string): Promise<CrmLeadContext | 
   return {
     leadId: String(lead.id),
     fullName: lead.full_name,
-    companyName: lead.establishment_name,
+    // No dedicated company/establishment column on leads to read here —
+    // whatever business info was captured lives in the notes text instead
+    // (see createLeadFromWhatsApp).
+    companyName: null,
     ownerId: lead.owner_id,
     ownerName: ownerRow ? ownerRow.full_name || [ownerRow.first_name, ownerRow.last_name].filter(Boolean).join(" ") || null : null,
     ownerEmail: ownerRow?.email ?? null,
@@ -115,7 +117,7 @@ async function whatsappSourceId(): Promise<string | null> {
 
   const { data: created, error } = await supabaseAdmin
     .from("sources")
-    .insert({ label: "واتساب", is_archived: false, sort_order: 999 })
+    .insert({ id: crypto.randomUUID(), label: "واتساب", is_archived: false, sort_order: 999 })
     .select("id")
     .single();
   if (error) {
@@ -156,15 +158,17 @@ export async function createLeadFromWhatsApp(input: {
   const [sourceId, stageId] = await Promise.all([whatsappSourceId(), firstLeadStageId()]);
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
+  // No dedicated company/establishment column to write to — folded into
+  // notes instead so it isn't lost.
+  const notes = input.companyName ? `المنشأة: ${input.companyName}\n${input.notes}` : input.notes;
   const { error } = await supabaseAdmin.from("leads").insert({
     id,
     full_name: input.fullName,
-    establishment_name: input.companyName,
     normalized_phone: input.waFrom,
     primary_source_id: sourceId,
     stage_id: stageId,
     owner_id: null,
-    notes: input.notes,
+    notes,
     created_at: now,
     updated_at: now,
   });
