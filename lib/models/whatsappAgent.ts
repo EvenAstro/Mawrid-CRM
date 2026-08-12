@@ -35,14 +35,64 @@ export async function logWhatsAppMessage(input: {
   direction: "inbound" | "outbound";
   body: string;
   waMessageId?: string | null;
+  leadId?: string | null;
 }): Promise<void> {
   const { error } = await supabaseAdmin.from("_whatsapp_agent_log").insert({
     wa_from: input.waFrom,
     direction: input.direction,
     body: input.body,
     wa_message_id: input.waMessageId ?? null,
+    lead_id: input.leadId ?? null,
   });
   if (error) console.error("[whatsapp] log insert failed", error);
+}
+
+/**
+ * Records an inbound message and reports whether this delivery is the one
+ * that should be answered.
+ *
+ * Meta redelivers a webhook it considers failed — including one that was
+ * merely slow, which the model loop routinely is — so the same message can
+ * arrive two or three times. The unique index on wa_message_id
+ * (20260812180000) makes this insert an atomic claim: exactly one delivery
+ * inserts, the rest come back as a unique violation and are told to stop.
+ * Without it the retry generated a second, different reply, because by then
+ * the first reply was already in the history the agent reads.
+ *
+ * A logging failure that isn't a duplicate returns true: dropping a real
+ * customer message because we couldn't write a log row is the worse of the
+ * two failures.
+ */
+export async function claimInboundMessage(input: {
+  waFrom: string;
+  body: string;
+  waMessageId: string | null;
+}): Promise<boolean> {
+  const { error } = await supabaseAdmin.from("_whatsapp_agent_log").insert({
+    wa_from: input.waFrom,
+    direction: "inbound",
+    body: input.body,
+    wa_message_id: input.waMessageId,
+  });
+  if (!error) return true;
+  if (error.code === "23505") {
+    console.log(`[whatsapp] duplicate delivery ${input.waMessageId} — already handled`);
+    return false;
+  }
+  console.error("[whatsapp] inbound log insert failed", error);
+  return true;
+}
+
+/** Backfills the lead this conversation resolved to onto the rows that
+ *  don't have it yet, so the CRM view can show the link on the whole
+ *  thread rather than only on messages sent after the match. */
+export async function linkConversationToLead(waFrom: string, leadId: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("_whatsapp_agent_log")
+    .update({ lead_id: leadId })
+    .eq("wa_from", waFrom)
+    .is("lead_id", null);
+  if (error) console.error("[whatsapp] lead link failed", error);
 }
 
 /** Recent turns for one number, oldest first — the agent's short memory of
@@ -92,5 +142,37 @@ export async function fetchWhatsAppLogClient(limit = 100) {
     .from("_whatsapp_agent_log")
     .select("id, wa_from, direction, body, created_at")
     .order("created_at", { ascending: false })
+    .limit(limit);
+}
+
+export interface WhatsAppConversation {
+  wa_from: string;
+  message_count: number;
+  inbound_count: number;
+  first_at: string;
+  last_at: string;
+  last_body: string;
+  last_direction: string;
+  lead_id: string | null;
+  lead_name: string | null;
+  stage_label: string | null;
+  owner_name: string | null;
+}
+
+/** One row per number the agent has talked to, newest first. Grouping and
+ *  the CRM join happen in the RPC (20260812180000) rather than here — the
+ *  alternative is pulling every message to the browser to group it, which
+ *  stops being viable the moment this leaves sandbox traffic. */
+export async function fetchWhatsAppConversationsClient() {
+  return supabase.rpc("whatsapp_conversations");
+}
+
+/** The full thread for one number, oldest first — chat reading order. */
+export async function fetchWhatsAppThreadClient(waFrom: string, limit = 500) {
+  return supabase
+    .from("_whatsapp_agent_log")
+    .select("id, wa_from, direction, body, created_at, lead_id")
+    .eq("wa_from", waFrom)
+    .order("created_at", { ascending: true })
     .limit(limit);
 }

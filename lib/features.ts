@@ -23,6 +23,7 @@ export const FEATURES: FeatureDef[] = [
   { key: "tasks", label: "المهام", description: "قائمة المهام والتقويم", group: "التفاعل", href: "/dashboard/tasks" },
   { key: "insights", label: "الرؤى والإيرادات", description: "رؤى تحليلية وذكاء الإيرادات", group: "الذكاء", href: "/dashboard/insights" },
   { key: "users", label: "إدارة المستخدمين", description: "إدارة حسابات الفريق وصلاحياتهم", group: "الإدارة", href: "/dashboard/users" },
+  { key: "whatsapp_conversations", label: "محادثات واتساب", description: "محادثات العملاء مع وكيل واتساب، مربوطة بملفاتهم", group: "التفاعل", href: "/dashboard/whatsapp" },
   { key: "whatsapp_agent", label: "وكيل واتساب — تجريبي", description: "تحكم ومراقبة وكيل الرد التلقائي التجريبي على واتساب", group: "الإدارة", href: "/dashboard/whatsapp-test" },
 ];
 

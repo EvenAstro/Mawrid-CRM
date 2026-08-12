@@ -44,7 +44,11 @@ interface OpenRouterModelInfo {
 }
 
 let freeModelsCache: { models: string[]; fetchedAt: number } | null = null;
-const FREE_MODELS_CACHE_MS = 10 * 60 * 1000; // 10 min — long enough to matter across a burst of messages, short enough to notice when OpenRouter's lineup shifts
+// 6 hours: the discovery call is pure latency on the customer's reply, and
+// OpenRouter's free lineup shifts over days, not minutes. A stale entry
+// costs one wasted fallback round; refetching every few minutes cost every
+// cold-started instance an extra round trip before it could answer at all.
+const FREE_MODELS_CACHE_MS = 6 * 60 * 60 * 1000;
 
 /**
  * Asks OpenRouter itself which models are free right now, instead of
@@ -88,64 +92,61 @@ async function discoverFreeModels(): Promise<string[]> {
   }
 }
 
-const MAX_TOOL_ROUNDS = 5;
+/** Each round is another full model call, so this is the main lever on how
+ *  long a customer waits. Three is enough for the deepest real sequence
+ *  (recommend_solution → create_qualified_lead → schedule_demo); five just
+ *  bought a confused model two more chances to stall. */
+const MAX_TOOL_ROUNDS = 3;
 
-const BASE_SYSTEM = `أنت "سامي"، مستشار حلول أعمال في شركة "مَوْرد" (Mawrid) — أول منصة محاسبية سعودية بالذكاء الاصطناعي. ترد على العملاء عبر واتساب بالعربية بأسلوب سعودي مهني وودود.
+/** Hard ceiling on reply length, enforced in code rather than trusted to
+ *  the prompt — a model that ignores "keep it short" still can't send a
+ *  wall of text to a WhatsApp thread. */
+const MAX_REPLY_CHARS = 480;
 
-════════ من أنت فعلاً ════════
-أنت مو "بوت رد آلي". أنت مستشار يفهم شغل العميل قبل ما يبيع له.
-الفرق بينك وبين الموظف الضعيف:
-• الموظف الضعيف يرد "راح نتواصل معك" ويقفل. أنت تناقش وتفهم وتعطي قيمة من أول رد.
-• الموظف الضعيف يسرد ميزات. أنت تسأل عن مشكلة العميل ثم تربطها بالحل.
-• الموظف الضعيف ينتظر تعليمات. أنت تاخذ القرار وتسوي الإجراء بنفسك.
+const BASE_SYSTEM = `أنت "سامي"، مستشار حلول أعمال في "مَوْرد" (Mawrid) — أول منصة محاسبية سعودية بالذكاء الاصطناعي. ترد على العملاء بواتساب بالعربية بأسلوب سعودي مهني وودود.
 
-════════ ⛔ ممنوعات مطلقة ════════
-1. ممنوع تنهي رسالة بدون سؤال. كل رد ينتهي بسؤال يدفع النقاش.
-2. ممنوع تقول "راح نتواصل معك" أو "سيتم الرد عليك" كجواب نهائي — هذا اعتراف بالفشل.
-3. ممنوع تسرد قائمة وحدات طويلة. اذكر وحدتين أو ثلاث تخص العميل فقط.
-4. ممنوع تسأل العميل أسئلة إدارية مثل "تبي أسجل ملاحظة؟" — سجّلها بنفسك واستمر.
-5. ممنوع تختلق سعر أو رقم. لكن ممنوع أيضاً تسكت وتقفل — ناقش الاحتياج بدل الرقم.
+════════ أسلوبك ════════
+أنت مستشار يفهم شغل العميل قبل ما يبيع له، مو بوت رد آلي.
+• لا تسرد ميزات — اسأل عن مشكلته أول، ثم اربطها بالحل.
+• خذ القرار وسوِّ الإجراء بنفسك، لا تستأذن بأشياء إدارية.
+
+════════ ⛔ ممنوعات ════════
+1. ممنوع تنهي رسالة بدون سؤال.
+2. ممنوع "راح نتواصل معك" كجواب نهائي.
+3. ممنوع تسرد وحدات كثيرة — وحدتين أو ثلاث تخص العميل فقط.
+4. ممنوع تختلق سعر أو رقم — ناقش الاحتياج بدل الرقم.
+
+════════ 📏 طول الرد (مهم جداً) ════════
+ردك رسالة واتساب، مو إيميل. سطرين إلى ثلاثة كحد أقصى — جملة أو جملتين مفيدة ثم سؤال.
+لا تستخدم عناوين ولا قوائم نقطية ولا فقرات. لا تعيد شرح كلام قلته قبل.
+لا ترسل إلا رسالة واحدة بالرد — لا تكتب رسالتين متتاليتين.
 
 ════════ أدواتك ════════
-عندك أدوات حقيقية تشتغل على نظام الشركة. استخدمها بدون ما تستأذن:
-• recommend_solution — أهم أداة عندك. أول ما تعرف نوع نشاط العميل استخدمها فوراً، ترجع لك مشاكل قطاعه والوحدات المناسبة وسؤال ذكي. لا تخمّن بنفسك.
-• الأدوات الباقية تسجل وتحجز وتنبّه الفريق — استخدمها بالوقت المناسب.
+• recommend_solution — أهم أداة. أول ما تعرف نشاط العميل استخدمها فوراً؛ ترجع لك مشاكل قطاعه والوحدات المناسبة وسؤال ذكي. لا تخمّن بنفسك.
+• الباقي يسجل ويحجز وينبّه الفريق — استخدمها بصمت بدون ما تخبر العميل "سجلتك بالنظام".
 
 ════════ معلومات مَوْرد ════════
-• منصة محاسبة ذكية + إدارة مبيعات ومصاريف، بدون إدخالات يدوية، من مكان واحد.
-• معتمدة من هيئة الزكاة والضريبة والجمارك، ومتوافقة مع الفوترة الإلكترونية (فاتورة) المرحلة الثانية.
-• تقييم العملاء 4.8 من 5 — توفير 30% بالموارد — سرعة إنجاز 75 ضعف — أكثر من 320 ميزة ذكية.
+• منصة محاسبة ذكية + مبيعات ومصاريف، بدون إدخالات يدوية، من مكان واحد.
+• معتمدة من هيئة الزكاة والضريبة والجمارك، ومتوافقة مع الفوترة الإلكترونية (فاتورة) — المرحلة الثانية.
+• تقييم 4.8/5 — توفير 30% بالموارد — إنجاز أسرع 75 ضعف — أكثر من 320 ميزة ذكية.
 • 16 وحدة: المحاسبة الذكية، نقاط البيع، المبيعات والعملاء، المخزون، المشتريات والموردين، الفواتير الرقمية، الدفع الإلكتروني، إدارة النقد، الأصول، المطاعم والكافيهات، المتاجر الإلكترونية، الأملاك والعقار، الموارد البشرية، الصلاحيات، التقارير، الداشبورد الذكي.
 
 ════════ الأسعار ════════
-ما عندك جدول أسعار معلن، والسعر فعلاً يعتمد على الوحدات وحجم المنشأة. هذا مو عذر للتهرب — هذا سبب للنقاش.
-❌ غلط: "سيتم التواصل معك قريباً لمزيد من المعلومات حول أسعارنا."
-✅ صح: "الباقات تختلف حسب الوحدات اللي تحتاجها وحجم منشأتك — عشان أعطيك تصور دقيق مو رقم عام، وش طبيعة نشاطك؟"
+ما فيه جدول أسعار معلن، والسعر يعتمد فعلاً على الوحدات وحجم المنشأة — وهذا سبب للنقاش مو للتهرب.
+❌ "سيتم التواصل معك قريباً بخصوص الأسعار."
+✅ "الباقات تختلف حسب الوحدات وحجم منشأتك — عشان أعطيك تصور دقيق، وش طبيعة نشاطك؟"
 
-════════ مثال محادثة نموذجية (اتبع هذا الأسلوب) ════════
+════════ مثال على الطول والأسلوب المطلوب ════════
 العميل: أبي أعرف أسعاركم
-أنت: "هلا فيك 👋 الأسعار عندنا مبنية على الوحدات اللي تحتاجها منشأتك فعلاً، عشان ما تدفع على شي ما تستخدمه. عطني فكرة عن نشاطك وأقدر أوجهك للأنسب — وش مجال شغلك؟"
+أنت: "هلا فيك 👋 أسعارنا مبنية على الوحدات اللي تحتاجها فعلاً عشان ما تدفع على شي ما تستخدمه. وش مجال شغلك؟"
 
 العميل: عندي مطعم
-[تستدعي recommend_solution بـ business_type = "مطعم"]
-أنت: "جميل، قطاع المطاعم من أكثر القطاعات اللي نشتغل معها. عادةً أكثر شي يوجع أصحاب المطاعم شيئين: ما تعرف تكلفة الطبق الحقيقية بدقة، والكاشير يطلع أرقام مختلفة عن المحاسبة آخر الشهر. مَوْرد يربطهم مع بعض — المخزون ينقص تلقائياً مع كل طلب وتشوف ربح كل صنف لحظياً. كم فرع عندك حالياً؟"
+أنت (بعد recommend_solution): "أكثر شي يوجع أصحاب المطاعم إن الكاشير يطلع أرقام مختلفة عن المحاسبة آخر الشهر، وتكلفة الطبق الحقيقية ما تكون واضحة. مَوْرد يربطهم فيصير المخزون ينقص تلقائياً مع كل طلب. كم فرع عندك؟"
 
-العميل: ثلاثة فروع وحوالي ٢٥ موظف
-أنت: "ممتاز، بحجم ٣ فروع و٢٥ موظف تبدأ تحتاج صلاحيات واضحة لكل موظف ومتابعة حضور ورواتب — وهذي موجودة بنفس النظام مو برنامج منفصل. الشي اللي راح تحس فيه من أول أسبوع إنك تقارن أداء الفروع الثلاثة من شاشة وحدة. تحب أرتب لك عرض توضيحي نوريك فيه النظام على بيانات مطعم فعلي؟"
+العميل: ثلاثة فروع و٢٥ موظف
+أنت: "بحجمكم تبدأ تحتاج صلاحيات لكل موظف ومتابعة حضور ورواتب، وكلها بنفس النظام. تحب أرتب لك عرض توضيحي ٢٠ دقيقة تشوف فيه النظام على بيانات مطعم؟"
 
-العميل: إيه زين، بس ودي أعرف كم راح يكلفني
-أنت: "أكيد، وهذا بالضبط اللي بيوضحه العرض — نبني لك التسعيرة على الوحدات اللي اخترناها لك بدل رقم عام ما يناسبك. العرض ما ياخذ أكثر من ٢٠ دقيقة وتطلع منه بتسعيرة مكتوبة. وش اسمك الكريم عشان أرتب لك الموعد؟"
-
-العميل: عبدالله، وخلها بكرة الصبح
-[تستدعي create_qualified_lead ثم schedule_demo]
-أنت: "تشرفنا أبو عبدالله 🌟 رتبت لك العرض بكرة الصبح والفريق بيتواصل معك يأكد الوقت بالضبط. فيه شي معين تحب نركز عليه بالعرض — التكاليف والأرباح ولا متابعة الفروع؟"
-
-════════ لاحظ بالمثال ════════
-• كل رد انتهى بسؤال.
-• ما ذكر ولا سعر مختلق، ومع ذلك ما تهرب ولا مرة.
-• استخدم الأدوات بصمت بدون ما يقول للعميل "سجلتك بالنظام".
-• ذكر مشاكل القطاع قبل ما يذكر الحلول — عشان يحس العميل إنه مفهوم.
-• ما سأل عن الاسم إلا متأخر، بعد ما بنى قيمة.
+لاحظ: كل رد سطرين وينتهي بسؤال، وما فيه ولا سعر مختلق، وما سأل عن الاسم إلا متأخر بعد ما بنى قيمة.
 
 اجعل ردودك بطول رسالة واتساب طبيعية — من سطرين لأربعة أسطر. لا تذكر أنك ذكاء اصطناعي إلا لو سُئلت مباشرة.`;
 
@@ -231,7 +232,7 @@ async function callModel(
           // 402, not a partial response) — a low balance shouldn't be
           // able to take the paid fallback down along with everything
           // free-tier that already failed above it.
-          max_tokens: 500,
+          max_tokens: 280,
           messages,
           ...(tools ? { tools } : {}),
         }),
@@ -264,7 +265,41 @@ async function callModel(
   return null;
 }
 
-export async function generateWhatsAppReply(waFrom: string, incoming: string): Promise<string | null> {
+/**
+ * Keeps the reply to one WhatsApp-sized message.
+ *
+ * Two failure modes to cut, both seen in production. A model that ignores
+ * the length instruction and writes an essay — trimmed at the last sentence
+ * boundary that fits, so it ends on a real sentence rather than mid-word.
+ * And a model that composes two messages in one turn, the second usually a
+ * restatement of the first: a blank-line-separated tail after a question is
+ * that second message, and dropping it is what the customer would want.
+ */
+function clampReply(raw: string): string {
+  let reply = raw.trim();
+
+  // Drop a trailing second "message" — a block after a blank line, once the
+  // first block already ends in a question (i.e. it was a complete reply).
+  const blocks = reply.split(/\n\s*\n/);
+  if (blocks.length > 1 && /[?؟]\s*$/.test(blocks[0].trim())) {
+    reply = blocks[0].trim();
+  }
+
+  if (reply.length <= MAX_REPLY_CHARS) return reply;
+  const head = reply.slice(0, MAX_REPLY_CHARS);
+  const lastBreak = Math.max(head.lastIndexOf("؟"), head.lastIndexOf("?"), head.lastIndexOf("."), head.lastIndexOf("\n"));
+  return (lastBreak > MAX_REPLY_CHARS * 0.5 ? head.slice(0, lastBreak + 1) : head).trim();
+}
+
+export interface WhatsAppReply {
+  reply: string;
+  /** The lead this conversation resolved to — either matched on the way in
+   *  or created mid-turn by create_qualified_lead. The caller records it on
+   *  the log so the CRM view can show the thread against the right lead. */
+  leadId: string | null;
+}
+
+export async function generateWhatsAppReply(waFrom: string, incoming: string): Promise<WhatsAppReply | null> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     console.error("[whatsapp agent] OPENROUTER_API_KEY not set");
@@ -277,7 +312,9 @@ export async function generateWhatsAppReply(waFrom: string, incoming: string): P
   const ctx: CrmToolCtx = { waFrom, lead };
   const system = BASE_SYSTEM + (lead ? EXISTING_LEAD_GUIDANCE : NEW_PROSPECT_GUIDANCE) + contextBlock(lead);
 
-  const history = await fetchWhatsAppHistory(waFrom, 20);
+  // Ten turns is plenty of memory for a WhatsApp thread and keeps the
+  // prompt short — prefill is most of the latency the customer feels.
+  const history = await fetchWhatsAppHistory(waFrom, 10);
   const messages: ChatMessage[] = [
     { role: "system", content: system },
     ...history.map((h) => ({
@@ -296,8 +333,8 @@ export async function generateWhatsAppReply(waFrom: string, incoming: string): P
 
     const toolCalls = choice.tool_calls;
     if (!toolCalls || toolCalls.length === 0) {
-      const reply = (choice.content ?? "").trim();
-      return reply || null;
+      const reply = clampReply(choice.content ?? "");
+      return reply ? { reply, leadId: ctx.lead?.leadId ?? null } : null;
     }
 
     messages.push({ role: "assistant", content: choice.content ?? "", tool_calls: toolCalls });

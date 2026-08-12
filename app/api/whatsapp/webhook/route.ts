@@ -5,6 +5,8 @@ import { generateWhatsAppReply } from "@/lib/whatsapp/agent";
 import {
   isWhatsAppAgentEnabled,
   logWhatsAppMessage,
+  claimInboundMessage,
+  linkConversationToLead,
 } from "@/lib/models/whatsappAgent";
 import { checkRateLimit } from "@/lib/rateLimit";
 
@@ -81,7 +83,17 @@ export async function POST(req: NextRequest) {
     const from = m.from;
     const text = m.text.body;
 
-    await logWhatsAppMessage({ waFrom: from, direction: "inbound", body: text, waMessageId: m.id });
+    // Logging the inbound message and claiming the right to answer it are
+    // the same write. Meta redelivers a webhook it thinks failed — which
+    // includes one that was merely slow, and the model loop often is — so
+    // without this the same message got answered twice, the second reply
+    // differing because the first was already in the agent's history.
+    const isFirstDelivery = await claimInboundMessage({
+      waFrom: from,
+      body: text,
+      waMessageId: m.id ?? null,
+    });
+    if (!isFirstDelivery) continue;
 
     // Per-number rate limit — a loop on the other end (or a misbehaving
     // test) must not be able to burn the OpenRouter budget unbounded.
@@ -94,17 +106,21 @@ export async function POST(req: NextRequest) {
     const enabled = await isWhatsAppAgentEnabled();
     if (!enabled) continue; // logged above; just not replying
 
-    const reply = await generateWhatsAppReply(from, text);
-    if (!reply) continue;
+    const result = await generateWhatsAppReply(from, text);
+    if (!result?.reply) continue;
 
-    const sent = await sendWhatsAppText(from, reply);
+    const sent = await sendWhatsAppText(from, result.reply);
     if (sent.ok) {
       await logWhatsAppMessage({
         waFrom: from,
         direction: "outbound",
-        body: reply,
+        body: result.reply,
         waMessageId: sent.messageId,
+        leadId: result.leadId,
       });
+      // Attribute the rest of the thread too, so the CRM view shows the
+      // link across the whole conversation and not just from here on.
+      if (result.leadId) await linkConversationToLead(from, result.leadId);
     } else {
       console.error("[whatsapp webhook] send failed", sent.error);
     }
