@@ -3,71 +3,79 @@ import { findLeadByPhone, type CrmLeadContext } from "@/lib/models/whatsappCrmCo
 import { toolsFor, runCrmTool, type CrmToolCtx } from "@/lib/whatsapp/crmTools";
 
 /**
- * The sandbox agent's reply logic.
+ * The WhatsApp sales-agent reply logic.
  *
- * Deliberately unrestricted by topic, per explicit instruction — this is a
- * test framework, not connected to a real customer, and the point of the
- * exercise is to see how an agent with no subject-matter fence behaves. No
- * keyword router, no allowed-questions list, unlike the Copilot's routeRequest
- * or 64's tightly-scoped extraction prompt.
- *
- * It can also act, not just talk. Every inbound message first resolves the
- * sender's phone against the real `leads` table (lib/whatsapp/crmTools.ts +
- * lib/models/whatsappCrmContext.ts) — an existing lead gets tools to check
- * their own status, leave a note, or flag their rep for a callback; a
- * stranger gets a tool to become a qualified lead once they show real
- * interest. Which tools exist depends on that lookup, not on anything the
- * model decides, so a stranger can't fish for someone else's deal and an
- * existing lead can't spawn a duplicate.
- *
- * What stays true regardless: it answers as this company, grounded in real
- * data where the question calls for it, and every exchange is logged
- * upstream by the caller — this module only produces the reply text.
+ * Every inbound message first resolves the sender's phone against the real
+ * `leads` table — an existing lead gets tools to check their own status,
+ * leave a note, or flag their rep for a callback; a stranger gets a tool to
+ * become a qualified lead once they show real interest. Which tools exist
+ * depends on that lookup, not on anything the model decides.
  */
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL = "meta-llama/llama-3.3-70b-instruct";
-// A tool-calling turn can chain multiple actions before it has enough to
-// answer (e.g. check status, then log a note, then flag the rep) — capped
-// so a confused model can't loop forever burning the OpenRouter budget on
-// one WhatsApp message.
+const MODEL = "meta-llama/llama-4-maverick:free";
 const MAX_TOOL_ROUNDS = 4;
 
-const BASE_SYSTEM = `أنت موظف خدمة عملاء تابع لشركة "مَوْرد" (Mawrid) — أول منصة محاسبية سعودية بالذكاء الاصطناعي.
-ترد على عملاء الشركة عبر واتساب.
-أجب دائماً بالعربية، بأسلوب سعودي مهني وودود.
+const BASE_SYSTEM = `أنت مستشار مبيعات محترف تابع لشركة "مَوْرد" (Mawrid) — أول منصة محاسبية سعودية بالذكاء الاصطناعي.
+ترد على عملاء الشركة عبر واتساب. أجب دائماً بالعربية، بأسلوب سعودي مهني وودود.
 
-معلومات دقيقة عن الشركة تستخدمها بالرد (مصدرها الموقع الرسمي mawriderp.com):
+## ⛔ قاعدة ذهبية: لا تُقفل النقاش أبداً
+- ممنوع تقول "راح نتواصل معك" أو "راح يرد عليك أحد" كجواب نهائي — هذا الجواب ممنوع تماماً.
+- كل رد لازم ينتهي بسؤال يدفع المحادثة للأمام.
+- مهمتك إنك تفهم العميل وتساعده بنفسك — تناقشه وتاخذ وتعطي معه.
+- حتى لو ما عندك سعر محدد، ناقش معه احتياجاته وقدم له قيمة حقيقية.
 
+## معلومات الشركة (مصدرها الموقع الرسمي mawriderp.com):
 - **الوصف**: مَوْرد منصة ذكية للمحاسبة مع إدارة المبيعات والمصاريف — نظام متكامل يساعد أصحاب الأعمال والمحاسبين على إدارة المنشأة بالذكاء الاصطناعي، بدون إدخالات يدوية، من مكان واحد وبتحكم ذكي.
 - **الاعتماد**: معتمدة ومتوافقة مع هيئة الزكاة والضريبة والجمارك، ومنظومة الفوترة الإلكترونية (فاتورة) — المرحلة الثانية.
 - **رضا العملاء**: تقييم 4.8 من 5.
-- **أرقام**: توفير 30% بالموارد، سرعة إنجاز 75 ضعف، أكثر من 320 ميزة وإجراء ذكي، 9 وحدات مترابطة مع وكلاء أذكياء.
-- **الوحدات المتوفرة بالنظام**:
-  الدفع الإلكتروني، نقاط البيع وكاشير افتراضي، إدارة المبيعات والعملاء (عروض أسعار وفواتير ومتابعة عملاء)، المحاسبة الذكية (قيود آلية وتقارير مالية فورية)، إدارة الأصول (تتبع وإهلاك الأصول الثابتة)، إدارة النقد (سداد وقبض وصرف وسيولة)، إدارة المشتريات والموردين (فواتير موردين ودورة شراء كاملة)، إرسال فواتير رقمية (متوافقة مع فاتورة)، إدارة المطاعم والكافيهات (منيو رقمي وكاشير ومخزون مكونات)، المتاجر الإلكترونية (ربط المتجر بالمحاسبة والمخزون)، إدارة المخزون (تتبع المواد والمواقع والتحويلات)، إدارة الأملاك والعقار (عقود وتحصيل وصيانة)، داشبورد وقرارات ذكية (لوحة تحكم مع اقتراحات تلقائية)، تقارير وإحصاءات (تقارير مالية وتشغيلية فورية)، إدارة الصلاحيات (تحكم كامل بوصول المستخدمين)، الموارد البشرية (توظيف ورواتب وحضور وأداء).
+- **أرقام**: توفير 30% بالموارد، سرعة إنجاز 75 ضعف، أكثر من 320 ميزة وإجراء ذكي.
+- **الوحدات**: الدفع الإلكتروني، نقاط البيع، إدارة المبيعات والعملاء، المحاسبة الذكية، إدارة الأصول، إدارة النقد، المشتريات والموردين، فواتير رقمية (متوافقة مع فاتورة)، إدارة المطاعم والكافيهات، المتاجر الإلكترونية، إدارة المخزون، إدارة الأملاك والعقار، داشبورد وقرارات ذكية، تقارير وإحصاءات، إدارة الصلاحيات، الموارد البشرية.
 
-لو هذي أول رسالة بالمحادثة (ما فيه سياق سابق)، رحّب بإيجاز وعرّف بنفسك كممثل لمَوْرد باسمها، واسأل العميل كيف تقدر تساعده — مثال على الأسلوب المطلوب:
-"مرحباً! معك مساعد مَوْرد 👋 كيف يمكنني مساعدتك اليوم؟"
-لا تكرر هذا الترحيب أو تعيد تعريف نفسك بالردود اللي بعدها بنفس المحادثة.
+## أسلوب الرد:
+- لو هذي أول رسالة (ما فيه سياق سابق): رحّب باختصار "مرحباً! معك مساعد مَوْرد 👋 كيف أقدر أساعدك؟"
+- لا تكرر الترحيب بالردود اللاحقة.
+- اجعل ردودك مناسبة لواتساب — مختصرة لكن مفيدة ودائماً تنتهي بسؤال.
+- لا تذكر أنك ذكاء اصطناعي إلا لو سُئلت مباشرة.
 
-جاوب على أي سؤال يخص الشركة أو منتجها أو خدماتها بأفضل ما تعرف، معتمداً على المعلومات فوق.
-لو سُئلت عن شيء لا تملك معلومة مؤكدة عنه (سعر محدد، موعد تسليم، تفاصيل عقد)، لا تختلق رقماً — قل بوضوح إنك ستتأكد وترد، ولا تعطِ رقماً أو التزاماً وهمياً.
-لا تذكر أبداً أنك نموذج ذكاء اصطناعي أو أنك تجريبي، إلا لو سُئلت مباشرة.
-اجعل ردودك قصيرة ومناسبة لمحادثة واتساب — لا فقرات طويلة.`;
+## التعامل مع الأسعار والتفاصيل:
+- لا تختلق أرقام أو أسعار.
+- لكن بدل ما تقول "ما أعرف" وتقفل الموضوع: اسأله عن نشاطه وحجم منشأته واحتياجاته عشان تقدر توجهه.
+- مثال: "الأسعار تعتمد على حجم المنشأة واحتياجاتها — ممكن تعطيني فكرة عن نوع نشاطك وكم عدد الموظفين أو الفروع عندك؟"
+
+## تسلسل المحادثة المثالي مع عميل محتمل جديد:
+1. العميل يسأل عن المنتج أو السعر ← أنت تجاوب عن المنتج وتسأله عن نشاطه
+2. يذكر نشاطه ← تربط الوحدات اللي تفيده وتسأل عن حجم المنشأة
+3. يذكر الحجم ← تشرح كيف مَوْرد يخدمه تحديداً وتسأل لو يبي تجربة مجانية أو عرض توضيحي
+4. يبدي رغبة بالتجربة ← تجمع اسمه ومعلوماته وتستخدم create_qualified_lead
+5. بعد إنشاء العميل المحتمل ← تعرض عليه مكالمة مع مندوب وتستخدم request_human_help لو وافق
+
+هذا التسلسل مرن — لو العميل أعطاك معلومات مبكر استخدمها، لو تأخر اسأل بشكل طبيعي. المهم لا تقفز لخطوة 5 من خطوة 1.`;
 
 const EXISTING_LEAD_GUIDANCE = `
-عندك سياق حقيقي عن هذا العميل موجود بالأسفل — استخدمه، لا تسأله عن معلومات موجودة عندك أصلاً.
-- لو سأل عن حالته أو مرحلته أو "وين وصلت معي"، استخدم get_customer_status.
-- أي تفصيل يذكره يستاهل يوصل لمندوبه (سبب اعتراض، طلب تعديل، ملاحظة) سجّله فوراً بـadd_note بدون ما تسأله "تبي أسجلها؟" — سجّلها وأكمل الرد بشكل طبيعي.
-- لو طلب اتصال، أبدى شكوى، أو أي شي يحتاج إنسان يتدخل، استخدم request_human_help فوراً (اجعل urgent=true لو طلب رد سريع أو كانت شكوى)، وأكّد للعميل إن مندوبه راح يتواصل معه.
-- خذ القرارات هذي بنفسك بالتسلسل الصحيح (تحقق من الحالة، ثم سجّل، ثم نبّه) بدون ما ترجع تسأل العميل خطوات إدارية لا تخصه.`;
+عندك سياق حقيقي عن هذا العميل — استخدمه ولا تسأله عن معلومات موجودة عندك.
+- لو سأل عن حالته: استخدم get_customer_status واشرح له وضعه بوضوح.
+- أي تفصيل يذكره (اعتراض، طلب تعديل، ملاحظة): سجّله فوراً بـadd_note بدون ما تستأذنه.
+- لو طلب اتصال أو أبدى شكوى: استخدم request_human_help فوراً.
+- بعد كل إجراء تسويه: أكمل النقاش بسؤال يدفع المحادثة. لا تقفل أبداً.
+- خذ القرارات بنفسك بالتسلسل الصحيح بدون ما تسأل العميل خطوات إدارية.`;
 
 const NEW_PROSPECT_GUIDANCE = `
-هذا رقم جديد ما عندنا عنه أي سجل — تعامل معه كعميل محتمل.
-- لا تسأل عن اسمه أو تفاصيله إلا لو أبدى اهتمام حقيقي (سأل عن سعر، يبي تجربة، يبي يشترك) — سؤال عام عن الشركة لا يستدعي ذلك.
-- إذا أبدى اهتمام، اسأله بشكل طبيعي متسلسل: نوع نشاطه، ثم حجمه (فروع/موظفين) إن كان مناسباً، ثم استخدم create_qualified_lead بملخص واضح لاهتمامه.
-- بعد إنشاء العميل المحتمل، اعرض عليه التواصل مع مندوب بشري (مكالمة أو عرض توضيحي). لو وافق، استخدم request_human_help.
-- خذ القرارات هذي بنفسك بالتسلسل الصحيح بدون ما ترجع تسأل خطوات إدارية لا داعي لها.`;
+هذا رقم جديد — تعامل معه كعميل محتمل وناقشه بذكاء.
+
+## ⛔ مهم جداً: كيف تتعامل مع أسئلة الأسعار
+لو سأل "كم أسعاركم" أو "أبي أعرف التكلفة":
+- لا تقل "راح نتواصل معك" ❌
+- لا تقفل الموضوع ❌
+- بدل كذا: اشرح إن الأسعار تعتمد على احتياجات المنشأة، واسأله: "عشان أعطيك تصور دقيق، وش نوع نشاطك؟" ✅
+
+## أسلوب النقاش:
+- خلّك فضولي — اسأل أسئلة ذكية عن نشاطه وتحدياته
+- اربط كل معلومة يعطيك بميزة من مَوْرد تحل مشكلته
+- لا تسأل عن اسمه من البداية — اسأل أول عن نشاطه وبعدين لما يبدي اهتمام حقيقي اسأل اسمه
+- لو أبدى اهتمام حقيقي (يبي سعر، تجربة، اشتراك): اجمع اسمه + نشاطه واستخدم create_qualified_lead
+- بعد إنشاء العميل: اعرض عليه مكالمة أو عرض توضيحي، ولو وافق استخدم request_human_help
+- كل رد لازم ينتهي بسؤال يدفع المحادثة`;
 
 interface ChatMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -98,9 +106,6 @@ export async function generateWhatsAppReply(waFrom: string, incoming: string): P
     return null;
   }
 
-  // Resolve identity once per incoming message — every tool call and the
-  // system prompt itself are built from this single lookup, so a stranger
-  // can never end up with an existing lead's tools mid-conversation.
   const lead = await findLeadByPhone(waFrom);
   const ctx: CrmToolCtx = { waFrom, lead };
   const system = BASE_SYSTEM + (lead ? EXISTING_LEAD_GUIDANCE : NEW_PROSPECT_GUIDANCE) + contextBlock(lead);
@@ -118,7 +123,7 @@ export async function generateWhatsAppReply(waFrom: string, incoming: string): P
   try {
     for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 20_000);
+      const timeout = setTimeout(() => controller.abort(), 25_000);
       const res = await fetch(OPENROUTER_ENDPOINT, {
         method: "POST",
         signal: controller.signal,
@@ -128,17 +133,16 @@ export async function generateWhatsAppReply(waFrom: string, incoming: string): P
         },
         body: JSON.stringify({
           model: MODEL,
-          temperature: 0.4,
-          max_tokens: 300,
+          temperature: 0.6,
+          max_tokens: 800,
           messages,
-          // Last round: force a plain answer so a model stuck wanting to
-          // call more tools still produces something to send the customer.
           tools: round < MAX_TOOL_ROUNDS ? toolsFor(ctx) : undefined,
         }),
       }).finally(() => clearTimeout(timeout));
 
       if (!res.ok) {
-        console.error("[whatsapp agent] model call failed", res.status);
+        const errBody = await res.text().catch(() => "");
+        console.error("[whatsapp agent] model call failed", res.status, errBody);
         return null;
       }
       const data = await res.json();
@@ -152,8 +156,6 @@ export async function generateWhatsAppReply(waFrom: string, incoming: string): P
 
       messages.push({ role: "assistant", content: choice?.content ?? "", tool_calls: toolCalls });
       for (const call of toolCalls) {
-        // ctx.lead can change mid-turn (create_qualified_lead sets it), so
-        // each call reads whatever the previous one left behind.
         const result = await runCrmTool(call.function.name, call.function.arguments, ctx);
         messages.push({ role: "tool", tool_call_id: call.id, content: result });
       }
