@@ -4,8 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { money } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
-<<<<<<< HEAD
-=======
 import {
   AlertIcon,
   CheckIcon,
@@ -15,7 +13,6 @@ import {
   BookIcon,
   MoneyIcon,
 } from "@/components/icons";
->>>>>>> main
 import type {
   InvestigationPayload,
   InvestigationActivity,

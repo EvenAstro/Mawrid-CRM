@@ -18,16 +18,6 @@ export interface EditableContact {
   notes: string | null;
 }
 
-export interface EditableContact {
-  id: string;
-  full_name: string | null;
-  phone: string | null;
-  email: string | null;
-  establishment_id?: string | null;
-  role: string | null;
-  notes: string | null;
-}
-
 export default function AddContactSlideOver({
   open,
   onClose,
@@ -100,13 +90,7 @@ export default function AddContactSlideOver({
       notes: notes.trim() || null,
       updated_at: now,
     };
-<<<<<<< HEAD
-    const { error } = isEdit
-      ? await supabase.from("contacts").update(payload).eq("id", contact!.id)
-      : await supabase.from("contacts").insert({ id: crypto.randomUUID(), ...payload, created_at: now });
-=======
     const { error } = await saveContact(payload, isEdit ? contact!.id : undefined);
->>>>>>> main
     setSaving(false);
     if (error) {
       console.error("[AddContact] save failed", error);

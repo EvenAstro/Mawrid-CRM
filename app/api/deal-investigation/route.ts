@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeDeal } from "@/lib/dealInvestigation/analyze";
 import { requireUser } from "@/lib/auth/requireUser";
-<<<<<<< HEAD
-
-export async function POST(req: NextRequest) {
-  if (!(await requireUser(req))) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-=======
 import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
@@ -19,7 +14,6 @@ export async function POST(req: NextRequest) {
       { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
     );
   }
->>>>>>> main
 
   let body: { dealId?: unknown };
   try {

@@ -3,11 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { classifyActivity } from "@/lib/classifyActivity";
 import { requireUser } from "@/lib/auth/requireUser";
-<<<<<<< HEAD
-=======
 import { checkRateLimit } from "@/lib/rateLimit";
 import { setActivitySituationalTag } from "@/lib/models/activities";
->>>>>>> main
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -17,9 +14,6 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
  * classifyActivity() must never run in client code.
  */
 export async function POST(req: NextRequest) {
-<<<<<<< HEAD
-  if (!(await requireUser(req))) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-=======
   const caller = await requireUser(req);
   if (!caller) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
@@ -30,7 +24,6 @@ export async function POST(req: NextRequest) {
       { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
     );
   }
->>>>>>> main
 
   let body: { activityId?: unknown; body?: unknown };
   try {

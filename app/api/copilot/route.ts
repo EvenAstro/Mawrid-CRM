@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildSnapshot } from "@/lib/copilot/snapshot";
 import { requireUser } from "@/lib/auth/requireUser";
-<<<<<<< HEAD
-=======
 import { fetchProfileName } from "@/lib/profiles";
 import { checkRateLimit } from "@/lib/rateLimit";
->>>>>>> main
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct";
@@ -141,9 +138,6 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-<<<<<<< HEAD
-  if (!(await requireUser(req))) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-=======
   const caller = await requireUser(req);
   if (!caller) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
@@ -154,7 +148,6 @@ export async function POST(req: NextRequest) {
       { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
     );
   }
->>>>>>> main
 
   let body: { messages?: unknown; context?: unknown };
   try {

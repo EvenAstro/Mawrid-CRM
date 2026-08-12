@@ -23,54 +23,29 @@ export const DATE_LOCALE = "ar-SA-u-ca-gregory-nu-latn";
 
 const nf = new Intl.NumberFormat("en-US");
 
-<<<<<<< HEAD
-/** "٢ يوليو · ١:٠٠ م" — the canonical timestamp format for the whole app. */
-=======
 /** "9 أغسطس · 01:00 م" — the canonical timestamp format for the whole app. */
->>>>>>> main
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-<<<<<<< HEAD
-  const date = d.toLocaleDateString("ar-SA", { month: "short", day: "numeric" });
-  const time = d.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
-  return `${date} · ${time}`;
-}
-
-/** "٢ يوليو ٢٠٢٦" — date only. */
-=======
   const date = d.toLocaleDateString(DATE_LOCALE, { month: "short", day: "numeric" });
   const time = d.toLocaleTimeString(DATE_LOCALE, { hour: "2-digit", minute: "2-digit" });
   return `${date} · ${time}`;
 }
 
 /** "9 أغسطس 2026" — date only. */
->>>>>>> main
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-<<<<<<< HEAD
-  return d.toLocaleDateString("ar-SA", { year: "numeric", month: "short", day: "numeric" });
-}
-
-/** "١:٠٠ م" — time only. */
-=======
   return d.toLocaleDateString(DATE_LOCALE, { year: "numeric", month: "short", day: "numeric" });
 }
 
 /** "1:00 م" — time only. */
->>>>>>> main
 export function formatTime(iso: string | null | undefined): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-<<<<<<< HEAD
-  return d.toLocaleTimeString("ar-SA", { hour: "numeric", minute: "2-digit" });
-}
-
-=======
   return d.toLocaleTimeString(DATE_LOCALE, { hour: "numeric", minute: "2-digit" });
 }
 
@@ -84,7 +59,6 @@ export function formatLongDate(d: Date): string {
   });
 }
 
->>>>>>> main
 /** "+966 50 123 4567" — group a raw phone number into readable chunks
  * instead of one unbroken digit string. Saudi mobile numbers (+966 5XXXXXXXX)
  * get the natural 2-3-4 grouping; anything else falls back to 3-digit groups
@@ -100,15 +74,12 @@ export function formatPhone(phone: string | null | undefined): string {
     return `+966 ${rest.slice(0, 2)} ${rest.slice(2, 5)} ${rest.slice(5)}`;
   }
 
-<<<<<<< HEAD
-=======
   // Local Saudi format (05XXXXXXXX, 10 digits) — same 2-3-4 grouping as the
   // +966 form above, just without the country code.
   if (digits.startsWith("05") && digits.length === 10) {
     return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
   }
 
->>>>>>> main
   const groups: string[] = [];
   for (let i = 0; i < digits.length; i += 3) groups.push(digits.slice(i, i + 3));
   return plus + groups.join(" ");
@@ -126,11 +97,7 @@ export function dayHeader(iso: string | null | undefined): string {
   const diff = Math.round((today.getTime() - day.getTime()) / 86_400_000);
   if (diff === 0) return "اليوم";
   if (diff === 1) return "أمس";
-<<<<<<< HEAD
-  return d.toLocaleDateString("ar-SA", { month: "short", day: "numeric" });
-=======
   return d.toLocaleDateString(DATE_LOCALE, { month: "short", day: "numeric" });
->>>>>>> main
 }
 
 /** Sortable day key (YYYY-MM-DD) for grouping. */
@@ -183,8 +150,6 @@ export function todayInput(): string {
   return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10);
 }
 
-<<<<<<< HEAD
-=======
 /**
  * Now, formatted for a `datetime-local` input (YYYY-MM-DDTHH:mm) in the
  * user's own timezone.
@@ -199,7 +164,6 @@ export function nowLocalInput(): string {
   return new Date(d.getTime() - off * 60000).toISOString().slice(0, 16);
 }
 
->>>>>>> main
 /** Build a display name from a Profile record. */
 export function profileName(p: { full_name?: string | null; first_name?: string | null; last_name?: string | null } | undefined | null): string {
   if (!p) return "";

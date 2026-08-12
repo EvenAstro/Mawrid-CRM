@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/requireUser";
-<<<<<<< HEAD
-=======
 import { checkRateLimit } from "@/lib/rateLimit";
->>>>>>> main
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct";
@@ -20,9 +17,6 @@ const SYSTEM = `أنت محلل مبيعات متخصص مدمج في لوحة �
 - إذا سألوا عن توقعات أو استراتيجية، كن محدداً ومستنداً للبيانات`;
 
 export async function POST(req: NextRequest) {
-<<<<<<< HEAD
-  if (!(await requireUser(req))) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-=======
   const caller = await requireUser(req);
   if (!caller) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
@@ -33,7 +27,6 @@ export async function POST(req: NextRequest) {
       { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
     );
   }
->>>>>>> main
 
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "OPENROUTER_API_KEY missing" }, { status: 500 });

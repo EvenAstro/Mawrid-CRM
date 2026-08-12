@@ -46,34 +46,9 @@ export async function fetchBriefingData(): Promise<BriefingData> {
   const userId = userRes.user?.id;
 
   const [todayRes, overdueRes, dealsRes] = await Promise.all([
-<<<<<<< HEAD
-    supabase
-      .from("tasks")
-      .select("id, title, due_at, depends_on_task_id")
-      .gte("due_at", todayStr)
-      .lt("due_at", tomorrow.toISOString())
-      .is("completed_at", null)
-      .eq("assignee_uid", userId ?? "")
-      .order("due_at", { ascending: true }),
-    supabase
-      .from("tasks")
-      .select("id, title, due_at, depends_on_task_id")
-      .lt("due_at", todayStr)
-      .is("completed_at", null)
-      .eq("assignee_uid", userId ?? "")
-      .order("due_at", { ascending: true })
-      .limit(5),
-    supabase
-      .from("deals")
-      .select("id, name, lead_id, updated_at, expected_value_minor, leads(full_name), pipeline_stages(terminal_type)")
-      .is("deleted_at", null)
-      .order("updated_at", { ascending: true })
-      .limit(30),
-=======
     fetchTasksDueToday(userId ?? "", todayStr, tomorrow.toISOString()),
     fetchOverdueTasks(userId ?? "", todayStr),
     fetchStaleDealsForBriefing(),
->>>>>>> main
   ]);
 
   let todayTasks = (todayRes.data as unknown as BriefingTask[]) ?? [];
@@ -82,14 +57,7 @@ export async function fetchBriefingData(): Promise<BriefingData> {
   const allBriefingTasks = [...todayTasks, ...overdueTasks];
   const depIds = allBriefingTasks.map((t) => t.depends_on_task_id).filter((id): id is string => !!id);
   if (depIds.length > 0) {
-<<<<<<< HEAD
-    const { data: depData } = await supabase
-      .from("tasks")
-      .select("id, title, completed_at")
-      .in("id", depIds);
-=======
     const { data: depData } = await fetchTasksByIds(depIds);
->>>>>>> main
     const depMap = new Map((depData as { id: string; title: string | null; completed_at: string | null }[] ?? []).map((d) => [d.id, d]));
     function markBlocked(tasks: BriefingTask[]): BriefingTask[] {
       return tasks.map((t) => {

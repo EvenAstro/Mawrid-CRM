@@ -4,11 +4,8 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { getContext, getDealMeta, type MatchTier } from "@/lib/nextBestAction/getContext";
 import { buildPrompt } from "@/lib/nextBestAction/buildPrompt";
 import { requireUser } from "@/lib/auth/requireUser";
-<<<<<<< HEAD
-=======
 import { checkRateLimit } from "@/lib/rateLimit";
 import { fetchCachedRecommendation, upsertRecommendationCache } from "@/lib/models/nextBestActionCache";
->>>>>>> main
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -50,9 +47,6 @@ function isValidModelOutput(v: unknown): v is Omit<Recommendation, "matchTier"> 
 }
 
 export async function POST(req: NextRequest) {
-<<<<<<< HEAD
-  if (!(await requireUser(req))) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-=======
   const caller = await requireUser(req);
   if (!caller) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
@@ -63,7 +57,6 @@ export async function POST(req: NextRequest) {
       { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
     );
   }
->>>>>>> main
 
   let body: { dealId?: unknown };
   try {

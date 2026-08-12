@@ -116,11 +116,7 @@ interface Suggestion {
 function SuggestionPopover({ suggestion, onClose }: { suggestion: Suggestion; onClose: () => void }) {
   return (
     <div
-<<<<<<< HEAD
-      className="absolute top-0 z-50 w-64 rounded-xl border border-border-light bg-white p-3 shadow-[0_12px_32px_rgba(15,23,20,0.18)]"
-=======
       className="absolute top-0 z-50 w-64 rounded-[var(--radius-md)] border border-border-light bg-[var(--surface-raised)] p-3 shadow-[0_12px_32px_rgba(15,23,20,0.18)]"
->>>>>>> main
       style={{ right: -272 }}
     >
       <div className="mb-1.5 flex items-center justify-between">
@@ -421,11 +417,7 @@ export default function DailyBriefing() {
           --briefing-rail-width custom property set above, so it still pushes <main>
           instead of overlaying it. */}
       <div
-<<<<<<< HEAD
-        className="fixed left-0 top-20 z-30 hidden overflow-hidden rounded-r-2xl border border-s-0 border-border-light bg-white shadow-[0_8px_28px_rgba(15,23,20,0.12)] transition-[width] duration-300 ease-in-out md:flex"
-=======
         className="fixed left-0 top-20 z-30 hidden overflow-hidden rounded-r-2xl border border-s-0 border-border-light bg-[var(--surface-raised)] shadow-[0_8px_28px_rgba(15,23,20,0.12)] transition-[width] duration-300 ease-in-out md:flex"
->>>>>>> main
         style={{ width: collapsed ? RAIL_COLLAPSED : RAIL_EXPANDED, maxHeight: collapsed ? undefined : "min(72vh, 560px)" }}
       >
         {/* Always-visible tab — the permanent, unmistakable "you have things to do" affordance. */}
@@ -489,15 +481,6 @@ export default function DailyBriefing() {
                           return (
                             <div
                               key={t.id}
-<<<<<<< HEAD
-                              className={`relative flex items-center gap-2.5 overflow-hidden rounded-lg border border-border-light px-2.5 py-2 transition-opacity ${blocked ? "bg-gray-50 opacity-60" : "bg-white"} ${done ? "opacity-40" : ""}`}
-                            >
-                              {overdue && !blocked && <span className="absolute bottom-1 left-0 top-1 w-1 rounded-full bg-danger" />}
-                              {blocked && <span className="absolute bottom-1 left-0 top-1 w-1 rounded-full bg-amber-400" />}
-                              {blocked ? (
-                                <span title={`بانتظار: ${t.blockedByTitle || "مهمة"}`} className="flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full border-2 border-dashed border-amber-300 ml-1">
-                                  <svg viewBox="0 0 16 16" fill="currentColor" className="h-2.5 w-2.5 text-amber-400"><path fillRule="evenodd" d="M8 1a7 7 0 100 14A7 7 0 008 1zM7.25 4.5a.75.75 0 011.5 0v3.25H11a.75.75 0 010 1.5H7.25V4.5z" clipRule="evenodd" /></svg>
-=======
                               className={`relative flex items-center gap-2.5 overflow-hidden rounded-[var(--radius-sm)] border border-border-light px-2.5 py-2 transition-opacity ${blocked ? "bg-[var(--surface-sunken)] opacity-60" : "bg-[var(--surface-raised)]"} ${done ? "opacity-40" : ""}`}
                             >
                               {overdue && !blocked && <span className="absolute bottom-1 left-0 top-1 w-1 rounded-full bg-danger" />}
@@ -505,18 +488,13 @@ export default function DailyBriefing() {
                               {blocked ? (
                                 <span title={`بانتظار: ${t.blockedByTitle || "مهمة"}`} className="flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full border-2 border-dashed border-[var(--status-warning-border)] ml-1">
                                   <svg viewBox="0 0 16 16" fill="currentColor" className="h-2.5 w-2.5 text-[var(--brand-amber-500)]"><path fillRule="evenodd" d="M8 1a7 7 0 100 14A7 7 0 008 1zM7.25 4.5a.75.75 0 011.5 0v3.25H11a.75.75 0 010 1.5H7.25V4.5z" clipRule="evenodd" /></svg>
->>>>>>> main
                                 </span>
                               ) : (
                                 <button
                                   onClick={() => setCompleteTarget(t)}
                                   aria-label="إتمام المهمة"
                                   className={`flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full border-2 transition-colors ${
-<<<<<<< HEAD
-                                    done ? "border-primary bg-primary" : overdue ? "ml-1 border-red-200 hover:border-primary" : "border-gray-200 hover:border-primary"
-=======
                                     done ? "border-primary bg-primary" : overdue ? "ml-1 border-[var(--status-danger-border)] hover:border-primary" : "border-[var(--border-default)] hover:border-primary"
->>>>>>> main
                                   }`}
                                 >
                                   {done && (
@@ -526,17 +504,10 @@ export default function DailyBriefing() {
                                   )}
                                 </button>
                               )}
-<<<<<<< HEAD
-                              <span dir="auto" className={`min-w-0 flex-1 truncate text-[13px] ${blocked ? "text-muted" : "text-ink-secondary"} ${done ? "line-through" : ""}`}>
-                                {t.title || "مهمة"}
-                              </span>
-                              <span className={`flex-none font-mono text-[11px] ${blocked ? "text-amber-500" : overdue ? "font-semibold text-danger" : "text-muted"}`}>
-=======
                               <span dir="auto" className={`min-w-0 flex-1 truncate t-body-sm ${blocked ? "text-muted" : "text-ink-secondary"} ${done ? "line-through" : ""}`}>
                                 {t.title || "مهمة"}
                               </span>
                               <span className={`flex-none font-mono t-micro ${blocked ? "text-[var(--brand-amber-500)]" : overdue ? "font-semibold text-danger" : "text-muted"}`}>
->>>>>>> main
                                 {blocked ? "معلّقة" : overdue ? "متأخرة" : timeAr(t.due_at)}
                               </span>
                             </div>

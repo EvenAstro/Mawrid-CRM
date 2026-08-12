@@ -179,6 +179,65 @@ export async function createLeadFromWhatsApp(input: {
   return { leadId: id, error: null };
 }
 
+/**
+ * Creates a follow-up task on a lead — how the agent turns "I'd like a demo
+ * Sunday morning" into something that actually shows up in a rep's task
+ * list instead of a promise buried in a chat log. Unassigned when the lead
+ * has no owner, matching createLeadFromWhatsApp's deliberate choice.
+ */
+export async function createWhatsAppTask(input: {
+  leadId: string;
+  title: string;
+  description: string;
+  dueAt: string | null;
+  assigneeId: string | null;
+}): Promise<{ error: string | null }> {
+  const now = new Date().toISOString();
+  const { error } = await supabaseAdmin.from("tasks").insert({
+    id: crypto.randomUUID(),
+    title: input.title,
+    description: input.description,
+    due_at: input.dueAt,
+    task_type_id: null,
+    assignee_uid: input.assigneeId,
+    lead_id: input.leadId,
+    entity_type: "lead",
+    entity_id: input.leadId,
+    created_at: now,
+    updated_at: now,
+  });
+  if (error) {
+    console.error("[whatsapp crm] createWhatsAppTask failed", error);
+    return { error: "تعذر إنشاء المهمة" };
+  }
+  return { error: null };
+}
+
+/**
+ * Appends newly-learned qualification detail to the lead's notes. The agent
+ * discovers a customer's business type and size over several messages, and
+ * that has to survive past the chat log — appending (rather than replacing)
+ * keeps whatever a human wrote there before.
+ */
+export async function appendLeadNotes(leadId: string, addition: string): Promise<{ error: string | null }> {
+  const { data, error: readErr } = await supabaseAdmin.from("leads").select("notes").eq("id", leadId).maybeSingle();
+  if (readErr) {
+    console.error("[whatsapp crm] appendLeadNotes read failed", readErr);
+    return { error: "تعذر تحديث البيانات" };
+  }
+  const existing = (data?.notes ?? "").trim();
+  const next = existing ? `${existing}\n${addition}` : addition;
+  const { error } = await supabaseAdmin
+    .from("leads")
+    .update({ notes: next, updated_at: new Date().toISOString() })
+    .eq("id", leadId);
+  if (error) {
+    console.error("[whatsapp crm] appendLeadNotes write failed", error);
+    return { error: "تعذر تحديث البيانات" };
+  }
+  return { error: null };
+}
+
 /** Logs an activity on a lead, tagged so it's obviously agent-authored when
  *  a rep reviews the timeline later. */
 export async function logWhatsAppActivity(leadId: string, body: string): Promise<{ error: string | null }> {

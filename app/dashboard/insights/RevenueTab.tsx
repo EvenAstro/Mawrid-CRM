@@ -8,11 +8,8 @@ import {
   type DealCategory,
 } from "@/lib/revenueIntelligence/buildRevenueIntelligence";
 import { supabase } from "@/lib/supabase";
-<<<<<<< HEAD
-=======
 import { ChartUpIcon, CheckIcon, ScaleIcon, XIcon } from "@/components/icons";
 import { money, formatDate, DATE_LOCALE } from "@/lib/format";
->>>>>>> main
 
 /* ═══ Global CSS ══════════════════════════════════════════════════════════ */
 const GLOBAL_CSS = `
@@ -55,15 +52,9 @@ const C = {
   // Rose danger
   r1:"var(--status-danger-fg)", r2:"var(--status-danger-fg)", r3:"var(--status-danger-fg)", r4:"var(--status-danger-fg)", r5:"var(--brand-red-500)", r6:"var(--brand-red-500)",
   // Neutral
-<<<<<<< HEAD
-  tx:"#0f172a", tx2:"#475569", tx3:"#94a3b8", tx4:"#cbd5e1",
-  bg:"#ffffff", bg2:"#f8faf9", bg3:"#f0faf8",
-  border:"#d6ece5", borderL:"#d6ece5", borderD:"#c2ddd3",
-=======
   tx:"var(--content-primary)", tx2:"var(--content-secondary)", tx3:"var(--content-tertiary)", tx4:"var(--border-strong)",
   bg:"var(--surface-raised)", bg2:"var(--surface-sunken)", bg3:"var(--surface-accent-subtle)",
   border:"var(--border-subtle)", borderL:"var(--border-subtle)", borderD:"var(--brand-teal-200)",
->>>>>>> main
 };
 
 const CAT: Record<string,{label:string;sub:string;hex:string;bg:string;ring:string;grad:string}> = {
@@ -184,21 +175,13 @@ function HealthCard({data,ctx}:{data:RevenueIntelligenceData;ctx:string}) {
 
   return (
     <div className="ri-card h-full flex flex-col" style={{animationDelay:".04s"}}>
-<<<<<<< HEAD
-      <div className="relative rounded-2xl border border-[#d6ece5] bg-white ri-lift cursor-pointer group flex-1 flex flex-col shadow-[0_2px_8px_rgba(26,92,79,0.05)]"
-=======
       <div className="relative rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] ri-lift cursor-pointer group flex-1 flex flex-col e-1"
->>>>>>> main
         onClick={explain}>
         <div className="relative p-5 flex flex-col flex-1">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-<<<<<<< HEAD
-              <div className="h-6 w-6 rounded-lg flex items-center justify-center" style={{backgroundColor:`${h.color}17`,color:h.color}}>
-=======
               <div className="h-6 w-6 rounded-[var(--radius-sm)] flex items-center justify-center" style={{backgroundColor:`${h.color}17`,color:h.color}}>
->>>>>>> main
                 <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 8h3l2-5 2 10 2-5h3"/></svg>
               </div>
               <div>
@@ -256,11 +239,7 @@ function HealthCard({data,ctx}:{data:RevenueIntelligenceData;ctx:string}) {
 
       {/* AI panel */}
       {open&&(
-<<<<<<< HEAD
-        <div className="ri-in mt-2.5 rounded-2xl border overflow-hidden" style={{background:"linear-gradient(145deg,#0f1729,#141c2e)",borderColor:`${h.color}20`,boxShadow:"0 12px 28px rgba(0,0,0,.18)"}}>
-=======
         <div className="ri-in mt-2.5 rounded-[var(--radius-lg)] border overflow-hidden" style={{background:"linear-gradient(145deg,var(--surface-inverse-deep),var(--surface-inverse))",borderColor:`${h.color}20`,boxShadow:"0 12px 28px rgba(0,0,0,.18)"}}>
->>>>>>> main
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]">
             <div className="flex items-center gap-2">
               <div className="h-5 w-5 rounded-[var(--radius-xs)] flex items-center justify-center" style={{background:h.grad}}>
@@ -343,15 +322,9 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={onClose}>
-<<<<<<< HEAD
-      <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-2xl"/>
-      <div className="ri-in relative w-full max-w-lg overflow-hidden rounded-2xl" onClick={e=>e.stopPropagation()}
-        style={{background:"#141c2e",border:"1px solid rgba(255,255,255,.08)",boxShadow:"0 32px 80px rgba(0,0,0,.4)"}}>
-=======
       <div className="absolute inset-0 bg-[color-mix(in_srgb,var(--surface-inverse-deep)_60%,transparent)] backdrop-blur-2xl"/>
       <div className="ri-in relative w-full max-w-lg overflow-hidden rounded-[var(--radius-lg)]" onClick={e=>e.stopPropagation()}
         style={{background:"var(--surface-inverse)",border:"1px solid rgba(255,255,255,.08)",boxShadow:"0 32px 80px rgba(0,0,0,.4)"}}>
->>>>>>> main
         <div className="absolute top-[-40px] right-[-20px] h-48 w-48 pointer-events-none" style={{background:"radial-gradient(circle,rgba(16,185,129,.18),transparent 70%)"}}/>
         <div className="absolute bottom-[-30px] left-[-20px] h-40 w-40 pointer-events-none" style={{background:"radial-gradient(circle,rgba(52,211,153,.1),transparent 70%)"}}/>
 
@@ -431,20 +404,12 @@ function CoachModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}
 function KpiCard({label,note,value,fmt,unit,accent,icon,spark,ring,trend}:
   {label:string;note:string;value:number;fmt?:(n:number)=>string;unit?:string;accent:string;icon:React.ReactNode;spark?:number[];ring?:{pct:number};trend?:{val:number;up:boolean}}) {
   return (
-<<<<<<< HEAD
-    <div className="ri-card ri-lift relative rounded-2xl border border-[#d6ece5] bg-white shadow-[0_2px_8px_rgba(26,92,79,0.05)] h-full flex flex-col">
-=======
     <div className="ri-card ri-lift relative rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] e-1 h-full flex flex-col">
->>>>>>> main
       <div className="relative p-5 flex flex-col flex-1">
         {/* Header row */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-2.5">
-<<<<<<< HEAD
-            <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{backgroundColor:`${accent}17`,color:accent}}>
-=======
             <div className="h-9 w-9 rounded-[var(--radius-md)] flex items-center justify-center" style={{backgroundColor:`${accent}17`,color:accent}}>
->>>>>>> main
               {icon}
             </div>
             <div>
@@ -653,125 +618,6 @@ function WeeklyChart({data}:{data:RevenueIntelligenceData["weeklyHistory"]}) {
 
 /* ═══ AI Chat Panel ═══════════════════════════════════════════════════════ */
 interface Msg{role:"user"|"assistant";content:string}
-<<<<<<< HEAD
-function AiPanel({ctx}:{ctx:string}) {
-  const [msgs,setMsgs]=useState<Msg[]>([]);
-  const [val,setVal]=useState("");
-  const [busy,setBusy]=useState(false);
-  const end=useRef<HTMLDivElement>(null);
-  const QUICK=["أي صفقة أركّز عليها؟","ليش هذي الصفقات في خطر؟","كيف أحسّن نسبة الفوز؟","توقعك لنهاية الشهر؟"];
-
-  async function send(text:string){
-    const q=text.trim();if(!q||busy)return;setVal("");
-    const next:Msg[]=[...msgs,{role:"user",content:q}];
-    setMsgs(next);setBusy(true);
-    try{const reply=await callAI(next,ctx);setMsgs([...next,{role:"assistant",content:reply}]);}
-    catch{setMsgs([...next,{role:"assistant",content:"تعذّر الاتصال."}]);}
-    finally{setBusy(false);}
-  }
-  useEffect(()=>{end.current?.scrollIntoView({behavior:"smooth"});},[msgs,busy]);
-
-  return (
-    <div className="flex flex-col h-full relative" style={{background:"#141c2e"}}>
-      {/* noise */}
-      <div className="absolute inset-0 opacity-[0.035] pointer-events-none"
-        style={{backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",backgroundSize:"120px"}}/>
-      <div className="absolute top-[-20px] right-[-20px] h-48 w-48 pointer-events-none" style={{background:"radial-gradient(circle,rgba(16,185,129,.16),transparent 70%)",animation:"ri-orb 8s ease-in-out infinite"}}/>
-      <div className="absolute bottom-[80px] left-[-30px] h-36 w-36 pointer-events-none" style={{background:"radial-gradient(circle,rgba(52,211,153,.1),transparent 70%)",animation:"ri-orb2 10s ease-in-out infinite"}}/>
-
-      {/* header */}
-      <div className="relative px-5 pt-5 pb-4 border-b border-white/[0.06] flex items-center gap-3">
-        <div className="relative flex-none">
-          <div className="h-10 w-10 rounded-xl flex items-center justify-center ri-shine-wrap"
-            style={{background:"linear-gradient(135deg,#059669,#34d399)",boxShadow:"0 4px 16px rgba(16,185,129,.35)"}}>
-            <svg viewBox="0 0 24 24" className="h-5 w-5">
-              <rect x="4" y="7" width="16" height="12" rx="3" fill="none" stroke="white" strokeWidth="1.5"/>
-              <circle cx="9" cy="12" fill="#6ee7b7"><animate attributeName="r" values="1.5;2;1.5" dur="2.4s" repeatCount="indefinite"/></circle>
-              <circle cx="15" cy="12" fill="#6ee7b7"><animate attributeName="r" values="1.5;2;1.5" dur="2.4s" begin=".5s" repeatCount="indefinite"/></circle>
-              <path d="M9 16h6" stroke="white" strokeWidth="1.3" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 border-2" style={{borderColor:"#011d16"}}>
-            <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-40"/>
-          </span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold text-white">محلل الإيرادات</p>
-          <p className="text-[9px] text-white/25 mt-0.5">اسأله عن خط المبيعات</p>
-        </div>
-        <div className="flex items-center gap-1 rounded-full px-2 py-1 border" style={{background:"rgba(16,185,129,.08)",borderColor:"rgba(16,185,129,.15)"}}>
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"/>
-          <span className="text-[8px] font-black text-emerald-400/70 uppercase tracking-widest">مباشر</span>
-        </div>
-      </div>
-
-      {/* messages */}
-      <div className="relative flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-0">
-        {msgs.length===0&&(
-          <div className="pt-1 space-y-2">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="h-px flex-1" style={{background:"linear-gradient(90deg,transparent,rgba(255,255,255,.08))"}}/>
-              <p className="text-[8px] text-white/20 text-center uppercase tracking-[.25em] font-black">أسئلة مقترحة</p>
-              <div className="h-px flex-1" style={{background:"linear-gradient(90deg,rgba(255,255,255,.08),transparent)"}}/>
-            </div>
-            {QUICK.map((q,idx)=>(
-              <button key={q} onClick={()=>send(q)}
-                className="w-full text-right text-[11.5px] text-white/50 hover:text-white/90 border border-white/[0.06] hover:border-emerald-500/25 rounded-xl px-4 py-3 transition-all group flex items-center gap-2.5"
-                style={{background:"rgba(255,255,255,.025)",animation:`ri-up .5s cubic-bezier(.22,1,.36,1) ${idx*.06+.1}s both`}}>
-                <span className="h-5 w-5 rounded-md flex items-center justify-center text-[10px] font-bold flex-none group-hover:bg-emerald-500/20 transition-colors" style={{background:"rgba(16,185,129,.1)",color:"#6ee7b7"}}>{idx+1}</span>
-                <span className="flex-1">{q}</span>
-                <svg viewBox="0 0 12 12" className="h-3 w-3 flex-none opacity-40 group-hover:opacity-70 transition" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 3l3 3-3 3"/></svg>
-              </button>
-            ))}
-          </div>
-        )}
-        {msgs.map((m,i)=>(
-          <div key={i} className={`flex gap-2 ${m.role==="user"?"flex-row-reverse":""}`}>
-            {m.role==="assistant"&&(
-              <div className="h-6 w-6 rounded-lg flex-none flex items-center justify-center mt-0.5"
-                style={{background:"linear-gradient(135deg,#059669,#34d399)",boxShadow:"0 2px 8px rgba(16,185,129,.25)"}}>
-                <svg viewBox="0 0 14 14" className="h-3 w-3"><rect x="1.5" y="3" width="11" height="8" rx="2" fill="none" stroke="white" strokeWidth="1.2"/><circle cx="5" cy="6.5" r="1" fill="#6ee7b7"/><circle cx="9" cy="6.5" r="1" fill="#6ee7b7"/></svg>
-              </div>
-            )}
-            <div className={`max-w-[85%] px-3.5 py-2.5 text-[11.5px] leading-[1.75] whitespace-pre-wrap rounded-xl ${m.role==="user"?"text-white rounded-tl-sm":"text-white/75 rounded-tr-sm border border-white/[0.06]"}`}
-              style={m.role==="user"?{background:"linear-gradient(135deg,#059669,#10b981)",boxShadow:"0 4px 12px rgba(16,185,129,.22)"}:{background:"rgba(255,255,255,.035)"}}>
-              {m.content}
-            </div>
-          </div>
-        ))}
-        {busy&&(
-          <div className="flex gap-2">
-            <div className="h-6 w-6 rounded-lg flex-none flex items-center justify-center mt-0.5" style={{background:"linear-gradient(135deg,#059669,#34d399)"}}>
-              <svg viewBox="0 0 14 14" className="h-3 w-3"><rect x="1.5" y="3" width="11" height="8" rx="2" fill="none" stroke="white" strokeWidth="1.2"/><circle cx="5" cy="6.5" r="1" fill="#6ee7b7"/><circle cx="9" cy="6.5" r="1" fill="#6ee7b7"/></svg>
-            </div>
-            <div className="rounded-xl rounded-tr-sm px-3.5 py-2.5 flex items-center gap-1.5 border border-white/[0.06]" style={{background:"rgba(255,255,255,.03)"}}>
-              {[0,1,2].map(i=><span key={i} className="h-1.5 w-1.5 rounded-full bg-emerald-400/60 animate-bounce" style={{animationDelay:`${i*.15}s`}}/>)}
-            </div>
-          </div>
-        )}
-        <div ref={end}/>
-      </div>
-
-      {/* input */}
-      <div className="relative px-4 pb-4 pt-2 border-t border-white/[0.06]">
-        <div className="flex items-end gap-2 rounded-xl px-3 py-2 border transition-all focus-within:border-emerald-500/30"
-          style={{background:"rgba(255,255,255,.03)",borderColor:"rgba(255,255,255,.07)"}}>
-          <textarea value={val} onChange={e=>setVal(e.target.value)}
-            onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send(val);}}}
-            placeholder="اسأل عن خط مبيعاتك…" rows={1} style={{maxHeight:72}}
-            className="flex-1 bg-transparent text-[11.5px] text-white/70 placeholder-white/20 resize-none focus:outline-none leading-relaxed"/>
-          <button onClick={()=>send(val)} disabled={!val.trim()||busy}
-            className="h-7 w-7 rounded-lg flex items-center justify-center flex-none transition-all disabled:opacity-15 hover:scale-105 active:scale-95"
-            style={{background:"linear-gradient(135deg,#059669,#34d399)",boxShadow:"0 3px 10px rgba(16,185,129,.35)"}}>
-            <svg viewBox="0 0 16 16" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 -rotate-90"><path d="M8 12V4M4 8l4-4 4 4"/></svg>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-=======
->>>>>>> main
 
 /* ═══ Deal Modal ══════════════════════════════════════════════════════════ */
 function DealModal({deal,ctx,onClose}:{deal:RIDeal;ctx:string;onClose:()=>void}) {
@@ -914,11 +760,7 @@ function Row({deal,onClick}:{deal:RIDeal;onClick:()=>void}) {
 function SectionHead({icon,title,sub,accent}:{icon:React.ReactNode;title:string;sub:string;grad?:string;accent:string}) {
   return (
     <div className="flex items-center gap-3 mb-5">
-<<<<<<< HEAD
-      <div className="h-9 w-9 rounded-xl flex items-center justify-center flex-none" style={{backgroundColor:`${accent}17`,color:accent}}>
-=======
       <div className="h-9 w-9 rounded-[var(--radius-md)] flex items-center justify-center flex-none" style={{backgroundColor:`${accent}17`,color:accent}}>
->>>>>>> main
         {icon}
       </div>
       <div>
@@ -988,13 +830,8 @@ export default function RevenueTab() {
       <div dir="rtl" className="flex flex-col gap-5 pb-12">
 
         {/* ─── HERO ─────────────────────────────────────────── */}
-<<<<<<< HEAD
-        <div className="ri-up relative overflow-hidden rounded-3xl text-white"
-          style={{background:"#141c2e"}}>
-=======
         <div className="ri-up relative overflow-hidden rounded-[var(--radius-lg)] text-white"
           style={{background:"var(--surface-inverse)"}}>
->>>>>>> main
           <div className="absolute top-[-50px] right-[-30px] h-72 w-72 pointer-events-none"
             style={{background:"radial-gradient(circle,rgba(52,211,153,.2),transparent 65%)",animation:"ri-orb 8s ease-in-out infinite"}}/>
           <div className="absolute bottom-[-50px] left-[15%] h-56 w-56 pointer-events-none"
@@ -1117,16 +954,9 @@ export default function RevenueTab() {
                       </div>
                     </button>
                     <button onClick={()=>setCoachDeal(deal)}
-<<<<<<< HEAD
-                      className="w-full flex items-center justify-center gap-2 py-2.5 text-[10.5px] font-bold border-t transition hover:opacity-90 text-white"
-                      style={{backgroundColor:"#1a5c4f",borderColor:"#fecaca"}}>
-                      <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round"><path d="M6 1.5l4.5 8H1.5z"/><path d="M6 5v2M6 9h.01"/></svg>
-                      خطة إغلاق AI
-=======
                       className="w-full flex items-center justify-center gap-2 py-2.5 t-micro font-bold border-t transition hover:opacity-90 text-white"
                       style={{backgroundColor:"var(--brand-teal-700)",borderColor:"var(--status-danger-border)"}}>
                       <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round"><path d="M6 1.5l4.5 8H1.5z"/><path d="M6 5v2M6 9h.01"/></svg>خطة إغلاق AI
->>>>>>> main
                     </button>
                   </div>
                 );
@@ -1140,23 +970,6 @@ export default function RevenueTab() {
           <div className="xl:col-span-2 flex flex-col gap-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Forecast */}
-<<<<<<< HEAD
-              <div className="ri-up bg-white rounded-2xl border p-5" style={{animationDelay:".08s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
-                <SectionHead grad="linear-gradient(135deg,#065f46,#10b981)" accent={C.e4}
-                  icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M2 2v16h16"/><path d="m6 13 3-3 3 3 4-4"/></svg>}
-                  title="توقعات الإيرادات" sub="3 سيناريوهات لنهاية الشهر"/>
-                <ForecastBars scenarios={data.forecast}/>
-                <div className="mt-4 rounded-lg px-3 py-2 border flex items-center gap-2.5" style={{background:"linear-gradient(135deg,#ecfdf5,#d1fae5)",borderColor:"#a7f3d0"}}>
-                  <div className="h-5 w-5 rounded-md flex items-center justify-center flex-none" style={{background:C.e4,boxShadow:"0 2px 6px rgba(5,150,105,.3)"}}>
-                    <svg viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" className="h-2.5 w-2.5"><path d="M2 6l3 3 5-5"/></svg>
-                  </div>
-                  <p className="text-[10px] font-semibold text-emerald-800">يشمل <strong>{sarFull(data.wonThisMonthSAR)} ر.س</strong> مُغلق بالفعل</p>
-                </div>
-              </div>
-              {/* Distribution */}
-              <div className="ri-up bg-white rounded-2xl border p-5" style={{animationDelay:".14s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
-                <SectionHead grad="linear-gradient(135deg,#4338ca,#818cf8)" accent={C.i4}
-=======
               <div className="ri-up bg-[var(--surface-raised)] rounded-[var(--radius-lg)] border p-[var(--space-card-pad)]" style={{animationDelay:".08s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
                 <SectionHead grad="linear-gradient(135deg,var(--status-success-fg),var(--brand-green-500))" accent={C.e4}
                   icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M2 2v16h16"/><path d="m6 13 3-3 3 3 4-4"/></svg>}
@@ -1172,23 +985,12 @@ export default function RevenueTab() {
               {/* Distribution */}
               <div className="ri-up bg-[var(--surface-raised)] rounded-[var(--radius-lg)] border p-[var(--space-card-pad)]" style={{animationDelay:".14s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
                 <SectionHead grad="linear-gradient(135deg,var(--status-info-fg),var(--brand-indigo-500))" accent={C.i4}
->>>>>>> main
                   icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M17.7 13.4A8 8 0 1 1 6.6 2.3"/><path d="M18 10A8 8 0 0 0 10 2v8z"/></svg>}
                   title="توزيع خط المبيعات" sub="حسب احتمالية الإغلاق"/>
                 <DistPills categories={data.categories}/>
               </div>
             </div>
             {/* Weekly */}
-<<<<<<< HEAD
-            <div className="ri-up bg-white rounded-2xl border p-5" style={{animationDelay:".2s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
-              <div className="flex items-center justify-between mb-5">
-                <SectionHead grad="linear-gradient(135deg,#92400e,#f59e0b)" accent={C.a4}
-                  icon={<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M15 17V8M10 17V3M5 17v-5"/></svg>}
-                  title="الأداء الأسبوعي" sub="آخر 12 أسبوع"/>
-                <div className="text-left mr-3">
-                  <p className="text-[8px] uppercase tracking-widest font-bold" style={{color:C.tx3}}>مُغلق الشهر</p>
-                  <p className="text-[15px] font-black tabular-nums mt-1" style={{color:C.e4}}>{sarK(data.wonThisMonthSAR)} <span className="text-[10px] font-medium" style={{color:C.tx3}}>ر.س</span></p>
-=======
             <div className="ri-up bg-[var(--surface-raised)] rounded-[var(--radius-lg)] border p-[var(--space-card-pad)]" style={{animationDelay:".2s",borderColor:C.borderL,boxShadow:"0 1px 3px rgba(0,0,0,.03),0 6px 18px rgba(0,0,0,.03)"}}>
               <div className="flex items-center justify-between mb-5">
                 <SectionHead grad="linear-gradient(135deg,var(--status-warning-fg),var(--brand-amber-500))" accent={C.a4}
@@ -1197,7 +999,6 @@ export default function RevenueTab() {
                 <div className="text-left mr-3">
                   <p className="t-micro uppercase tracking-widest font-bold" style={{color:C.tx3}}>مُغلق الشهر</p>
                   <p className="t-body font-black tabular-nums mt-1" style={{color:C.e4}}>{sarK(data.wonThisMonthSAR)} <span className="t-micro font-medium" style={{color:C.tx3}}>ر.س</span></p>
->>>>>>> main
                 </div>
               </div>
               <WeeklyChart data={data.weeklyHistory}/>
@@ -1205,12 +1006,7 @@ export default function RevenueTab() {
           </div>
           {/* AI Panel */}
           <div className="xl:col-span-1">
-<<<<<<< HEAD
-            <div className="relative rounded-2xl overflow-hidden sticky top-20" style={{height:560,boxShadow:"0 16px 40px rgba(4,45,32,.18),0 0 0 1px rgba(0,0,0,.05)"}}>
-              <AiPanel ctx={ctx}/>
-=======
             <div className="relative rounded-[var(--radius-lg)] overflow-hidden sticky top-20" style={{height:560,boxShadow:"0 16px 40px rgba(4,45,32,.18),0 0 0 1px rgba(0,0,0,.05)"}}>
->>>>>>> main
             </div>
           </div>
         </div>
@@ -1220,11 +1016,7 @@ export default function RevenueTab() {
           <div className="px-6 py-5 border-b" style={{borderColor:C.borderL}}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-3">
-<<<<<<< HEAD
-                <div className="h-9 w-9 rounded-xl flex items-center justify-center flex-none" style={{backgroundColor:"#1a5c4f17",color:"#1a5c4f"}}>
-=======
                 <div className="h-9 w-9 rounded-[var(--radius-md)] flex items-center justify-center flex-none" style={{backgroundColor:"#1a5c4f17",color:"var(--brand-teal-700)"}}>
->>>>>>> main
                   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M3 6h14M3 10h14M3 14h14"/></svg>
                 </div>
                 <div>
@@ -1239,11 +1031,7 @@ export default function RevenueTab() {
                 </svg>
                 <input value={search} onChange={e=>setSearch(e.target.value)}
                   placeholder="بحث عن صفقة أو عميل…"
-<<<<<<< HEAD
-                  className="rounded-xl pr-9 pl-4 py-2 text-[11px] w-52 border bg-[#f8faf9] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 focus:border-[#1a5c4f]/40 transition"
-=======
                   className="rounded-[var(--radius-md)] pr-9 pl-4 py-2 t-micro w-52 border bg-[var(--surface-sunken)] focus:bg-[var(--surface-raised)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal-700)]/15 focus:border-[var(--brand-teal-700)]/40 transition"
->>>>>>> main
                   style={{borderColor:C.border}}/>
               </div>
             </div>
@@ -1252,13 +1040,8 @@ export default function RevenueTab() {
                 const active=filter===key, isRisk=key==="high_risk";
                 return (
                   <button key={key} onClick={()=>setFilter(key)}
-<<<<<<< HEAD
-                    className="px-3.5 py-1.5 rounded-lg text-[10.5px] font-bold border transition-all"
-                    style={{backgroundColor:active?(isRisk?"#dc2626":"#1a5c4f"):"white",color:active?"white":C.tx2,borderColor:active?"transparent":C.border}}>
-=======
                     className="px-3.5 py-1.5 rounded-[var(--radius-sm)] t-micro font-bold border transition-all"
                     style={{backgroundColor:active?(isRisk?"var(--status-danger-fg)":"var(--brand-teal-700)"):"white",color:active?"white":C.tx2,borderColor:active?"transparent":C.border}}>
->>>>>>> main
                     {label}{count!==undefined&&<span className="mr-1 opacity-65">({count})</span>}
                   </button>
                 );

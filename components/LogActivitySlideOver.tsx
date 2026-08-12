@@ -3,16 +3,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
-<<<<<<< HEAD
-import { todayInput } from "@/lib/format";
-=======
 import { nowLocalInput } from "@/lib/format";
 import { createActivity } from "@/lib/models/activities";
 import { triggerClassification } from "@/lib/classifyTrigger";
 import { fetchActiveActivityTypes } from "@/lib/models/refData";
 import { searchLeadsByName } from "@/lib/models/leads";
 import { searchDealsForPalette } from "@/lib/models/deals";
->>>>>>> main
 
 interface ActivityType {
   id: string;
@@ -23,8 +19,6 @@ interface Hit {
   name: string | null;
 }
 
-<<<<<<< HEAD
-=======
 /**
  * What the activity is about.
  *
@@ -37,7 +31,6 @@ interface Hit {
  */
 type TargetType = "lead" | "deal";
 
->>>>>>> main
 export default function LogActivitySlideOver({
   open,
   onClose,
@@ -144,24 +137,7 @@ export default function LogActivitySlideOver({
     }
     toast("تم تسجيل النشاط");
 
-<<<<<<< HEAD
-    // Fire-and-forget: classify inbound replies in the background. The form
-    // closes immediately regardless of how long — or whether — this succeeds.
-    if (direction === "inbound" && trimmedNotes) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        fetch("/api/classify-activity", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
-          },
-          body: JSON.stringify({ activityId, body: trimmedNotes }),
-        }).catch((err) => console.error("[LogActivity] classify trigger failed", err));
-      });
-    }
-=======
     triggerClassification(activityId, trimmedNotes, direction);
->>>>>>> main
 
     reset();
     onCreated?.();
@@ -188,13 +164,8 @@ export default function LogActivitySlideOver({
       >
         <div className="flex items-center justify-between border-b border-[var(--border-subtle)] p-6">
           <div>
-<<<<<<< HEAD
-            <h2 className="text-xl font-bold text-[#1e1b4b]">تسجيل نشاط</h2>
-            <p className="mt-0.5 text-[13px] text-[#94a3b8]">Record a touchpoint with a contact</p>
-=======
             <h2 className="text-xl font-bold text-[var(--content-primary)]">تسجيل نشاط</h2>
             <p className="mt-0.5 t-body-sm text-[var(--content-tertiary)]">سجّل تواصلاً مع عميل أو على صفقة</p>
->>>>>>> main
           </div>
           <button onClick={onClose} aria-label="إغلاق" className="text-[var(--content-tertiary)] transition hover:text-[var(--content-secondary)]">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-5 w-5">
@@ -231,13 +202,6 @@ export default function LogActivitySlideOver({
           </div>
 
           <div className="relative">
-<<<<<<< HEAD
-            <label className={labelCls} htmlFor="la-contact">العميل *</label>
-            {selected ? (
-              <div className="flex items-center justify-between rounded-xl border border-[#1a5c4f]/30 bg-[#f0faf8] px-3.5 py-2.5">
-                <span dir="auto" className="text-[15px] font-medium text-[#1e1b4b]">
-                  {selected.full_name || "عميل بدون اسم"}
-=======
             <label className={labelCls} htmlFor="la-contact">
               {targetType === "lead" ? "العميل *" : "الصفقة *"}
             </label>
@@ -245,7 +209,6 @@ export default function LogActivitySlideOver({
               <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--brand-teal-700)]/30 bg-[var(--surface-accent-subtle)] px-3.5 py-2.5">
                 <span dir="auto" className="t-body font-medium text-[var(--content-primary)]">
                   {selected.name || (targetType === "lead" ? "عميل بدون اسم" : "صفقة بدون اسم")}
->>>>>>> main
                 </span>
                 <button
                   type="button"
@@ -264,11 +227,7 @@ export default function LogActivitySlideOver({
                 dir="auto"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-<<<<<<< HEAD
-                placeholder="ابحث عن عميل بالاسم..."
-=======
                 placeholder={targetType === "lead" ? "ابحث عن عميل بالاسم..." : "ابحث عن صفقة بالاسم..."}
->>>>>>> main
                 className={inputCls}
                 autoComplete="off"
               />
@@ -286,11 +245,7 @@ export default function LogActivitySlideOver({
                     dir="auto"
                     className="block w-full px-3.5 py-2.5 text-left t-body text-[var(--content-secondary)] transition hover:bg-[var(--surface-sunken)]"
                   >
-<<<<<<< HEAD
-                    {h.full_name || "عميل بدون اسم"}
-=======
                     {h.name || (targetType === "lead" ? "عميل بدون اسم" : "صفقة بدون اسم")}
->>>>>>> main
                   </button>
                 ))}
               </div>
@@ -334,10 +289,6 @@ export default function LogActivitySlideOver({
           </div>
 
           <div>
-<<<<<<< HEAD
-            <label className={labelCls} htmlFor="la-date">التاريخ *</label>
-            <input id="la-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls} />
-=======
             <label className={labelCls} htmlFor="la-date">وقت النشاط *</label>
             <input
               id="la-date"
@@ -346,7 +297,6 @@ export default function LogActivitySlideOver({
               onChange={(e) => setWhen(e.target.value)}
               className={inputCls}
             />
->>>>>>> main
           </div>
 
           <div>
@@ -358,24 +308,13 @@ export default function LogActivitySlideOver({
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
               placeholder="ماذا حصل في هذا التواصل..."
-<<<<<<< HEAD
-              className="w-full rounded-xl border border-[#e8ece9] bg-white px-3.5 py-2.5 text-[15px] text-[#334155] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15"
-=======
               className="w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3.5 py-2.5 t-body text-[var(--content-secondary)] placeholder:text-[var(--content-tertiary)] focus:border-[var(--brand-teal-700)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal-700)]/15"
->>>>>>> main
             />
           </div>
         </form>
 
-<<<<<<< HEAD
-        <div className="flex gap-3 border-t border-[#e8ece9] p-6">
-          <button onClick={onClose} type="button" className="h-11 flex-1 rounded-xl border border-[#e8ece9] text-[15px] font-semibold text-[#334155] transition hover:bg-[#f8fafc]">
-            إلغاء
-          </button>
-=======
         <div className="flex gap-3 border-t border-[var(--border-subtle)] p-6">
           <button onClick={onClose} type="button" className="h-11 flex-1 rounded-[var(--radius-md)] border border-[var(--border-subtle)] t-body font-semibold text-[var(--content-secondary)] transition hover:bg-[var(--surface-sunken)]">إلغاء</button>
->>>>>>> main
           <button
             onClick={handleSubmit}
             disabled={saving}

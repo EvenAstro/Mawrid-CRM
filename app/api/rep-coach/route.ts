@@ -1,8 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-<<<<<<< HEAD
-import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
-import { requireUser } from "@/lib/auth/requireUser";
-=======
 import { requireUser } from "@/lib/auth/requireUser";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { fetchProfileGreetingName } from "@/lib/profiles";
@@ -23,14 +19,11 @@ import {
 import { fetchRepCoachTodayActivities, fetchRepCoachUpcomingMeetings } from "@/lib/models/activities";
 import { fetchRepCoachNewLeads } from "@/lib/models/leads";
 import { money } from "@/lib/format";
->>>>>>> main
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct";
 const MS_PER_DAY = 86_400_000;
 
-<<<<<<< HEAD
-=======
 // Saudi Arabia doesn't observe DST, so a fixed +3h offset from UTC is safe
 // year-round. This route runs server-side (Vercel functions default to
 // UTC), so without this every "today"/hour-of-day check below — the
@@ -62,7 +55,6 @@ function riyadhTimeStr(d: Date): string {
   return `${h}:${m}`;
 }
 
->>>>>>> main
 interface Directive {
   id: string;
   type: "urgent" | "warning" | "remind" | "praise";
@@ -84,14 +76,6 @@ export async function GET(req: NextRequest) {
   if (!caller) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   const userId = caller.id;
 
-<<<<<<< HEAD
-  try {
-    const now = new Date();
-    const todayStart = new Date(now);
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(todayStart);
-    todayEnd.setDate(todayEnd.getDate() + 1);
-=======
   const rl = checkRateLimit(`${userId}:rep-coach`, 20, 60_000);
   if (!rl.allowed) {
     return NextResponse.json(
@@ -104,7 +88,6 @@ export async function GET(req: NextRequest) {
     const now = new Date();
     const shiftedNow = riyadhNow();
     const { start: todayStart, end: todayEnd } = riyadhDayBounds(shiftedNow);
->>>>>>> main
     const ds = todayStart.toISOString();
     const de = todayEnd.toISOString();
     const sevenDaysAgo = new Date(now.getTime() - 7 * MS_PER_DAY).toISOString();
@@ -112,15 +95,7 @@ export async function GET(req: NextRequest) {
     const twoDaysAgo = new Date(now.getTime() - 2 * MS_PER_DAY).toISOString();
 
     // Fetch user profile for personalized greeting
-<<<<<<< HEAD
-    const profileRes = await supabase
-      .from("profiles")
-      .select("first_name, full_name")
-      .eq("id", userId)
-      .maybeSingle();
-=======
     const profileRes = await fetchProfileGreetingName(userId);
->>>>>>> main
     const firstName = profileRes.data?.first_name || profileRes.data?.full_name?.split(" ")[0] || null;
 
     const threeDaysFromNow = new Date(now.getTime() + 3 * MS_PER_DAY).toISOString();
@@ -140,50 +115,6 @@ export async function GET(req: NextRequest) {
       quoteDealsRes,
       yesterdayCompletedRes,
     ] = await Promise.all([
-<<<<<<< HEAD
-      supabase.from("tasks").select("id, title, due_at")
-        .eq("assignee_uid", userId).lt("due_at", ds).is("completed_at", null)
-        .order("due_at", { ascending: true }).limit(10),
-      supabase.from("tasks").select("id, title, due_at")
-        .eq("assignee_uid", userId).gte("due_at", ds).lt("due_at", de).is("completed_at", null)
-        .order("due_at", { ascending: true }).limit(10),
-      // Upcoming tasks — tomorrow to 3 days from now
-      supabase.from("tasks").select("id, title, due_at")
-        .eq("assignee_uid", userId).gte("due_at", de).lte("due_at", threeDaysFromNow).is("completed_at", null)
-        .order("due_at", { ascending: true }).limit(10),
-      supabase.from("tasks").select("id, title, completed_at")
-        .eq("assignee_uid", userId).gte("completed_at", ds).lt("completed_at", de).limit(20),
-      supabase.from("tasks").select("id, title, created_at")
-        .eq("assignee_uid", userId).is("due_at", null).is("completed_at", null)
-        .order("created_at", { ascending: false }).limit(10),
-      supabase.from("deals").select("id, name, updated_at, expected_value, leads(full_name)")
-        .is("deleted_at", null).is("closed_at", null).lt("updated_at", sevenDaysAgo)
-        .order("updated_at", { ascending: true }).limit(10),
-      supabase.from("activities").select("id, entity_type, entity_id, direction, occurred_at")
-        .eq("user_id", userId).gte("occurred_at", ds).lt("occurred_at", de),
-      supabase.from("leads").select("id, full_name, company_name, created_at")
-        .is("deleted_at", null).gte("created_at", twoDaysAgo)
-        .order("created_at", { ascending: false }).limit(10),
-      supabase.from("deals").select("id, name, expected_value, stage, updated_at, leads(full_name)")
-        .is("deleted_at", null).is("closed_at", null)
-        .order("expected_value", { ascending: false }).limit(5),
-      supabase.from("deals").select("id, name, stage, expected_value, leads(full_name)")
-        .is("deleted_at", null).is("closed_at", null)
-        .order("created_at", { ascending: false }).limit(20),
-      // Upcoming meetings — activities with "meeting" type in the next 3 days
-      supabase.from("activities").select("id, body, occurred_at, activity_types!inner(label)")
-        .eq("user_id", userId).gte("occurred_at", ds).lte("occurred_at", threeDaysFromNow)
-        .ilike("activity_types.label", "%meeting%")
-        .order("occurred_at", { ascending: true }).limit(10),
-      // Deals in quote/proposal stage — need follow-up if not updated in 3+ days
-      supabase.from("deals").select("id, name, expected_value, updated_at, leads(full_name), pipeline_stages!inner(label)")
-        .is("deleted_at", null).is("closed_at", null).lt("updated_at", threeDaysAgo)
-        .ilike("pipeline_stages.label", "%عرض%")
-        .order("updated_at", { ascending: true }).limit(10),
-      supabase.from("tasks").select("id").eq("assignee_uid", userId)
-        .gte("completed_at", new Date(todayStart.getTime() - MS_PER_DAY).toISOString())
-        .lt("completed_at", ds),
-=======
       fetchRepCoachOverdueTasks(userId, ds),
       fetchRepCoachTodayTasks(userId, ds, de),
       // Upcoming tasks — tomorrow to 3 days from now
@@ -200,7 +131,6 @@ export async function GET(req: NextRequest) {
       // Deals in quote/proposal stage — need follow-up if not updated in 3+ days
       fetchRepCoachQuoteDeals(threeDaysAgo),
       fetchRepCoachYesterdayCompletedIds(userId, new Date(todayStart.getTime() - MS_PER_DAY).toISOString(), ds),
->>>>>>> main
     ]);
 
     type Task = { id: string; title: string | null; due_at: string | null };
@@ -251,11 +181,7 @@ export async function GET(req: NextRequest) {
     staleDeals.forEach((d) => {
       const days = Math.ceil((now.getTime() - new Date(d.updated_at!).getTime()) / MS_PER_DAY);
       const name = d.leads?.full_name || d.name || "عميل";
-<<<<<<< HEAD
-      const val = d.expected_value ? ` (${(d.expected_value / 100).toLocaleString("ar-SA")} ر.س)` : "";
-=======
       const val = d.expected_value ? ` (${money(d.expected_value / 100)} ر.س)` : "";
->>>>>>> main
       directives.push({
         id: `d${idx++}`, type: "warning", icon: "⚠️",
         message: `صفقة "${name}"${val} واقفة من ${days} يوم — اتصل عليه أو أرسل عرض`,
@@ -268,13 +194,7 @@ export async function GET(req: NextRequest) {
       const mDate = new Date(m.occurred_at!);
       const isToday = mDate >= todayStart && mDate < todayEnd;
       const isTomorrow = mDate >= todayEnd && mDate < new Date(todayEnd.getTime() + MS_PER_DAY);
-<<<<<<< HEAD
-      const h = mDate.getHours();
-      const min = mDate.getMinutes();
-      const timeStr = `${h.toString().padStart(2, "0")}:${min.toString().padStart(2, "0")}`;
-=======
       const timeStr = riyadhTimeStr(mDate);
->>>>>>> main
       const desc = m.body ? ` — ${m.body.slice(0, 50)}` : "";
       if (isToday) {
         const hoursLeft = (mDate.getTime() - now.getTime()) / 3600000;
@@ -296,11 +216,7 @@ export async function GET(req: NextRequest) {
     quoteDeals.forEach((d) => {
       const days = Math.ceil((now.getTime() - new Date(d.updated_at!).getTime()) / MS_PER_DAY);
       const name = d.leads?.full_name || d.name || "عميل";
-<<<<<<< HEAD
-      const val = d.expected_value ? ` (${(d.expected_value / 100).toLocaleString("ar-SA")} ر.س)` : "";
-=======
       const val = d.expected_value ? ` (${money(d.expected_value / 100)} ر.س)` : "";
->>>>>>> main
       directives.push({
         id: `d${idx++}`, type: "warning", icon: "📄",
         message: `${ya}عرض سعر لـ "${name}"${val} ما تابعته من ${days} يوم — تواصل معه`,
@@ -322,13 +238,7 @@ export async function GET(req: NextRequest) {
     // 5. Today's upcoming tasks
     todayTasks.forEach((t) => {
       const dueTime = new Date(t.due_at!);
-<<<<<<< HEAD
-      const h = dueTime.getHours();
-      const m = dueTime.getMinutes();
-      const timeStr = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-=======
       const timeStr = riyadhTimeStr(dueTime);
->>>>>>> main
       const isUpcoming = dueTime.getTime() - now.getTime() < 2 * 3600 * 1000 && dueTime > now;
       directives.push({
         id: `d${idx++}`, type: isUpcoming ? "warning" : "remind",
@@ -345,13 +255,7 @@ export async function GET(req: NextRequest) {
       const dueDate = new Date(t.due_at!);
       const daysDiff = Math.ceil((dueDate.getTime() - now.getTime()) / MS_PER_DAY);
       const dayLabel = daysDiff <= 1 ? "بكرة" : `بعد ${daysDiff} أيام`;
-<<<<<<< HEAD
-      const h = dueDate.getHours();
-      const m = dueDate.getMinutes();
-      const timeStr = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-=======
       const timeStr = riyadhTimeStr(dueDate);
->>>>>>> main
       directives.push({
         id: `d${idx++}`, type: "remind", icon: "📅",
         message: `${ya}عندك مهمة "${t.title || "بدون عنوان"}" ${dayLabel} الساعة ${timeStr} — جهّز لها`,
@@ -383,21 +287,13 @@ export async function GET(req: NextRequest) {
     });
 
     // 7. Activity warnings
-<<<<<<< HEAD
-    if (outboundCount === 0 && now.getHours() >= 10) {
-=======
     if (outboundCount === 0 && shiftedNow.getUTCHours() >= 10) {
->>>>>>> main
       directives.push({
         id: `d${idx++}`, type: "warning", icon: "📵",
         message: "ما سويت أي تواصل اليوم — ابدأ اتصل على عملائك الحين",
         action: "افتح النشاطات", actionHref: "/dashboard/activities",
       });
-<<<<<<< HEAD
-    } else if (outboundCount > 0 && outboundCount < 3 && now.getHours() >= 12) {
-=======
     } else if (outboundCount > 0 && outboundCount < 3 && shiftedNow.getUTCHours() >= 12) {
->>>>>>> main
       directives.push({
         id: `d${idx++}`, type: "remind", icon: "📱",
         message: `تواصلت مع ${outboundCount} بس — حاول توصل ٥ على الأقل اليوم`,
@@ -459,11 +355,7 @@ ${firstName ? `اسم المندوب: ${firstName}. خاطبه باسمه (يا 
 - عروض أسعار تحتاج متابعة: ${quoteDeals.length}
 - عملاء جدد بدون تواصل: ${untouchedLeads.length}
 - مسار الصفقات: ${pipelineStr || "فاضي"}
-<<<<<<< HEAD
-- قيمة المسار: ${totalPipelineValue > 0 ? (totalPipelineValue / 100).toLocaleString("ar-SA") + " ر.س" : "—"}
-=======
 - قيمة المسار: ${totalPipelineValue > 0 ? money(totalPipelineValue / 100) + " ر.س" : "—"}
->>>>>>> main
 
 ## التوجيهات:
 ${directivesList || "لا توجيهات — كل شيء تمام"}
@@ -504,11 +396,7 @@ ${directivesList || "لا توجيهات — كل شيء تمام"}
     }
 
     if (!aiSummary) {
-<<<<<<< HEAD
-      const hour = now.getHours();
-=======
       const hour = shiftedNow.getUTCHours();
->>>>>>> main
       const greeting = hour < 10 ? "صباح الخير" : hour < 16 ? "هلا والله" : "مساء الخير";
       const nameGreet = firstName ? ` يا ${firstName}` : "";
       const urgentCount = directives.filter((d) => d.type === "urgent").length;

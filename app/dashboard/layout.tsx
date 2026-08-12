@@ -11,31 +11,12 @@ import DailyBriefing from "@/components/DailyBriefing";
 import { initials as initialsOf } from "@/lib/format";
 import RoleProvider, { useRole } from "@/components/RoleProvider";
 import { FEATURES } from "@/lib/features";
-<<<<<<< HEAD
-import { UsersIcon } from "@/components/navIcons";
-import NotificationsDropdown from "@/components/NotificationsDropdown";
-import SupervisorBot from "@/components/SupervisorBot";
-import {
-  DashboardIcon,
-  ContactsIcon,
-  LeadsIcon,
-  DealsIcon,
-  ActivitiesIcon,
-  TasksIcon,
-  TicketsIcon,
-  ScoringIcon,
-  PlaybookIcon,
-  InsightsIcon,
-  LogoutIcon,
-} from "@/components/navIcons";
-=======
 import { PhoneIcon } from "@/components/icons";
 import { ActivitiesIcon, ContactsIcon, DashboardIcon, DealsIcon, InsightsIcon, LeadsIcon, LogoutIcon, TasksIcon, UsersIcon } from "@/components/navIcons";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
 import CommandPalette from "@/components/CommandPalette";
 import EmptyState from "@/components/ui/EmptyState";
 import { ChatBubbleIcon } from "@/components/icons";
->>>>>>> main
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   dashboard: DashboardIcon,
@@ -46,13 +27,8 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   activities: ActivitiesIcon,
   tasks: TasksIcon,
   insights: InsightsIcon,
-<<<<<<< HEAD
-  lead_scoring: ScoringIcon,
-  playbook: PlaybookIcon,
-=======
   calls: PhoneIcon,
   team: UsersIcon,
->>>>>>> main
   users: UsersIcon,
 };
 
@@ -113,8 +89,6 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-<<<<<<< HEAD
-=======
   const [chatUnread, setChatUnread] = useState(0);
 
   // The badge on "المحادثات" — polled rather than realtime because it has
@@ -137,7 +111,6 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
       clearInterval(t);
     };
   }, [pathname]);
->>>>>>> main
 
   useEffect(() => {
     setCollapsed(localStorage.getItem("mawrid_sidebar_collapsed") === "1");
@@ -224,11 +197,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
   const effectiveCollapsed = collapsed && !isMobile;
 
   return (
-<<<<<<< HEAD
-    <div className="min-h-screen bg-[#f0f5f3]">
-=======
     <div className="min-h-screen bg-[var(--surface-page)]">
->>>>>>> main
       {/* Mobile drawer backdrop */}
       {isMobile && mobileOpen && (
         <div
@@ -242,25 +211,11 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
           which is where it's docked, since the app is RTL). */}
       <div
         style={{ width: sidebarWidth }}
-<<<<<<< HEAD
-        className={`fixed inset-y-0 right-0 z-40 flex flex-col bg-[#141c2e] transition-all duration-300 ${
-=======
         className={`fixed inset-y-0 right-0 z-40 flex flex-col bg-[var(--surface-inverse)] transition-transform duration-[var(--motion-slow)] ease-[var(--ease-standard)] ${
->>>>>>> main
           isMobile ? (mobileOpen ? "translate-x-0" : "translate-x-full") : "translate-x-0"
         }`}
       >
         {/* Logo */}
-<<<<<<< HEAD
-        <div className="flex h-[72px] items-center justify-between px-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <svg viewBox="0 0 36 36" className="h-9 w-9 flex-none" fill="none">
-              <rect width="36" height="36" rx="9" fill="#3a9080" />
-              <path d="M18 5C11.37 5 6 10.37 6 17c0 6.63 5.37 12 12 12h7v-7h-7a5 5 0 1 1 0-10c2.76 0 5 2.24 5 5v12h7V17C30 10.37 24.63 5 18 5z" fill="white" />
-            </svg>
-            {(!collapsed || isMobile) && (
-              <span className="block truncate text-[28px] font-bold tracking-wide text-white" style={{ fontFamily: "var(--font-cairo), system-ui, sans-serif" }}>مَــوْرد</span>
-=======
         <div className="flex h-[var(--layout-topbar)] flex-none items-center justify-between px-4">
           <div className="flex min-w-0 items-center gap-3">
             <svg viewBox="0 0 36 36" className="h-9 w-9 flex-none" fill="none">
@@ -269,18 +224,13 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
             </svg>
             {(!collapsed || isMobile) && (
               <span className="block truncate t-title-1 font-bold tracking-wide text-white" style={{ fontFamily: "var(--font-display)" }}>مَــوْرد</span>
->>>>>>> main
             )}
           </div>
           {isMobile ? (
             <button
               onClick={() => setMobileOpen(false)}
               aria-label="إغلاق القائمة"
-<<<<<<< HEAD
-              className="flex-none rounded-lg p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white"
-=======
               className="flex-none rounded-[var(--radius-sm)] p-1.5 text-[color:var(--content-inverse-tertiary)] transition-colors hover:bg-white/10 hover:text-white"
->>>>>>> main
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
                 <path d="M18 6 6 18M6 6l12 12" />
@@ -290,11 +240,7 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
             <button
               onClick={toggleCollapse}
               aria-label={collapsed ? "توسيع القائمة" : "طي القائمة"}
-<<<<<<< HEAD
-              className={`flex-none rounded-lg p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white ${collapsed ? "absolute -left-3 top-5 z-10 rounded-full border border-[#e8ece9] bg-white text-[#141c2e] shadow-lg" : ""}`}
-=======
               className={`flex-none rounded-[var(--radius-sm)] p-1.5 text-[color:var(--content-inverse-tertiary)] transition-colors hover:bg-white/10 hover:text-white ${collapsed ? "absolute -left-3 top-5 z-10 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[color:var(--content-primary)] e-2" : ""}`}
->>>>>>> main
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={`h-4 w-4 transition-transform ${collapsed ? "rotate-180" : ""}`}>
                 <path d="M9 18l6-6-6-6" />
@@ -304,29 +250,17 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
         </div>
 
         {/* Nav */}
-<<<<<<< HEAD
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
-          {navGroups.map((group) => (
-            <div key={group.heading} className="mt-6 first:mt-0">
-              {!effectiveCollapsed && (
-                <p className="mb-2 px-3 text-[11px] font-bold tracking-wider text-[#3a9080]">
-=======
         <nav ref={navRef} className="relative flex-1 overflow-y-auto px-3 py-4">
           <div ref={pillRef} className="nav-pill" style={{ opacity: 0, top: 0, height: 0 }} />
           {navGroups.map((group) => (
             <div key={group.heading} className="mt-6 first:mt-0">
               {!effectiveCollapsed && (
                 <p className="t-eyebrow mb-2 px-3 text-[color:var(--content-inverse-tertiary)]">
->>>>>>> main
                   {group.heading}
                 </p>
               )}
               <div className="space-y-0.5">
-<<<<<<< HEAD
-                {group.items.map(({ label, href, Icon }) => {
-=======
                 {group.items.map(({ key, label, href, Icon }) => {
->>>>>>> main
                   const active = isActive(pathname, href);
                   const badge = key === "chat" ? chatUnread : 0;
                   return (
@@ -334,15 +268,6 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
                       key={label}
                       href={href}
                       title={effectiveCollapsed ? label : undefined}
-<<<<<<< HEAD
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] transition-all ${
-                        active
-                          ? "bg-[#3a9080]/20 font-bold text-[#5ec4b0]"
-                          : "font-medium text-white/50 hover:bg-white/6 hover:text-white/85"
-                      } ${effectiveCollapsed ? "justify-center px-0" : ""}`}
-                    >
-                      <Icon className={`h-[20px] w-[20px] flex-shrink-0 ${active ? "text-[#5ec4b0]" : ""}`} />
-=======
                       data-nav-active={active ? "true" : undefined}
                       className={`relative z-[1] flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-[length:var(--text-body)] transition-colors duration-[var(--motion-fast)] ease-[var(--ease-standard)] ${
                         active
@@ -362,7 +287,6 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
                           </span>
                         )}
                       </span>
->>>>>>> main
                       {!effectiveCollapsed && label}
                     </Link>
                   );
@@ -373,31 +297,18 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
         </nav>
 
         {/* User */}
-<<<<<<< HEAD
-        <div className="border-t border-white/8 px-3 pb-4 pt-4">
-          <div className={`flex items-center gap-3 rounded-xl px-2 py-2 ${effectiveCollapsed ? "justify-center" : ""}`}>
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#3a9080]">
-=======
         <div className="border-t border-[var(--border-inverse)] px-3 pb-4 pt-4">
           <div className={`flex items-center gap-3 rounded-[var(--radius-md)] px-2 py-2 ${effectiveCollapsed ? "justify-center" : ""}`}>
             <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[var(--brand-teal-400)]">
->>>>>>> main
               <span className="text-sm font-bold text-white">{userInitials}</span>
             </div>
             {!effectiveCollapsed && (
               <>
                 <div className="min-w-0 flex-1">
-<<<<<<< HEAD
-                  <p className="truncate text-[14px] font-semibold text-white/90">{displayName}</p>
-                  <p className="truncate text-[11px] text-white/35">{email}</p>
-                </div>
-                <button onClick={handleLogout} aria-label="تسجيل الخروج" className="flex-none rounded-lg p-1.5 text-white/25 transition-colors hover:bg-white/10 hover:text-red-400">
-=======
                   <p className="truncate text-[length:var(--text-body-sm)] font-semibold text-[color:var(--content-inverse-primary)]">{displayName}</p>
                   <p dir="ltr" className="t-micro truncate text-end text-[color:var(--content-inverse-tertiary)]">{email}</p>
                 </div>
                 <button onClick={handleLogout} aria-label="تسجيل الخروج" className="flex-none rounded-[var(--radius-sm)] p-1.5 text-[color:var(--content-inverse-tertiary)] transition-colors hover:bg-white/10 hover:text-[var(--status-danger-on-inverse)]">
->>>>>>> main
                   <LogoutIcon className="h-4 w-4" />
                 </button>
               </>
@@ -409,39 +320,20 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
       {/* Top bar */}
       <div
         style={{ right: contentOffset }}
-<<<<<<< HEAD
-        className="fixed left-0 top-0 z-20 flex h-[56px] items-center justify-between gap-3 border-b border-[#e8ece9] bg-white px-4 transition-all duration-300 md:px-8"
-=======
         className="fixed left-0 top-0 z-20 flex h-[var(--layout-topbar)] items-center justify-between gap-3 border-b border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4 transition-[right] duration-[var(--motion-slow)] ease-[var(--ease-standard)] md:px-8"
->>>>>>> main
       >
         <div className="flex min-w-0 items-center gap-3">
           {isMobile && (
             <button
               onClick={() => setMobileOpen(true)}
               aria-label="فتح القائمة"
-<<<<<<< HEAD
-              className="flex-none rounded-lg p-1.5 text-[#475569] transition hover:bg-[#f0faf8]"
-=======
               className="flex-none rounded-[var(--radius-sm)] p-1.5 text-[color:var(--content-secondary)] transition-colors hover:bg-[var(--surface-accent-subtle)]"
->>>>>>> main
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
                 <path d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
           )}
-<<<<<<< HEAD
-          <div className="flex min-w-0 items-center gap-2 text-[14px]">
-            <span className="hidden text-[#94a3b8] sm:inline">مساحة العمل</span>
-            <span className="hidden text-[#d1d5db] sm:inline">/</span>
-            <span className="truncate font-semibold text-[#1e1b4b]">{pageName}</span>
-          </div>
-        </div>
-        <div className="flex flex-none items-center gap-3">
-          <NotificationsDropdown />
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#141c2e]">
-=======
           <div className="flex min-w-0 items-center gap-2 t-body-sm">
             <span className="hidden text-[color:var(--content-tertiary)] sm:inline">مساحة العمل</span>
             <span className="hidden text-[color:var(--border-strong)] sm:inline">/</span>
@@ -460,7 +352,6 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
           </button>
           <NotificationsDropdown />
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-inverse)]">
->>>>>>> main
             <span className="text-xs font-bold text-white">{userInitials}</span>
           </div>
         </div>
@@ -469,16 +360,6 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
       {/* Main */}
       <main
         style={{ marginRight: contentOffset, paddingLeft: "var(--briefing-rail-width, 52px)" }}
-<<<<<<< HEAD
-        className="min-h-screen bg-[#f0f5f3] pt-[56px] transition-all duration-300"
-      >
-        <div key={pathname} className="page-content mx-auto max-w-[1600px] p-4 sm:p-6 md:p-8">
-          {roleLoading ? null : currentFeature && !can(currentFeature.key) ? null : children}
-        </div>
-      </main>
-      <CopilotWidget />
-      <SupervisorBot />
-=======
         className="min-h-screen bg-[var(--surface-page)] pt-[var(--layout-topbar)] transition-[margin,padding] duration-[var(--motion-slow)] ease-[var(--ease-standard)]"
       >
         <div key={pathname} className="page-content mx-auto max-w-[var(--layout-content-max)] p-[var(--space-gutter-sm)] md:p-[var(--space-gutter)]">
@@ -502,7 +383,6 @@ function DashboardShell({ children, email, fullName }: { children: React.ReactNo
         </div>
       </main>
       <Supervisor />
->>>>>>> main
       <DailyBriefing />
       <CommandPalette />
     </div>

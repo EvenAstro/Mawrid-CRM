@@ -100,13 +100,8 @@ export default function NewLeadSlideOver({
       >
         <div className="flex items-center justify-between border-b border-[var(--border-subtle)] p-6">
           <div>
-<<<<<<< HEAD
-            <h2 className="text-xl font-bold text-[#1e1b4b]">عميل جديد</h2>
-            <p className="mt-0.5 text-[13px] text-[#94a3b8]">أضف عميل لمسار المبيعات</p>
-=======
             <h2 className="text-xl font-bold text-[var(--content-primary)]">عميل جديد</h2>
             <p className="mt-0.5 t-body-sm text-[var(--content-tertiary)]">أضف عميل لمسار المبيعات</p>
->>>>>>> main
           </div>
           <button
             onClick={onClose}
@@ -166,11 +161,7 @@ export default function NewLeadSlideOver({
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
               placeholder="أي ملاحظات عن هذا العميل..."
-<<<<<<< HEAD
-              className="w-full rounded-xl border border-[#e8ece9] bg-white px-3.5 py-2.5 text-[15px] text-[#334155] placeholder:text-[#94a3b8] focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15"
-=======
               className="w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3.5 py-2.5 t-body text-[var(--content-secondary)] placeholder:text-[var(--content-tertiary)] focus:border-[var(--brand-teal-700)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal-700)]/15"
->>>>>>> main
             />
           </div>
         </form>
@@ -179,15 +170,8 @@ export default function NewLeadSlideOver({
           <button
             onClick={onClose}
             type="button"
-<<<<<<< HEAD
-            className="h-11 flex-1 rounded-xl border border-[#e8ece9] text-[15px] font-semibold text-[#334155] transition hover:bg-[#f8fafc]"
-          >
-            إلغاء
-          </button>
-=======
             className="h-11 flex-1 rounded-[var(--radius-md)] border border-[var(--border-subtle)] t-body font-semibold text-[var(--content-secondary)] transition hover:bg-[var(--surface-sunken)]"
           >إلغاء</button>
->>>>>>> main
           <button
             onClick={handleSubmit}
             disabled={saving}

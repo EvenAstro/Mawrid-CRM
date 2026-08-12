@@ -3,11 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
-<<<<<<< HEAD
-import { fetchCurrentProfile, fetchProfiles, type Profile, type Role } from "@/lib/profiles";
-=======
 import { fetchCurrentProfile, fetchProfiles, updateProfileRole, type Profile, type Role } from "@/lib/profiles";
->>>>>>> main
 import { initials, profileName } from "@/lib/format";
 import UserPermissionsModal from "@/components/UserPermissionsModal";
 
@@ -21,13 +17,8 @@ function profileInitials(p: Profile): string {
   return initials(profileName(p));
 }
 
-<<<<<<< HEAD
-const inputCls = "h-11 w-full rounded-xl border border-[#d6ece5] bg-[#f8faf9] px-4 text-[14px] text-slate-700 placeholder:text-slate-400 focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition";
-const selectCls = "h-11 w-full rounded-xl border border-[#d6ece5] bg-[#f8faf9] px-4 text-[14px] text-slate-700 focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition appearance-none";
-=======
 const inputCls = "h-11 w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-4 t-body-sm text-[var(--content-secondary)] placeholder:text-[var(--content-tertiary)] focus:border-[var(--brand-teal-700)] focus:bg-[var(--surface-raised)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal-700)]/15 transition";
 const selectCls = "h-11 w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-4 t-body-sm text-[var(--content-secondary)] focus:border-[var(--brand-teal-700)] focus:bg-[var(--surface-raised)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal-700)]/15 transition appearance-none";
->>>>>>> main
 
 export default function UsersPage() {
   const toast = useToast();
@@ -204,16 +195,6 @@ export default function UsersPage() {
   return (
     <>
       {/* Hero header */}
-<<<<<<< HEAD
-      <div className="mb-6 rounded-3xl bg-[#141c2e] px-7 py-7">
-        <div className="flex flex-wrap items-center justify-between gap-5">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white/10">
-              <svg viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth={1.8} className="h-6 w-6"><circle cx="7" cy="7" r="3" /><circle cx="14" cy="9" r="2.4" /><path d="M2.5 17c.6-3 2.4-4.8 4.5-4.8s3.9 1.8 4.5 4.8M12.8 12.4c1.7.2 3 1.6 3.5 4" strokeLinecap="round" /></svg>
-            </div>
-            <div>
-              <h1 dir="auto" className="text-[26px] font-bold tracking-[-0.02em] text-white">المستخدمون والصلاحيات</h1>
-=======
       <div className="mb-6 rounded-[var(--radius-lg)] bg-[var(--surface-inverse)] px-7 py-7">
         <div className="flex flex-wrap items-center justify-between gap-5">
           <div className="flex items-center gap-4">
@@ -222,24 +203,15 @@ export default function UsersPage() {
             </div>
             <div>
               <h1 dir="auto" className="t-title-1 font-bold tracking-[-0.02em] text-white">المستخدمون والصلاحيات</h1>
->>>>>>> main
               <p className="mt-1 text-sm text-white/50">إدارة أدوار الفريق — أدمن، مدير، أو مندوب مبيعات</p>
             </div>
           </div>
           {!loading && (me?.role === "admin" || me?.role === "manager") && (
             <button
               onClick={() => { setAddOpen(true); setCreateErr(""); }}
-<<<<<<< HEAD
-              className="flex h-11 items-center gap-2 rounded-xl bg-[#3a9080] px-5 text-[14px] font-bold text-white transition-all hover:bg-[#328173] active:scale-[0.98]"
-            >
-              <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
-              إضافة مستخدم
-            </button>
-=======
               className="flex h-11 items-center gap-2 rounded-[var(--radius-md)] bg-[var(--brand-teal-400)] px-5 t-body-sm font-bold text-white transition-all hover:bg-[var(--brand-teal-600)] active:scale-[0.98]"
             >
               <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>إضافة مستخدم</button>
->>>>>>> main
           )}
         </div>
       </div>
@@ -254,16 +226,6 @@ export default function UsersPage() {
           <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted">
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.6} className="h-4 w-4"><circle cx="9" cy="9" r="6" /><path d="m17 17-3.5-3.5" strokeLinecap="round" /></svg>
           </span>
-<<<<<<< HEAD
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث بالاسم أو الإيميل..." className="h-11 w-full rounded-2xl border border-[#d6ece5] bg-white pr-11 pl-4 text-[14px] text-ink-secondary shadow-[0_2px_8px_rgba(26,92,79,0.04)] placeholder:text-muted focus:border-[#1a5c4f] focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15" />
-        </div>
-      )}
-
-      <div className="overflow-hidden rounded-2xl border border-[#d6ece5] bg-white shadow-[0_2px_8px_rgba(26,92,79,0.05)]">
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-b border-[#e8f0ec] bg-[#f8faf9] text-[12px] font-semibold uppercase tracking-wider text-slate-500">
-=======
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث بالاسم أو الإيميل..." className="h-11 w-full rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] pr-11 pl-4 t-body-sm text-ink-secondary e-1 placeholder:text-muted focus:border-[var(--brand-teal-700)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal-700)]/15" />
         </div>
       )}
@@ -272,7 +234,6 @@ export default function UsersPage() {
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="border-b border-[var(--border-subtle)] bg-[var(--surface-sunken)] t-caption font-semibold uppercase tracking-wider text-[var(--content-tertiary)]">
->>>>>>> main
               <th className="px-6 py-3.5">المستخدم</th>
               <th className="px-6 py-3.5">الدور الحالي</th>
               <th className="px-6 py-3.5">تغيير الدور</th>
@@ -303,15 +264,7 @@ export default function UsersPage() {
               ))
             ) : filteredProfiles.length === 0 ? (
               <tr>
-<<<<<<< HEAD
-                <td colSpan={6} className="px-6 py-16 text-center text-[14px] text-slate-500">جارِ التحميل…</td>
-              </tr>
-            ) : filteredProfiles.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-16 text-center text-[14px] text-slate-500">لا يوجد مستخدمون</td>
-=======
                 <td colSpan={6} className="px-6 py-16 text-center t-body-sm text-[var(--content-tertiary)]">لا يوجد مستخدمون</td>
->>>>>>> main
               </tr>
             ) : (
               filteredProfiles.map((p) => {
@@ -319,28 +272,17 @@ export default function UsersPage() {
                 const isAdminTarget = p.role === "admin";
                 const disabled = !canEdit || savingId === p.id || (me?.role === "manager" && (isAdminTarget || isSelf));
                 return (
-<<<<<<< HEAD
-                  <tr key={p.id} className="border-b border-[#e8f0ec] last:border-0">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-gradient-to-br from-[#1a5c4f] to-[#0f3a30] text-[13px] font-bold text-white shadow-sm">
-=======
                   <tr key={p.id} className="border-b border-[var(--border-subtle)] last:border-0">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <span className="flex h-10 w-10 flex-none items-center justify-center rounded-[var(--radius-md)] bg-gradient-to-br from-[var(--brand-teal-700)] to-[var(--brand-teal-900)] t-body-sm font-bold text-white shadow-sm">
->>>>>>> main
                           {profileInitials(p)}
                         </span>
                         <div className="min-w-0">
                           <p dir="auto" className="truncate t-body-sm font-semibold text-[var(--content-primary)]">
                             {profileName(p)} {isSelf && <span className="text-[var(--content-tertiary)]">(أنت)</span>}
                           </p>
-<<<<<<< HEAD
-                          {p.email && <p className="truncate text-[12px] text-slate-400">{p.email}</p>}
-=======
                           {p.email && <p className="truncate t-caption text-[var(--content-tertiary)]">{p.email}</p>}
->>>>>>> main
                         </div>
                       </div>
                     </td>
@@ -354,11 +296,7 @@ export default function UsersPage() {
                         value={p.role}
                         disabled={disabled}
                         onChange={(e) => changeRole(p, e.target.value as Role)}
-<<<<<<< HEAD
-                        className="h-10 rounded-xl border border-[#d6ece5] bg-[#f8faf9] px-3 text-[13px] font-medium text-slate-700 focus:border-[#1a5c4f] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1a5c4f]/15 transition disabled:cursor-not-allowed disabled:opacity-50"
-=======
                         className="h-10 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3 t-body-sm font-medium text-[var(--content-secondary)] focus:border-[var(--brand-teal-700)] focus:bg-[var(--surface-raised)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal-700)]/15 transition disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> main
                       >
                         <option value="sales">مندوب مبيعات</option>
                         <option value="manager">مدير</option>
@@ -372,11 +310,7 @@ export default function UsersPage() {
                         ) : (
                           <button
                             onClick={() => setPermsTarget(p)}
-<<<<<<< HEAD
-                            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-600 transition hover:border-[#1a5c4f]/40 hover:bg-[#f0faf8] hover:text-[#1a5c4f]"
-=======
                             className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-raised)] px-3 py-1.5 t-caption font-semibold text-[var(--content-secondary)] transition hover:border-[var(--brand-teal-700)]/40 hover:bg-[var(--surface-accent-subtle)] hover:text-[var(--brand-teal-700)]"
->>>>>>> main
                           >
                             <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5"><path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" /></svg>الصلاحيات</button>
                         )}
@@ -389,11 +323,7 @@ export default function UsersPage() {
                         ) : (
                           <button
                             onClick={() => openEdit(p)}
-<<<<<<< HEAD
-                            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-600 transition hover:border-[#1a5c4f]/40 hover:bg-[#f0faf8] hover:text-[#1a5c4f]"
-=======
                             className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-raised)] px-3 py-1.5 t-caption font-semibold text-[var(--content-secondary)] transition hover:border-[var(--brand-teal-700)]/40 hover:bg-[var(--surface-accent-subtle)] hover:text-[var(--brand-teal-700)]"
->>>>>>> main
                           >
                             <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>تعديل</button>
                         )}
@@ -487,11 +417,7 @@ export default function UsersPage() {
                 <button
                   onClick={createUser}
                   disabled={creating}
-<<<<<<< HEAD
-                  className="h-11 flex-1 rounded-xl bg-[#1a5c4f] text-[14px] font-bold text-white shadow-sm shadow-[#1a5c4f]/25 transition hover:bg-[#15503f] disabled:opacity-50"
-=======
                   className="h-11 flex-1 rounded-[var(--radius-md)] bg-[var(--brand-teal-700)] t-body-sm font-bold text-white shadow-sm shadow-[var(--brand-teal-700)]/25 transition hover:bg-[var(--brand-teal-800)] disabled:opacity-50"
->>>>>>> main
                 >
                   {creating ? "جارِ الإنشاء…" : "إنشاء الحساب"}
                 </button>
@@ -556,11 +482,7 @@ export default function UsersPage() {
                 <button
                   onClick={saveEdit}
                   disabled={savingEdit}
-<<<<<<< HEAD
-                  className="h-11 flex-1 rounded-xl bg-[#1a5c4f] text-[14px] font-bold text-white shadow-sm shadow-[#1a5c4f]/25 transition hover:bg-[#15503f] disabled:opacity-50"
-=======
                   className="h-11 flex-1 rounded-[var(--radius-md)] bg-[var(--brand-teal-700)] t-body-sm font-bold text-white shadow-sm shadow-[var(--brand-teal-700)]/25 transition hover:bg-[var(--brand-teal-800)] disabled:opacity-50"
->>>>>>> main
                 >
                   {savingEdit ? "جارِ الحفظ…" : "حفظ التعديلات"}
                 </button>

@@ -40,11 +40,7 @@ export default function CopilotWidget() {
 
       {/* Sliding panel */}
       <div
-<<<<<<< HEAD
-        className={`fixed left-0 top-0 z-[56] flex h-screen w-full max-w-[480px] flex-col border-r border-gray-100 bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
-=======
         className={`fixed left-0 top-0 z-[56] flex h-screen w-full max-w-[480px] flex-col border-r border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-2xl transition-transform duration-300 ease-in-out ${
->>>>>>> main
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >

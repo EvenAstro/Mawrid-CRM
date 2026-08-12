@@ -88,11 +88,7 @@ export default function UserPermissionsModal({
         className="relative flex max-h-[88vh] w-full max-w-[640px] flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-raised)] shadow-2xl"
       >
         {/* Header */}
-<<<<<<< HEAD
-        <div className="flex items-start justify-between gap-3 border-b border-slate-100 bg-[#141c2e] px-6 py-5">
-=======
         <div className="flex items-start justify-between gap-3 border-b border-[var(--border-subtle)] bg-[var(--surface-inverse)] px-6 py-5">
->>>>>>> main
           <div>
             <h3 className="t-body-lg font-bold text-white">صلاحيات {userName}</h3>
             <p className="mt-0.5 t-body-sm text-[var(--content-disabled)]">تحديد أي أجزاء الموقع مسموح لهذا المستخدم يوصلها</p>
@@ -137,11 +133,7 @@ export default function UserPermissionsModal({
                           return (
                             <div
                               key={f.key}
-<<<<<<< HEAD
-                              className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 transition ${allowed ? "border-[#b8ddd2] bg-[#f0faf8]/60" : "border-slate-200 bg-slate-50/40"}`}
-=======
                               className={`flex items-center justify-between gap-3 rounded-[var(--radius-md)] border px-4 py-3 transition ${allowed ? "border-[var(--brand-teal-200)] bg-[var(--surface-accent-subtle)]/60" : "border-[var(--border-default)] bg-[color-mix(in_srgb,var(--surface-sunken)_40%,transparent)]"}`}
->>>>>>> main
                             >
                               <div className="min-w-0">
                                 <p className="t-body-sm font-semibold text-[var(--content-primary)]">{f.label}</p>
@@ -151,11 +143,7 @@ export default function UserPermissionsModal({
                                 onClick={() => toggle(f.key)}
                                 role="switch"
                                 aria-checked={allowed}
-<<<<<<< HEAD
-                                className={`relative flex h-7 w-12 flex-none items-center rounded-full transition-colors ${allowed ? "bg-[#1a5c4f]" : "bg-slate-300"}`}
-=======
                                 className={`relative flex h-7 w-12 flex-none items-center rounded-full transition-colors ${allowed ? "bg-[var(--brand-teal-700)]" : "bg-[var(--border-default)]"}`}
->>>>>>> main
                               >
                                 <span className={`absolute left-[2px] h-5 w-5 rounded-full bg-[var(--surface-raised)] shadow-sm transition-transform ${allowed ? "translate-x-[22px]" : "translate-x-0"}`} />
                               </button>
@@ -175,11 +163,7 @@ export default function UserPermissionsModal({
               <button
                 onClick={handleSave}
                 disabled={saving || loading}
-<<<<<<< HEAD
-                className="h-11 flex-1 rounded-xl bg-[#1a5c4f] text-[14px] font-bold text-white shadow-sm shadow-[#1a5c4f]/20 transition hover:bg-[#15503f] disabled:opacity-50"
-=======
                 className="h-11 flex-1 rounded-[var(--radius-md)] bg-[var(--brand-teal-700)] t-body-sm font-bold text-white shadow-sm shadow-[var(--brand-teal-700)]/20 transition hover:bg-[var(--brand-teal-800)] disabled:opacity-50"
->>>>>>> main
               >
                 {saving ? "جارِ الحفظ…" : "حفظ الصلاحيات"}
               </button>

@@ -47,10 +47,6 @@ function contextForPath(pathname: string): string {
   if (pathname.startsWith("/dashboard/leads")) return "أنا على صفحة العملاء المحتملين";
   if (pathname.startsWith("/dashboard/activities")) return "أنا على صفحة النشاطات";
   if (pathname.startsWith("/dashboard/tasks")) return "أنا على صفحة المهام";
-<<<<<<< HEAD
-  if (pathname.startsWith("/dashboard/lead-scoring")) return "أنا على صفحة تقييم العملاء";
-=======
->>>>>>> main
   if (pathname.startsWith("/dashboard/contacts")) return "أنا على صفحة جهات الاتصال";
   return "";
 }
