@@ -15,6 +15,16 @@
 --    reading it couldn't tell which lead was on the other end. lead_id
 --    records who the agent resolved the number to at the time it replied.
 
+-- The rows the bug already created have to go first, or the unique index
+-- can't be built. Keeps the earliest row per wa_message_id — that's the
+-- delivery that was actually answered; the later ones are the redeliveries
+-- that produced the duplicate replies.
+delete from public._whatsapp_agent_log a
+using public._whatsapp_agent_log b
+where a.wa_message_id is not null
+  and a.wa_message_id = b.wa_message_id
+  and (a.created_at, a.id) > (b.created_at, b.id);
+
 create unique index if not exists whatsapp_agent_log_wa_message_id_key
   on public._whatsapp_agent_log (wa_message_id)
   where wa_message_id is not null;
