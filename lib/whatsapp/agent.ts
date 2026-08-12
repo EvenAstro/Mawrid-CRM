@@ -13,27 +13,25 @@ import { toolsFor, runCrmTool, type CrmToolCtx } from "@/lib/whatsapp/crmTools";
  * a stranger can't fish for someone else's deal and an existing lead can't
  * spawn a duplicate.
  *
- * The model is a free-tier one, which shapes two decisions here. It can't be
- * trusted to invent which product modules fit a restaurant, so that reasoning
- * is a tool (recommend_solution) reading a human-editable playbook rather
- * than prompt text. And free endpoints rate-limit constantly, so MODELS is a
- * fallback chain rather than a single id — a 429 on the first is normal
- * traffic, not an outage.
+ * It can't be trusted to invent which product modules fit a restaurant on
+ * its own, so that reasoning is a tool (recommend_solution) reading a
+ * human-editable playbook rather than prompt text — that keeps quality
+ * high regardless of which model in the chain ends up answering.
  */
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 
-/** Tried in order. OpenRouter's free-tier model slugs churn constantly —
- *  one going 404 because it was renamed or retired is normal, not a sign
- *  the whole chain is broken, so treat falling through as the expected
- *  path. The last entry is a paid model with a stable, unchanging slug —
- *  confirmed working in this project before — so the chain always has a
- *  floor: even if every free endpoint above it 404s or throttles, the
- *  agent still replies instead of going silent. */
+/** Tried in order. gpt-4o-mini leads — strong Arabic, reliable tool
+ *  calling, a stable slug that doesn't churn like OpenRouter's free tier
+ *  does, and cheap enough that cost was never the constraint quality was.
+ *  The two below it are free-tier backups for if OpenRouter itself has an
+ *  outage; llama-3.3-70b-instruct at the end is the same paid model that
+ *  was already confirmed working in this project, so the chain always has
+ *  a floor the agent can't fall through. */
 const MODELS = [
+  "openai/gpt-4o-mini",
   "deepseek/deepseek-chat-v3-0324:free",
   "meta-llama/llama-3.3-70b-instruct:free",
-  "qwen/qwen-2.5-72b-instruct:free",
   "meta-llama/llama-3.3-70b-instruct", // paid fallback — always resolves
 ];
 
