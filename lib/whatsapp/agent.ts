@@ -21,18 +21,18 @@ import { toolsFor, runCrmTool, type CrmToolCtx } from "@/lib/whatsapp/crmTools";
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 
-/** Tried in order. gpt-4o-mini leads — strong Arabic, reliable tool
- *  calling, a stable slug that doesn't churn like OpenRouter's free tier
- *  does, and cheap enough that cost was never the constraint quality was.
- *  The two below it are free-tier backups for if OpenRouter itself has an
- *  outage; llama-3.3-70b-instruct at the end is the same paid model that
- *  was already confirmed working in this project, so the chain always has
- *  a floor the agent can't fall through. */
+/** Tried in order, free-tier only — this account runs with no OpenRouter
+ *  balance, so a paid model here is dead weight: it will always 402 and
+ *  cost a fallback round for nothing. Free-tier slugs 404 as a block when
+ *  the account hasn't opted in to OpenRouter's free-model data policy
+ *  (openrouter.ai/settings/privacy → "free model publication") — that
+ *  toggle, not the slugs, was the actual cause of every 404 seen in
+ *  production so far. */
 const MODELS = [
-  "openai/gpt-4o-mini",
   "deepseek/deepseek-chat-v3-0324:free",
   "meta-llama/llama-3.3-70b-instruct:free",
-  "meta-llama/llama-3.3-70b-instruct", // paid fallback — always resolves
+  "qwen/qwen-2.5-72b-instruct:free",
+  "google/gemma-2-9b-it:free",
 ];
 
 const MAX_TOOL_ROUNDS = 5;
@@ -170,7 +170,13 @@ async function callModel(
         body: JSON.stringify({
           model,
           temperature: 0.7,
-          max_tokens: 1000,
+          // Kept modest on purpose: OpenRouter's paid models reject a
+          // request outright if the account's remaining credit can't
+          // cover the requested max_tokens ("can only afford 528" is a
+          // 402, not a partial response) — a low balance shouldn't be
+          // able to take the paid fallback down along with everything
+          // free-tier that already failed above it.
+          max_tokens: 500,
           messages,
           ...(tools ? { tools } : {}),
         }),
