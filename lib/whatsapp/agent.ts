@@ -371,10 +371,13 @@ const MODEL_TIMEOUT_MS = 20_000;
  *  rather than the invocation dying with it half-composed. */
 const TURN_BUDGET_MS = 44_000;
 
-/** Models to try per round. Walking six on every round can't fit the
- *  budget; two gives a slow or throttled endpoint one alternative and
- *  leaves time for the rounds that follow. */
-const MODELS_PER_ROUND = 2;
+/** Free models to try per round, before the paid floor. One, not two:
+ *  the account's free allowance is 50 requests a day and every attempt
+ *  spends one, so a second free model per round halves how many
+ *  conversations a day the agent can hold in exchange for very little —
+ *  when a free endpoint fails it's usually the account-wide daily limit,
+ *  which the next free model will hit too. */
+const MODELS_PER_ROUND = 1;
 
 /**
  * When OpenRouter's daily free-tier allowance runs out, every free model
@@ -433,9 +436,14 @@ async function callModel(
   // returns the same 429, so walking them is pure latency — go straight
   // to the paid floor for the rest of the day.
   const paidFloor: DiscoveredModel = { id: STATIC_FLOOR, supportsTools: true };
+  // The cap applies to the free models only. Slicing the combined list
+  // cut the paid floor off the end whenever discovery returned more
+  // entries than the cap — which is always — so a turn could exhaust two
+  // rate-limited free models and stop, never reaching the one endpoint
+  // that was actually answering.
   const chain: DiscoveredModel[] = isFreeTierExhausted()
     ? [paidFloor]
-    : [...discovered, paidFloor].slice(0, MODELS_PER_ROUND);
+    : [...discovered.slice(0, MODELS_PER_ROUND), paidFloor];
 
   for (const entry of chain) {
     const model = entry.id;
