@@ -377,6 +377,43 @@ const TURN_BUDGET_MS = 44_000;
 const MODELS_PER_ROUND = 2;
 
 /**
+ * When OpenRouter's daily free-tier allowance runs out, every free model
+ * 429s with the same account-wide error — the limit is per account, not
+ * per model, so walking the chain just burns latency discovering the same
+ * refusal eight times. Recording the exhaustion lets the rest of the day
+ * skip straight to the paid floor.
+ *
+ * The allowance is 50 requests/day on an account with no credits, and a
+ * single customer message costs three to five of them, so this fires
+ * after roughly ten conversations.
+ */
+let freeTierExhaustedUntil = 0;
+
+function markFreeTierExhausted() {
+  // Resets at UTC midnight, which is when OpenRouter's daily counter rolls.
+  const tomorrow = new Date();
+  tomorrow.setUTCHours(24, 0, 0, 0);
+  freeTierExhaustedUntil = tomorrow.getTime();
+  console.warn(`[whatsapp agent] free tier exhausted for today — using paid floor until ${tomorrow.toISOString()}`);
+}
+
+function isFreeTierExhausted(): boolean {
+  return Date.now() < freeTierExhaustedUntil;
+}
+
+/** Pulls the affordable budget out of OpenRouter's 402. The message reads
+ *  "You requested up to 450 tokens, but can only afford 231" — with a thin
+ *  balance the paid model is usable, just not at the budget we asked for,
+ *  and retrying at what it quoted is the difference between a reply and
+ *  the holding message. */
+function affordableTokensFrom(body: string): number | null {
+  const m = body.match(/can only afford (\d+)/i);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  return Number.isFinite(n) && n > 40 ? n - 10 : null;
+}
+
+/**
  * One OpenRouter round, walking the fallback chain. Returns the assistant
  * message, or null when every model in the chain refused — which on free
  * tier usually means "all throttled right now", not "broken".
@@ -392,11 +429,13 @@ async function callModel(
   deadline: number,
 ): Promise<{ content?: string; tool_calls?: ChatMessage["tool_calls"] } | null> {
   const discovered = await discoverFreeModels();
-  const chain: DiscoveredModel[] = [
-    ...discovered,
-    // Paid floor last, and only reachable if every free endpoint failed.
-    { id: STATIC_FLOOR, supportsTools: true },
-  ].slice(0, MODELS_PER_ROUND);
+  // Once the account's daily free allowance is gone every free model
+  // returns the same 429, so walking them is pure latency — go straight
+  // to the paid floor for the rest of the day.
+  const paidFloor: DiscoveredModel = { id: STATIC_FLOOR, supportsTools: true };
+  const chain: DiscoveredModel[] = isFreeTierExhausted()
+    ? [paidFloor]
+    : [...discovered, paidFloor].slice(0, MODELS_PER_ROUND);
 
   for (const entry of chain) {
     const model = entry.id;
@@ -409,42 +448,71 @@ async function callModel(
       console.warn("[whatsapp agent] turn budget spent — not starting another model call");
       break;
     }
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), Math.min(MODEL_TIMEOUT_MS, remaining));
+
+    // Arabic costs far more tokens per character than English on these
+    // tokenizers — 280 cut a three-line reply off mid-word. This is
+    // headroom, not a target; length is governed by the prompt and
+    // MAX_REPLY_CHARS. A 402 below may lower it for this attempt.
+    let budget = 450;
+
+    /** One attempt at `model`. Separated out so a 402 can replay it at a
+     *  budget the balance actually covers. */
+    const attempt = async (maxTokens: number) => {
+      const controller = new AbortController();
+      const left = deadline - Date.now();
+      const timeout = setTimeout(() => controller.abort(), Math.min(MODEL_TIMEOUT_MS, Math.max(left, 1_000)));
+      try {
+        return await fetch(OPENROUTER_ENDPOINT, {
+          method: "POST",
+          signal: controller.signal,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model,
+            // Low on purpose. These are quantized free endpoints writing
+            // in Arabic, and sampling temperature is what decides how
+            // often a near-miss token from another script wins — 0.7
+            // produced visible token soup in production.
+            temperature: 0.3,
+            max_tokens: maxTokens,
+            messages,
+            ...(toolsForThisModel ? { tools: toolsForThisModel } : {}),
+          }),
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
+    };
+
     try {
-      const res = await fetch(OPENROUTER_ENDPOINT, {
-        method: "POST",
-        signal: controller.signal,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model,
-          // Low on purpose. These are quantized free endpoints writing in
-          // Arabic, and sampling temperature is what decides how often a
-          // near-miss token from another script wins — 0.7 produced
-          // visible token soup in production, 0.3 keeps it on-distribution
-          // without making the copy read robotic.
-          temperature: 0.3,
-          // Kept modest on purpose: OpenRouter's paid models reject a
-          // request outright if the account's remaining credit can't
-          // cover the requested max_tokens ("can only afford 528" is a
-          // 402, not a partial response) — a low balance shouldn't be
-          // able to take the paid fallback down along with everything
-          // free-tier that already failed above it.
-          // Arabic costs far more tokens per character than English on
-          // these tokenizers — 280 cut a three-line reply off mid-word
-          // ("...وربحه الصافي لحظياً. كم"). This is headroom, not a target;
-          // length is governed by the prompt and MAX_REPLY_CHARS.
-          max_tokens: 450,
-          messages,
-          ...(toolsForThisModel ? { tools: toolsForThisModel } : {}),
-        }),
-      });
+      let res = await attempt(budget);
+
+      if (res.status === 402) {
+        // Thin balance: the model is reachable, we just asked for more
+        // tokens than the account can pay for. OpenRouter names the
+        // number it will accept, so ask again for exactly that.
+        const body = await res.text().catch(() => "");
+        const affordable = affordableTokensFrom(body);
+        if (affordable) {
+          console.warn(`[whatsapp agent] ${model} → 402, retrying with max_tokens=${affordable}`);
+          budget = affordable;
+          res = await attempt(budget);
+        } else {
+          console.warn(`[whatsapp agent] ${model} → 402`, body.slice(0, 200));
+          continue;
+        }
+      }
 
       if (!res.ok) {
         const body = await res.text().catch(() => "");
+        // The daily free-model allowance is account-wide, so one model
+        // reporting it means every free model will too.
+        if (res.status === 429 && /free-models-per-day/.test(body)) {
+          markFreeTierExhausted();
+          continue;
+        }
         console.warn(`[whatsapp agent] ${model} → ${res.status}`, body.slice(0, 300));
         continue; // next model in the chain
       }
@@ -480,8 +548,6 @@ async function callModel(
     } catch (err) {
       console.warn(`[whatsapp agent] ${model} threw`, err);
       continue;
-    } finally {
-      clearTimeout(timeout);
     }
   }
   console.error("[whatsapp agent] every model in the fallback chain failed");
