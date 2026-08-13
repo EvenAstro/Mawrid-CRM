@@ -69,6 +69,38 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // The probes above ask for 20 tokens, which a nearly-empty balance can
+  // still afford — that's why the paid floor looked healthy while the
+  // agent kept failing. This asks for what the agent actually asks for,
+  // so the 402 (and the budget OpenRouter will accept) is visible.
+  let realistic: unknown = null;
+  if (apiKey) {
+    const started = Date.now();
+    try {
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        signal: AbortSignal.timeout(25_000),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: "meta-llama/llama-3.3-70b-instruct",
+          max_tokens: 450,
+          temperature: 0.3,
+          messages: [{ role: "user", content: "رد بجملة قصيرة: كيف حالك؟" }],
+        }),
+      });
+      const body = await res.text();
+      realistic = {
+        note: "paid floor at the agent's real max_tokens (450)",
+        status: res.status,
+        ms: Date.now() - started,
+        ok: res.ok,
+        body: body.slice(0, 400),
+      };
+    } catch (err) {
+      realistic = { note: "paid floor at 450", ok: false, error: String(err).slice(0, 200) };
+    }
+  }
+
   const { data: queue } = await supabaseAdmin
     .from("_whatsapp_agent_queue")
     .select("status, created_at, last_error, wa_from")
@@ -91,6 +123,7 @@ export async function GET(req: NextRequest) {
     discovered_count: discovered.length,
     discovered,
     probes,
+    realistic_probe: realistic,
     recent_queue: queue ?? [],
   });
 }
