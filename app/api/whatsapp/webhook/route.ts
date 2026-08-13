@@ -1,33 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import crypto from "node:crypto";
-import { sendWhatsAppText } from "@/lib/whatsapp/client";
-import { generateWhatsAppReply } from "@/lib/whatsapp/agent";
-import {
-  isWhatsAppAgentEnabled,
-  logWhatsAppMessage,
-  claimInboundMessage,
-  linkConversationToLead,
-} from "@/lib/models/whatsappAgent";
-import { checkRateLimit } from "@/lib/rateLimit";
+import { claimInboundMessage } from "@/lib/models/whatsappAgent";
+import { enqueueInbound } from "@/lib/whatsapp/queue";
+import { drainWhatsAppQueue } from "@/lib/whatsapp/processor";
 
 /**
  * WhatsApp Cloud API webhook — sandbox test number only.
  *
+ * The route's job is to acknowledge Meta within a second and log what
+ * arrived. The model loop that composes the reply runs in the background
+ * task scheduled with after() — Meta stops retrying because it saw a 200,
+ * and the customer's message is answered on the same request without the
+ * customer having to wait for the whole loop to finish before the webhook
+ * returns. Anything after() drops (cold shutdown, container recycle) is
+ * caught by the queue's cron sweeper on the next tick.
+ *
  * Two request shapes from Meta, handled the way the platform requires:
  *
- *   GET  — the one-time verification handshake when you register this URL
- *          in the Meta app dashboard. Echoes back hub.challenge if the
- *          verify token matches.
+ *   GET  — the one-time verification handshake when you register the URL
+ *          in the Meta app dashboard. Echoes hub.challenge back on match.
  *
- *   POST — actual events (incoming messages, delivery receipts, ...). Every
- *          POST body is signed with the app secret; a request whose
- *          signature doesn't match is rejected before anything in it is
- *          trusted, the same principle as 64's quote-grounding check —
- *          verify before you act, not after.
- *
- * The kill switch is checked after logging, not before: an inbound message
- * is real regardless of whether the agent is allowed to answer it, so it is
- * always recorded. Only the reply is gated.
+ *   POST — actual events. Every POST body is signed with the app secret;
+ *          a request whose signature doesn't match is rejected before
+ *          anything in it is trusted.
  */
 
 function verifySignature(rawBody: string, signatureHeader: string | null): boolean {
@@ -78,16 +74,15 @@ export async function POST(req: NextRequest) {
   const messages =
     body.entry?.flatMap((e) => e.changes?.flatMap((c) => c.value?.messages ?? []) ?? []) ?? [];
 
+  let enqueued = 0;
   for (const m of messages) {
     if (m.type !== "text" || !m.text?.body) continue;
     const from = m.from;
     const text = m.text.body;
 
-    // Logging the inbound message and claiming the right to answer it are
-    // the same write. Meta redelivers a webhook it thinks failed — which
-    // includes one that was merely slow, and the model loop often is — so
-    // without this the same message got answered twice, the second reply
-    // differing because the first was already in the agent's history.
+    // Dedupe on the log's unique wa_message_id index — Meta redelivers
+    // webhooks it thinks failed, and without this the same message would
+    // be enqueued twice and answered twice.
     const isFirstDelivery = await claimInboundMessage({
       waFrom: from,
       body: text,
@@ -95,38 +90,23 @@ export async function POST(req: NextRequest) {
     });
     if (!isFirstDelivery) continue;
 
-    // Per-number rate limit — a loop on the other end (or a misbehaving
-    // test) must not be able to burn the OpenRouter budget unbounded.
-    const rl = checkRateLimit(`whatsapp:${from}`, 20, 60_000);
-    if (!rl.allowed) {
-      console.warn(`[whatsapp webhook] rate limited for ${from}`);
-      continue;
-    }
-
-    const enabled = await isWhatsAppAgentEnabled();
-    if (!enabled) continue; // logged above; just not replying
-
-    const result = await generateWhatsAppReply(from, text);
-    if (!result?.reply) continue;
-
-    const sent = await sendWhatsAppText(from, result.reply);
-    if (sent.ok) {
-      await logWhatsAppMessage({
-        waFrom: from,
-        direction: "outbound",
-        body: result.reply,
-        waMessageId: sent.messageId,
-        leadId: result.leadId,
-      });
-      // Attribute the rest of the thread too, so the CRM view shows the
-      // link across the whole conversation and not just from here on.
-      if (result.leadId) await linkConversationToLead(from, result.leadId);
-    } else {
-      console.error("[whatsapp webhook] send failed", sent.error);
-    }
+    await enqueueInbound({ waFrom: from, body: text, waMessageId: m.id ?? null });
+    enqueued++;
   }
 
-  // Meta requires a fast 200 regardless of what happened above, or it will
-  // retry the same webhook delivery repeatedly.
+  // Kick the processor on the same request, after the 200 goes back to
+  // Meta. after() runs to completion even though the response has already
+  // been sent, which is exactly the shape Meta needs: no wait for the
+  // model loop, no retries triggered by our own latency.
+  if (enqueued > 0) {
+    after(async () => {
+      try {
+        await drainWhatsAppQueue(enqueued);
+      } catch (err) {
+        console.error("[whatsapp webhook] background drain threw", err);
+      }
+    });
+  }
+
   return NextResponse.json({ ok: true });
 }

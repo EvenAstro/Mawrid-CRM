@@ -6,6 +6,9 @@ import {
   logWhatsAppActivity,
 } from "@/lib/models/whatsappCrmContext";
 import { playbookFor, sizeAdvice } from "@/lib/whatsapp/mawridKnowledge";
+import { resolveLeadAssignment, setLeadOwner } from "@/lib/models/leadAssignmentRules";
+import { fetchFreeSlotsAdmin } from "@/lib/models/calendar";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { sendEmail } from "@/lib/email/resend";
 
 /**
@@ -46,6 +49,21 @@ const SHARED_TOOLS = [
           size: { type: "string", description: "عدد الموظفين أو الفروع إن ذكره، وإلا اتركه فاضي" },
         },
         required: ["business_type"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "find_available_slots",
+      description:
+        "يرجع لك ٣ مواعيد فاضية بتقويم مندوب العميل ضمن الأيام القادمة. استخدمه قبل ما تعرض على العميل موعد للعرض التوضيحي — لا تقترح وقت بنفسك مثل 'بكرة الصبح' من رأسك. لازم يكون العميل عنده مندوب معيّن (لعميل موجود بالنظام أو بعد create_qualified_lead).",
+      parameters: {
+        type: "object",
+        properties: {
+          within_days: { type: "number", description: "خلال كم يوم من اليوم تبحث عن مواعيد — ٧ افتراضياً" },
+        },
+        required: [],
       },
     },
   },
@@ -97,15 +115,21 @@ const TOOLS_FOR_EXISTING_LEAD = [
     function: {
       name: "schedule_demo",
       description:
-        "يحجز عرض توضيحي أو مكالمة للعميل وينشئ مهمة حقيقية عند فريق المبيعات بالموعد المطلوب. استخدمه أول ما العميل يوافق على مكالمة أو عرض ويذكر وقت يناسبه.",
+        "يحجز عرض توضيحي بتقويم المندوب فعلياً وينشئ مهمة عليه. الطريقة الصح: استخدم find_available_slots أولاً، اعرض المواعيد للعميل، ولما يختار واحد ناديني بـslot_at = قيمة starts_at للموعد اللي اختاره. لو العميل ذكر وقت مو ضمن المواعيد المقترحة، ناديني بـpreferred_time بس بدون slot_at وبنسجل طلب مفتوح.",
       parameters: {
         type: "object",
         properties: {
-          preferred_time: { type: "string", description: "الوقت اللي ذكره العميل بكلماته، مثلاً: بكرة الصبح، الأحد بعد العصر" },
-          days_from_now: { type: "number", description: "كم يوم من اليوم يقع الموعد تقريباً — 0 لليوم، 1 لبكرة، وهكذا" },
+          slot_at: {
+            type: "string",
+            description: "توقيت ISO للموعد اللي اختاره العميل من find_available_slots. مفضل يكون موجود.",
+          },
+          preferred_time: {
+            type: "string",
+            description: "الوقت اللي ذكره العميل بكلماته — للسجل والإيميل، حتى لو slot_at موجود.",
+          },
           notes: { type: "string", description: "ملخص وش يبي يشوفه بالعرض" },
         },
-        required: ["preferred_time", "days_from_now"],
+        required: ["preferred_time"],
       },
     },
   },
@@ -234,6 +258,46 @@ export async function runCrmTool(name: string, rawArgs: string, ctx: CrmToolCtx)
         });
       }
 
+      case "find_available_slots": {
+        if (!ctx.lead?.ownerId) {
+          return JSON.stringify({
+            error: "لا يوجد مندوب معيّن — لا تقدر تحجز موعد قبل ما يكون فيه مندوب. لعميل جديد استخدم create_qualified_lead أولاً.",
+          });
+        }
+        const withinDays = Math.min(Math.max(Number(args.within_days ?? 7), 1), 21);
+        const from = new Date();
+        const to = new Date();
+        to.setUTCDate(to.getUTCDate() + withinDays);
+        const slots = await fetchFreeSlotsAdmin({
+          userId: ctx.lead.ownerId,
+          from: from.toISOString(),
+          to: to.toISOString(),
+          durationMinutes: 30,
+          max: 3,
+        });
+        if (!slots.length) {
+          return JSON.stringify({
+            slots: [],
+            تعليمات: "ما فيه مواعيد فاضية خلال المدة — اسأل العميل أي وقت يناسبه بشكل مفتوح وسجّلها بـschedule_demo بدون slot_at.",
+          });
+        }
+        return JSON.stringify({
+          slots: slots.map((s) => ({
+            starts_at: s.starts_at,
+            label: new Date(s.starts_at).toLocaleString("ar-SA", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              hour: "numeric",
+              minute: "2-digit",
+              timeZone: "Asia/Riyadh",
+            }),
+          })),
+          تعليمات:
+            "اعرض المواعيد الثلاثة على العميل بشكل طبيعي بجملة وحدة (مثلاً: 'متاح الأحد ١٠ص، أو الاثنين ٢م، أو الثلاثاء ١١ص — أيها أنسب؟'). لما يختار واحد، ناديe schedule_demo مع slot_at = قيمة starts_at للموعد اللي اختاره بالضبط.",
+        });
+      }
+
       case "get_customer_status": {
         if (!ctx.lead) return JSON.stringify({ error: "no lead in context" });
         return JSON.stringify({
@@ -277,7 +341,19 @@ export async function runCrmTool(name: string, rawArgs: string, ctx: CrmToolCtx)
         const preferred = String(args.preferred_time ?? "").trim();
         if (!preferred) return JSON.stringify({ error: "preferred_time required" });
         const notes = String(args.notes ?? "").trim();
-        const dueAt = dueDateFrom(args.days_from_now);
+
+        // Prefer the exact slot the customer picked; fall back to a
+        // rough day-based guess when the model didn't run
+        // find_available_slots first (customer named a time nobody
+        // offered, or the calendar was empty).
+        let dueAt: string;
+        const slotAtRaw = args.slot_at ? String(args.slot_at).trim() : "";
+        const parsedSlot = slotAtRaw ? new Date(slotAtRaw) : null;
+        if (parsedSlot && !Number.isNaN(parsedSlot.valueOf()) && parsedSlot > new Date()) {
+          dueAt = parsedSlot.toISOString();
+        } else {
+          dueAt = dueDateFrom(args.days_from_now ?? 1);
+        }
         const who = ctx.lead.fullName ?? "عميل من واتساب";
 
         const { error } = await createWhatsAppTask({
@@ -361,16 +437,41 @@ export async function runCrmTool(name: string, rawArgs: string, ctx: CrmToolCtx)
         });
         if (error || !leadId) return JSON.stringify({ ok: false, error });
 
-        // Mutate ctx so a following schedule_demo / request_human_help in
-        // this same turn attaches to the lead that was just created
-        // instead of finding nothing.
+        // Route the new lead to the right rep automatically, then load
+        // that rep's contact info back into ctx so a schedule_demo /
+        // request_human_help later in the same turn attaches to the
+        // owner instead of finding no one to email.
+        const sizeNum = size ? parseInt(size.replace(/\D/g, ""), 10) : null;
+        const assignment = await resolveLeadAssignment({
+          leadId,
+          industry: businessType,
+          size: Number.isFinite(sizeNum) ? sizeNum : null,
+          source: "واتساب",
+        });
+        let ownerId: string | null = null;
+        let ownerName: string | null = null;
+        let ownerEmail: string | null = null;
+        if (assignment?.assignee_id) {
+          ownerId = assignment.assignee_id;
+          await setLeadOwner(leadId, ownerId);
+          const { data: prof } = await supabaseAdmin
+            .from("profiles")
+            .select("full_name, first_name, last_name, email")
+            .eq("id", ownerId)
+            .maybeSingle();
+          if (prof) {
+            ownerName = prof.full_name || [prof.first_name, prof.last_name].filter(Boolean).join(" ") || null;
+            ownerEmail = prof.email ?? null;
+          }
+        }
+
         ctx.lead = {
           leadId,
           fullName,
           companyName,
-          ownerId: null,
-          ownerName: null,
-          ownerEmail: null,
+          ownerId,
+          ownerName,
+          ownerEmail,
           stageLabel: null,
           deals: [],
           recentActivities: [],
@@ -378,7 +479,11 @@ export async function runCrmTool(name: string, rawArgs: string, ctx: CrmToolCtx)
         return JSON.stringify({
           ok: true,
           lead_id: leadId,
-          تعليمات: "لا تخبر العميل إنك 'سجلته بالنظام' بصيغة إدارية — بدلها اعرض عليه الخطوة التالية (عرض توضيحي أو تجربة) واسأله وش الوقت المناسب له.",
+          assigned_to: ownerName,
+          rule: assignment?.rule_name ?? null,
+          تعليمات: ownerName
+            ? `تم توجيه العميل تلقائياً للمندوب ${ownerName}. اذكر اسمه للعميل بصيغة طبيعية (مثلاً: "${ownerName} راح يتابع معك") واعرض عليه ترتيب موعد.`
+            : "لا تخبر العميل إنك 'سجلته بالنظام' — بدلها اعرض عليه الخطوة التالية (عرض توضيحي) واسأله عن وقت مناسب.",
         });
       }
 

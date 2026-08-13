@@ -16,6 +16,34 @@ function endpoint(phoneNumberId: string): string {
   return `https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`;
 }
 
+/**
+ * Marks an inbound message as read and shows the "typing…" indicator in
+ * WhatsApp until the reply lands. Cosmetic but the whole point is
+ * perceived latency: the model loop still takes seconds, and a customer
+ * who sees the typing bubble reads that as "he's answering" instead of
+ * "no one's there". Best-effort — a failure here must not block the
+ * actual reply, so it swallows errors and returns void.
+ */
+export async function sendWhatsAppTyping(recipientMessageId: string): Promise<void> {
+  const token = process.env.WHATSAPP_ACCESS_TOKEN;
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  if (!token || !phoneNumberId || !recipientMessageId) return;
+  try {
+    await fetch(endpoint(phoneNumberId), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        status: "read",
+        message_id: recipientMessageId,
+        typing_indicator: { type: "text" },
+      }),
+    });
+  } catch (err) {
+    console.warn("[whatsapp] typing indicator failed", err);
+  }
+}
+
 export async function sendWhatsAppText(to: string, body: string): Promise<{ ok: boolean; messageId?: string; error?: string }> {
   const token = process.env.WHATSAPP_ACCESS_TOKEN;
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;

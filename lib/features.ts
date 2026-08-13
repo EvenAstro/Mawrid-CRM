@@ -24,6 +24,9 @@ export const FEATURES: FeatureDef[] = [
   { key: "insights", label: "الرؤى والإيرادات", description: "رؤى تحليلية وذكاء الإيرادات", group: "الذكاء", href: "/dashboard/insights" },
   { key: "users", label: "إدارة المستخدمين", description: "إدارة حسابات الفريق وصلاحياتهم", group: "الإدارة", href: "/dashboard/users" },
   { key: "whatsapp_conversations", label: "محادثات واتساب", description: "محادثات العملاء مع وكيل واتساب، مربوطة بملفاتهم", group: "التفاعل", href: "/dashboard/whatsapp" },
+  { key: "calendar", label: "التقويم", description: "التقويم الأسبوعي — كل مواعيدك المجدولة", group: "التفاعل", href: "/dashboard/calendar" },
+  { key: "working_hours", label: "ساعات العمل", description: "ساعات عمل يومية يستخدمها الوكيل لاقتراح مواعيد للعملاء", group: "التفاعل", href: "/dashboard/settings/working-hours" },
+  { key: "assignment_rules", label: "قواعد توزيع العملاء", description: "قواعد ذكية لتوجيه كل عميل جديد للمندوب المناسب تلقائياً", group: "الإدارة", href: "/dashboard/settings/assignment-rules" },
   { key: "whatsapp_agent", label: "وكيل واتساب — تجريبي", description: "تحكم ومراقبة وكيل الرد التلقائي التجريبي على واتساب", group: "الإدارة", href: "/dashboard/whatsapp-test" },
 ];
 
@@ -44,7 +47,7 @@ export function getFeature(key: string): FeatureDef | undefined {
 }
 
 /** Baseline access before any per-user override is applied. */
-const SALES_DEFAULT_DENY = new Set(["insights", "users", "team", "whatsapp_agent"]);
+const SALES_DEFAULT_DENY = new Set(["insights", "users", "team", "whatsapp_agent", "assignment_rules"]);
 
 export function defaultFeatureAccess(role: Role | null, key: string): boolean {
   if (role === "admin" || role === "manager") return true;
