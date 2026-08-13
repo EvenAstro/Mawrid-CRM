@@ -15,6 +15,18 @@ import { drainWhatsAppQueue } from "@/lib/whatsapp/processor";
  *
  * Guarded by CRON_SECRET so a public poller can't drive OpenRouter usage
  * for us. Vercel Cron sends the header automatically for scheduled runs.
+ *
+ * Scheduled daily, not per-minute, because this project is on Vercel's
+ * Hobby plan — Hobby caps crons at one run per day, and a per-minute
+ * schedule in vercel.json is rejected outright, which blocks the whole
+ * deployment rather than just the cron. A daily sweep is too slow to be
+ * a real recovery path for a stuck message; treat it as a backstop that
+ * eventually clears the queue, and rely on after() for actual delivery.
+ * On a Pro plan this can go back to "* * * * *" and becomes a genuine
+ * minute-level safety net.
+ *
+ * The route also works on demand: hit it with the CRON_SECRET bearer
+ * token to force a drain if a message is visibly stuck.
  */
 
 export const dynamic = "force-dynamic";
