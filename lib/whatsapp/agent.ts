@@ -139,6 +139,8 @@ const BASE_SYSTEM = `أنت "سامي"، مستشار حلول أعمال في "
 ردك رسالة واتساب، مو إيميل. سطرين إلى ثلاثة كحد أقصى.
 لا تستخدم عناوين ولا قوائم نقطية ولا فقرات. لا تعيد شرح كلام قلته قبل.
 لا ترسل إلا رسالة واحدة بالرد — لا تكتب رسالتين متتاليتين.
+⛔ رحّب مرة وحدة بأول رسالة فقط. بعدها ادخل بالموضوع مباشرة — لا "هلا بك" ولا "مرحباً" ولا 👋 مرة ثانية.
+أنهِ جملتك دائماً — لا توقف بنص كلمة أو بنص سؤال.
 
 ════════ أدواتك ════════
 • recommend_solution — أول ما تعرف نشاط العميل استخدمها فوراً؛ ترجع مشاكل قطاعه والحل. لا تخمّن.
@@ -340,7 +342,11 @@ async function callModel(
           // 402, not a partial response) — a low balance shouldn't be
           // able to take the paid fallback down along with everything
           // free-tier that already failed above it.
-          max_tokens: 280,
+          // Arabic costs far more tokens per character than English on
+          // these tokenizers — 280 cut a three-line reply off mid-word
+          // ("...وربحه الصافي لحظياً. كم"). This is headroom, not a target;
+          // length is governed by the prompt and MAX_REPLY_CHARS.
+          max_tokens: 450,
           messages,
           ...(tools ? { tools } : {}),
         }),
@@ -411,10 +417,37 @@ function clampReply(raw: string): string {
     reply = blocks[0].trim();
   }
 
-  if (reply.length <= MAX_REPLY_CHARS) return reply;
-  const head = reply.slice(0, MAX_REPLY_CHARS);
-  const lastBreak = Math.max(head.lastIndexOf("؟"), head.lastIndexOf("?"), head.lastIndexOf("."), head.lastIndexOf("\n"));
-  return (lastBreak > MAX_REPLY_CHARS * 0.5 ? head.slice(0, lastBreak + 1) : head).trim();
+  if (reply.length > MAX_REPLY_CHARS) {
+    reply = reply.slice(0, MAX_REPLY_CHARS);
+  }
+
+  // Whatever the reason the text ends mid-sentence — the token ceiling cut
+  // it, or the slice above did — the customer must not see the fragment.
+  // Production sent "...وربحه الصافي لحظياً. كم" and stopped there.
+  return trimToLastCompleteSentence(reply);
+}
+
+/**
+ * Cuts back to the last sentence that actually finished. Leaves the text
+ * alone when it already ends on punctuation, and gives up rather than
+ * gutting a reply whose only sentence is incomplete — half a sentence
+ * still reads better than nothing at all.
+ */
+function trimToLastCompleteSentence(text: string): string {
+  const reply = text.trim();
+  if (!reply || /[.!?؟…]$/.test(reply)) return reply;
+
+  const lastEnd = Math.max(
+    reply.lastIndexOf("."),
+    reply.lastIndexOf("؟"),
+    reply.lastIndexOf("?"),
+    reply.lastIndexOf("!"),
+    reply.lastIndexOf("…"),
+  );
+  // Only trim if enough of the reply survives — otherwise the customer
+  // gets a near-empty message, which is worse than a clipped one.
+  if (lastEnd > reply.length * 0.4) return reply.slice(0, lastEnd + 1).trim();
+  return reply;
 }
 
 export interface WhatsAppReply {
