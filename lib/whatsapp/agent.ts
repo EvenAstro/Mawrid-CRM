@@ -469,14 +469,31 @@ async function callModel(
     const budget = maxTokensOverride ?? 450;
     for (const model of GEMINI_MODELS) {
       if (deadline - Date.now() < 5_000) break;
-      const out = await callGemini({
-        apiKey: geminiKey,
-        model,
-        messages,
-        tools,
-        maxTokens: budget,
-        timeoutMs: Math.min(MODEL_TIMEOUT_MS, Math.max(deadline - Date.now(), 1_000)),
-      });
+      const call = (withTools: ReturnType<typeof toolsFor> | undefined) =>
+        callGemini({
+          apiKey: geminiKey,
+          model,
+          messages,
+          tools: withTools,
+          maxTokens: budget,
+          timeoutMs: Math.min(MODEL_TIMEOUT_MS, Math.max(deadline - Date.now(), 1_000)),
+        });
+
+      let out = await call(tools);
+
+      // Tools are the fragile part of this integration: the schemas are
+      // written for OpenAI, and a shape Gemini rejects fails the whole
+      // request rather than just the tool. Retrying without them turns a
+      // dead turn into a talking one — the agent loses the ability to
+      // book or record on that turn, which is a far smaller loss than the
+      // customer getting an apology. Only worth it when tools were the
+      // difference; a failure without them is a real failure.
+      if (!out.ok && tools) {
+        console.warn(`[whatsapp agent] gemini ${model} → ${out.status} with tools, retrying without`, out.error);
+        noteFailure(`gemini ${model} ${out.status} with tools: ${out.error.slice(0, 160)}`);
+        out = await call(undefined);
+      }
+
       if (!out.ok) {
         console.warn(`[whatsapp agent] gemini ${model} → ${out.status}`, out.error);
         noteFailure(`gemini ${model} ${out.status}: ${out.error.slice(0, 160)}`);
