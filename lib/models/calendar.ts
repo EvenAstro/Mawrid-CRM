@@ -38,6 +38,18 @@ export async function saveWorkingHours(userId: string, rows: WorkingHours[]): Pr
   return { error };
 }
 
+/**
+ * Gives a user the standard Sunday–Thursday 9–5 week. The migration seeded
+ * this for sales-role users only, so anyone promoted into a rule later —
+ * a manager who takes enterprise leads, say — has no hours at all, and the
+ * agent silently finds no slots for them. This is the one-click repair.
+ * Idempotent: existing rows are left alone.
+ */
+export async function seedWorkingHours(userId: string): Promise<{ error: Error | null }> {
+  const { error } = await supabase.rpc("seed_working_hours", { p_user_id: userId });
+  return { error };
+}
+
 export interface FreeSlot {
   starts_at: string;
   ends_at: string;
