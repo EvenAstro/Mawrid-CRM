@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/requireUser";
 import { discoverFreeModels } from "@/lib/whatsapp/agent";
-import { callGemini, GEMINI_MODELS } from "@/lib/whatsapp/gemini";
+import { callGemini, discoverGeminiModels } from "@/lib/whatsapp/gemini";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /**
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
   const geminiKey = process.env.GEMINI_API_KEY;
   const geminiProbes: unknown[] = [];
   if (geminiKey) {
-    for (const model of GEMINI_MODELS) {
+    for (const model of await discoverGeminiModels(geminiKey)) {
       const started = Date.now();
       const out = await callGemini({
         apiKey: geminiKey,

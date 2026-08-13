@@ -1,7 +1,7 @@
 import { fetchWhatsAppHistory } from "@/lib/models/whatsappAgent";
 import { findLeadByPhone, type CrmLeadContext } from "@/lib/models/whatsappCrmContext";
 import { toolsFor, runCrmTool, type CrmToolCtx } from "@/lib/whatsapp/crmTools";
-import { callGemini, GEMINI_MODELS } from "@/lib/whatsapp/gemini";
+import { callGemini, discoverGeminiModels } from "@/lib/whatsapp/gemini";
 
 /**
  * The WhatsApp sales-agent reply logic.
@@ -467,7 +467,7 @@ async function callModel(
   const geminiKey = process.env.GEMINI_API_KEY;
   if (geminiKey) {
     const budget = maxTokensOverride ?? 450;
-    for (const model of GEMINI_MODELS) {
+    for (const model of await discoverGeminiModels(geminiKey)) {
       if (deadline - Date.now() < 5_000) break;
       const call = (withTools: ReturnType<typeof toolsFor> | undefined) =>
         callGemini({

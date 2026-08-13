@@ -21,10 +21,69 @@ import type { toolsFor } from "@/lib/whatsapp/crmTools";
 
 const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
 
-/** Free-tier models, best first. 2.0-flash handles Arabic and tool
- *  calling well; the lite variant is the fallback when the first is
- *  rate-limited, since its quota is counted separately. */
-export const GEMINI_MODELS = ["gemini-2.0-flash", "gemini-2.0-flash-lite"];
+/**
+ * Aliases that always point at whatever Google currently ships.
+ *
+ * Pinning versions here was the same mistake made with OpenRouter's
+ * slugs: gemini-2.0-flash and its lite variant were retired and started
+ * 404ing with "no longer available", which took the whole agent down.
+ * The -latest aliases move with Google's releases, so a retirement
+ * becomes a silent upgrade instead of an outage. Both verified answering
+ * Arabic and returning functionCall parts for this project's tool
+ * schemas.
+ *
+ * discoverGeminiModels() below supersedes this at runtime; the constants
+ * are the starting point and the fallback if that listing ever fails.
+ */
+export const GEMINI_MODELS = ["gemini-flash-latest", "gemini-flash-lite-latest"];
+
+const GEMINI_MODELS_CACHE_MS = 6 * 60 * 60 * 1000;
+let geminiModelCache: { models: string[]; fetchedAt: number } | null = null;
+
+/** Model families to avoid: they either can't hold a conversation or are
+ *  far too expensive per call for a WhatsApp reply. */
+const GEMINI_EXCLUDE = /embedding|aqa|imagen|veo|lyria|tts|robotics|computer-use|deep-research|nano-banana|antigravity|omni/i;
+
+/**
+ * Asks Google which models this key can actually call, so a retirement
+ * can't silently break the agent again. Prefers flash variants — they're
+ * the fast, free-tier-friendly tier, and this is a chat reply, not a
+ * research task — and puts the version-less `-latest` aliases first
+ * since those survive the next retirement too.
+ */
+export async function discoverGeminiModels(apiKey: string): Promise<string[]> {
+  if (geminiModelCache && Date.now() - geminiModelCache.fetchedAt < GEMINI_MODELS_CACHE_MS) {
+    return geminiModelCache.models;
+  }
+  try {
+    const res = await fetch(`${GEMINI_ENDPOINT}?pageSize=200`, {
+      headers: { "x-goog-api-key": apiKey },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) throw new Error(`models list → ${res.status}`);
+    const data = await res.json();
+    const usable = ((data?.models as { name?: string; supportedGenerationMethods?: string[] }[]) ?? [])
+      .filter((m) => m.supportedGenerationMethods?.includes("generateContent"))
+      .map((m) => (m.name ?? "").replace(/^models\//, ""))
+      .filter((id) => id && !GEMINI_EXCLUDE.test(id));
+
+    usable.sort((a, b) => {
+      const score = (id: string) =>
+        (id.includes("flash") ? 0 : 10) + (id.includes("latest") ? 0 : 1) + (id.includes("preview") ? 2 : 0);
+      return score(a) - score(b);
+    });
+
+    const models = usable.slice(0, 4);
+    if (models.length) {
+      geminiModelCache = { models, fetchedAt: Date.now() };
+      return models;
+    }
+    return GEMINI_MODELS;
+  } catch (err) {
+    console.warn("[whatsapp agent] gemini model discovery failed", err);
+    return geminiModelCache?.models ?? GEMINI_MODELS;
+  }
+}
 
 export interface GeminiMessage {
   role: "system" | "user" | "assistant" | "tool";
