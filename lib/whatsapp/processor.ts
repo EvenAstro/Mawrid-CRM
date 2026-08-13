@@ -54,9 +54,26 @@ async function processOne(msg: QueuedMessage): Promise<boolean> {
 
     const result = await generateWhatsAppReply(msg.wa_from, msg.body);
     if (!result?.reply) {
-      // Model produced nothing. Not retryable in a useful way — the
-      // history is the same next time — so park it as done rather than
-      // burn attempts.
+      // Nothing usable came back even after the agent's own retry. This
+      // is the state that leaves a customer mid-conversation on read —
+      // it happened on the turn that creates the lead, where the tool
+      // chain is longest and most likely to hit the time ceiling.
+      //
+      // Silence is the worst outcome here: the customer has just given
+      // their name and is waiting. Acknowledge, keep the thread alive,
+      // and let a human pick it up. The queue row is resolved either way
+      // so a redelivery doesn't send this twice.
+      console.error(`[whatsapp processor] no reply for ${msg.wa_from} — sending holding message`);
+      const holding = "عذراً، صار عندي تأخير بسيط 🙏 وصلتني معلوماتك وفريقنا بيتواصل معك قريب. فيه شي ثاني أقدر أساعدك فيه؟";
+      const fallbackSent = await sendWhatsAppText(msg.wa_from, holding);
+      if (fallbackSent.ok) {
+        await logWhatsAppMessage({
+          waFrom: msg.wa_from,
+          direction: "outbound",
+          body: holding,
+          waMessageId: fallbackSent.messageId,
+        });
+      }
       await resolveDone(msg.id);
       return true;
     }

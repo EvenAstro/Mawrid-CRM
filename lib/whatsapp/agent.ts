@@ -355,7 +355,12 @@ async function callModel(
   const chain = discovered.length ? [...discovered, STATIC_FLOOR] : [STATIC_FLOOR];
   for (const model of chain) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30_000);
+    // Deliberately tight. The whole turn — several tool rounds, each a
+    // model call, walking a fallback chain on every one — has to finish
+    // inside the route's 60s ceiling. A model that hasn't answered in 12
+    // seconds is one to move past, not one to wait on: spending the
+    // budget on a slow endpoint is what leaves the customer with nothing.
+    const timeout = setTimeout(() => controller.abort(), 12_000);
     try {
       const res = await fetch(OPENROUTER_ENDPOINT, {
         method: "POST",

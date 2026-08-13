@@ -30,6 +30,9 @@ import { drainWhatsAppQueue } from "@/lib/whatsapp/processor";
  */
 
 export const dynamic = "force-dynamic";
+/** Same reason as the webhook: draining a backlog means a full model turn
+ *  per message, and the default ceiling cuts that off mid-turn. */
+export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;

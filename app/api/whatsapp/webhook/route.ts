@@ -26,6 +26,16 @@ import { drainWhatsAppQueue } from "@/lib/whatsapp/processor";
  *          anything in it is trusted.
  */
 
+/**
+ * The 200 goes back to Meta in milliseconds, but the after() task keeps
+ * running past it — and the platform kills the invocation at the default
+ * limit regardless of the response already being sent. A turn that calls
+ * two or three tools plus a model round per tool needs well past 10
+ * seconds, and when the ceiling hits mid-turn the queue row is left in
+ * 'processing' with no reply sent. 60 is the Hobby maximum.
+ */
+export const maxDuration = 60;
+
 function verifySignature(rawBody: string, signatureHeader: string | null): boolean {
   const secret = process.env.WHATSAPP_APP_SECRET;
   if (!secret || !signatureHeader) return false;
