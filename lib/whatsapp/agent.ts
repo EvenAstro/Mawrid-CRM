@@ -30,6 +30,12 @@ const OPENROUTER_MODELS_ENDPOINT = "https://openrouter.ai/api/v1/models";
  *  API directly. */
 const PREFERRED_FREE_PROVIDERS = ["deepseek", "qwen", "meta-llama", "google", "mistralai"];
 
+/** Small models write the worst Arabic — the token soup this agent kept
+ *  producing came from one. Parameter count is in the slug often enough
+ *  to filter on, so anything advertising fewer than ~20B is skipped when
+ *  there's a larger free model available. */
+const SMALL_MODEL_HINT = /[^0-9]([0-9]|1[0-9])b(?![0-9])/i;
+
 /** Same account, same balance state, same low-cost paid fallback that was
  *  already confirmed to work here — kept only as an absolute floor in case
  *  discoverFreeModels() itself fails (network hiccup, OpenRouter outage).
@@ -73,9 +79,14 @@ async function discoverFreeModels(): Promise<string[]> {
         m.pricing?.completion === "0" &&
         (m.supported_parameters?.includes("tools") ?? false),
     );
-    // Known-reliable providers first, everything else after — order is a
-    // quality heuristic, not a correctness requirement.
+    // Big models first, then known-reliable providers. Both are quality
+    // heuristics rather than correctness requirements — a small model
+    // still gets tried, just after every larger one has had a turn, since
+    // small models are where the Arabic token soup came from.
     free.sort((a, b) => {
+      const small = (id: string) => (SMALL_MODEL_HINT.test(id) ? 1 : 0);
+      const bySize = small(a.id) - small(b.id);
+      if (bySize !== 0) return bySize;
       const rank = (id: string) => {
         const i = PREFERRED_FREE_PROVIDERS.findIndex((p) => id.startsWith(p + "/"));
         return i === -1 ? PREFERRED_FREE_PROVIDERS.length : i;
@@ -204,6 +215,27 @@ function contextBlock(lead: CrmLeadContext | null): string {
 - آخر ملاحظة مسجلة: ${lastActivity}`;
 }
 
+/** Scripts that have no business appearing in an Arabic sales reply.
+ *  Latin is excluded deliberately — "Mawrid", "ERP", "WhatsApp" are all
+ *  legitimate. These are not. */
+const FOREIGN_SCRIPT = /[Ѐ-ӿऀ-ॿ一-鿿぀-ヿ가-힯฀-๿֐-׿԰-֏Ⴀ-ჿ]/;
+
+/**
+ * Detects the token soup a heavily-quantized free model produces on
+ * Arabic: the sentence structure survives but individual words come out
+ * as fragments of other scripts ("هلا بك pyeм", "فِرِيksha"). Seen in
+ * production — the reply reads as damaged text to the customer, which is
+ * worse than a plainer answer from a slower model.
+ *
+ * Only the script check is reliable enough to gate on. Cyrillic,
+ * Devanagari, CJK, Hangul, Thai, Hebrew, Armenian or Georgian in a reply
+ * this prompt asked for in Arabic means the model is bleeding tokens, not
+ * that it had something to say.
+ */
+function looksCorrupted(text: string): boolean {
+  return FOREIGN_SCRIPT.test(text);
+}
+
 /**
  * One OpenRouter round, walking the fallback chain. Returns the assistant
  * message, or null when every model in the chain refused — which on free
@@ -229,7 +261,12 @@ async function callModel(
         },
         body: JSON.stringify({
           model,
-          temperature: 0.7,
+          // Low on purpose. These are quantized free endpoints writing in
+          // Arabic, and sampling temperature is what decides how often a
+          // near-miss token from another script wins — 0.7 produced
+          // visible token soup in production, 0.3 keeps it on-distribution
+          // without making the copy read robotic.
+          temperature: 0.3,
           // Kept modest on purpose: OpenRouter's paid models reject a
           // request outright if the account's remaining credit can't
           // cover the requested max_tokens ("can only afford 528" is a
@@ -255,6 +292,13 @@ async function callModel(
       // than sending the customer silence.
       if (!choice || (!choice.content?.trim() && !choice.tool_calls?.length)) {
         console.warn(`[whatsapp agent] ${model} returned an empty message`);
+        continue;
+      }
+      // Garbled output is a failure of this model, not of the request —
+      // the next one in the chain gets the same messages and usually
+      // answers cleanly.
+      if (choice.content && looksCorrupted(choice.content)) {
+        console.warn(`[whatsapp agent] ${model} returned corrupted text`, choice.content.slice(0, 120));
         continue;
       }
       return choice;
