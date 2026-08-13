@@ -1,6 +1,7 @@
 import { fetchWhatsAppHistory } from "@/lib/models/whatsappAgent";
 import { findLeadByPhone, type CrmLeadContext } from "@/lib/models/whatsappCrmContext";
 import { toolsFor, runCrmTool, type CrmToolCtx } from "@/lib/whatsapp/crmTools";
+import { callGemini, GEMINI_MODELS } from "@/lib/whatsapp/gemini";
 
 /**
  * The WhatsApp sales-agent reply logic.
@@ -459,6 +460,51 @@ async function callModel(
    *  inside a nearly-spent balance. */
   maxTokensOverride?: number,
 ): Promise<{ content?: string; tool_calls?: ChatMessage["tool_calls"] } | null> {
+  // Gemini first. Its free tier is vastly larger than OpenRouter's 50
+  // requests a day and needs no card, which was the constraint actually
+  // breaking this agent — everything below is now the fallback path
+  // rather than the main one.
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (geminiKey) {
+    const budget = maxTokensOverride ?? 450;
+    for (const model of GEMINI_MODELS) {
+      if (deadline - Date.now() < 5_000) break;
+      const out = await callGemini({
+        apiKey: geminiKey,
+        model,
+        messages,
+        tools,
+        maxTokens: budget,
+        timeoutMs: Math.min(MODEL_TIMEOUT_MS, Math.max(deadline - Date.now(), 1_000)),
+      });
+      if (!out.ok) {
+        console.warn(`[whatsapp agent] gemini ${model} → ${out.status}`, out.error);
+        noteFailure(`gemini ${model} ${out.status}: ${out.error.slice(0, 160)}`);
+        continue;
+      }
+      const { content, tool_calls } = out.result;
+      if (!content?.trim() && !tool_calls?.length) {
+        noteFailure(`gemini ${model} returned an empty message`);
+        continue;
+      }
+      // Same output gates as the OpenRouter path — a provider change
+      // doesn't make garbled or thought-aloud text acceptable.
+      if (content) {
+        const cleaned = stripThinking(content);
+        if (looksCorrupted(cleaned)) {
+          noteFailure(`gemini ${model} corrupted text: ${cleaned.slice(0, 120)}`);
+          continue;
+        }
+        if (!tool_calls?.length && looksLikeReasoning(cleaned)) {
+          noteFailure(`gemini ${model} leaked reasoning: ${cleaned.slice(0, 120)}`);
+          continue;
+        }
+        return { content: cleaned, tool_calls };
+      }
+      return { content, tool_calls };
+    }
+  }
+
   const discovered = await discoverFreeModels();
   // Once the account's daily free allowance is gone every free model
   // returns the same 429, so walking them is pure latency — go straight

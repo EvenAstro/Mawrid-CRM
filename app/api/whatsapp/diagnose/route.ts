@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/requireUser";
 import { discoverFreeModels } from "@/lib/whatsapp/agent";
+import { callGemini, GEMINI_MODELS } from "@/lib/whatsapp/gemini";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /**
@@ -33,6 +34,30 @@ export async function GET(req: NextRequest) {
   }
 
   const apiKey = process.env.OPENROUTER_API_KEY;
+
+  // Gemini is the primary provider now, so it's the first thing anyone
+  // debugging a silent agent needs to see.
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const geminiProbes: unknown[] = [];
+  if (geminiKey) {
+    for (const model of GEMINI_MODELS) {
+      const started = Date.now();
+      const out = await callGemini({
+        apiKey: geminiKey,
+        model,
+        messages: [{ role: "user", content: "رد بكلمة وحدة: تمام" }],
+        tools: undefined,
+        maxTokens: 20,
+        timeoutMs: 15_000,
+      });
+      geminiProbes.push(
+        out.ok
+          ? { model, ok: true, ms: Date.now() - started, reply: out.result.content }
+          : { model, ok: false, ms: Date.now() - started, status: out.status, error: out.error },
+      );
+    }
+  }
+
   const discovered = await discoverFreeModels();
 
   // Probe each candidate with the smallest possible request. Same order
@@ -115,11 +140,13 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     env: {
+      gemini_key: !!geminiKey,
       openrouter_key: !!apiKey,
       whatsapp_token: !!process.env.WHATSAPP_ACCESS_TOKEN,
       whatsapp_phone_id: !!process.env.WHATSAPP_PHONE_NUMBER_ID,
     },
     agent_enabled: settings?.enabled ?? null,
+    gemini_probes: geminiProbes,
     discovered_count: discovered.length,
     discovered,
     probes,
