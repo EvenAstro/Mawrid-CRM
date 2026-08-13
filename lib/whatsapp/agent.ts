@@ -434,7 +434,10 @@ function affordableTokensFrom(body: string): number | null {
   const m = body.match(/can only afford (\d+)/i);
   if (!m) return null;
   const n = parseInt(m[1], 10);
-  return Number.isFinite(n) && n > 40 ? n - 10 : null;
+  // 24 tokens is a short Arabic sentence — worth attempting, where the
+  // previous floor of 40 threw away budgets that could still have
+  // produced something. Below that there is genuinely nothing to say.
+  return Number.isFinite(n) && n > 24 ? n - 4 : null;
 }
 
 /**
@@ -451,6 +454,10 @@ async function callModel(
   messages: ChatMessage[],
   tools: ReturnType<typeof toolsFor> | undefined,
   deadline: number,
+  /** Overrides the default completion budget. The lean salvage retry
+   *  passes a very small one so the request has a chance of fitting
+   *  inside a nearly-spent balance. */
+  maxTokensOverride?: number,
 ): Promise<{ content?: string; tool_calls?: ChatMessage["tool_calls"] } | null> {
   const discovered = await discoverFreeModels();
   // Once the account's daily free allowance is gone every free model
@@ -486,7 +493,7 @@ async function callModel(
     // On the paid floor with a thin balance, asking for 450 is what
     // triggers the 402 in the first place, so start where the balance
     // can plausibly land and let the 402 handler refine from there.
-    let budget = isFreeTierExhausted() ? 200 : 450;
+    let budget = maxTokensOverride ?? (isFreeTierExhausted() ? 200 : 450);
 
     /** One attempt at `model`. Separated out so a 402 can replay it at a
      *  budget the balance actually covers. */
@@ -744,27 +751,35 @@ export async function generateWhatsAppReply(waFrom: string, incoming: string): P
     }
   }
 
-  // Nothing survived validation. Rather than leaving the customer on
-  // read, ask once more with the tools removed and the constraint stated
-  // as bluntly as possible — the failures that get this far are models
-  // narrating their process, and the tool work they were reasoning about
-  // has already run, so all that's left is to say something.
-  console.warn("[whatsapp agent] first pass produced nothing usable — retrying for a plain reply");
+  // Nothing survived validation. Ask once more, and make this attempt as
+  // cheap as it can possibly be: the lean prompt, only the last two turns
+  // of history, no tools.
+  //
+  // Building it fresh rather than appending to `messages` is the point.
+  // The lean-mode flag above lives in module memory, so a cold instance —
+  // which on this platform is most of them — always takes the full-prompt
+  // path first and then arrives here with a two-thousand-token
+  // conversation that a thin balance can't pay for. This retry doesn't
+  // depend on that flag, so it works on the first message of a cold start,
+  // which is exactly when the customer is waiting.
+  console.warn("[whatsapp agent] first pass produced nothing usable — retrying lean");
+  const tail = history.slice(-2).map((h) => ({
+    role: h.direction === "inbound" ? ("user" as const) : ("assistant" as const),
+    content: h.body,
+  }));
   const retry = await callModel(
     apiKey,
     [
-      ...messages,
-      {
-        role: "system",
-        content:
-          "اكتب الآن رد واتساب نهائي للعميل بالعربية فقط. سطرين كحد أقصى. ممنوع تشرح تفكيرك أو خطواتك، وممنوع تكتب أي كلمة إنجليزية أو تذكر أدوات أو تعليمات — اكتب الرسالة نفسها اللي بتوصل للعميل ولا شيء غيرها.",
-      },
+      { role: "system", content: LEAN_SYSTEM },
+      ...tail,
+      { role: "user", content: incoming },
     ],
     undefined,
     // The retry gets its own small budget past the turn's: reaching here
     // means the turn is nearly spent, and the point of the retry is to
     // salvage a reply rather than to respect the clock that already failed.
     Date.now() + 12_000,
+    120,
   );
   const retryReply = clampReply(retry?.content ?? "");
   if (retryReply) return { reply: retryReply, leadId: ctx.lead?.leadId ?? null };
