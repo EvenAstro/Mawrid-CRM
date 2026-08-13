@@ -129,13 +129,14 @@ const BASE_SYSTEM = `أنت "سامي"، مستشار حلول أعمال في "
 • خذ القرار وسوِّ الإجراء بنفسك، لا تستأذن بأشياء إدارية.
 
 ════════ ⛔ ممنوعات ════════
-1. ممنوع تنهي رسالة بدون سؤال.
-2. ممنوع "راح نتواصل معك" كجواب نهائي.
-3. ممنوع تسرد وحدات كثيرة — وحدتين أو ثلاث تخص العميل فقط.
-4. ممنوع تختلق سعر أو رقم — ناقش الاحتياج بدل الرقم.
+1. لا تنهي رسالة بدون سؤال **طالما فيه شي ناقص تعرفه**. لكن لو المحادثة وصلت نهايتها الطبيعية (حجزتوا الموعد والعميل قال "لا" أو "تمام")، اختم بجملة ودّية قصيرة بدون سؤال — ولا تخترع سؤال عشان تعبّي.
+2. ⛔ ممنوع منعاً باتاً تكرر سؤال سبق سألته بنفس المحادثة. لو العميل جاوب عليه أو تجاهله، عدّي — لا تعيده بصيغة ثانية.
+3. ممنوع "راح نتواصل معك" كجواب نهائي.
+4. ممنوع تسرد وحدات كثيرة — وحدتين أو ثلاث تخص العميل فقط.
+5. ⛔ ممنوع تخترع أي رقم ما أعطاك إياه النظام: لا سعر، ولا **مدة العرض** (لا تقول "٢٠ دقيقة" ولا "نص ساعة")، ولا موعد. قل "عرض توضيحي" وخلاص — الفريق هو اللي يحدد المدة.
 
 ════════ 📏 طول الرد (مهم جداً) ════════
-ردك رسالة واتساب، مو إيميل. سطرين إلى ثلاثة كحد أقصى — جملة أو جملتين مفيدة ثم سؤال.
+ردك رسالة واتساب، مو إيميل. سطرين إلى ثلاثة كحد أقصى.
 لا تستخدم عناوين ولا قوائم نقطية ولا فقرات. لا تعيد شرح كلام قلته قبل.
 لا ترسل إلا رسالة واحدة بالرد — لا تكتب رسالتين متتاليتين.
 
@@ -165,9 +166,9 @@ const BASE_SYSTEM = `أنت "سامي"، مستشار حلول أعمال في "
 أنت (بعد recommend_solution): "أكثر شي يوجع أصحاب المطاعم إن الكاشير يطلع أرقام مختلفة عن المحاسبة آخر الشهر، وتكلفة الطبق الحقيقية ما تكون واضحة. مَوْرد يربطهم فيصير المخزون ينقص تلقائياً مع كل طلب. كم فرع عندك؟"
 
 العميل: ثلاثة فروع و٢٥ موظف
-أنت: "بحجمكم تبدأ تحتاج صلاحيات لكل موظف ومتابعة حضور ورواتب، وكلها بنفس النظام. تحب أرتب لك عرض توضيحي ٢٠ دقيقة تشوف فيه النظام على بيانات مطعم؟"
+أنت: "بحجمكم تبدأ تحتاج صلاحيات لكل موظف ومتابعة حضور ورواتب، وكلها بنفس النظام. تحب أرتب لك عرض توضيحي تشوف فيه النظام على بيانات مطعم؟"
 
-لاحظ: كل رد سطرين وينتهي بسؤال، وما فيه ولا سعر مختلق، وما سأل عن الاسم إلا متأخر بعد ما بنى قيمة.
+لاحظ: كل رد سطرين، ما فيه ولا رقم مختلق (لا سعر ولا مدة)، وما سأل عن الاسم إلا متأخر بعد ما بنى قيمة.
 
 اجعل ردودك بطول رسالة واتساب طبيعية — من سطرين لأربعة أسطر. لا تذكر أنك ذكاء اصطناعي إلا لو سُئلت مباشرة.`;
 
@@ -205,6 +206,35 @@ interface ChatMessage {
   content: string;
   tool_calls?: { id: string; type: "function"; function: { name: string; arguments: string } }[];
   tool_call_id?: string;
+}
+
+/**
+ * Lists the questions the agent has already put to this customer, so the
+ * prompt can forbid them by name.
+ *
+ * Telling a model "don't repeat yourself" and trusting it to re-read the
+ * transcript doesn't hold — it asked "موبايل ولا حاسوب؟" twice two
+ * minutes apart with both turns inside its own context window. Naming the
+ * exact sentences it must not reuse is a much stronger constraint than
+ * asking it to notice.
+ */
+function askedQuestionsBlock(history: { direction: string; body: string }[]): string {
+  // Split on every sentence boundary, not just question marks — otherwise
+  // the statement preceding a question gets carried along with it and the
+  // "don't repeat this" instruction points at a whole paragraph.
+  const questions = history
+    .filter((h) => h.direction === "outbound")
+    .flatMap((h) => h.body.split(/(?<=[.!؟?\n])\s*/))
+    .map((s) => s.trim())
+    .filter((s) => /[?؟]$/.test(s) && s.length > 8);
+
+  // Last few only: an old question is fair to revisit, and a long list
+  // buries the recent ones that actually matter.
+  const recent = [...new Set(questions)].slice(-6);
+  if (!recent.length) return "";
+  return `\n\n════════ ⛔ أسئلة سبق سألتها — ممنوع تعيدها ════════
+${recent.map((q) => `- ${q}`).join("\n")}
+لو ما فيه سؤال جديد يستاهل، اختم بجملة ودّية قصيرة بدون سؤال.`;
 }
 
 function contextBlock(lead: CrmLeadContext | null): string {
@@ -406,11 +436,16 @@ export async function generateWhatsAppReply(waFrom: string, incoming: string): P
   // system prompt itself are built from this single lookup.
   const lead = await findLeadByPhone(waFrom);
   const ctx: CrmToolCtx = { waFrom, lead };
-  const system = BASE_SYSTEM + (lead ? EXISTING_LEAD_GUIDANCE : NEW_PROSPECT_GUIDANCE) + contextBlock(lead);
 
   // Ten turns is plenty of memory for a WhatsApp thread and keeps the
   // prompt short — prefill is most of the latency the customer feels.
   const history = await fetchWhatsAppHistory(waFrom, 10);
+  const system =
+    BASE_SYSTEM +
+    (lead ? EXISTING_LEAD_GUIDANCE : NEW_PROSPECT_GUIDANCE) +
+    contextBlock(lead) +
+    askedQuestionsBlock(history);
+
   const messages: ChatMessage[] = [
     { role: "system", content: system },
     ...history.map((h) => ({
