@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireUser } from "@/lib/auth/requireUser";
 import { discoverFreeModels } from "@/lib/whatsapp/agent";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -12,8 +13,11 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
  * model, alongside the queue's state, so a dead chain, an empty
  * discovery, and a stuck queue are all distinguishable at a glance.
  *
- * Guarded by CRON_SECRET: it spends OpenRouter quota and exposes account
- * state, so it must not be openly pollable.
+ * Two ways in, because the two callers are different. A signed-in user
+ * hitting the button on the WhatsApp page authenticates the same way
+ * every other browser-called route here does; a script or a scheduled
+ * check uses CRON_SECRET. Either is enough — but one of them is
+ * required, since this spends OpenRouter quota and reports account state.
  */
 
 export const dynamic = "force-dynamic";
@@ -22,10 +26,9 @@ export const maxDuration = 60;
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   const header = req.headers.get("authorization");
-  if (!secret) {
-    return NextResponse.json({ error: "CRON_SECRET not configured — set it before using this route" }, { status: 503 });
-  }
-  if (header !== `Bearer ${secret}`) {
+  const bySecret = !!secret && header === `Bearer ${secret}`;
+  const byUser = bySecret ? null : await requireUser(req);
+  if (!bySecret && !byUser) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

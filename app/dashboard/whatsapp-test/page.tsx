@@ -35,6 +35,8 @@ export default function WhatsAppTestPage() {
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [log, setLog] = useState<LogRow[] | null>(null);
   const [toggling, setToggling] = useState(false);
+  const [diag, setDiag] = useState<string | null>(null);
+  const [diagnosing, setDiagnosing] = useState(false);
 
   const load = useCallback(async () => {
     const [s, l] = await Promise.all([
@@ -79,6 +81,25 @@ export default function WhatsAppTestPage() {
     }
   }
 
+  /** Runs the model-chain probe and shows the raw result. Deliberately
+   *  unformatted: this is here to be read once when something is broken
+   *  and pasted somewhere, not to be a dashboard. */
+  async function runDiagnose() {
+    setDiagnosing(true);
+    setDiag(null);
+    const { data: { session } } = await supabase.auth.getSession();
+    try {
+      const res = await fetch("/api/whatsapp/diagnose", {
+        headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
+      });
+      setDiag(JSON.stringify(await res.json(), null, 2));
+    } catch (err) {
+      setDiag(String(err));
+    } finally {
+      setDiagnosing(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-8 p-4 md:p-6">
       <header>
@@ -110,6 +131,34 @@ export default function WhatsAppTestPage() {
           >
             {enabled ? "أوقف الوكيل" : "شغّل الوكيل"}
           </button>
+        </Panel>
+      </LedgerSection>
+
+      <LedgerSection label="التشخيص">
+        <Panel className="p-[var(--space-card-pad)]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="t-body font-semibold text-[color:var(--content-primary)]">لماذا لا يرد الوكيل؟</p>
+              <p className="t-caption mt-1 text-[color:var(--content-tertiary)]">
+                يفحص كل موديل بالسلسلة ويعرض حالته، مع آخر الرسائل بالطابور.
+              </p>
+            </div>
+            <button
+              onClick={runDiagnose}
+              disabled={diagnosing}
+              className="t-caption rounded-[var(--radius-sm)] border border-[var(--border-subtle)] px-4 py-2 font-bold text-[color:var(--content-primary)] disabled:opacity-50"
+            >
+              {diagnosing ? "جارٍ الفحص…" : "افحص الآن"}
+            </button>
+          </div>
+          {diag && (
+            <pre
+              dir="ltr"
+              className="t-micro mt-4 max-h-[420px] overflow-auto rounded-[var(--radius-sm)] bg-[var(--surface-sunken)] p-3 text-start text-[color:var(--content-secondary)]"
+            >
+              {diag}
+            </pre>
+          )}
         </Panel>
       </LedgerSection>
 
