@@ -307,11 +307,38 @@ function stripThinking(text: string): string {
  * where a keyword check wouldn't.
  */
 function looksLikeReasoning(text: string): boolean {
-  const arabic = (text.match(/[؀-ۿ]/g) ?? []).length;
-  const latin = (text.match(/[A-Za-z]/g) ?? []).length;
+  const reply = text.trim();
+  if (!reply) return false;
+
+  // 1. Anything from the machinery itself. A customer reply never
+  //    contains a tool name or one of the prompt's own section rules —
+  //    if it does, the model is quoting its instructions back.
+  if (/════|recommend_solution|create_qualified_lead|schedule_demo|find_available_slots|save_discovery|request_human_help|add_note|get_customer_status/.test(reply)) {
+    return true;
+  }
+
+  // 2. English planning language. These are the phrases a model uses
+  //    when narrating its own process, never when selling to a customer
+  //    in Arabic.
+  if (/\b(I need to|I should|I will|let me|the user (just )?said|based on the|according to the|the instruction says|first,? I|my (own )?words|step \d)\b/i.test(reply)) {
+    return true;
+  }
+
+  // 3. Opens in English. Every legitimate reply starts in Arabic, so a
+  //    Latin-script opening is a reliable tell on its own — and it's what
+  //    catches leakage that quotes enough Arabic to beat the ratio below.
+  const opening = reply.slice(0, 60);
+  if (/[A-Za-z]/.test(opening) && !/[؀-ۿ]/.test(opening)) return true;
+
+  // 4. Ratio, as the catch-all. Deliberately generous at 0.6 — this fires
+  //    last, after the specific signals above, so it can afford to be
+  //    strict without eating replies that legitimately name products in
+  //    Latin script.
+  const arabic = (reply.match(/[؀-ۿ]/g) ?? []).length;
+  const latin = (reply.match(/[A-Za-z]/g) ?? []).length;
   const letters = arabic + latin;
   if (letters < 12) return false; // too short to judge; let it through
-  return arabic / letters < 0.4;
+  return arabic / letters < 0.6;
 }
 
 /**
@@ -502,12 +529,13 @@ export async function generateWhatsAppReply(waFrom: string, incoming: string): P
     // still produces something to actually send the customer.
     const tools = round < MAX_TOOL_ROUNDS ? toolsFor(ctx) : undefined;
     const choice = await callModel(apiKey, messages, tools);
-    if (!choice) return null;
+    if (!choice) break; // every model rejected — fall through to the retry
 
     const toolCalls = choice.tool_calls;
     if (!toolCalls || toolCalls.length === 0) {
       const reply = clampReply(choice.content ?? "");
-      return reply ? { reply, leadId: ctx.lead?.leadId ?? null } : null;
+      if (reply) return { reply, leadId: ctx.lead?.leadId ?? null };
+      break;
     }
 
     messages.push({ role: "assistant", content: choice.content ?? "", tool_calls: toolCalls });
@@ -518,5 +546,28 @@ export async function generateWhatsAppReply(waFrom: string, incoming: string): P
       messages.push({ role: "tool", tool_call_id: call.id, content: result });
     }
   }
+
+  // Nothing survived validation. Rather than leaving the customer on
+  // read, ask once more with the tools removed and the constraint stated
+  // as bluntly as possible — the failures that get this far are models
+  // narrating their process, and the tool work they were reasoning about
+  // has already run, so all that's left is to say something.
+  console.warn("[whatsapp agent] first pass produced nothing usable — retrying for a plain reply");
+  const retry = await callModel(
+    apiKey,
+    [
+      ...messages,
+      {
+        role: "system",
+        content:
+          "اكتب الآن رد واتساب نهائي للعميل بالعربية فقط. سطرين كحد أقصى. ممنوع تشرح تفكيرك أو خطواتك، وممنوع تكتب أي كلمة إنجليزية أو تذكر أدوات أو تعليمات — اكتب الرسالة نفسها اللي بتوصل للعميل ولا شيء غيرها.",
+      },
+    ],
+    undefined,
+  );
+  const retryReply = clampReply(retry?.content ?? "");
+  if (retryReply) return { reply: retryReply, leadId: ctx.lead?.leadId ?? null };
+
+  console.error("[whatsapp agent] no usable reply after retry");
   return null;
 }
