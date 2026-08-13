@@ -96,6 +96,39 @@ interface GeminiPart {
   text?: string;
   functionCall?: { name: string; args: Record<string, unknown> };
   functionResponse?: { name: string; response: Record<string, unknown> };
+  /** Opaque token the thinking models attach to every functionCall. It
+   *  has to come back with that call on the next request — see
+   *  signatureFor below. */
+  thoughtSignature?: string;
+}
+
+/**
+ * Thought signatures, keyed by the tool-call id the agent sees.
+ *
+ * Gemini's thinking models reject a follow-up request that replays a
+ * functionCall without the thought_signature they issued with it:
+ * "Function call is missing a thought_signature in functionCall parts."
+ * The agent's message type has nowhere to carry that — it's modelled on
+ * OpenAI's shape, which has no such concept — so the signature is parked
+ * here against the synthetic call id and reattached when the call is
+ * replayed.
+ *
+ * A Map bounded by eviction rather than a cache with a TTL: signatures
+ * are only needed for the few seconds between issuing a call and sending
+ * its result back, and a serverless instance that lives longer than that
+ * would otherwise accumulate them for every conversation it handles.
+ */
+const thoughtSignatures = new Map<string, string>();
+const MAX_SIGNATURES = 200;
+
+function rememberSignature(callId: string, signature: string | undefined) {
+  if (!signature) return;
+  if (thoughtSignatures.size >= MAX_SIGNATURES) {
+    // Oldest first — insertion order is iteration order for a Map.
+    const oldest = thoughtSignatures.keys().next().value;
+    if (oldest) thoughtSignatures.delete(oldest);
+  }
+  thoughtSignatures.set(callId, signature);
 }
 
 /**
@@ -155,7 +188,13 @@ function toGeminiContents(messages: GeminiMessage[]): { contents: unknown[]; sys
         } catch {
           args = {};
         }
-        return { functionCall: { name: c.function.name, args } };
+        // Replaying a call without the signature Gemini issued for it is
+        // a 400, which is what broke every turn that used a tool.
+        const signature = thoughtSignatures.get(c.id);
+        return {
+          functionCall: { name: c.function.name, args },
+          ...(signature ? { thoughtSignature: signature } : {}),
+        };
       });
       if (m.content?.trim()) parts.unshift({ text: m.content });
       contents.push({ role: "model", parts });
@@ -248,16 +287,22 @@ export async function callGemini(input: {
       result: {
         content: text || undefined,
         tool_calls: calls.length
-          ? calls.map((p, i) => ({
-              // Gemini has no call ids; the agent only uses these to pair
-              // a result back to its call, so a positional one is enough.
-              id: `gemini-${i}-${p.functionCall!.name}`,
-              type: "function" as const,
-              function: {
-                name: p.functionCall!.name,
-                arguments: JSON.stringify(p.functionCall!.args ?? {}),
-              },
-            }))
+          ? calls.map((p, i) => {
+              // Gemini has no call ids of its own here; the agent only
+              // uses these to pair a result back to its call, so a
+              // positional one is enough — and it doubles as the key the
+              // thought signature is parked under.
+              const id = `gemini-${Date.now()}-${i}-${p.functionCall!.name}`;
+              rememberSignature(id, p.thoughtSignature);
+              return {
+                id,
+                type: "function" as const,
+                function: {
+                  name: p.functionCall!.name,
+                  arguments: JSON.stringify(p.functionCall!.args ?? {}),
+                },
+              };
+            })
           : undefined,
       },
     };
