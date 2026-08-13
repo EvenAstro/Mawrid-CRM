@@ -522,6 +522,14 @@ async function callModel(
     }
   }
 
+  // No OpenRouter credentials means no fallback chain — every call below
+  // would 401. Stop here so the caller's salvage retry runs instead of
+  // burning the turn's budget on requests that cannot succeed.
+  if (!apiKey) {
+    noteFailure("gemini failed and OPENROUTER_API_KEY is not set — no fallback available");
+    return null;
+  }
+
   const discovered = await discoverFreeModels();
   // Once the account's daily free allowance is gone every free model
   // returns the same 429, so walking them is pure latency — go straight
@@ -746,9 +754,13 @@ export interface WhatsAppReply {
 }
 
 export async function generateWhatsAppReply(waFrom: string, incoming: string): Promise<WhatsAppReply | null> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    console.error("[whatsapp agent] OPENROUTER_API_KEY not set");
+  // Either provider is enough. This used to demand OPENROUTER_API_KEY and
+  // bail without it, which silently disabled the whole agent the moment
+  // that key was removed in favour of Gemini — the primary provider was
+  // gated behind the fallback's credentials.
+  const apiKey = process.env.OPENROUTER_API_KEY ?? "";
+  if (!apiKey && !process.env.GEMINI_API_KEY) {
+    console.error("[whatsapp agent] no model provider configured — set GEMINI_API_KEY or OPENROUTER_API_KEY");
     return null;
   }
 
