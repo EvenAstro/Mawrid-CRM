@@ -341,26 +341,47 @@ function looksLikeReasoning(text: string): boolean {
   return arabic / letters < 0.6;
 }
 
+/** Per-call ceiling. Free endpoints are genuinely slow — 12s starved
+ *  every one of them and turned a working agent into nothing but the
+ *  holding message, so this has to be generous. The turn as a whole is
+ *  bounded by the deadline below rather than by squeezing this. */
+const MODEL_TIMEOUT_MS = 20_000;
+
+/** How long a whole turn may take before it stops starting new work. The
+ *  route allows 60s; leaving headroom means the reply still gets sent
+ *  rather than the invocation dying with it half-composed. */
+const TURN_BUDGET_MS = 44_000;
+
+/** Models to try per round. Walking six on every round can't fit the
+ *  budget; two gives a slow or throttled endpoint one alternative and
+ *  leaves time for the rounds that follow. */
+const MODELS_PER_ROUND = 2;
+
 /**
  * One OpenRouter round, walking the fallback chain. Returns the assistant
  * message, or null when every model in the chain refused — which on free
  * tier usually means "all throttled right now", not "broken".
+ *
+ * `deadline` is the wall-clock the whole turn has to finish by. Checking
+ * it before each attempt is what keeps a long tool chain from spending
+ * its entire budget on round one and dying before it can answer.
  */
 async function callModel(
   apiKey: string,
   messages: ChatMessage[],
   tools: ReturnType<typeof toolsFor> | undefined,
+  deadline: number,
 ): Promise<{ content?: string; tool_calls?: ChatMessage["tool_calls"] } | null> {
   const discovered = await discoverFreeModels();
-  const chain = discovered.length ? [...discovered, STATIC_FLOOR] : [STATIC_FLOOR];
+  const chain = [...discovered, STATIC_FLOOR].slice(0, MODELS_PER_ROUND);
   for (const model of chain) {
+    const remaining = deadline - Date.now();
+    if (remaining < 5_000) {
+      console.warn("[whatsapp agent] turn budget spent — not starting another model call");
+      break;
+    }
     const controller = new AbortController();
-    // Deliberately tight. The whole turn — several tool rounds, each a
-    // model call, walking a fallback chain on every one — has to finish
-    // inside the route's 60s ceiling. A model that hasn't answered in 12
-    // seconds is one to move past, not one to wait on: spending the
-    // budget on a slow endpoint is what leaves the customer with nothing.
-    const timeout = setTimeout(() => controller.abort(), 12_000);
+    const timeout = setTimeout(() => controller.abort(), Math.min(MODEL_TIMEOUT_MS, remaining));
     try {
       const res = await fetch(OPENROUTER_ENDPOINT, {
         method: "POST",
@@ -529,11 +550,15 @@ export async function generateWhatsAppReply(waFrom: string, incoming: string): P
     { role: "user", content: incoming },
   ];
 
+  const deadline = Date.now() + TURN_BUDGET_MS;
+
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
     // Last round drops tools so a model stuck wanting to call more of them
-    // still produces something to actually send the customer.
-    const tools = round < MAX_TOOL_ROUNDS ? toolsFor(ctx) : undefined;
-    const choice = await callModel(apiKey, messages, tools);
+    // still produces something to actually send the customer. The budget
+    // does the same thing when time rather than rounds runs out.
+    const outOfTime = Date.now() > deadline - 8_000;
+    const tools = round < MAX_TOOL_ROUNDS && !outOfTime ? toolsFor(ctx) : undefined;
+    const choice = await callModel(apiKey, messages, tools, deadline);
     if (!choice) break; // every model rejected — fall through to the retry
 
     const toolCalls = choice.tool_calls;
@@ -569,6 +594,10 @@ export async function generateWhatsAppReply(waFrom: string, incoming: string): P
       },
     ],
     undefined,
+    // The retry gets its own small budget past the turn's: reaching here
+    // means the turn is nearly spent, and the point of the retry is to
+    // salvage a reply rather than to respect the clock that already failed.
+    Date.now() + 12_000,
   );
   const retryReply = clampReply(retry?.content ?? "");
   if (retryReply) return { reply: retryReply, leadId: ctx.lead?.leadId ?? null };

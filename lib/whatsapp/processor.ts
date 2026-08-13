@@ -63,8 +63,12 @@ async function processOne(msg: QueuedMessage): Promise<boolean> {
       // their name and is waiting. Acknowledge, keep the thread alive,
       // and let a human pick it up. The queue row is resolved either way
       // so a redelivery doesn't send this twice.
+      // Deliberately says nothing about what the customer told us. The
+      // first version claimed "وصلتني معلوماتك" and fired on a bare
+      // "مرحبا", which reads as the agent hallucinating a history that
+      // doesn't exist. This message is true whatever the customer said.
       console.error(`[whatsapp processor] no reply for ${msg.wa_from} — sending holding message`);
-      const holding = "عذراً، صار عندي تأخير بسيط 🙏 وصلتني معلوماتك وفريقنا بيتواصل معك قريب. فيه شي ثاني أقدر أساعدك فيه؟";
+      const holding = "عذراً، صار عندي خلل تقني بسيط 🙏 ممكن تعيد رسالتك؟";
       const fallbackSent = await sendWhatsAppText(msg.wa_from, holding);
       if (fallbackSent.ok) {
         await logWhatsAppMessage({
