@@ -1,7 +1,8 @@
 import { sendWhatsAppText, sendWhatsAppTyping } from "@/lib/whatsapp/client";
 import { generateWhatsAppReply } from "@/lib/whatsapp/agent";
 import { logWhatsAppMessage, linkConversationToLead, isWhatsAppAgentEnabled } from "@/lib/models/whatsappAgent";
-import { claimNext, resolveDone, resolveFailed, type QueuedMessage } from "@/lib/whatsapp/queue";
+import { claimNext, resolveDone, resolveFailed, parkFailed, type QueuedMessage } from "@/lib/whatsapp/queue";
+import { getLastFailureReason } from "@/lib/whatsapp/agent";
 import { checkRateLimit } from "@/lib/rateLimit";
 
 /**
@@ -78,7 +79,11 @@ async function processOne(msg: QueuedMessage): Promise<boolean> {
           waMessageId: fallbackSent.messageId,
         });
       }
-      await resolveDone(msg.id);
+      // Park with the reason rather than resolving clean: the customer
+      // has been answered so this must not retry, but "why did it fall
+      // back?" is the question that needs answering, and the diagnose
+      // route reads it straight off the row.
+      await parkFailed(msg.id, getLastFailureReason() || "no usable reply");
       return true;
     }
 

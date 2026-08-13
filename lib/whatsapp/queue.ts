@@ -97,6 +97,26 @@ export async function claimNext(): Promise<QueuedMessage | null> {
   return (claimed as QueuedMessage) ?? null;
 }
 
+/**
+ * Marks a row terminally failed with the reason, without consuming a
+ * retry. Used when the agent answered with the holding message: the
+ * customer has been told something, so this must not be retried, but the
+ * reason has to survive somewhere a human can read it — the failure
+ * happens inside a background task whose logs are awkward to reach, and
+ * "why did it fall back?" is the question that actually needs answering.
+ */
+export async function parkFailed(id: string, reason: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("_whatsapp_agent_queue")
+    .update({
+      status: "failed",
+      processed_at: new Date().toISOString(),
+      last_error: reason.slice(0, 500),
+    })
+    .eq("id", id);
+  if (error) console.error("[whatsapp queue] park failed", error);
+}
+
 export async function resolveDone(id: string): Promise<void> {
   const { error } = await supabaseAdmin
     .from("_whatsapp_agent_queue")

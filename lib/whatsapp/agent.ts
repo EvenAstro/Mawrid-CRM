@@ -202,6 +202,27 @@ const BASE_SYSTEM = `أنت "سامي"، مستشار حلول أعمال في "
 
 اجعل ردودك بطول رسالة واتساب طبيعية — من سطرين لأربعة أسطر. لا تذكر أنك ذكاء اصطناعي إلا لو سُئلت مباشرة.`;
 
+/**
+ * The prompt used when the account is out of free requests and only the
+ * paid floor is left on a nearly-empty balance.
+ *
+ * OpenRouter prices prompt and completion together against the remaining
+ * credit: a 402 reading "you requested 450 tokens but can only afford
+ * 220" was measured against a one-line prompt, so the full BASE_SYSTEM —
+ * roughly two thousand tokens of persona, playbook and worked examples —
+ * leaves nothing to pay for the reply itself. Every send in that state
+ * 402s and the customer gets the holding message.
+ *
+ * So this is the same agent with everything that isn't load-bearing
+ * removed: no examples, no conversation roadmap, no tool instructions
+ * (tools are dropped in this mode anyway, since a tool round means a
+ * second paid call). It answers, in character, and that's all — a
+ * degraded reply the customer can talk to beats an apology.
+ */
+const LEAN_SYSTEM = `أنت "سامي" من "مَوْرد" — منصة محاسبة سعودية ذكية. ترد بواتساب بالعربية، بأسلوب سعودي مهني وودود.
+قواعد: رد بسطرين كحد أقصى. اسأل عن نشاط العميل وحجم منشأته قبل ما تتكلم عن الحلول. لا تخترع أسعار ولا مدد ولا مواعيد. لا تكرر الترحيب إلا بأول رسالة (عرّف نفسك فيها: "معك سامي من مَوْرد"). اختم بسؤال إلا لو خلصت المحادثة.
+مَوْرد: محاسبة ومبيعات ومخزون وفوترة إلكترونية متوافقة مع هيئة الزكاة والضريبة (فاتورة — المرحلة الثانية)، ١٦ وحدة، تقييم 4.8/5.`;
+
 const EXISTING_LEAD_GUIDANCE = `
 ════════ هذا عميل مسجل عندنا ════════
 تعرفه — بياناته بالأسفل. لا تسأله عن شي تعرفه أصلاً، وهذا أكبر فرق يحسه العميل.
@@ -461,7 +482,11 @@ async function callModel(
     // tokenizers — 280 cut a three-line reply off mid-word. This is
     // headroom, not a target; length is governed by the prompt and
     // MAX_REPLY_CHARS. A 402 below may lower it for this attempt.
-    let budget = 450;
+    //
+    // On the paid floor with a thin balance, asking for 450 is what
+    // triggers the 402 in the first place, so start where the balance
+    // can plausibly land and let the 402 handler refine from there.
+    let budget = isFreeTierExhausted() ? 200 : 450;
 
     /** One attempt at `model`. Separated out so a 402 can replay it at a
      *  budget the balance actually covers. */
@@ -509,6 +534,7 @@ async function callModel(
           res = await attempt(budget);
         } else {
           console.warn(`[whatsapp agent] ${model} → 402`, body.slice(0, 200));
+          noteFailure(`${model} 402 (no affordable budget quoted): ${body.slice(0, 160)}`);
           continue;
         }
       }
@@ -519,9 +545,11 @@ async function callModel(
         // reporting it means every free model will too.
         if (res.status === 429 && /free-models-per-day/.test(body)) {
           markFreeTierExhausted();
+          noteFailure(`${model} 429 daily free limit reached`);
           continue;
         }
         console.warn(`[whatsapp agent] ${model} → ${res.status}`, body.slice(0, 300));
+        noteFailure(`${model} HTTP ${res.status}: ${body.slice(0, 160)}`);
         continue; // next model in the chain
       }
 
@@ -532,6 +560,7 @@ async function callModel(
       // than sending the customer silence.
       if (!choice || (!choice.content?.trim() && !choice.tool_calls?.length)) {
         console.warn(`[whatsapp agent] ${model} returned an empty message`);
+        noteFailure(`${model} returned an empty message`);
         continue;
       }
       // Garbled or thought-aloud output is a failure of this model, not
@@ -541,6 +570,7 @@ async function callModel(
         const cleaned = stripThinking(choice.content);
         if (looksCorrupted(cleaned)) {
           console.warn(`[whatsapp agent] ${model} returned corrupted text`, cleaned.slice(0, 120));
+          noteFailure(`${model} corrupted text: ${cleaned.slice(0, 120)}`);
           continue;
         }
         // Only judge a text answer this way. A tool call with a bit of
@@ -548,6 +578,7 @@ async function callModel(
         // sees comes from a later round.
         if (!choice.tool_calls?.length && looksLikeReasoning(cleaned)) {
           console.warn(`[whatsapp agent] ${model} leaked reasoning instead of replying`, cleaned.slice(0, 120));
+          noteFailure(`${model} leaked reasoning: ${cleaned.slice(0, 120)}`);
           continue;
         }
         choice.content = cleaned;
@@ -555,11 +586,32 @@ async function callModel(
       return choice;
     } catch (err) {
       console.warn(`[whatsapp agent] ${model} threw`, err);
+      noteFailure(`${model} threw: ${String(err).slice(0, 160)}`);
       continue;
     }
   }
   console.error("[whatsapp agent] every model in the fallback chain failed");
   return null;
+}
+
+/**
+ * Why the last turn failed, in a sentence.
+ *
+ * The whole pipeline runs inside a background task, so its console output
+ * is the awkward place to look and the only visible symptom is the
+ * holding message. Recording the reason lets it be written onto the queue
+ * row and read back from the diagnose route, which is where someone
+ * actually looks when the agent stops answering.
+ *
+ * Module-level and last-write-wins: it is a debugging breadcrumb, not
+ * state anything depends on, and each serverless instance keeps its own.
+ */
+let lastFailureReason = "";
+export function getLastFailureReason(): string {
+  return lastFailureReason;
+}
+function noteFailure(reason: string) {
+  lastFailureReason = `${new Date().toISOString()} ${reason}`;
 }
 
 /**
@@ -635,14 +687,21 @@ export async function generateWhatsAppReply(waFrom: string, incoming: string): P
   const lead = await findLeadByPhone(waFrom);
   const ctx: CrmToolCtx = { waFrom, lead };
 
+  // Lean mode: the free allowance is spent and only the paid floor is
+  // left on a balance that can't pay for a full prompt plus a reply. Cut
+  // the prompt to essentials and the history to four turns so the request
+  // fits inside what the account can actually afford.
+  const lean = isFreeTierExhausted();
+
   // Ten turns is plenty of memory for a WhatsApp thread and keeps the
   // prompt short — prefill is most of the latency the customer feels.
-  const history = await fetchWhatsAppHistory(waFrom, 10);
-  const system =
-    BASE_SYSTEM +
-    (lead ? EXISTING_LEAD_GUIDANCE : NEW_PROSPECT_GUIDANCE) +
-    contextBlock(lead) +
-    askedQuestionsBlock(history);
+  const history = await fetchWhatsAppHistory(waFrom, lean ? 4 : 10);
+  const system = lean
+    ? LEAN_SYSTEM + contextBlock(lead)
+    : BASE_SYSTEM +
+      (lead ? EXISTING_LEAD_GUIDANCE : NEW_PROSPECT_GUIDANCE) +
+      contextBlock(lead) +
+      askedQuestionsBlock(history);
 
   const messages: ChatMessage[] = [
     { role: "system", content: system },
@@ -659,8 +718,13 @@ export async function generateWhatsAppReply(waFrom: string, incoming: string): P
     // Last round drops tools so a model stuck wanting to call more of them
     // still produces something to actually send the customer. The budget
     // does the same thing when time rather than rounds runs out.
+    //
+    // Lean mode drops them throughout: a tool call costs a second paid
+    // request to interpret its result, which is exactly what the balance
+    // can't cover. The agent talks instead of acting until the free
+    // allowance resets.
     const outOfTime = Date.now() > deadline - 8_000;
-    const tools = round < MAX_TOOL_ROUNDS && !outOfTime ? toolsFor(ctx) : undefined;
+    const tools = !lean && round < MAX_TOOL_ROUNDS && !outOfTime ? toolsFor(ctx) : undefined;
     const choice = await callModel(apiKey, messages, tools, deadline);
     if (!choice) break; // every model rejected — fall through to the retry
 
