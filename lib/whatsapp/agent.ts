@@ -55,7 +55,15 @@ interface OpenRouterModelInfo {
   supported_parameters?: string[];
 }
 
-let freeModelsCache: { models: string[]; fetchedAt: number } | null = null;
+export interface DiscoveredModel {
+  id: string;
+  /** Whether the model can be sent a `tools` array. Models without it
+   *  still get used — they just answer as plain text, which is far better
+   *  than the agent having nothing to fall back on. */
+  supportsTools: boolean;
+}
+
+let freeModelsCache: { models: DiscoveredModel[]; fetchedAt: number } | null = null;
 // 6 hours: the discovery call is pure latency on the customer's reply, and
 // OpenRouter's free lineup shifts over days, not minutes. A stale entry
 // costs one wasted fallback round; refetching every few minutes cost every
@@ -65,11 +73,17 @@ const FREE_MODELS_CACHE_MS = 6 * 60 * 60 * 1000;
 /**
  * Asks OpenRouter itself which models are free right now, instead of
  * trusting a hardcoded slug list that reliably goes stale within days.
- * No auth required for this endpoint. Filters to ones that actually
- * support tool calling — a free model that can't call recommend_solution
- * is worse than useless here, it just wastes a fallback round.
+ * No auth required for this endpoint.
+ *
+ * Tool support is recorded, not required. Requiring it was a mistake:
+ * OpenRouter's free tier carries only a handful of tool-capable models at
+ * any moment, and when that intersection came up empty the chain fell
+ * through to the paid floor, which 402s on an account with no balance —
+ * so every single message ended in the holding text. A free model that
+ * can only produce text still answers the customer; it just can't book a
+ * demo, which is a far smaller loss than silence.
  */
-async function discoverFreeModels(): Promise<string[]> {
+export async function discoverFreeModels(): Promise<DiscoveredModel[]> {
   if (freeModelsCache && Date.now() - freeModelsCache.fetchedAt < FREE_MODELS_CACHE_MS) {
     return freeModelsCache.models;
   }
@@ -83,14 +97,16 @@ async function discoverFreeModels(): Promise<string[]> {
         m.id.endsWith(":free") &&
         m.pricing?.prompt === "0" &&
         m.pricing?.completion === "0" &&
-        (m.supported_parameters?.includes("tools") ?? false) &&
         !REASONING_MODEL_HINT.test(m.id),
     );
-    // Big models first, then known-reliable providers. Both are quality
-    // heuristics rather than correctness requirements — a small model
-    // still gets tried, just after every larger one has had a turn, since
-    // small models are where the Arabic token soup came from.
+    // Tool-capable first — those can actually run the sales flow. Then
+    // big before small, then known-reliable providers. All three are
+    // quality heuristics; nothing here is a correctness requirement, so a
+    // less-preferred model still gets its turn rather than being dropped.
     free.sort((a, b) => {
+      const tools = (m: OpenRouterModelInfo) => (m.supported_parameters?.includes("tools") ? 0 : 1);
+      const byTools = tools(a) - tools(b);
+      if (byTools !== 0) return byTools;
       const small = (id: string) => (SMALL_MODEL_HINT.test(id) ? 1 : 0);
       const bySize = small(a.id) - small(b.id);
       if (bySize !== 0) return bySize;
@@ -100,7 +116,10 @@ async function discoverFreeModels(): Promise<string[]> {
       };
       return rank(a.id) - rank(b.id);
     });
-    const models = free.slice(0, 6).map((m) => m.id);
+    const models: DiscoveredModel[] = free.slice(0, 8).map((m) => ({
+      id: m.id,
+      supportsTools: m.supported_parameters?.includes("tools") ?? false,
+    }));
     freeModelsCache = { models, fetchedAt: Date.now() };
     if (!models.length) console.warn("[whatsapp agent] OpenRouter free-model discovery returned nothing");
     return models;
@@ -373,8 +392,18 @@ async function callModel(
   deadline: number,
 ): Promise<{ content?: string; tool_calls?: ChatMessage["tool_calls"] } | null> {
   const discovered = await discoverFreeModels();
-  const chain = [...discovered, STATIC_FLOOR].slice(0, MODELS_PER_ROUND);
-  for (const model of chain) {
+  const chain: DiscoveredModel[] = [
+    ...discovered,
+    // Paid floor last, and only reachable if every free endpoint failed.
+    { id: STATIC_FLOOR, supportsTools: true },
+  ].slice(0, MODELS_PER_ROUND);
+
+  for (const entry of chain) {
+    const model = entry.id;
+    // Sending `tools` to a model that doesn't advertise support is a 400
+    // on some providers, so drop them for that model and take a plain
+    // answer — the alternative is not using the model at all.
+    const toolsForThisModel = entry.supportsTools ? tools : undefined;
     const remaining = deadline - Date.now();
     if (remaining < 5_000) {
       console.warn("[whatsapp agent] turn budget spent — not starting another model call");
@@ -410,7 +439,7 @@ async function callModel(
           // length is governed by the prompt and MAX_REPLY_CHARS.
           max_tokens: 450,
           messages,
-          ...(tools ? { tools } : {}),
+          ...(toolsForThisModel ? { tools: toolsForThisModel } : {}),
         }),
       });
 
