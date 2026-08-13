@@ -36,6 +36,12 @@ const PREFERRED_FREE_PROVIDERS = ["deepseek", "qwen", "meta-llama", "google", "m
  *  there's a larger free model available. */
 const SMALL_MODEL_HINT = /[^0-9]([0-9]|1[0-9])b(?![0-9])/i;
 
+/** Reasoning models put their chain of thought in `content` on the free
+ *  endpoints — the customer got a paragraph of English analysis about
+ *  the persona instead of a reply. There's no reliable way to ask for
+ *  just the answer across every provider, so they're skipped outright. */
+const REASONING_MODEL_HINT = /(^|[-/])(r1|qwq|o1|o3)([-:.]|$)|think|reason/i;
+
 /** Same account, same balance state, same low-cost paid fallback that was
  *  already confirmed to work here — kept only as an absolute floor in case
  *  discoverFreeModels() itself fails (network hiccup, OpenRouter outage).
@@ -77,7 +83,8 @@ async function discoverFreeModels(): Promise<string[]> {
         m.id.endsWith(":free") &&
         m.pricing?.prompt === "0" &&
         m.pricing?.completion === "0" &&
-        (m.supported_parameters?.includes("tools") ?? false),
+        (m.supported_parameters?.includes("tools") ?? false) &&
+        !REASONING_MODEL_HINT.test(m.id),
     );
     // Big models first, then known-reliable providers. Both are quality
     // heuristics rather than correctness requirements — a small model
@@ -236,6 +243,36 @@ function looksCorrupted(text: string): boolean {
   return FOREIGN_SCRIPT.test(text);
 }
 
+/** Removes an explicit thinking block when a model emits one. Cheap to
+ *  do and recovers an otherwise-good reply instead of discarding it. */
+function stripThinking(text: string): string {
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/<thinking>[\s\S]*?<\/thinking>/gi, "")
+    .trim();
+}
+
+/**
+ * Rejects a reply that is the model reasoning out loud rather than
+ * talking to the customer.
+ *
+ * Seen in production: a reasoning model answered "مرحبا" with a
+ * paragraph of English analysis — "The user just said مرحبا. According
+ * to the persona and rules, I need to…". Filtering those models out of
+ * discovery covers the known case, but the reliable guard is on the
+ * output: this prompt demands an Arabic reply, so anything that isn't
+ * substantially Arabic is not a reply. Quoted Arabic fragments inside
+ * English reasoning still fail the ratio, which is what makes this work
+ * where a keyword check wouldn't.
+ */
+function looksLikeReasoning(text: string): boolean {
+  const arabic = (text.match(/[؀-ۿ]/g) ?? []).length;
+  const latin = (text.match(/[A-Za-z]/g) ?? []).length;
+  const letters = arabic + latin;
+  if (letters < 12) return false; // too short to judge; let it through
+  return arabic / letters < 0.4;
+}
+
 /**
  * One OpenRouter round, walking the fallback chain. Returns the assistant
  * message, or null when every model in the chain refused — which on free
@@ -294,12 +331,23 @@ async function callModel(
         console.warn(`[whatsapp agent] ${model} returned an empty message`);
         continue;
       }
-      // Garbled output is a failure of this model, not of the request —
-      // the next one in the chain gets the same messages and usually
-      // answers cleanly.
-      if (choice.content && looksCorrupted(choice.content)) {
-        console.warn(`[whatsapp agent] ${model} returned corrupted text`, choice.content.slice(0, 120));
-        continue;
+      // Garbled or thought-aloud output is a failure of this model, not
+      // of the request — the next one in the chain gets the same messages
+      // and usually answers cleanly.
+      if (choice.content) {
+        const cleaned = stripThinking(choice.content);
+        if (looksCorrupted(cleaned)) {
+          console.warn(`[whatsapp agent] ${model} returned corrupted text`, cleaned.slice(0, 120));
+          continue;
+        }
+        // Only judge a text answer this way. A tool call with a bit of
+        // English scaffolding around it is fine — the reply the customer
+        // sees comes from a later round.
+        if (!choice.tool_calls?.length && looksLikeReasoning(cleaned)) {
+          console.warn(`[whatsapp agent] ${model} leaked reasoning instead of replying`, cleaned.slice(0, 120));
+          continue;
+        }
+        choice.content = cleaned;
       }
       return choice;
     } catch (err) {
